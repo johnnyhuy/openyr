@@ -21,8 +21,9 @@ Wine runs YR on macOS, but it is a compatibility layer: resolution, input, colou
 | MIX archive reader (incl. encrypted headers) | done |
 | CSF string tables | done |
 | INI rules parser | done |
+| PAL colour tables | done |
 | `mix-dump` inspection CLI | done |
-| SHP/VXL/HVA/palette formats | not started |
+| SHP/VXL/HVA/TMP formats | not started |
 | Simulation | not started |
 | Renderer / macOS app | not started |
 
