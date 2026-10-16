@@ -58,14 +58,27 @@ pub fn mix_id_td(name: &str) -> u32 {
 pub fn crc32(data: &[u8]) -> u32 {
     let mut crc = 0xFFFF_FFFFu32;
     for &b in data {
-        crc ^= u32::from(b);
-        for _ in 0..8 {
-            let mask = (crc & 1).wrapping_neg();
-            crc = (crc >> 1) ^ (0xEDB8_8320 & mask);
-        }
+        crc = CRC_TABLE[((crc ^ u32::from(b)) & 0xFF) as usize] ^ (crc >> 8);
     }
     !crc
 }
+
+/// Byte-at-a-time table for the reflected ZIP polynomial `0xEDB88320`.
+const CRC_TABLE: [u32; 256] = {
+    let mut table = [0u32; 256];
+    let mut i = 0;
+    while i < 256 {
+        let mut crc = i as u32;
+        let mut k = 0;
+        while k < 8 {
+            crc = (crc >> 1) ^ (0xEDB8_8320 & (crc & 1).wrapping_neg());
+            k += 1;
+        }
+        table[i] = crc;
+        i += 1;
+    }
+    table
+};
 
 #[cfg(test)]
 mod tests {

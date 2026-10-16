@@ -6,7 +6,7 @@
 
 use std::fs;
 use std::path::PathBuf;
-use yr_formats::{mix_id, CsfFile, IniFile, MixArchive};
+use yr_formats::{mix_id, CsfFile, HvaFile, IniFile, MixArchive, ShpFile, TmpFile, VxlFile};
 
 fn corpus() -> Option<PathBuf> {
     let dir = PathBuf::from(std::env::var("HOME").ok()?)
@@ -18,6 +18,16 @@ fn read(name: &str) -> Option<Vec<u8>> {
     let dir = corpus()?;
     let p = dir.join(name);
     p.is_file().then(|| fs::read(&p).ok()).flatten()
+}
+
+/// Read `top` then descend through nested archives by filename.
+fn nested(top: &str, path: &[&str]) -> Option<Vec<u8>> {
+    let mut cur = read(top)?;
+    for name in path {
+        let mix = MixArchive::parse(&cur).expect("nested archive parses");
+        cur = mix.get(name).unwrap_or_else(|| panic!("{name} present")).to_vec();
+    }
+    Some(cur)
 }
 
 #[test]
@@ -138,4 +148,79 @@ fn rulesmd_ini_is_reachable() {
         ini.sections.len(),
         raw.len()
     );
+}
+
+#[test]
+fn cameo_shp_is_60x48() {
+    let Some(data) = nested("language.mix", &["CAMEO.MIX", "HTNKICON.SHP"]) else {
+        eprintln!("skip: retail corpus not present");
+        return;
+    };
+    let shp = ShpFile::parse(&data).expect("cameo parses");
+    assert_eq!((shp.width, shp.height, shp.frames.len()), (60, 48, 1));
+    let px = shp.decode_frame(0).unwrap();
+    assert_eq!(px.len(), 60 * 48);
+    assert!(px.iter().filter(|&&p| p != 0).count() > 60 * 48 / 2, "cameo is mostly opaque");
+}
+
+#[test]
+fn building_shp_decodes_every_frame() {
+    let Some(data) = nested("ra2.mix", &["SNOW.MIX", "GACNST.SHP"]) else {
+        eprintln!("skip: retail corpus not present");
+        return;
+    };
+    let shp = ShpFile::parse(&data).expect("GACNST parses");
+    assert_eq!((shp.width, shp.height), (284, 226));
+    for i in 0..shp.frames.len() {
+        let canvas = shp.decode_frame_canvas(i).unwrap();
+        assert_eq!(canvas.len(), 284 * 226);
+        assert!(canvas.iter().any(|&p| p != 0), "frame {i} has pixels");
+    }
+}
+
+#[test]
+fn vehicle_vxl_and_hva_pair_up() {
+    let (Some(vxl), Some(hva)) = (
+        nested("ra2.mix", &["LOCAL.MIX", "HTNK.VXL"]),
+        nested("ra2.mix", &["LOCAL.MIX", "HTNK.HVA"]),
+    ) else {
+        eprintln!("skip: retail corpus not present");
+        return;
+    };
+    let vxl = VxlFile::parse(&vxl).expect("HTNK.VXL parses");
+    let hva = HvaFile::parse(&hva).expect("HTNK.HVA parses");
+    assert_eq!(vxl.remap, (16, 31), "player colour remap range");
+    let names: Vec<_> = vxl.limbs.iter().map(|l| l.name.as_str()).collect();
+    assert_eq!(names, hva.limbs);
+    let body = &vxl.limbs[0];
+    assert_eq!(body.size, [46, 34, 12]);
+    assert_eq!(body.voxels.len(), 4816);
+    assert!((body.scale - 1.0 / 12.0).abs() < 1e-6);
+    for v in &body.voxels {
+        assert!(v.x < body.size[0] && v.y < body.size[1] && v.z < body.size[2]);
+    }
+    // Westwood's asset path leaks into the HVA name field.
+    assert!(hva.name.starts_with("N:\\RA2\\ASSETS"));
+}
+
+#[test]
+fn terrain_tmp_known_answers() {
+    let (Some(clear), Some(road)) = (
+        nested("ra2.mix", &["ISOTEMP.MIX", "CLEAR01.TEM"]),
+        nested("ra2.mix", &["ISOURB.MIX", "PROAD15.URB"]),
+    ) else {
+        eprintln!("skip: retail corpus not present");
+        return;
+    };
+    let clear = TmpFile::parse(&clear).expect("CLEAR01.TEM parses");
+    assert_eq!((clear.cells_x, clear.cells_y), (1, 1));
+    assert_eq!((clear.tile_width, clear.tile_height), (60, 30));
+    let tile = clear.tiles[0].as_ref().unwrap();
+    assert_eq!((tile.height, tile.ramp_type), (0, 0));
+    assert_eq!(tile.pixels.len(), 900);
+    assert!(tile.depth.is_some() && tile.extra.is_none());
+
+    let road = TmpFile::parse(&road).expect("PROAD15.URB parses");
+    assert_eq!((road.cells_x, road.cells_y), (3, 4));
+    assert_eq!(road.tiles.iter().flatten().count(), 12);
 }
