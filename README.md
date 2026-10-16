@@ -1,4 +1,4 @@
-# ra2yr-native
+# OpenYR
 
 A native, reverse-engineered rewrite of **Command & Conquer: Red Alert 2 — Yuri's Revenge** for modern macOS (Apple Silicon first). Long-term goal: a faithful, moddable engine that runs the original game assets natively — no Wine — so we can ship patches, quality-of-life fixes and new units.
 
