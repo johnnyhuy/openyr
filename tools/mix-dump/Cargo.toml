@@ -1,0 +1,13 @@
+[package]
+name = "mix-dump"
+description = "Inspect and extract Westwood MIX archives"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "mix-dump"
+path = "src/main.rs"
+
+[dependencies]
+yr-formats = { path = "../../crates/yr-formats" }

@@ -25,7 +25,7 @@ Flag bits (in the 3rd byte of the flags word):
 
 | Constant | Value | Meaning |
 |---|---|---|
-| `CHECKSUM` | `0x00010000` | 20-byte SHA1 trailer after the body |
+| `CHECKSUM` | `0x00010000` | 20-byte SHA1 trailer after the body (SHA-1 of the body only, retail-confirmed 2026-10-16) |
 | `ENCRYPTED` | `0x00020000` | `key_source` present; header+index are Blowfish-encrypted |
 
 Size identity (XCC's validity check, byte-exact):

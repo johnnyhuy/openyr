@@ -1,0 +1,11 @@
+[package]
+name = "yr-formats"
+description = "Pure parsers for Westwood Red Alert 2 / Yuri's Revenge file formats"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+blowfish = "0.9"
+num-bigint = "0.4"
+num-traits = "0.2"
