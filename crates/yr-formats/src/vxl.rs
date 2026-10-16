@@ -85,6 +85,13 @@ impl VxlFile {
         if limb_count != tailer_count || limb_count == 0 {
             return Err(VxlError::BadSignature);
         }
+        // Check the counts against the file before allocating per limb.
+        let fixed = limb_count
+            .checked_mul(LIMB_HEADER_LEN + LIMB_TAILER_LEN)
+            .and_then(|n| n.checked_add(HEADER_LEN + body_size));
+        if fixed.is_none_or(|n| n > data.len()) {
+            return Err(VxlError::Truncated);
+        }
 
         let mut names = Vec::with_capacity(limb_count);
         for _ in 0..limb_count {
@@ -265,6 +272,14 @@ mod tests {
             VxlFile::parse(b"Voxel Animatiox\0").unwrap_err(),
             VxlError::BadSignature
         );
+    }
+
+    #[test]
+    fn hostile_limb_count_rejected_before_allocating() {
+        let mut d = sample();
+        d[20..24].copy_from_slice(&u32::MAX.to_le_bytes());
+        d[24..28].copy_from_slice(&u32::MAX.to_le_bytes());
+        assert_eq!(VxlFile::parse(&d).unwrap_err(), VxlError::Truncated);
     }
 
     #[test]

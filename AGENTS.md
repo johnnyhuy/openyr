@@ -13,6 +13,8 @@ Native Rust rewrite of Red Alert 2: Yuri's Revenge (macOS first). Not a Wine wra
 - `crates/yr-formats` is pure parsing only — no filesystem writes, no platform code.
 - Future `sim` crate must be deterministic: fixed-point maths only, no `f32`/`f64`, no `HashMap` iteration in sim paths, fixed tick order. See `docs/architecture.md`.
 - Keep renderer/app code out of the simulation crates.
+- Parsers treat every header field as hostile: check counts and sizes against the input length (with checked arithmetic) before allocating, and add a hostile-header unit test for each new format.
+- `mix-dump scan <all retail .mix>` must stay at zero errors; it decodes every asset in the install.
 
 ## Method
 

@@ -52,7 +52,8 @@ impl CsfFile {
         if reserved != [0; 8] {
             return Err(CsfError::BadString);
         }
-        let mut entries = Vec::with_capacity(num_strings);
+        // Each string record is at least 8 bytes; never reserve beyond that.
+        let mut entries = Vec::with_capacity(num_strings.min(data.len() / 8));
         for _ in 0..num_labels {
             r.expect(b" LBL")?;
             let num_strings = r.u32()? as usize;
@@ -192,5 +193,15 @@ mod tests {
         let mut data = build();
         data[0] = b'X';
         assert!(matches!(CsfFile::parse(&data), Err(CsfError::BadMagic)));
+    }
+
+    #[test]
+    fn hostile_string_count_does_not_overallocate() {
+        let mut data = b" FSC".to_vec();
+        for v in [3u32, 0, u32::MAX] {
+            data.extend(v.to_le_bytes());
+        }
+        data.extend([0; 8]);
+        assert!(matches!(CsfFile::parse(&data), Err(CsfError::BadString)));
     }
 }

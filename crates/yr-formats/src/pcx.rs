@@ -82,13 +82,18 @@ impl PcxImage {
         // RLE runs may cross scanline/plane boundaries, so decode the whole
         // stream into one buffer of `bytes_per_line * planes * height`.
         let stride = bytes_per_line * planes as usize;
-        let mut raw = vec![0u8; stride * height];
         let body_end = if planes == 1 {
             data.len().checked_sub(PALETTE_TRAILER).ok_or(PcxError::MissingPalette)?
         } else {
             data.len()
         };
         let body = data.get(HEADER_LEN..body_end).ok_or(PcxError::Truncated)?;
+        // RLE expands at most 63 bytes per 2 input bytes; reject headers
+        // claiming more before allocating.
+        if stride * height > body.len().saturating_mul(32) {
+            return Err(PcxError::Truncated);
+        }
+        let mut raw = vec![0u8; stride * height];
         unrle(body, &mut raw)?;
 
         let pixels = if planes == 1 {
@@ -204,6 +209,15 @@ mod tests {
         d.extend([1, 2, 3, 4, 5, 6]); // R plane, G plane, B plane
         let img = PcxImage::parse(&d).unwrap();
         assert_eq!(img.pixels, PcxPixels::Rgb(vec![1, 3, 5, 2, 4, 6]));
+    }
+
+    #[test]
+    fn hostile_dimensions_rejected_before_allocating() {
+        // 65535 x 65536 x 3 planes claimed by a 130-byte file.
+        let mut d = header(u16::MAX, u16::MAX, 3, u16::MAX);
+        d[10..12].copy_from_slice(&u16::MAX.to_le_bytes());
+        d.extend([0xC1, 0]);
+        assert_eq!(PcxImage::parse(&d).unwrap_err(), PcxError::Truncated);
     }
 
     #[test]

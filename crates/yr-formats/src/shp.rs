@@ -7,6 +7,11 @@ use crate::bytes::Cursor;
 
 const FILE_HEADER_LEN: usize = 8;
 const FRAME_HEADER_LEN: usize = 24;
+/// Zero-run RLE can expand 2 bytes into 255 pixels; no frame may claim more
+/// pixels than its remaining data could produce.
+const MAX_EXPANSION: usize = 128;
+/// Canvas cap for `decode_frame_canvas` (retail maximum is 632x568).
+const MAX_CANVAS_PIXELS: usize = 4096 * 4096;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum ShpError {
@@ -119,6 +124,10 @@ impl<'a> ShpFile<'a> {
             return Ok(Vec::new());
         }
         let (w, h) = (f.width as usize, f.height as usize);
+        let remaining = self.data.len() - f.offset as usize;
+        if w * h > remaining.saturating_mul(MAX_EXPANSION) {
+            return Err(ShpError::Truncated);
+        }
         let mut out = vec![0u8; w * h];
         let mut c = Cursor::at(self.data, f.offset as usize);
         match f.compression {
@@ -151,6 +160,9 @@ impl<'a> ShpFile<'a> {
     pub fn decode_frame_canvas(&self, i: usize) -> Result<Vec<u8>, ShpError> {
         let f = *self.frames.get(i).ok_or(ShpError::BadFrame(i))?;
         let (cw, ch) = (self.width as usize, self.height as usize);
+        if cw * ch > MAX_CANVAS_PIXELS {
+            return Err(ShpError::BadHeader);
+        }
         let mut canvas = vec![0u8; cw * ch];
         let px = self.decode_frame(i)?;
         let (w, x, y) = (f.width as usize, f.x as usize, f.y as usize);
@@ -257,6 +269,17 @@ mod tests {
         }
         let shp = ShpFile::parse(&d).unwrap();
         assert!(shp.frames.iter().all(ShpFrame::is_empty));
+    }
+
+    #[test]
+    fn hostile_frame_size_rejected_before_allocating() {
+        // 65535x65535 raw frame backed by 4 bytes.
+        let mut d = header(u16::MAX, u16::MAX, 1);
+        d.extend(frame(0, 0, u16::MAX, u16::MAX, 1, 32));
+        d.extend([0; 4]);
+        let shp = ShpFile::parse(&d).unwrap();
+        assert_eq!(shp.decode_frame(0).unwrap_err(), ShpError::Truncated);
+        assert_eq!(shp.decode_frame_canvas(0).unwrap_err(), ShpError::BadHeader);
     }
 
     #[test]
