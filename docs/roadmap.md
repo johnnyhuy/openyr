@@ -10,7 +10,7 @@ incremental, testable path where each milestone is independently useful.
 - Repo, licence, method: `docs/legal.md`
 - Wine testbed retained as reference oracle at `~/Games/RA2YR`
 
-## M1 — Asset layer (current)
+## M1 — Asset layer (done 2026-10-17; open items carried forward)
 
 - [x] MIX reader: classic + flagged headers, SHA1 trailer, encrypted (RSA/Blowfish) headers
 - [x] Filename hash (TS/CRC32 variant) with known-answer tests
@@ -25,11 +25,12 @@ incremental, testable path where each milestone is independently useful.
 - [x] PCX reader (8-bit paletted + 24-bit planar; all 271 retail files)
 - [x] AUD / AUDIO.BAG+IDX / IMA WAV decoders, bit-exact vs ffmpeg
 - [ ] WSA/BIK metadata
-- [ ] `yr-assets` VFS with MIX cascade (ra2md.mix over ra2.mix, expandmd override order)
+- [x] `yr-assets` VFS: engine-order MIX cascade, nested mounts, theaters, loose overrides
+- [ ] Side-specific archives (SIDEC##) and per-file loader exceptions
 - [x] MIX name database: every nested archive named; ~88% of all entries named
       via INI-derived candidates with content-kind collision rejection
 
-## M2 — Typed game data
+## M2 — Typed game data (current)
 
 - [ ] Parse `rulesmd.ini`/`artmd.ini`/`soundmd.ini` into typed TechTypes/Weapons/Warheads
 - [ ] `mix-dump inspect <unit>`: show a resolved unit's full property inheritance

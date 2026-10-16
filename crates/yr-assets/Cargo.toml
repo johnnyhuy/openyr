@@ -1,0 +1,10 @@
+[package]
+name = "yr-assets"
+description = "Virtual file system over a Yuri's Revenge install: MIX cascade in engine order"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+yr-formats = { path = "../yr-formats" }
+memmap2 = "0.9"
