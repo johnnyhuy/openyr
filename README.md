@@ -1,0 +1,60 @@
+# ra2yr-native
+
+A native, reverse-engineered rewrite of **Command & Conquer: Red Alert 2 — Yuri's Revenge** for modern macOS (Apple Silicon first). Long-term goal: a faithful, moddable engine that runs the original game assets natively — no Wine — so we can ship patches, quality-of-life fixes and new units.
+
+> Working name. This is a from-scratch engine in Rust that reads the original Westwood data files (MIX/CSF/INI/SHP/VXL/…). It ships **no EA assets**; you supply your own legally owned game install.
+
+## Why
+
+Wine runs YR on macOS, but it is a compatibility layer: resolution, input, colour depth and modding are all capped by a 2001-era Windows binary. A native engine gives:
+
+- modern macOS: Retina/integer scaling, real fullscreen, Metal, gamepads, no Rosetta
+- a moddable codebase: data-driven units (including new ones), scripted QoL patches
+- a foundation for content additions (e.g. RA3-style units with new art and audio)
+
+## Status
+
+**Pre-alpha — asset layer in progress.** See [docs/roadmap.md](docs/roadmap.md).
+
+| Area | State |
+|---|---|
+| MIX archive reader (incl. encrypted headers) | done |
+| CSF string tables | done |
+| INI rules parser | done |
+| `mix-dump` inspection CLI | done |
+| SHP/VXL/HVA/palette formats | not started |
+| Simulation | not started |
+| Renderer / macOS app | not started |
+
+## Layout
+
+```
+crates/yr-formats/   pure parsers for Westwood file formats (no I/O side effects)
+tools/mix-dump/      CLI to list/extract MIX archives from a game install
+docs/                architecture, roadmap, format specs, research notes
+```
+
+## Building
+
+```sh
+cargo build --workspace
+cargo test --workspace
+```
+
+Tests read the real game archives from `~/Games/RA2YR/prefix/drive_c/Westwood/RA2`
+when present (skipped otherwise), so they double as a parity check against retail data.
+
+## Using your own game data
+
+Point the tools at your own install:
+
+```sh
+cargo run -p mix-dump -- list "/path/to/RA2/langmd.mix"
+cargo run -p mix-dump -- extract "/path/to/RA2/ra2md.mix" RULESMD.INI out/
+```
+
+## Legal
+
+See [docs/legal.md](docs/legal.md). Short version: clean-room method, no EA code or
+assets in this repository, user-supplied assets only. Precedent (re3, DevilutionX,
+OpenRCT2, Thyme) is summarised in `docs/research/`.
