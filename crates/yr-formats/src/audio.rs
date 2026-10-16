@@ -144,7 +144,9 @@ impl AudFile {
             return Err(AudioError::Unsupported("8-bit IMA AUD".into()));
         }
         let mut ima = Ima::default();
-        let mut samples = Vec::with_capacity(hdr.output_size as usize / 2);
+        // Never trust the header for allocation: each input byte yields at
+        // most two samples.
+        let mut samples = Vec::with_capacity((hdr.output_size as usize / 2).min((data.len() - 12) * 2));
         let mut c = Cursor::at(data, 12);
         while c.pos() < data.len() {
             let in_size = c.u16().ok_or(AudioError::Truncated)? as usize;
@@ -184,8 +186,9 @@ pub fn decode_ms_ima(data: &[u8], channels: u16, block_align: usize) -> Result<V
             "IMA block {block_align} x {channels} channels"
         )));
     }
-    let per_channel = (block_align - 4 * ch) * 2 / ch + 1;
-    let mut out = Vec::with_capacity(data.len() / block_align * per_channel * ch + per_channel * ch);
+    // Two samples per input byte plus one header sample per channel bounds
+    // the output regardless of the (untrusted) block size.
+    let mut out = Vec::with_capacity(data.len() * 2 + 2 * ch);
     for block in data.chunks(block_align) {
         if block.len() < 4 * ch {
             break;
@@ -414,6 +417,20 @@ mod tests {
         // State carries across the chunk boundary: the 3rd sample continues
         // from the 2nd, not from zero.
         assert!(pcm.samples[2] > pcm.samples[1]);
+    }
+
+    #[test]
+    fn hostile_sizes_do_not_overallocate() {
+        // AUD claiming a 4 GiB output with no chunks.
+        let mut d = Vec::new();
+        d.extend(22050u16.to_le_bytes());
+        d.extend(0u32.to_le_bytes());
+        d.extend(u32::MAX.to_le_bytes());
+        d.extend([AUD_FLAG_16BIT, AUD_CODEC_IMA]);
+        assert!(AudFile::decode(&d).unwrap().samples.is_empty());
+        // Huge IMA block size over a tiny buffer.
+        // A partial block decodes what it holds: 1 header sample + 8 nibbles.
+        assert_eq!(decode_ms_ima(&[0; 8], 1, 65532).unwrap().len(), 9);
     }
 
     #[test]
