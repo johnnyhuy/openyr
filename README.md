@@ -22,8 +22,10 @@ Wine runs YR on macOS, but it is a compatibility layer: resolution, input, colou
 | CSF string tables | done |
 | INI rules parser | done |
 | PAL colour tables | done |
-| `mix-dump` inspection CLI | done |
-| SHP/VXL/HVA/TMP formats | not started |
+| SHP / VXL / HVA / TMP readers | done (whole retail corpus decodes) |
+| MIX name recovery (~88% of entries) | done |
+| `mix-dump` inspection CLI (`scan`, nested `extract`) | done |
+| PCX / AUD / `yr-assets` VFS | next |
 | Simulation | not started |
 | Renderer / macOS app | not started |
 
@@ -52,6 +54,8 @@ Point the tools at your own install:
 ```sh
 cargo run -p mix-dump -- list "/path/to/RA2/langmd.mix"
 cargo run -p mix-dump -- extract "/path/to/RA2/ra2md.mix" RULESMD.INI out/
+cargo run -p mix-dump -- extract "/path/to/RA2/ra2.mix" LOCAL.MIX/HTNK.VXL out/
+cargo run --release -p mix-dump -- scan /path/to/RA2/*.mix   # census + names
 ```
 
 ## Legal

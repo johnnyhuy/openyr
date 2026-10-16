@@ -18,18 +18,21 @@ incremental, testable path where each milestone is independently useful.
 - [x] INI reader (sections, keys, comments, order-preserving)
 - [x] `mix-dump` CLI (list/extract/info/names)
 - [x] PAL / colour tables (6-bit RGB palettes)
-- [ ] SHP reader (cameos, buildings, infantry sprites)
-- [ ] VXL + HVA readers (vehicles)
-- [ ] TMP terrain tiles
+- [x] SHP reader (cameos, buildings, infantry sprites): every retail frame decodes
+- [x] VXL + HVA readers (vehicles)
+- [x] TMP terrain tiles
+- [x] `mix-dump scan`: recursive census + corpus-wide parser check
+- [ ] PCX reader (loading screens, 271 retail files)
 - [ ] AUD/IMA-ADPCM audio, WSA/BIK metadata
 - [ ] `yr-assets` VFS with MIX cascade (ra2md.mix over ra2.mix, expandmd override order)
-- [ ] MIX name database: resolve nested archive IDs (`mix-dump names` covers known names)
+- [x] MIX name database: every nested archive named; ~88% of all entries named
+      via INI-derived candidates with content-kind collision rejection
 
 ## M2 — Typed game data
 
 - [ ] Parse `rulesmd.ini`/`artmd.ini`/`soundmd.ini` into typed TechTypes/Weapons/Warheads
 - [ ] `mix-dump inspect <unit>`: show a resolved unit's full property inheritance
-- [ ] Name database: resolve unknown MIX IDs via content sniffing + known-name lists
+- [ ] Name database: close the remaining ~12% (RA2-only VXLs, PCX, audio)
 
 ## M3 — Renderer v1
 

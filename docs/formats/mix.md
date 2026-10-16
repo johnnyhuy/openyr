@@ -123,22 +123,55 @@ what every existing tool does.
 | `expandmd01.mix` | `0x8218f9f4` | `RULESMD.INI` (743,215 bytes) |
 | `expandmd01.mix` | `0x7a742519` | `SOUNDMD.INI` (99,392 bytes) |
 
-Most nested archives in `ra2md.mix` remain unresolved (`mix-dump names` prints
-`? (nested mix)`); extend `KNOWN_NAMES` in `tools/mix-dump` as names are
-discovered, or read nested contents recursively to identify by shape.
+More nested names confirmed by brute force over candidate stems:
+`NTRLMD.MIX` (`0xc93b27a0`), `LOAD.MIX` (`0xbc80c10f`), `LOADMD.MIX`
+(`0xdf966243`). Every nested archive in the retail install now has a name.
+
+### Name recovery from INIs (`mix-dump scan`)
+
+The game names its own assets: `artmd.ini` (`Image=`, `Cameo=`), rules sections,
+sound/EVA INIs and theater INIs (`FileName=` + `TilesInSet=`) all hold the
+stems. `names::NameDb::learn_from_inis` tokenises every INI found in the
+scanned archives and expands each token with extensions, art suffixes (`TUR`,
+`BARL` for voxels; `ICON`, `UICO` for cameos; `MK` for build-ups) and theater
+letters. It keeps only names whose hash hits a real entry ID.
+
+Across all 16 retail archives (13,061 unique IDs) this learns **11,318 names
+in about 3 s**, naming about 88% of entries: SHP 4,798/5,450, TMP 5,023/5,536,
+WAV 1,223/1,223, VXL/HVA 139/221 and 139/220.
+
+**Collisions are real.** About 10M candidates against 13k IDs predicts tens of
+CRC32 false matches. Early runs produced names like `0CBDACBCBARL.HVA` on TMP
+content (from 8-hex-digit digest values in map INIs; those tokens are now
+dropped). `scan` therefore keeps a recovered name only when its extension
+agrees with the detected content kind, and reports rejections.
+
+**Building art naming** (retail evidence, `ra2.mix`/`ra2md.mix`):
+`<side><theater><name>`, e.g. `GACNST.SHP`, `GGCNST.SHP`, `NACNST.SHP`,
+`YGCNST.SHP`, `GTCNSTMK.SHP`. The side letter comes first: `G` Allied (a
+TS-era GDI holdover), `N` Soviet, `Y` Yuri, `C` civilian. The theater letter
+is the **second** character: `A` snow, `G` generic, `T` temperate, `U` urban,
+`D` desert, `L` lunar, `N` new urban. Main sprites ship only in snow (`A`)
+and generic (`G`) variants. Build-ups (`MK`) ship for every theater.
+
+## Resolved questions
+
+- The 7,033/7,631-byte binaries in `expandmd01.mix` with prefix
+  `0a 05 01 08 ...` are **PCX** images (manufacturer `0x0A`, version 5, RLE,
+  8 bpp). The retail install holds 271 PCX files.
+- `0x65ac42bd` (360 KB, `00 00 78 02 38 02 01 00`) is a single-frame 632x568
+  **SHP** (`docs/formats/shp.md`).
+- The 3x 12,946-byte nested MIXes are `DES.MIX`, `LUN.MIX`, `UBN.MIX`: tiny
+  per-theater archives holding `AMMO01.SHP`, `WAKE2.SHP` and one more SHP.
+- The 337 KB INI `0xb91d69a0` is `C1A02MD.MAP`, a campaign map. Its
+  `[CARUS08]`-style sections are per-map rule overrides.
 
 ## Open questions
 
-- Format of the 7,033/7,631-byte binaries in `expandmd01.mix` (identical
-  16-byte prefix `0a 05 01 08 00 00 00 00 b7 01 23 00 48 00 48 00`, likely
-  sprites/voxels of the SHP family but the header matches no recalled spec —
-  read ModEnc's SHP page and reverse the layout properly).
-- Format of the 360 KB binary `0x65ac42bd` (starts `00 00 78 02 38 02 01 00`)
-  and the 3× 12,946-byte nested MIXes in `ra2md.mix` (each holds 3 small
-  binaries of 4,896 / 5,480 / 2,488 bytes — cameo-SHP-shaped).
-- The 337 KB INI `0xb91d69a0` in `expandmd01.mix` has one section per map
-  (`[CARUS08]`, `[CAWASH17]`, ...) with `Name=` display strings; likely the
-  1.001 map-pack index. Needs its real filename.
+- 15 entries remain unclassified ("binary"), including `VOXELS.VPL` (voxel
+  lighting palette) and an 82 KB blob in `langmd.mix/AUDIOMD.MIX`.
+- About 80 VXL/HVA names are unresolved. They are likely RA2-only units whose stems are
+  absent from YR's INIs; try `rules.ini`/`art.ini` from `ra2.mix` explicitly.
 
 ## Related
 
