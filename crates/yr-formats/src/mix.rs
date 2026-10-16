@@ -274,12 +274,23 @@ impl<'a> MixArchive<'a> {
     }
 
     /// Look up a file by name using the RA2/YR hash (or TD hash for classic).
+    /// Look up by filename. RA2/YR hash every archive with the CRC32 scheme,
+    /// including classic-header ones (retail `AUDIO.MIX` has a classic header
+    /// and CRC IDs), so CRC is tried first; classic archives fall back to the
+    /// TD/RA1 rotate-add hash.
     pub fn get(&self, name: &str) -> Option<&'a [u8]> {
-        let id = match self.version {
-            MixVersion::Classic => mix_id_td(name),
-            MixVersion::Flagged => mix_id(name),
-        };
-        self.get_by_id(id)
+        self.resolve(name).and_then(|id| self.get_by_id(id))
+    }
+
+    /// The entry ID `name` resolves to in this archive, if present.
+    pub fn resolve(&self, name: &str) -> Option<u32> {
+        let has = |id: u32| self.entries.iter().any(|e| e.id == id);
+        let crc = mix_id(name);
+        if has(crc) {
+            return Some(crc);
+        }
+        let td = mix_id_td(name);
+        (self.version == MixVersion::Classic && has(td)).then_some(td)
     }
 }
 

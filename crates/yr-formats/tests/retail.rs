@@ -254,3 +254,17 @@ fn pcx_both_flavours_decode() {
     });
     assert!(r > b * 2, "plane order is R, G, B");
 }
+
+#[test]
+fn classic_header_archives_use_crc_ids() {
+    // AUDIOMD.MIX has a classic (no flags) header but CRC32 entry IDs.
+    let Some(audio) = nested("langmd.mix", &["AUDIOMD.MIX"]) else {
+        eprintln!("skip: retail corpus not present");
+        return;
+    };
+    let mix = MixArchive::parse(&audio).unwrap();
+    assert_eq!(mix.version(), yr_formats::MixVersion::Classic);
+    let wav = mix.get("CEVA060.WAV").expect("EVA line resolves by CRC name");
+    assert_eq!(&wav[..4], b"RIFF");
+    assert_eq!(mix.resolve("CEVA060.WAV"), Some(mix_id("CEVA060.WAV")));
+}

@@ -16,7 +16,7 @@ mod render;
 mod scan;
 
 use yr_formats::names::known_name;
-use yr_formats::{mix_id, mix_id_td, MixArchive, MixVersion};
+use yr_formats::{mix_id, MixArchive};
 
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
@@ -119,19 +119,10 @@ pub(crate) fn descend<'a>(data: &'a [u8], path: &str) -> Result<(&'a [u8], u32),
     let mut id = 0;
     for segment in path.split('/') {
         let mix = MixArchive::parse(current).map_err(|e| format!("{segment}: {e}"))?;
-        let payload = match parse_id(segment) {
-            Some(raw) => {
-                id = raw;
-                mix.get_by_id(raw)
-            }
-            None => {
-                id = match mix.version() {
-                    MixVersion::Classic => mix_id_td(segment),
-                    MixVersion::Flagged => mix_id(segment),
-                };
-                mix.get(segment)
-            }
-        };
+        id = parse_id(segment)
+            .or_else(|| mix.resolve(segment))
+            .unwrap_or_else(|| mix_id(segment));
+        let payload = mix.get_by_id(id);
         current = payload.ok_or_else(|| format!("{segment} (0x{id:08x}) not found"))?;
     }
     Ok((current, id))
