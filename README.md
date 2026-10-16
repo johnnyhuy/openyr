@@ -56,6 +56,8 @@ cargo run -p mix-dump -- list "/path/to/RA2/langmd.mix"
 cargo run -p mix-dump -- extract "/path/to/RA2/ra2md.mix" RULESMD.INI out/
 cargo run -p mix-dump -- extract "/path/to/RA2/ra2.mix" LOCAL.MIX/HTNK.VXL out/
 cargo run --release -p mix-dump -- scan /path/to/RA2/*.mix   # census + names
+cargo run --release -p mix-dump -- render \
+  /path/to/RA2/ra2.mix:SNOW.MIX/GACNST.SHP /path/to/RA2/ra2.mix:CACHE.MIX/UNITSNO.PAL gacnst.png
 ```
 
 ## Legal

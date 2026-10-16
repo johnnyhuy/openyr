@@ -6,10 +6,13 @@
 //!   mix-dump names <archive.mix>
 //!   mix-dump scan [-v] <archive.mix>...  recursive content census + name recovery
 //!   mix-dump extract <archive.mix> <name-or-id> <outdir>
+//!   mix-dump render <archive.mix:path> <archive.mix:palette.pal> <out.png>
 
 use std::fs;
 use std::path::PathBuf;
 use std::process::ExitCode;
+mod png;
+mod render;
 mod scan;
 
 use yr_formats::names::known_name;
@@ -23,9 +26,10 @@ fn main() -> ExitCode {
         ["names", path] => cmd_names(path),
         ["scan", "-v", ref paths @ ..] if !paths.is_empty() => scan::cmd_scan(paths, true),
         ["scan", ref paths @ ..] if !paths.is_empty() => scan::cmd_scan(paths, false),
+        ["render", asset, palette, out] => render::cmd_render(asset, palette, out),
         ["extract", path, name, outdir] => cmd_extract(path, name, PathBuf::from(outdir)),
         _ => {
-            eprintln!("usage:\n  mix-dump info <archive.mix>\n  mix-dump list <archive.mix>\n  mix-dump names <archive.mix>\n  mix-dump scan [-v] <archive.mix>...\n  mix-dump extract <archive.mix> <name-or-id> <outdir>");
+            eprintln!("usage:\n  mix-dump info <archive.mix>\n  mix-dump list <archive.mix>\n  mix-dump names <archive.mix>\n  mix-dump scan [-v] <archive.mix>...\n  mix-dump extract <archive.mix> <name-or-id> <outdir>\n  mix-dump render <archive.mix:path> <archive.mix:palette> <out.png>");
             return ExitCode::from(2);
         }
     };
@@ -94,9 +98,25 @@ fn cmd_list(path: &str) -> Result<(), String> {
 /// `NTRLMD.MIX/0x88480c72`; each segment is a filename or hex/decimal ID.
 fn cmd_extract(path: &str, name: &str, outdir: PathBuf) -> Result<(), String> {
     let (data, _) = load(path)?;
-    let mut current: &[u8] = &data;
+    let (payload, id) = descend(&data, name)?;
+    fs::create_dir_all(&outdir).map_err(|e| e.to_string())?;
+    let outfile = outdir.join(sanitize(name));
+    fs::write(&outfile, payload).map_err(|e| e.to_string())?;
+    println!(
+        "extracted {} (0x{id:08x}, {} bytes) -> {}",
+        name,
+        payload.len(),
+        outfile.display()
+    );
+    Ok(())
+}
+
+/// Walk `/`-separated segments through nested archives; returns the payload
+/// and the ID of the last segment.
+pub(crate) fn descend<'a>(data: &'a [u8], path: &str) -> Result<(&'a [u8], u32), String> {
+    let mut current = data;
     let mut id = 0;
-    for segment in name.split('/') {
+    for segment in path.split('/') {
         let mix = MixArchive::parse(current).map_err(|e| format!("{segment}: {e}"))?;
         let payload = match parse_id(segment) {
             Some(raw) => {
@@ -113,16 +133,7 @@ fn cmd_extract(path: &str, name: &str, outdir: PathBuf) -> Result<(), String> {
         };
         current = payload.ok_or_else(|| format!("{segment} (0x{id:08x}) not found"))?;
     }
-    fs::create_dir_all(&outdir).map_err(|e| e.to_string())?;
-    let outfile = outdir.join(sanitize(name));
-    fs::write(&outfile, current).map_err(|e| e.to_string())?;
-    println!(
-        "extracted {} (0x{id:08x}, {} bytes) -> {}",
-        name,
-        current.len(),
-        outfile.display()
-    );
-    Ok(())
+    Ok((current, id))
 }
 
 /// Accepts decimal (`305419896`) or hex (`0x1234abcd`) IDs.

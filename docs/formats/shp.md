@@ -55,6 +55,11 @@ files (83,626 non-empty frames) with zero errors:
   They are localised assets, so they live in `language.mix`, not `ra2.mix`.
 - Odd frame dimensions occur; frames are not padded in storage.
 - `expandmd01.mix/0x65ac42bd` (360 KB) is a single-frame 632x568 SHP.
+- Building SHPs store body frames first, then the same number of shadow
+  frames (`GACNST.SHP`: 3 body states, normal and two damage levels, then 3
+  shadows). Shadow pixels are coverage masks: draw them as translucent black,
+  not via the palette. Visual check: `mix-dump render` (the cameo, the snow
+  Construction Yard and the urban road templates render correctly).
 
 ## Sources
 
