@@ -6,7 +6,9 @@
 
 use std::fs;
 use std::path::PathBuf;
-use yr_formats::{mix_id, CsfFile, HvaFile, IniFile, MixArchive, ShpFile, TmpFile, VxlFile};
+use yr_formats::{
+    mix_id, CsfFile, HvaFile, IniFile, MixArchive, PcxImage, PcxPixels, ShpFile, TmpFile, VxlFile,
+};
 
 fn corpus() -> Option<PathBuf> {
     let dir = PathBuf::from(std::env::var("HOME").ok()?)
@@ -20,12 +22,16 @@ fn read(name: &str) -> Option<Vec<u8>> {
     p.is_file().then(|| fs::read(&p).ok()).flatten()
 }
 
-/// Read `top` then descend through nested archives by filename.
+/// Read `top` then descend through nested archives by filename or `0x` ID.
 fn nested(top: &str, path: &[&str]) -> Option<Vec<u8>> {
     let mut cur = read(top)?;
     for name in path {
         let mix = MixArchive::parse(&cur).expect("nested archive parses");
-        cur = mix.get(name).unwrap_or_else(|| panic!("{name} present")).to_vec();
+        let entry = match name.strip_prefix("0x") {
+            Some(hex) => mix.get_by_id(u32::from_str_radix(hex, 16).unwrap()),
+            None => mix.get(name),
+        };
+        cur = entry.unwrap_or_else(|| panic!("{name} present")).to_vec();
     }
     Some(cur)
 }
@@ -223,4 +229,28 @@ fn terrain_tmp_known_answers() {
     let road = TmpFile::parse(&road).expect("PROAD15.URB parses");
     assert_eq!((road.cells_x, road.cells_y), (3, 4));
     assert_eq!(road.tiles.iter().flatten().count(), 12);
+}
+
+#[test]
+fn pcx_both_flavours_decode() {
+    let (Some(menu), Some(emblem)) = (
+        nested("ra2.mix", &["LOCAL.MIX", "0x58da0eb1"]),
+        nested("ra2.mix", &["NEUTRAL.MIX", "0xf1f8cf8a"]),
+    ) else {
+        eprintln!("skip: retail corpus not present");
+        return;
+    };
+    let menu = PcxImage::parse(&menu).expect("8-bit PCX parses");
+    assert_eq!((menu.width, menu.height), (640, 400));
+    assert!(matches!(menu.pixels, PcxPixels::Indexed { .. }));
+    let emblem = PcxImage::parse(&emblem).expect("24-bit PCX parses");
+    assert_eq!((emblem.width, emblem.height), (472, 448));
+    let PcxPixels::Rgb(rgb) = &emblem.pixels else {
+        panic!("expected 24-bit");
+    };
+    // The Soviet emblem is dominated by red: R exceeds B on average.
+    let (r, b) = rgb.chunks_exact(3).fold((0u64, 0u64), |(r, b), p| {
+        (r + u64::from(p[0]), b + u64::from(p[2]))
+    });
+    assert!(r > b * 2, "plane order is R, G, B");
 }

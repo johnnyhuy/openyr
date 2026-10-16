@@ -1,15 +1,23 @@
-//! `mix-dump render`: draw an SHP (all frames as a sheet) or a TMP template
-//! to PNG with a given palette, for eyeballing decoder output.
+//! `mix-dump render`: draw an SHP (all frames as a sheet), a TMP template
+//! (both with a given palette) or a PCX to PNG, for eyeballing decoder output.
 //!
 //! Asset specs are `<archive.mix>:<nested/path>`, e.g.
 //! `ra2.mix:SNOW.MIX/GACNST.SHP`.
 
 use crate::png;
 use std::fs;
-use yr_formats::{Palette, ShpFile, TmpFile};
+use yr_formats::{Palette, PcxImage, ShpFile, TmpFile};
 
-pub fn cmd_render(asset: &str, palette: &str, out: &str) -> Result<(), String> {
+/// `palette` is required for SHP/TMP; PCX carries its own colours.
+pub fn cmd_render(asset: &str, palette: Option<&str>, out: &str) -> Result<(), String> {
     let data = load_spec(asset)?;
+    if let Ok(img) = PcxImage::parse(&data) {
+        let (w, h) = (img.width, img.height);
+        fs::write(out, png::encode_rgba(w, h, &img.to_rgba())).map_err(|e| e.to_string())?;
+        println!("rendered {asset} -> {out} ({w}x{h})");
+        return Ok(());
+    }
+    let palette = palette.ok_or("SHP/TMP need a palette argument")?;
     let pal = Palette::parse(&load_spec(palette)?).ok_or("palette must be 768 bytes")?;
     let (w, h, rgba) = if let Ok(tmp) = TmpFile::parse(&data) {
         render_tmp(&tmp, &pal)

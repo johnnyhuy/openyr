@@ -6,7 +6,9 @@
 
 use std::collections::{BTreeMap, HashSet};
 use yr_formats::names::NameDb;
-use yr_formats::{CsfFile, HvaFile, IniFile, MixArchive, Palette, ShpFile, TmpFile, VxlFile};
+use yr_formats::{
+    CsfFile, HvaFile, IniFile, MixArchive, Palette, PcxImage, ShpFile, TmpFile, VxlFile,
+};
 
 #[derive(Default)]
 struct Bucket {
@@ -204,7 +206,22 @@ fn classify(d: &[u8], label: &str, c: &mut Census) -> &'static str {
         return "shp";
     }
     match d {
-        [0x0a, 0x05, 0x01, 0x08, ..] => return "pcx",
+        [0x0a, 0x05, 0x01, 0x08, ..] => {
+            return match PcxImage::parse(d) {
+                Ok(img) => {
+                    let kind = match img.pixels {
+                        yr_formats::PcxPixels::Indexed { .. } => "8-bit",
+                        yr_formats::PcxPixels::Rgb(_) => "24-bit",
+                    };
+                    c.detail(format!("pcx {kind}"));
+                    "pcx"
+                }
+                Err(e) => {
+                    c.errors.push(format!("{label}: pcx: {e}"));
+                    "pcx?"
+                }
+            };
+        }
         [b'F', b'o', b'N', b't', ..] | [b'f', b'o', b'n', b'T', ..] => return "fnt",
         // AUD: u16 sample rate (22050 Hz in retail) then sizes, flags, codec.
         [0x22, 0x56, ..] if d.len() > 12 => return "aud",

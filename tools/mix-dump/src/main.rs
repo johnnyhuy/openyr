@@ -6,7 +6,7 @@
 //!   mix-dump names <archive.mix>
 //!   mix-dump scan [-v] <archive.mix>...  recursive content census + name recovery
 //!   mix-dump extract <archive.mix> <name-or-id> <outdir>
-//!   mix-dump render <archive.mix:path> <archive.mix:palette.pal> <out.png>
+//!   mix-dump render <archive.mix:path> [<archive.mix:palette.pal>] <out.png>
 
 use std::fs;
 use std::path::PathBuf;
@@ -26,10 +26,11 @@ fn main() -> ExitCode {
         ["names", path] => cmd_names(path),
         ["scan", "-v", ref paths @ ..] if !paths.is_empty() => scan::cmd_scan(paths, true),
         ["scan", ref paths @ ..] if !paths.is_empty() => scan::cmd_scan(paths, false),
-        ["render", asset, palette, out] => render::cmd_render(asset, palette, out),
+        ["render", asset, out] => render::cmd_render(asset, None, out),
+        ["render", asset, palette, out] => render::cmd_render(asset, Some(palette), out),
         ["extract", path, name, outdir] => cmd_extract(path, name, PathBuf::from(outdir)),
         _ => {
-            eprintln!("usage:\n  mix-dump info <archive.mix>\n  mix-dump list <archive.mix>\n  mix-dump names <archive.mix>\n  mix-dump scan [-v] <archive.mix>...\n  mix-dump extract <archive.mix> <name-or-id> <outdir>\n  mix-dump render <archive.mix:path> <archive.mix:palette> <out.png>");
+            eprintln!("usage:\n  mix-dump info <archive.mix>\n  mix-dump list <archive.mix>\n  mix-dump names <archive.mix>\n  mix-dump scan [-v] <archive.mix>...\n  mix-dump extract <archive.mix> <name-or-id> <outdir>\n  mix-dump render <archive.mix:path> [<archive.mix:palette>] <out.png>");
             return ExitCode::from(2);
         }
     };
