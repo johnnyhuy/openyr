@@ -171,7 +171,7 @@ and generic (`G`) variants. Build-ups (`MK`) ship for every theater.
 - Unclassified ("binary") entries are down to a handful: `VOXELS.VPL` (voxel
   lighting palette), `CREDITS*.TXT` and a few unnamed blobs. `AUDIO.IDX`/`AUDIO.BAG` are
   the sound bank (`docs/formats/audio.md`). `6POINT`/`8POINT`/`GRAD6FNT.FNT` use the
-  classic Westwood font format (u16 file size, `00 02`, block offsets).
+  classic Westwood font format (u16 file size, u16 2, block offsets).
 - About 80 VXL/HVA names are unresolved. They are likely RA2-only units whose stems are
   absent from YR's INIs; try `rules.ini`/`art.ini` from `ra2.mix` explicitly.
 
