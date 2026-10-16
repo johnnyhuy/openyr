@@ -261,6 +261,9 @@ fn classify(d: &[u8], label: &str, c: &mut Census) -> &'static str {
             };
         }
         [b'F', b'o', b'N', b't', ..] | [b'f', b'o', b'n', b'T', ..] => return "fnt",
+        // Classic Westwood font (6POINT/8POINT/GRAD6FNT.FNT): u16 file size,
+        // then `00 02` and block offsets.
+        [a, b, 0x00, 0x02, ..] if usize::from(u16::from_le_bytes([*a, *b])) == d.len() => return "fnt",
         _ => {}
     }
     if is_ini(d) {
