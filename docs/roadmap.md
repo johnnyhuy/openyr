@@ -16,12 +16,14 @@ incremental, testable path where each milestone is independently useful.
 - [x] Filename hash (TS/CRC32 variant) with known-answer tests
 - [x] CSF reader (labels, UTF-16 inverted strings)
 - [x] INI reader (sections, keys, comments, order-preserving)
-- [x] `mix-dump` CLI (list/extract)
+- [x] `mix-dump` CLI (list/extract/info/names)
+- [x] PAL / colour tables (6-bit RGB palettes)
 - [ ] SHP reader (cameos, buildings, infantry sprites)
 - [ ] VXL + HVA readers (vehicles)
-- [ ] PAL / colour tables, TMP terrain tiles
+- [ ] TMP terrain tiles
 - [ ] AUD/IMA-ADPCM audio, WSA/BIK metadata
 - [ ] `yr-assets` VFS with MIX cascade (ra2md.mix over ra2.mix, expandmd override order)
+- [ ] MIX name database: resolve nested archive IDs (`mix-dump names` covers known names)
 
 ## M2 — Typed game data
 

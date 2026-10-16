@@ -93,6 +93,53 @@ The documented constant `0x54C2D545` ("local mix database.dat") is the
 carry that entry; the hash scheme of the *host* archive still applies to all
 normal entries.
 
+### The keypair marker file (id `0x763c81dd`)
+
+`ra2md.mix` and `expandmd01.mix` each contain a 151-byte file at id
+`0x763c81dd` (the ID XCC uses for TS/RA2 game detection). Its content is a
+Westwood-format INI:
+
+```
+[PublicKey]
+1=AihRvNoIbTn85FZRYNZRcT+i6KpU+maCsEqr3Q5q+LDB5tH7Tz2qQ38V
+
+[PrivateKey]
+1=AigKVje8mROcR8QixnxUEF5b29Curkq01DNDWCdOG99XBqH79OaCiTCB
+```
+
+This is primary retail evidence for the public-key constant used in MIX header
+decryption (it ships inside the game's own data, matching the value documented
+by XCC and other community tools). Reading a user's own archives with it is
+what every existing tool does.
+
+### Resolved names (`mix-dump names`)
+
+| Archive | ID | Name |
+|---|---|---|
+| `ra2md.mix` | `0xa01a9a03` | `URBANN.MIX` (terrain tiles) |
+| `ra2md.mix` | `0xcd50b6e6` | `DESERT.MIX` |
+| `ra2md.mix` | `0x78c2bb3f` | `LUNAR.MIX` |
+| `ra2md.mix` | `0xeb108109` | `SNOWMD.MIX` |
+| `expandmd01.mix` | `0x8218f9f4` | `RULESMD.INI` (743,215 bytes) |
+| `expandmd01.mix` | `0x7a742519` | `SOUNDMD.INI` (99,392 bytes) |
+
+Most nested archives in `ra2md.mix` remain unresolved (`mix-dump names` prints
+`? (nested mix)`); extend `KNOWN_NAMES` in `tools/mix-dump` as names are
+discovered, or read nested contents recursively to identify by shape.
+
+## Open questions
+
+- Format of the 7,033/7,631-byte binaries in `expandmd01.mix` (identical
+  16-byte prefix `0a 05 01 08 00 00 00 00 b7 01 23 00 48 00 48 00`, likely
+  sprites/voxels of the SHP family but the header matches no recalled spec —
+  read ModEnc's SHP page and reverse the layout properly).
+- Format of the 360 KB binary `0x65ac42bd` (starts `00 00 78 02 38 02 01 00`)
+  and the 3× 12,946-byte nested MIXes in `ra2md.mix` (each holds 3 small
+  binaries of 4,896 / 5,480 / 2,488 bytes — cameo-SHP-shaped).
+- The 337 KB INI `0xb91d69a0` in `expandmd01.mix` has one section per map
+  (`[CARUS08]`, `[CAWASH17]`, ...) with `Name=` display strings; likely the
+  1.001 map-pack index. Needs its real filename.
+
 ## Related
 
 - `langmd.mix` contains a nested MIX (`flags 0x00030000`) — nested MIXes must be
