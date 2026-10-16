@@ -1,0 +1,12 @@
+[package]
+name = "yr-rules"
+description = "Typed Yuri's Revenge game data from rulesmd.ini / artmd.ini"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+yr-formats = { path = "../yr-formats" }
+
+[dev-dependencies]
+yr-assets = { path = "../yr-assets" }

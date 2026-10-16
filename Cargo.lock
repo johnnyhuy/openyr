@@ -84,6 +84,7 @@ version = "0.1.0"
 dependencies = [
  "yr-assets",
  "yr-formats",
+ "yr-rules",
 ]
 
 [[package]]
@@ -141,4 +142,12 @@ dependencies = [
  "blowfish",
  "num-bigint",
  "num-traits",
+]
+
+[[package]]
+name = "yr-rules"
+version = "0.1.0"
+dependencies = [
+ "yr-assets",
+ "yr-formats",
 ]

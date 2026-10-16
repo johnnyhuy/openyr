@@ -32,8 +32,11 @@ incremental, testable path where each milestone is independently useful.
 
 ## M2 — Typed game data (current)
 
-- [ ] Parse `rulesmd.ini`/`artmd.ini`/`soundmd.ini` into typed TechTypes/Weapons/Warheads
-- [ ] `mix-dump inspect <unit>`: show a resolved unit's full property inheritance
+- [x] Parse `rulesmd.ini`/`artmd.ini` into typed technos/weapons/warheads/projectiles (`yr-rules`)
+- [x] `mix-dump rules <gamedir> <ID>`: resolved unit, weapon chain, damage table, art provenance
+- [x] INI fidelity: header text after `]` (MirageWH), first-char booleans, map merge
+- [ ] `[General]`/`[CombatDamage]` globals, countries, superweapons, `soundmd.ini`
+- [ ] Engine defaults per key, verified against the Wine oracle
 - [ ] Name database: close the remaining ~12% (RA2-only VXLs, PCX, audio)
 
 ## M3 — Renderer v1

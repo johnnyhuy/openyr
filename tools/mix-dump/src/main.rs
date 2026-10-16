@@ -9,12 +9,14 @@
 //!   mix-dump render <archive.mix:path> [<archive.mix:palette.pal>] <out.png>
 //!   mix-dump wav <archive.mix:path[/AUDIO.BAG#name]> <out.wav>
 //!   mix-dump vfs <gamedir> [--theater <name>] [file...]   engine-order lookup
+//!   mix-dump rules <gamedir> [ID...]   typed rules summary / resolved unit
 
 use std::fs;
 use std::path::PathBuf;
 use std::process::ExitCode;
 mod png;
 mod render;
+mod rules;
 mod scan;
 mod vfs;
 mod wav;
@@ -30,13 +32,14 @@ fn main() -> ExitCode {
         ["names", path] => cmd_names(path),
         ["scan", "-v", ref paths @ ..] if !paths.is_empty() => scan::cmd_scan(paths, true),
         ["scan", ref paths @ ..] if !paths.is_empty() => scan::cmd_scan(paths, false),
+        ["rules", ref rest @ ..] if !rest.is_empty() => rules::cmd_rules(rest),
         ["vfs", ref rest @ ..] if !rest.is_empty() => vfs::cmd_vfs(rest),
         ["wav", asset, out] => wav::cmd_wav(asset, out),
         ["render", asset, out] => render::cmd_render(asset, None, out),
         ["render", asset, palette, out] => render::cmd_render(asset, Some(palette), out),
         ["extract", path, name, outdir] => cmd_extract(path, name, PathBuf::from(outdir)),
         _ => {
-            eprintln!("usage:\n  mix-dump info <archive.mix>\n  mix-dump list <archive.mix>\n  mix-dump names <archive.mix>\n  mix-dump scan [-v] <archive.mix>...\n  mix-dump extract <archive.mix> <name-or-id> <outdir>\n  mix-dump render <archive.mix:path> [<archive.mix:palette>] <out.png>\n  mix-dump wav <archive.mix:path[.BAG#name]> <out.wav>\n  mix-dump vfs <gamedir> [--theater <name>] [file...]");
+            eprintln!("usage:\n  mix-dump info <archive.mix>\n  mix-dump list <archive.mix>\n  mix-dump names <archive.mix>\n  mix-dump scan [-v] <archive.mix>...\n  mix-dump extract <archive.mix> <name-or-id> <outdir>\n  mix-dump render <archive.mix:path> [<archive.mix:palette>] <out.png>\n  mix-dump wav <archive.mix:path[.BAG#name]> <out.wav>\n  mix-dump vfs <gamedir> [--theater <name>] [file...]\n  mix-dump rules <gamedir> [ID...]");
             return ExitCode::from(2);
         }
     };
