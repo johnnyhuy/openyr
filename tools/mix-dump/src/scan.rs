@@ -7,7 +7,7 @@
 use std::collections::{BTreeMap, HashSet};
 use yr_formats::names::NameDb;
 use yr_formats::{
-    CsfFile, HvaFile, IniFile, MixArchive, Palette, PcxImage, ShpFile, TmpFile, VxlFile,
+    AudFile, CsfFile, HvaFile, IniFile, MixArchive, Palette, PcxImage, ShpFile, TmpFile, VxlFile,
 };
 
 #[derive(Default)]
@@ -143,12 +143,50 @@ fn walk(data: &[u8], path: &str, depth: usize, names: &NameDb, c: &mut Census, v
             walk(payload, &label, depth + 1, names, c, verbose);
         }
     }
+    if let (Some(idx), Some(bag)) = (mix.get("AUDIO.IDX"), mix.get("AUDIO.BAG")) {
+        check_bag(idx, bag, path, c);
+    }
+}
+
+/// Decode every sound in an AUDIO.BAG/AUDIO.IDX pair.
+fn check_bag(idx: &[u8], bag: &[u8], path: &str, c: &mut Census) {
+    let entries = match yr_formats::audio::parse_bag_index(idx) {
+        Ok(e) => e,
+        Err(e) => {
+            c.errors.push(format!("{path}/AUDIO.IDX: {e}"));
+            return;
+        }
+    };
+    for e in &entries {
+        match e.decode(bag) {
+            Ok(_) => c.detail(format!("bag flags {} ({} ch)", e.flags, e.channels())),
+            Err(err) => c.errors.push(format!("{path}/AUDIO.BAG#{}: {err}", e.name)),
+        }
+    }
 }
 
 fn classify(d: &[u8], label: &str, c: &mut Census) -> &'static str {
     let head = &d[..d.len().min(4)];
     if head == b"RIFF" {
-        return "wav";
+        return match yr_formats::audio::decode_wav(d) {
+            Ok(pcm) => {
+                c.detail(format!("wav {} Hz {} ch", pcm.sample_rate, pcm.channels));
+                "wav"
+            }
+            Err(e) => {
+                c.errors.push(format!("{label}: wav: {e}"));
+                "wav?"
+            }
+        };
+    }
+    if AudFile::parse_header(d).is_ok() {
+        return match AudFile::decode(d) {
+            Ok(_) => "aud",
+            Err(e) => {
+                c.errors.push(format!("{label}: aud: {e}"));
+                "aud?"
+            }
+        };
     }
     if head == b"BIKi" {
         return "bink";
@@ -223,8 +261,6 @@ fn classify(d: &[u8], label: &str, c: &mut Census) -> &'static str {
             };
         }
         [b'F', b'o', b'N', b't', ..] | [b'f', b'o', b'n', b'T', ..] => return "fnt",
-        // AUD: u16 sample rate (22050 Hz in retail) then sizes, flags, codec.
-        [0x22, 0x56, ..] if d.len() > 12 => return "aud",
         _ => {}
     }
     if is_ini(d) {

@@ -268,3 +268,32 @@ fn classic_header_archives_use_crc_ids() {
     assert_eq!(&wav[..4], b"RIFF");
     assert_eq!(mix.resolve("CEVA060.WAV"), Some(mix_id("CEVA060.WAV")));
 }
+
+#[test]
+fn audio_containers_decode() {
+    let (Some(aud), Some(idx), Some(bag), Some(wav)) = (
+        nested("ra2.mix", &["SIDENC01.MIX", "EFFICIEN.AUD"]),
+        nested("language.mix", &["AUDIO.MIX", "AUDIO.IDX"]),
+        nested("language.mix", &["AUDIO.MIX", "AUDIO.BAG"]),
+        nested("langmd.mix", &["AUDIOMD.MIX", "CEVA060.WAV"]),
+    ) else {
+        eprintln!("skip: retail corpus not present");
+        return;
+    };
+    // AUD whose final chunk overstates its output by one sample.
+    let pcm = yr_formats::AudFile::decode(&aud).expect("EFFICIEN.AUD decodes");
+    assert_eq!((pcm.sample_rate, pcm.channels), (22050, 1));
+    assert_eq!(pcm.samples.len(), 11966 / 2 - 1);
+
+    let index = yr_formats::audio::parse_bag_index(&idx).expect("AUDIO.IDX parses");
+    assert_eq!(index.len(), 1153);
+    let last = index.iter().map(|e| e.offset + e.size).max().unwrap();
+    assert_eq!(last as usize, bag.len(), "entries tile the bag");
+    let atta = index.iter().find(|e| e.name == "ichratta").unwrap();
+    assert_eq!((atta.flags, atta.chunk_size), (12, 512));
+    let pcm = atta.decode(&bag).expect("bag entry decodes");
+    assert_eq!(pcm.samples.len(), 71148 / 512 * 1017 + (71148 % 512 - 4) * 2 + 1);
+
+    let pcm = yr_formats::audio::decode_wav(&wav).expect("EVA WAV decodes");
+    assert_eq!(pcm.samples.len(), 26383, "fact chunk frame count");
+}

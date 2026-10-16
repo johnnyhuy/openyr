@@ -26,7 +26,8 @@ Wine runs YR on macOS, but it is a compatibility layer: resolution, input, colou
 | MIX name recovery (~88% of entries) | done |
 | `mix-dump` inspection CLI (`scan`, nested `extract`) | done |
 | PCX images | done |
-| AUD audio / `yr-assets` VFS | next |
+| Audio (AUD, sound bank, IMA WAV; bit-exact vs ffmpeg) | done |
+| `yr-assets` VFS | next |
 | Simulation | not started |
 | Renderer / macOS app | not started |
 

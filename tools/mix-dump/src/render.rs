@@ -31,7 +31,7 @@ pub fn cmd_render(asset: &str, palette: Option<&str>, out: &str) -> Result<(), S
     Ok(())
 }
 
-fn load_spec(spec: &str) -> Result<Vec<u8>, String> {
+pub(crate) fn load_spec(spec: &str) -> Result<Vec<u8>, String> {
     let (archive, inner) = spec
         .rsplit_once(':')
         .ok_or_else(|| format!("{spec}: expected <archive.mix>:<path>"))?;

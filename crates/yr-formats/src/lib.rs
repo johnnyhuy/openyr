@@ -3,6 +3,7 @@
 //! No I/O and no platform code lives here: callers feed bytes in and get typed
 //! data out. Format specs and evidence: `docs/formats/`.
 
+pub mod audio;
 mod bytes;
 pub mod csf;
 pub mod hash;
@@ -17,6 +18,7 @@ pub mod shp;
 pub mod tmp;
 pub mod vxl;
 
+pub use audio::{AudFile, AudioError, BagEntry, Pcm};
 pub use csf::{CsfEntry, CsfError, CsfFile};
 pub use hash::{crc32, mix_id, mix_id_td};
 pub use hva::{HvaError, HvaFile};

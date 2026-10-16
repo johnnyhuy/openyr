@@ -23,7 +23,8 @@ incremental, testable path where each milestone is independently useful.
 - [x] TMP terrain tiles
 - [x] `mix-dump scan`: recursive census + corpus-wide parser check
 - [x] PCX reader (8-bit paletted + 24-bit planar; all 271 retail files)
-- [ ] AUD/IMA-ADPCM audio, WSA/BIK metadata
+- [x] AUD / AUDIO.BAG+IDX / IMA WAV decoders, bit-exact vs ffmpeg
+- [ ] WSA/BIK metadata
 - [ ] `yr-assets` VFS with MIX cascade (ra2md.mix over ra2.mix, expandmd override order)
 - [x] MIX name database: every nested archive named; ~88% of all entries named
       via INI-derived candidates with content-kind collision rejection
