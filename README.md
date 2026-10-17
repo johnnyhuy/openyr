@@ -28,7 +28,8 @@ Wine runs YR on macOS, but it is a compatibility layer: resolution, input, colou
 | PCX images | done |
 | Audio (AUD, sound bank, IMA WAV; bit-exact vs ffmpeg) | done |
 | `yr-assets` VFS (engine lookup order) | done |
-| Typed rules (M2) / renderer (M3) | next |
+| Typed rules: technos, weapons, warheads (M2) | in progress |
+| Renderer (M3) | next |
 | Simulation | not started |
 | Renderer / macOS app | not started |
 
@@ -37,6 +38,7 @@ Wine runs YR on macOS, but it is a compatibility layer: resolution, input, colou
 ```
 crates/yr-formats/   pure parsers for Westwood file formats (no I/O side effects)
 crates/yr-assets/    VFS over a game install: MIX cascade in engine lookup order
+crates/yr-rules/     typed game data from rulesmd.ini / artmd.ini
 tools/mix-dump/      CLI to list/extract MIX archives from a game install
 docs/                architecture, roadmap, format specs, research notes
 ```

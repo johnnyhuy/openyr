@@ -11,4 +11,5 @@ path = "src/main.rs"
 
 [dependencies]
 yr-assets = { path = "../../crates/yr-assets" }
+yr-rules = { path = "../../crates/yr-rules" }
 yr-formats = { path = "../../crates/yr-formats" }
