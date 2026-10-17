@@ -58,7 +58,9 @@ incremental, testable path where each milestone is independently useful.
 
 ## M4 — Simulation v1
 
-- [ ] Deterministic core: map grid, terrain passability, unit movement (fixed-point)
+- [x] Deterministic core: yr-sim skeleton (fixed-point, RNG, hash);
+      terrain grid with passability/speed per locomotor (retail-verified)
+- [ ] Unit movement on the grid (A*, occupancy)
 - [ ] Building placement, harvesting loop, production queues
 - [ ] Weapons/warheads/damage with the original formulas
 - [ ] `sim-bench` headless benchmark; state hashing

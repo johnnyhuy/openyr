@@ -12,9 +12,11 @@
 mod fix;
 mod hash;
 mod rng;
+pub mod terrain;
 
 pub use fix::Fix;
 pub use rng::Rng;
+pub use terrain::TerrainGrid;
 
 /// One cell in leptons: positions are in leptons (256 per cell), the
 /// original game's sub-cell unit.
@@ -46,11 +48,21 @@ pub struct Sim {
     next_id: u32,
     /// Kept in id order; all iteration is over this Vec.
     units: Vec<Unit>,
+    terrain: Option<TerrainGrid>,
 }
 
 impl Sim {
     pub fn new(seed: u64) -> Sim {
-        Sim { tick: 0, rng: Rng::new(seed), next_id: 1, units: Vec::new() }
+        Sim { tick: 0, rng: Rng::new(seed), next_id: 1, units: Vec::new(), terrain: None }
+    }
+
+    /// Attach the scenario terrain (static; fingerprinted into the hash).
+    pub fn set_terrain(&mut self, terrain: TerrainGrid) {
+        self.terrain = Some(terrain);
+    }
+
+    pub fn terrain(&self) -> Option<&TerrainGrid> {
+        self.terrain.as_ref()
     }
 
     pub fn tick(&self) -> u64 {
@@ -114,6 +126,7 @@ impl Sim {
         h.write_u64(self.tick);
         h.write_u64(self.rng.state());
         h.write_u64(u64::from(self.next_id));
+        h.write_u64(self.terrain.as_ref().map_or(0, TerrainGrid::hash));
         h.write_u64(self.units.len() as u64);
         for u in &self.units {
             h.write_u64(u64::from(u.id));

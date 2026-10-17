@@ -139,6 +139,15 @@ variant; the generic `G` variant in `GENERIC.MIX` is the fallback
 (`GACNST` -> `GGCNST.SHP`; snow uses the plain `A` name in `SNOW.MIX`).
 The renderer tries theater letter, then `G`, then the plain name.
 
+## Terrain classes for the sim
+
+`yr_sim::terrain` maps the TMP `terrain_type` byte to ground classes.
+Dominant value per tile-set filename prefix on the retail corpus
+(temperate/urban/snow, measured 2026-10-17): 9 = water, 10 = beach,
+11 = paved, 12 = road, 13 = clear, 14 = rough, 15 = cliff. Note the
+iso tile coordinates run past the map's `Size=` rectangle, so a sim
+grid must span the tile extents, not the rectangle.
+
 ## Hostile-input posture
 
 Chunk headers, counts and sizes are never trusted: decoders bound output

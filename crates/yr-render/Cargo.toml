@@ -9,3 +9,4 @@ license.workspace = true
 yr-assets = { path = "../yr-assets" }
 yr-formats = { path = "../yr-formats" }
 yr-rules = { path = "../yr-rules" }
+yr-sim = { path = "../yr-sim" }
