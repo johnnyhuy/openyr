@@ -110,6 +110,20 @@ impl Theater {
         }
     }
 
+    /// Letter substituted as the second character of `NewTheater=yes`
+    /// art filenames (e.g. `GACNST` -> `GTCNST.SHP` in temperate), with
+    /// `G` (generic, in GENERIC.MIX) as the engine's fallback.
+    pub fn art_letter(self) -> char {
+        match self {
+            Theater::Temperate => 'T',
+            Theater::Snow => 'A',
+            Theater::Urban => 'U',
+            Theater::Desert => 'D',
+            Theater::Lunar => 'L',
+            Theater::NewUrban => 'N',
+        }
+    }
+
     /// Unit palette (`UNIT*.PAL`) for this theater.
     pub fn unit_palette(self) -> &'static str {
         match self {

@@ -119,13 +119,22 @@ cell centre:
   defaulting to the type ID) with the unit palette, frame from facing
   (`facing / 32`). Infantry art sequences need `artmd.ini` sequence data
   for correct poses; frame selection here is approximate.
-- Structures and voxel vehicles are drawn as footprint markers for now.
+- Structures are drawn as real SHPs: frame 0 plus its shadow frame
+  (the second half of the SHP), centred on the art `Foundation=`
+  footprint, with palette indices 16–31 (the player-colour ramp)
+  remapped to the owner house colour — the owner's `Color=` name
+  resolved through the `[Colors]` HSV table in `rulesmd.ini`.
+- Voxel vehicles are still drawn as footprint markers.
 
-Open question — building art: `GACNST.SHP` was only located in
-`RA2.MIX/SNOW.MIX`; the temperate/urban file name or archive for building
-SHPs is unresolved (candidates by ID, theater extension and generic
-archives were all checked on 2026-10-17). Resolving this is the first
-step of the building-rendering slice.
+Building art resolution (found 2026-10-17 by matching SHP canvas
+sizes and filename hashes across the retail archives): for
+`NewTheater=yes` art, the filename's second character is the theater
+letter — `T` temperate, `A` snow, `U` urban, `D` desert, `L` lunar,
+`N` new urban (e.g. civilian `CALAB` -> `CTLAB.SHP` in `ISOTEMP.MIX`,
+`CULAB.SHP` in `ISOURB.MIX`). Player buildings often have no theater
+variant; the generic `G` variant in `GENERIC.MIX` is the fallback
+(`GACNST` -> `GGCNST.SHP`; snow uses the plain `A` name in `SNOW.MIX`).
+The renderer tries theater letter, then `G`, then the plain name.
 
 ## Hostile-input posture
 

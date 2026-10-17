@@ -47,8 +47,9 @@ incremental, testable path where each milestone is independently useful.
       heights, cliff extras — eyeballed on urban + temperate retail maps)
 - [x] Overlay objects (ore/gems/walls), `[Terrain]` objects and placed
       infantry/aircraft on the map (`mix-dump render-map`, eyeballed)
-- [ ] Structures and voxel vehicles on the map (footprint markers today;
-      building art location still unresolved — see `docs/formats/map.md`)
+- [x] Structures on the map (NewTheater letter + generic-`G` art,
+      foundation anchoring, shadow frames, owner-colour remap)
+- [ ] Voxel vehicles on the map (footprint markers today)
 - [ ] wgpu/Metal window, integer-scaled 640x480 virtual viewport, pan/zoom
 - [ ] SHP + VXL drawing with palette + shadow pass
 - [ ] Sidebar/cameo UI from `ra2md.csf` strings
