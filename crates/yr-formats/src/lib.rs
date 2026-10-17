@@ -5,10 +5,12 @@
 
 pub mod audio;
 mod bytes;
+pub mod compress;
 pub mod csf;
 pub mod hash;
 pub mod hva;
 pub mod ini;
+pub mod map;
 pub mod mix;
 pub mod names;
 pub mod pal;
@@ -23,6 +25,7 @@ pub use csf::{CsfEntry, CsfError, CsfFile};
 pub use hash::{crc32, mix_id, mix_id_td};
 pub use hva::{HvaError, HvaFile};
 pub use ini::{IniFile, IniSection};
+pub use map::{IsoTile, MapError, MapFile, MapObject};
 pub use mix::{MixArchive, MixEntry, MixError, MixVersion};
 pub use pal::Palette;
 pub use pcx::{PcxError, PcxImage, PcxPixels};
