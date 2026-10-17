@@ -30,12 +30,13 @@ incremental, testable path where each milestone is independently useful.
 - [x] MIX name database: every nested archive named; ~88% of all entries named
       via INI-derived candidates with content-kind collision rejection
 
-## M2 — Typed game data (current)
+## M2 — Typed game data
 
 - [x] Parse `rulesmd.ini`/`artmd.ini` into typed technos/weapons/warheads/projectiles (`yr-rules`)
 - [x] `mix-dump rules <gamedir> <ID>`: resolved unit, weapon chain, damage table, art provenance
 - [x] INI fidelity: header text after `]` (MirageWH), first-char booleans, map merge
-- [ ] `[General]`/`[CombatDamage]` globals, countries, superweapons, `soundmd.ini`
+- [x] `[General]`/`[CombatDamage]` globals, houses/countries, skirmish defaults
+- [ ] Superweapons, `soundmd.ini`
 - [ ] Engine defaults per key, verified against the Wine oracle
 - [ ] Name database: close the remaining ~12% (RA2-only VXLs, PCX, audio)
 

@@ -67,3 +67,27 @@ fn mirage_header_comment_does_not_corrupt_lunarwh() {
     assert_eq!(lunar.verse(Armor::Plate), Decimal::ONE);
     assert_eq!(lunar.verse(Armor::Wood), Decimal::ONE);
 }
+
+#[test]
+fn globals_houses_and_skirmish_defaults() {
+    let Some(rules) = retail() else {
+        eprintln!("skip: retail corpus not present");
+        return;
+    };
+    // [General] BuildSpeed=.7 (minutes per 1000 credits), exact decimal.
+    assert_eq!(rules.globals.build_speed.map(|d| d.units()), Some(700_000));
+    assert_eq!(rules.globals.refund_percent.map(|d| d.units()), Some(500_000), "RefundPercent=50%");
+    assert_eq!(rules.globals.atom_damage, Some(1000));
+    assert_eq!(rules.globals.bridge_strength, Some(1500));
+    assert_eq!(rules.globals.tiberium_grows, Some(true));
+    assert_eq!(rules.skirmish.money, Some(10_000));
+    assert_eq!(rules.skirmish.unit_count, Some(10));
+    // [Sides]: 5 Allied + 4 Soviet + Yuri + Neutral + Special.
+    assert_eq!(rules.houses.len(), 12);
+    let usa = rules.houses.get("Americans").expect("Americans house");
+    assert_eq!(usa.side, "GDI");
+    assert_eq!(usa.color.as_deref(), Some("Gold"));
+    assert_eq!(usa.color_hsv, Some((43, 239, 255)));
+    assert_eq!(rules.houses.get("YuriCountry").map(|h| h.side.as_str()), Some("ThirdSide"));
+    assert_eq!(rules.houses.get("Neutral").map(|h| h.side.as_str()), Some("Civilian"));
+}
