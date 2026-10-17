@@ -40,6 +40,10 @@ pub enum Command {
     },
     Move { id: u32, x: Fix, y: Fix },
     Attack { id: u32, target: u32 },
+    /// Send a harvester into its auto-loop (ore -> refinery -> ore).
+    Harvest { id: u32 },
+    /// Mark a unit's economy role (scenario setup).
+    AssignRole { id: u32, role: Role },
     Stop { id: u32 },
     Remove { id: u32 },
 }
@@ -51,6 +55,34 @@ pub enum Event {
     Fired { shooter: u32, target: u32 },
     Hit { target: u32, damage: i64 },
     Died { id: u32 },
+    /// A harvester finished unloading; `total` is the sim credit pool.
+    Unloaded { id: u32, value: i64, total: i64 },
+}
+
+/// What a unit is for; drives the economy state machine.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Role {
+    Combat,
+    Harvester,
+    Refinery,
+}
+
+/// Credits per harvested bail (RA2 bail values).
+pub const BAIL_ORE: i64 = 25;
+pub const BAIL_GEM: i64 = 50;
+/// Bails a harvester carries before returning (RA2 capacity).
+pub const HARVESTER_CAPACITY: u8 = 20;
+/// Ticks spent loading one bail / unloading the cargo.
+pub const HARVEST_TICKS: u32 = 20;
+pub const UNLOAD_TICKS: u32 = 30;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Harvest {
+    Idle,
+    ToOre(u16, u16),
+    Loading(u32),
+    ToRefinery(u32),
+    Unloading(u32),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -74,6 +106,11 @@ pub struct Unit {
     pub cooldown: u32,
     pub attack: Option<u32>,
     pub shots: u32,
+    pub role: Role,
+    /// Credits worth of ore/gems currently carried.
+    pub cargo: i64,
+    pub bails: u8,
+    harvest: Harvest,
 }
 
 /// A homing projectile in flight (internal; observed via events).
@@ -97,11 +134,12 @@ pub struct Sim {
     terrain: Option<TerrainGrid>,
     projectiles: Vec<Projectile>,
     events: Vec<Event>,
+    credits: i64,
 }
 
 impl Sim {
     pub fn new(seed: u64) -> Sim {
-        Sim { tick: 0, rng: Rng::new(seed), next_id: 1, units: Vec::new(), terrain: None, projectiles: Vec::new(), events: Vec::new() }
+        Sim { tick: 0, rng: Rng::new(seed), next_id: 1, units: Vec::new(), terrain: None, projectiles: Vec::new(), events: Vec::new(), credits: 0 }
     }
 
     /// Attach the scenario terrain (static; fingerprinted into the hash).
@@ -145,7 +183,23 @@ impl Sim {
                         cooldown: 0,
                         attack: None,
                         shots: 0,
+                        role: Role::Combat,
+                        cargo: 0,
+                        bails: 0,
+                        harvest: Harvest::Idle,
                     });
+                }
+                Command::AssignRole { id, role } => {
+                    if let Some(u) = self.units.iter_mut().find(|u| u.id == id) {
+                        u.role = role;
+                    }
+                }
+                Command::Harvest { id } => {
+                    if let Some(u) = self.units.iter_mut().find(|u| u.id == id) {
+                        if u.role == Role::Harvester && u.harvest == Harvest::Idle {
+                            u.harvest = Harvest::ToOre(u16::MAX, u16::MAX);
+                        }
+                    }
                 }
                 Command::Attack { id, target } => {
                     if let Some(u) = self.units.iter_mut().find(|u| u.id == id) {
@@ -169,6 +223,7 @@ impl Sim {
                 }
             }
         }
+        self.harvest_phase();
         // Attackers close to range; in-range attackers hold position.
         for i in 0..self.units.len() {
             let Some(enemy) = self.units[i].attack else { continue };
@@ -205,6 +260,114 @@ impl Sim {
         self.fire_phase();
         self.projectile_phase();
         self.tick += 1;
+    }
+
+    /// Harvester state machine (runs before movement): pick ore, drive,
+    /// load bails, return to the first refinery, unload into credits.
+    fn harvest_phase(&mut self) {
+        let Some(mut grid) = self.terrain.clone() else { return };
+        let mut grid_dirty = false;
+        for i in 0..self.units.len() {
+            if self.units[i].role != Role::Harvester {
+                continue;
+            }
+            let cell = (
+                self.units[i].x.to_int_floor().max(0) as u16,
+                self.units[i].y.to_int_floor().max(0) as u16,
+            );
+            match self.units[i].harvest {
+                Harvest::Idle => {}
+                Harvest::ToOre(tx, ty) => {
+                    let target = if (tx, ty) == (u16::MAX, u16::MAX) || grid.cell(tx, ty).is_none_or(|c| c.resource == 0) {
+                        grid.nearest_resource(cell)
+                    } else {
+                        grid.cell(tx, ty).map(|c| (tx, ty, c.overlay))
+                    };
+                    match target {
+                        Some((ox, oy, _)) => {
+                            self.units[i].harvest = Harvest::ToOre(ox, oy);
+                            if (ox, oy) == cell {
+                                self.units[i].harvest = Harvest::Loading(HARVEST_TICKS);
+                                self.units[i].target = None;
+                                self.units[i].path.clear();
+                            } else {
+                                self.units[i].target = Some((Fix::from_int(i32::from(ox)) + Fix::from_raw(128), Fix::from_int(i32::from(oy)) + Fix::from_raw(128)));
+                            }
+                        }
+                        None => {
+                            // No ore left: unload whatever we carry.
+                            if self.units[i].bails > 0 {
+                                if let Some(r) = self.units.iter().find(|u| u.role == Role::Refinery) {
+                                    self.units[i].harvest = Harvest::ToRefinery(r.id);
+                                } else {
+                                    self.units[i].harvest = Harvest::Idle;
+                                }
+                            } else {
+                                self.units[i].harvest = Harvest::Idle;
+                            }
+                        }
+                    }
+                }
+                Harvest::Loading(mut left) => {
+                    if left > 0 {
+                        left -= 1;
+                        self.units[i].harvest = Harvest::Loading(left);
+                    } else if let Some(kind) = grid.take_bail(cell.0, cell.1) {
+                        grid_dirty = true;
+                        self.units[i].bails += 1;
+                        self.units[i].cargo += match kind {
+                            terrain::Overlay::Gem => BAIL_GEM,
+                            _ => BAIL_ORE,
+                        };
+                        if self.units[i].bails >= HARVESTER_CAPACITY {
+                            if let Some(r) = self.units.iter().find(|u| u.role == Role::Refinery) {
+                                self.units[i].harvest = Harvest::ToRefinery(r.id);
+                            } else {
+                                self.units[i].harvest = Harvest::Idle;
+                            }
+                        } else {
+                            self.units[i].harvest = Harvest::Loading(HARVEST_TICKS);
+                        }
+                    } else {
+                        self.units[i].harvest = Harvest::ToOre(u16::MAX, u16::MAX);
+                    }
+                }
+                Harvest::ToRefinery(rid) => {
+                    let Some(r) = self.units.iter().find(|u| u.id == rid) else {
+                        self.units[i].harvest = Harvest::Idle;
+                        continue;
+                    };
+                    let rcell = (r.x.to_int_floor().max(0) as u16, r.y.to_int_floor().max(0) as u16);
+                    // Unload from an adjacent cell: the refinery's own
+                    // cell is occupied by the refinery itself.
+                    let adjacent = (i32::from(cell.0) - i32::from(rcell.0)).abs() <= 1
+                        && (i32::from(cell.1) - i32::from(rcell.1)).abs() <= 1;
+                    if adjacent {
+                        self.units[i].harvest = Harvest::Unloading(UNLOAD_TICKS);
+                        self.units[i].target = None;
+                        self.units[i].path.clear();
+                    } else {
+                        self.units[i].target = Some((r.x, r.y));
+                    }
+                }
+                Harvest::Unloading(mut left) => {
+                    if left > 0 {
+                        left -= 1;
+                        self.units[i].harvest = Harvest::Unloading(left);
+                    } else {
+                        let value = self.units[i].cargo;
+                        self.credits += value;
+                        self.units[i].cargo = 0;
+                        self.units[i].bails = 0;
+                        self.events.push(Event::Unloaded { id: self.units[i].id, value, total: self.credits });
+                        self.units[i].harvest = Harvest::ToOre(u16::MAX, u16::MAX);
+                    }
+                }
+            }
+        }
+        if grid_dirty {
+            self.terrain = Some(grid);
+        }
     }
 
     fn fire_phase(&mut self) {
@@ -293,6 +456,10 @@ impl Sim {
         }
     }
 
+    pub fn credits(&self) -> i64 {
+        self.credits
+    }
+
     /// Events since the last drain (renderer/audio consume these).
     pub fn drain_events(&mut self) -> Vec<Event> {
         std::mem::take(&mut self.events)
@@ -379,6 +546,8 @@ impl Sim {
             h.write_i64(u.hp);
             h.write_u64(u64::from(u.cooldown));
             h.write_u64(u.attack.map_or(0, u64::from));
+            h.write_i64(u.cargo);
+            h.write_u64(u64::from(u.bails));
             if let Some(&(wx, wy)) = u.path.front() {
                 h.write_u64(u64::from(wx));
                 h.write_u64(u64::from(wy));
@@ -392,6 +561,7 @@ impl Sim {
                 None => h.write_u64(0),
             }
         }
+        h.write_i64(self.credits);
         h.write_u64(self.projectiles.len() as u64);
         for p in &self.projectiles {
             h.write_i64(i64::from(p.x.raw()));
@@ -547,6 +717,37 @@ mod tests {
         assert_eq!(sim.units()[0].shots, 3, "120hp / 50dmg = 3 shots");
         assert_eq!(events.iter().filter(|e| matches!(e, Event::Fired { .. })).count(), 3);
         assert_eq!(events.last(), Some(&Event::Died { id: 2 }));
+    }
+
+    #[test]
+    fn harvester_loop_earns_credits_and_depletes_ore() {
+        let mut grid = TerrainGrid::new(0, 0, 8, 2);
+        grid.set_resource(6, 0, terrain::Overlay::Ore, 40);
+        let mut sim = Sim::new(4);
+        sim.set_terrain(grid);
+        let centre = |c: i32| Fix::from_int(c) + Fix::from_raw(128);
+        sim.step(&[
+            Command::Spawn { x: centre(0), y: centre(0), loco: terrain::Loco::Track, speed: Fix::from_int(256), hp: 100, armor: 0, weapon: None },
+            Command::Spawn { x: centre(1), y: centre(0), loco: terrain::Loco::Track, speed: Fix::from_int(256), hp: 100, armor: 0, weapon: None },
+            Command::AssignRole { id: 1, role: Role::Refinery },
+            Command::AssignRole { id: 2, role: Role::Harvester },
+            Command::Harvest { id: 2 },
+        ]);
+        // Move the refinery marker onto the spawn area cell (0,0) is fine;
+        // the harvester starts at (1,0). Run until two unloads happened.
+        let mut unloads = 0;
+        for _ in 0..4000 {
+            sim.step(&[]);
+            unloads += sim.drain_events().iter().filter(|e| matches!(e, Event::Unloaded { .. })).count();
+            if unloads >= 2 {
+                break;
+            }
+        }
+        assert_eq!(unloads, 2, "harvester completed two loops");
+        assert_eq!(sim.credits(), 2 * i64::from(HARVESTER_CAPACITY) * BAIL_ORE, "20 bails x 25cr per loop");
+        let g = sim.terrain().unwrap();
+        assert_eq!(g.cell(6, 0).map(|c| c.resource), Some(0), "ore cell depleted");
+        assert_eq!(g.cell(6, 0).map(|c| c.overlay), Some(terrain::Overlay::None));
     }
 
     #[test]
