@@ -111,7 +111,7 @@ impl MapFile {
             return Err(MapError::BadValue("IsoMapPack5"));
         }
         let tiles = raw[..raw.len() - 4]
-            .chunks_exact(11)
+            .as_chunks::<11>().0.iter()
             .map(|c| {
                 let tile = i32::from_le_bytes([c[4], c[5], c[6], c[7]]);
                 IsoTile {

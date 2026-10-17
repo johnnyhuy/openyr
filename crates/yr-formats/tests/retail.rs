@@ -250,7 +250,7 @@ fn pcx_both_flavours_decode() {
         panic!("expected 24-bit");
     };
     // The Soviet emblem is dominated by red: R exceeds B on average.
-    let (r, b) = rgb.chunks_exact(3).fold((0u64, 0u64), |(r, b), p| {
+    let (r, b) = rgb.as_chunks::<3>().0.iter().fold((0u64, 0u64), |(r, b), p| {
         (r + u64::from(p[0]), b + u64::from(p[2]))
     });
     assert!(r > b * 2, "plane order is R, G, B");

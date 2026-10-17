@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/yr-formats", "crates/yr-assets", "crates/yr-rules", "tools/mix-dump"]
+members = ["crates/yr-formats", "crates/yr-assets", "crates/yr-rules", "crates/yr-render", "crates/yr-app", "tools/mix-dump"]
 
 [workspace.package]
 version = "0.1.0"

@@ -102,7 +102,7 @@ impl PcxImage {
                 return Err(PcxError::MissingPalette);
             }
             let mut palette = Box::new([[0u8; 3]; 256]);
-            for (dst, src) in palette.iter_mut().zip(trailer[1..].chunks_exact(3)) {
+            for (dst, src) in palette.iter_mut().zip(trailer[1..].as_chunks::<3>().0) {
                 *dst = [src[0], src[1], src[2]];
             }
             let mut indices = Vec::with_capacity(width * height);
@@ -139,7 +139,7 @@ impl PcxImage {
                 })
                 .collect(),
             PcxPixels::Rgb(rgb) => rgb
-                .chunks_exact(3)
+                .as_chunks::<3>().0.iter()
                 .flat_map(|p| [p[0], p[1], p[2], 255])
                 .collect(),
         }

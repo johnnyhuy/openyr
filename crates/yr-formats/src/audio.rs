@@ -181,7 +181,7 @@ impl AudFile {
 /// each group 8 nibbles low-first.
 pub fn decode_ms_ima(data: &[u8], channels: u16, block_align: usize) -> Result<Vec<i16>, AudioError> {
     let ch = channels as usize;
-    if ch == 0 || ch > 2 || block_align <= 4 * ch || (block_align - 4 * ch) % (4 * ch) != 0 {
+    if ch == 0 || ch > 2 || block_align <= 4 * ch || !(block_align - 4 * ch).is_multiple_of(4 * ch) {
         return Err(AudioError::Unsupported(format!(
             "IMA block {block_align} x {channels} channels"
         )));
@@ -201,7 +201,7 @@ pub fn decode_ms_ima(data: &[u8], channels: u16, block_align: usize) -> Result<V
             st.index = i32::from(h[2]).min(88);
             chans[c].push(st.predictor as i16);
         }
-        for (g, group) in block[4 * ch..].chunks_exact(4).enumerate() {
+        for (g, group) in block[4 * ch..].as_chunks::<4>().0.iter().enumerate() {
             let c = g % ch;
             for &b in group {
                 chans[c].push(state[c].expand(b & 0x0F));
@@ -249,7 +249,7 @@ pub fn decode_wav(data: &[u8]) -> Result<Pcm, AudioError> {
     let bits = f.u16().ok_or(AudioError::BadHeader)?;
     let mut samples = match (tag, bits) {
         (1, 16) => body
-            .chunks_exact(2)
+            .as_chunks::<2>().0.iter()
             .map(|b| i16::from_le_bytes([b[0], b[1]]))
             .collect(),
         (1, 8) => body.iter().map(|&b| (i16::from(b) - 128) << 8).collect(),
@@ -295,7 +295,7 @@ impl BagEntry {
         let samples = if self.flags & BAG_FLAG_IMA != 0 {
             decode_ms_ima(data, channels, self.chunk_size as usize)?
         } else if self.flags & BAG_FLAG_PCM != 0 && self.flags & BAG_FLAG_16BIT != 0 {
-            data.chunks_exact(2)
+            data.as_chunks::<2>().0.iter()
                 .map(|b| i16::from_le_bytes([b[0], b[1]]))
                 .collect()
         } else if self.flags & BAG_FLAG_PCM != 0 {
