@@ -36,7 +36,10 @@ impl RenderedMap {
         let cx = (cell_x - cell_y) * HALF_W as f32;
         let cy = (cell_x + cell_y) * HALF_H as f32 + HALF_H as f32;
         let s = self.scale.max(1) as f32;
-        ((cx - self.origin_x as f32) / s, (cy - self.origin_y as f32) / s)
+        (
+            (cx - self.origin_x as f32) / s,
+            (cy - self.origin_y as f32) / s,
+        )
     }
 
     /// Inverse of [`Self::cell_to_px`]: buffer pixel -> fractional cell.
@@ -78,8 +81,11 @@ pub fn render_map(gamedir: &str, map_name: &str, scale: u32) -> Result<RenderedM
         vfs.read(ini_name).ok_or("tileset INI unreadable")?,
     ));
     let index = TileSetIndex::parse(&ini, theater.tile_extension());
-    let pal = Palette::parse(vfs.read(theater.palette()).ok_or("theater palette not found")?)
-        .ok_or("palette must be 768 bytes")?;
+    let pal = Palette::parse(
+        vfs.read(theater.palette())
+            .ok_or("theater palette not found")?,
+    )
+    .ok_or("palette must be 768 bytes")?;
     let unit_pal = vfs
         .read(theater.unit_palette())
         .and_then(Palette::parse)
@@ -122,8 +128,12 @@ pub fn render_map(gamedir: &str, map_name: &str, scale: u32) -> Result<RenderedM
         y1 = y1.max(by);
     };
     for t in &map.tiles {
-        let Some(Some(tmp)) = tmps.get(&t.tile.unwrap_or(0)) else { continue };
-        let Some(tile) = tmp.tiles.get(t.subtile as usize).and_then(Option::as_ref) else { continue };
+        let Some(Some(tmp)) = tmps.get(&t.tile.unwrap_or(0)) else {
+            continue;
+        };
+        let Some(tile) = tmp.tiles.get(t.subtile as usize).and_then(Option::as_ref) else {
+            continue;
+        };
         let (cx, cy) = cell_screen(t.x, t.y, t.level);
         grow(cx - HALF_W, cy, cx + HALF_W, cy + HALF_H * 2);
         if let Some(e) = &tile.extra {
@@ -153,8 +163,12 @@ pub fn render_map(gamedir: &str, map_name: &str, scale: u32) -> Result<RenderedM
     let mut sorted: Vec<_> = map.tiles.iter().collect();
     sorted.sort_by_key(|t| (u32::from(t.x) + u32::from(t.y), t.x));
     for t in sorted {
-        let Some(Some(tmp)) = tmps.get(&t.tile.unwrap_or(0)) else { continue };
-        let Some(tile) = tmp.tiles.get(t.subtile as usize).and_then(Option::as_ref) else { continue };
+        let Some(Some(tmp)) = tmps.get(&t.tile.unwrap_or(0)) else {
+            continue;
+        };
+        let Some(tile) = tmp.tiles.get(t.subtile as usize).and_then(Option::as_ref) else {
+            continue;
+        };
         let (cx, cy) = cell_screen(t.x, t.y, t.level);
         let (dx, dy) = (cx - HALF_W - x0, cy - y0);
         let mut src = tile.pixels.iter();
@@ -202,21 +216,48 @@ pub fn render_map(gamedir: &str, map_name: &str, scale: u32) -> Result<RenderedM
     }
     let mut jobs: Vec<Job> = Vec::new();
     let mut markers = 0usize;
-    let cell_job = |jobs: &mut Vec<Job>, x: u16, y: u16, file: Option<String>, frame: usize, unit: bool, marker: Option<[u8; 4]>| {
+    let cell_job = |jobs: &mut Vec<Job>,
+                    x: u16,
+                    y: u16,
+                    file: Option<String>,
+                    frame: usize,
+                    unit: bool,
+                    marker: Option<[u8; 4]>| {
         let level = levels.get(&(x, y)).copied().unwrap_or(0);
         let (cx, top) = cell_screen(x, y, level);
-        jobs.push(Job { key: u32::from(x) + u32::from(y), cx, cy: top + HALF_H, file, frame, unit, marker, shadow: false, remap: None, voxel: None });
+        jobs.push(Job {
+            key: u32::from(x) + u32::from(y),
+            cx,
+            cy: top + HALF_H,
+            file,
+            frame,
+            unit,
+            marker,
+            shadow: false,
+            remap: None,
+            voxel: None,
+        });
     };
     for (i, &o) in map.overlay.iter().enumerate() {
         if o == yr_formats::map::NO_OVERLAY {
             continue;
         }
-        let Some(kind) = overlay_types.get(o as usize) else { continue };
+        let Some(kind) = overlay_types.get(o as usize) else {
+            continue;
+        };
         let (image, theater_art, _) = art_image(&art_ini, kind);
         let file = art_file(&image, theater_art, theater);
         if load_shp(&vfs, &file, &mut shps) {
             let frame = usize::from(map.overlay_data[i]);
-            cell_job(&mut jobs, (i % 512) as u16, (i / 512) as u16, Some(file), frame, false, None);
+            cell_job(
+                &mut jobs,
+                (i % 512) as u16,
+                (i / 512) as u16,
+                Some(file),
+                frame,
+                false,
+                None,
+            );
         }
     }
     for (x, y, kind) in &map.terrain {
@@ -229,18 +270,33 @@ pub fn render_map(gamedir: &str, map_name: &str, scale: u32) -> Result<RenderedM
             jobs.last_mut().unwrap().key = key;
         }
     }
-    let mut object = |jobs: &mut Vec<Job>, obj: &yr_formats::MapObject, shps: &mut HashMap<String, Option<Vec<u8>>>, vfs: &AssetFs| {
+    let mut object = |jobs: &mut Vec<Job>,
+                      obj: &yr_formats::MapObject,
+                      shps: &mut HashMap<String, Option<Vec<u8>>>,
+                      vfs: &AssetFs| {
         let techno = rules.techno(&obj.kind);
-        let voxel = techno.and_then(|t| t.art.as_ref()).map(|a| a.voxel).unwrap_or(false);
+        let voxel = techno
+            .and_then(|t| t.art.as_ref())
+            .map(|a| a.voxel)
+            .unwrap_or(false);
         if voxel {
-            let image = techno.map(|t| t.image.clone()).unwrap_or_else(|| obj.kind.clone());
+            let image = techno
+                .map(|t| t.image.clone())
+                .unwrap_or_else(|| obj.kind.clone());
             let file = format!("{}.VXL", image.to_ascii_uppercase());
-            let ok = vxl_cache.entry(file.clone()).or_insert_with(|| {
-                let v = vfs.read(&file).map(<[u8]>::to_vec);
-                let t = vfs.read(&format!("{}TUR.VXL", image.to_ascii_uppercase())).map(<[u8]>::to_vec);
-                let b = vfs.read(&format!("{}BARL.VXL", image.to_ascii_uppercase())).map(<[u8]>::to_vec);
-                v.map(|body| (body, t, b))
-            }).is_some();
+            let ok = vxl_cache
+                .entry(file.clone())
+                .or_insert_with(|| {
+                    let v = vfs.read(&file).map(<[u8]>::to_vec);
+                    let t = vfs
+                        .read(&format!("{}TUR.VXL", image.to_ascii_uppercase()))
+                        .map(<[u8]>::to_vec);
+                    let b = vfs
+                        .read(&format!("{}BARL.VXL", image.to_ascii_uppercase()))
+                        .map(<[u8]>::to_vec);
+                    v.map(|body| (body, t, b))
+                })
+                .is_some();
             if ok {
                 cell_job(jobs, obj.x, obj.y, None, 0, true, None);
                 let job = jobs.last_mut().unwrap();
@@ -257,15 +313,24 @@ pub fn render_map(gamedir: &str, map_name: &str, scale: u32) -> Result<RenderedM
             cell_job(jobs, obj.x, obj.y, None, 0, true, Some([0, 200, 255, 255]));
             return;
         }
-        let image = techno.map(|t| t.image.clone()).unwrap_or_else(|| obj.kind.clone());
+        let image = techno
+            .map(|t| t.image.clone())
+            .unwrap_or_else(|| obj.kind.clone());
         let art = techno.and_then(|t| t.art.as_ref());
-        let is_building = techno.map(|t| t.kind == yr_rules::TechnoKind::Building).unwrap_or(false);
+        let is_building = techno
+            .map(|t| t.kind == yr_rules::TechnoKind::Building)
+            .unwrap_or(false);
         if is_building {
             // NewTheater=yes buildings: second letter is the theater
             // letter, generic `G` variant as fallback (docs/formats/map.md).
             let mut candidates = Vec::new();
             if image.len() > 1 {
-                candidates.push(format!("{}{}{}.SHP", &image[..1], theater.art_letter(), &image[2..]));
+                candidates.push(format!(
+                    "{}{}{}.SHP",
+                    &image[..1],
+                    theater.art_letter(),
+                    &image[2..]
+                ));
                 candidates.push(format!("{}G{}.SHP", &image[..1], &image[2..]));
             }
             candidates.push(format!("{}.SHP", image.to_ascii_uppercase()));
@@ -290,11 +355,19 @@ pub fn render_map(gamedir: &str, map_name: &str, scale: u32) -> Result<RenderedM
                 }
                 None => {
                     markers += 1;
-                    eprintln!("no building art for {} ({})", obj.kind, candidates.join(", "));
+                    eprintln!(
+                        "no building art for {} ({})",
+                        obj.kind,
+                        candidates.join(", ")
+                    );
                     cell_job(jobs, obj.x, obj.y, None, 0, false, Some([255, 0, 200, 255]));
                 }
             }
-        } else if load_shp(vfs, &art_file(&image, art.map(|a| a.theater).unwrap_or(false), theater), shps) {
+        } else if load_shp(
+            vfs,
+            &art_file(&image, art.map(|a| a.theater).unwrap_or(false), theater),
+            shps,
+        ) {
             let file = art_file(&image, art.map(|a| a.theater).unwrap_or(false), theater);
             cell_job(jobs, obj.x, obj.y, Some(file), 0, true, None);
             jobs.last_mut().unwrap().shadow = true;
@@ -304,7 +377,13 @@ pub fn render_map(gamedir: &str, map_name: &str, scale: u32) -> Result<RenderedM
             cell_job(jobs, obj.x, obj.y, None, 0, true, Some([0, 200, 255, 255]));
         }
     };
-    for obj in map.structures.iter().chain(&map.units).chain(&map.infantry).chain(&map.aircraft) {
+    for obj in map
+        .structures
+        .iter()
+        .chain(&map.units)
+        .chain(&map.infantry)
+        .chain(&map.aircraft)
+    {
         object(&mut jobs, obj, &mut shps, &vfs);
     }
     let drawn_jobs = jobs.iter().filter(|j| j.file.is_some()).count();
@@ -314,7 +393,11 @@ pub fn render_map(gamedir: &str, map_name: &str, scale: u32) -> Result<RenderedM
         if let Some(color) = job.marker {
             // Filled 60x30 diamond centred on the cell.
             for row in 0..30i32 {
-                let width = if row < 15 { 4 + row * 4 } else { 60 - (row - 14) * 4 };
+                let width = if row < 15 {
+                    4 + row * 4
+                } else {
+                    60 - (row - 14) * 4
+                };
                 for dx in 0..width.max(0) {
                     let (x, y) = (cx - width / 2 + dx, cy - HALF_H + row);
                     if x >= 0 && y >= 0 && (x as usize) < w && (y as usize) < h {
@@ -327,22 +410,54 @@ pub fn render_map(gamedir: &str, map_name: &str, scale: u32) -> Result<RenderedM
         }
         if let Some((image, facing)) = &job.voxel {
             if let Some(Some((body, tur, barl))) = vxl_cache.get(&format!("{image}.VXL")) {
-                draw_voxel(&mut rgba, w, h, cx, cy, body, tur.as_deref(), barl.as_deref(), *facing, &unit_pal, job.remap);
+                draw_voxel(
+                    &mut rgba,
+                    w,
+                    h,
+                    cx,
+                    cy,
+                    body,
+                    tur.as_deref(),
+                    barl.as_deref(),
+                    *facing,
+                    &unit_pal,
+                    job.remap,
+                );
             }
             continue;
         }
-        let Some(bytes) = job.file.as_ref().and_then(|f| shps.get(f)).and_then(Option::as_ref) else { continue };
-        let Ok(shp) = ShpFile::parse(bytes) else { continue };
-        let frame = if job.frame < shp.frames.len() { job.frame } else { 0 };
-        let Ok(canvas) = shp.decode_frame_canvas(frame) else { continue };
+        let Some(bytes) = job
+            .file
+            .as_ref()
+            .and_then(|f| shps.get(f))
+            .and_then(Option::as_ref)
+        else {
+            continue;
+        };
+        let Ok(shp) = ShpFile::parse(bytes) else {
+            continue;
+        };
+        let frame = if job.frame < shp.frames.len() {
+            job.frame
+        } else {
+            0
+        };
+        let Ok(canvas) = shp.decode_frame_canvas(frame) else {
+            continue;
+        };
         if job.shadow && shp.frames.len() >= 2 {
             let shadow_frame = job.frame + shp.frames.len() / 2;
             if shadow_frame < shp.frames.len() {
                 if let Ok(shadow) = shp.decode_frame_canvas(shadow_frame) {
                     let (ox, oy) = (cx - shp.width as i32 / 2, cy - shp.height as i32 / 2);
                     for (p, &index) in shadow.iter().enumerate() {
-                        if index == 0 { continue; }
-                        let (x, y) = (ox + (p % shp.width as usize) as i32, oy + (p / shp.width as usize) as i32);
+                        if index == 0 {
+                            continue;
+                        }
+                        let (x, y) = (
+                            ox + (p % shp.width as usize) as i32,
+                            oy + (p / shp.width as usize) as i32,
+                        );
                         if x >= 0 && y >= 0 && (x as usize) < w && (y as usize) < h {
                             let at = (y as usize * w + x as usize) * 4;
                             rgba[at] /= 2;
@@ -359,7 +474,10 @@ pub fn render_map(gamedir: &str, map_name: &str, scale: u32) -> Result<RenderedM
             if index == 0 {
                 continue;
             }
-            let (x, y) = (ox + (p % shp.width as usize) as i32, oy + (p / shp.width as usize) as i32);
+            let (x, y) = (
+                ox + (p % shp.width as usize) as i32,
+                oy + (p / shp.width as usize) as i32,
+            );
             if x >= 0 && y >= 0 && (x as usize) < w && (y as usize) < h {
                 let at = (y as usize * w + x as usize) * 4;
                 if let (Some(base), 16..=31) = (job.remap, index) {
@@ -409,15 +527,37 @@ pub fn render_map(gamedir: &str, map_name: &str, scale: u32) -> Result<RenderedM
 /// facing rotates the model around Z. Approximate: turret raised to the
 /// body top, flat shading (palette colours carry most of the form).
 #[allow(clippy::too_many_arguments)]
-fn draw_voxel(rgba: &mut [u8], w: usize, h: usize, cx: i32, cy: i32, body: &[u8], tur: Option<&[u8]>, barl: Option<&[u8]>, facing: u16, pal: &Palette, remap: Option<[u8; 3]>) {
-    let Ok(body_vxl) = VxlFile::parse(body) else { return };
+fn draw_voxel(
+    rgba: &mut [u8],
+    w: usize,
+    h: usize,
+    cx: i32,
+    cy: i32,
+    body: &[u8],
+    tur: Option<&[u8]>,
+    barl: Option<&[u8]>,
+    facing: u16,
+    pal: &Palette,
+    remap: Option<[u8; 3]>,
+) {
+    let Ok(body_vxl) = VxlFile::parse(body) else {
+        return;
+    };
     let _ = HvaFile::parse(body); // transforms not applied yet (see issue notes)
     let mut parts: Vec<(&VxlFile, f32)> = vec![(&body_vxl, 0.0)];
     let tur_vxl = tur.and_then(|d| VxlFile::parse(d).ok());
     let barl_vxl = barl.and_then(|d| VxlFile::parse(d).ok());
-    let body_h = body_vxl.limbs.first().map(|l| f32::from(l.size[2])).unwrap_or(8.0);
-    if let Some(t) = &tur_vxl { parts.push((t, body_h * 0.75)); }
-    if let Some(b) = &barl_vxl { parts.push((b, body_h * 0.75)); }
+    let body_h = body_vxl
+        .limbs
+        .first()
+        .map(|l| f32::from(l.size[2]))
+        .unwrap_or(8.0);
+    if let Some(t) = &tur_vxl {
+        parts.push((t, body_h * 0.75));
+    }
+    if let Some(b) = &barl_vxl {
+        parts.push((b, body_h * 0.75));
+    }
     let ang = f32::from(facing + 32) * (std::f32::consts::TAU / 256.0);
     let (sin, cos) = ang.sin_cos();
     let mut pts: Vec<(f32, f32, f32, u8)> = Vec::new();
@@ -425,15 +565,31 @@ fn draw_voxel(rgba: &mut [u8], w: usize, h: usize, cx: i32, cy: i32, body: &[u8]
         for limb in &vxl.limbs {
             let (mx, my) = (f32::from(limb.size[0]) / 2.0, f32::from(limb.size[1]) / 2.0);
             for v in &limb.voxels {
-                let (lx, ly, lz) = (f32::from(v.x) - mx, f32::from(v.y) - my, f32::from(v.z) + zoff);
+                let (lx, ly, lz) = (
+                    f32::from(v.x) - mx,
+                    f32::from(v.y) - my,
+                    f32::from(v.z) + zoff,
+                );
                 let (rx, ry) = (lx * cos - ly * sin, lx * sin + ly * cos);
-                pts.push(((rx - ry), (rx + ry) * 0.5 - lz, rx + ry + lz * 0.01, v.color));
+                pts.push((
+                    (rx - ry),
+                    (rx + ry) * 0.5 - lz,
+                    rx + ry + lz * 0.01,
+                    v.color,
+                ));
             }
         }
     }
-    if pts.is_empty() { return; }
+    if pts.is_empty() {
+        return;
+    }
     let (mut x0, mut x1, mut y0, mut y1) = (f32::MAX, f32::MIN, f32::MAX, f32::MIN);
-    for (x, y, _, _) in &pts { x0 = x0.min(*x); x1 = x1.max(*x); y0 = y0.min(*y); y1 = y1.max(*y); }
+    for (x, y, _, _) in &pts {
+        x0 = x0.min(*x);
+        x1 = x1.max(*x);
+        y0 = y0.min(*y);
+        y1 = y1.max(*y);
+    }
     let scale = 60.0 / (x1 - x0).max(1.0);
     let size = ((scale * 2.0).ceil() as i32).max(1);
     pts.sort_by(|a, b| a.2.partial_cmp(&b.2).unwrap_or(std::cmp::Ordering::Equal));
@@ -461,7 +617,9 @@ fn draw_voxel(rgba: &mut [u8], w: usize, h: usize, cx: i32, cy: i32, body: &[u8]
 
 /// Ordered values of a `rulesmd.ini` type-list section (`0=FOO`, `1=BAR`).
 pub fn type_list(ini: &IniFile, section: &str) -> Vec<String> {
-    let Some(sec) = ini.section(section) else { return Vec::new() };
+    let Some(sec) = ini.section(section) else {
+        return Vec::new();
+    };
     let mut entries: Vec<(u32, String)> = sec
         .entries
         .iter()
@@ -490,7 +648,11 @@ fn art_image(art: &IniFile, kind: &str) -> (String, bool, bool) {
 
 fn art_file(image: &str, theater_art: bool, theater: Theater) -> String {
     if theater_art {
-        format!("{}.{}", image.to_ascii_uppercase(), theater.tile_extension())
+        format!(
+            "{}.{}",
+            image.to_ascii_uppercase(),
+            theater.tile_extension()
+        )
     } else {
         format!("{}.SHP", image.to_ascii_uppercase())
     }
@@ -504,11 +666,20 @@ fn house_color(rules: &IniFile, owner: &str) -> [u8; 3] {
         .and_then(|s| s.get("Color"))
         .map(|v| v.split(';').next().unwrap_or(v).trim().to_string())
         .unwrap_or_else(|| "LightGrey".to_string());
-    let hsv = rules.section("Colors").and_then(|s| s.get(&name)).and_then(|v| {
-        let mut it = v.split(';').next()?.split(',').map(|p| p.trim().parse::<f32>().ok());
-        Some((it.next()??, it.next()??, it.next()??))
-    });
-    let Some((h, sat, val)) = hsv else { return [170, 170, 170] };
+    let hsv = rules
+        .section("Colors")
+        .and_then(|s| s.get(&name))
+        .and_then(|v| {
+            let mut it = v
+                .split(';')
+                .next()?
+                .split(',')
+                .map(|p| p.trim().parse::<f32>().ok());
+            Some((it.next()??, it.next()??, it.next()??))
+        });
+    let Some((h, sat, val)) = hsv else {
+        return [170, 170, 170];
+    };
     let (h, sat, val) = (h / 255.0 * 360.0, sat / 255.0, val / 255.0);
     let c = val * sat;
     let x = c * (1.0 - ((h / 60.0) % 2.0 - 1.0).abs());
@@ -521,7 +692,11 @@ fn house_color(rules: &IniFile, owner: &str) -> [u8; 3] {
         _ => (c, 0.0, x),
     };
     let m = val - c;
-    [((r + m) * 255.0) as u8, ((g + m) * 255.0) as u8, ((b + m) * 255.0) as u8]
+    [
+        ((r + m) * 255.0) as u8,
+        ((g + m) * 255.0) as u8,
+        ((b + m) * 255.0) as u8,
+    ]
 }
 
 /// Build the sim terrain grid for a parsed map: TMP terrain types and
@@ -539,13 +714,17 @@ pub fn build_terrain(
         .iter()
         .find(|n| fs.read(n).is_some())
         .ok_or("tileset INI not found")?;
-    let ini = IniFile::parse(&String::from_utf8_lossy(fs.read(ini_name).ok_or("tileset INI unreadable")?));
+    let ini = IniFile::parse(&String::from_utf8_lossy(
+        fs.read(ini_name).ok_or("tileset INI unreadable")?,
+    ));
     let index = TileSetIndex::parse(&ini, theater.tile_extension());
     let mut tmps: std::collections::HashMap<String, TmpFile> = std::collections::HashMap::new();
     let mut rows: Vec<(u16, u16, u8, u8, u8)> = Vec::new();
     for t in &map.tiles {
         let Some(id) = t.tile else { continue };
-        let Some(name) = index.file_for(id) else { continue };
+        let Some(name) = index.file_for(id) else {
+            continue;
+        };
         let tmp = tmps.entry(name.to_string()).or_insert_with(|| {
             TmpFile::parse(fs.read(name).expect("TMP readable")).expect("TMP parses")
         });
@@ -562,14 +741,28 @@ pub fn build_terrain(
         if o == yr_formats::map::NO_OVERLAY {
             continue;
         }
-        let Some(kind) = overlay_types.get(o as usize) else { continue };
+        let Some(kind) = overlay_types.get(o as usize) else {
+            continue;
+        };
         let (x, y) = ((i % 512) as u16, (i / 512) as u16);
         let upper = kind.to_ascii_uppercase();
         if upper.contains("TIB") || upper.starts_with("GEM") {
             let bails = 2 + (map.overlay_data[i] % 5);
             let gem = upper.starts_with("GEM");
-            grid.set_resource(x, y, if gem { yr_sim::terrain::Overlay::Gem } else { yr_sim::terrain::Overlay::Ore }, bails);
-        } else if ["WALL", "FENCE", "SAND", "BARB", "CYCL"].iter().any(|k| upper.contains(k)) {
+            grid.set_resource(
+                x,
+                y,
+                if gem {
+                    yr_sim::terrain::Overlay::Gem
+                } else {
+                    yr_sim::terrain::Overlay::Ore
+                },
+                bails,
+            );
+        } else if ["WALL", "FENCE", "SAND", "BARB", "CYCL"]
+            .iter()
+            .any(|k| upper.contains(k))
+        {
             grid.set_overlay(x, y, yr_sim::terrain::Overlay::Wall);
         }
     }
@@ -583,12 +776,23 @@ mod tests {
     #[test]
     fn cell_px_round_trip() {
         // Arrange
-        let map = RenderedMap { width: 10, height: 10, rgba: vec![0; 400], summary: String::new(), origin_x: -90, origin_y: -200, scale: 2 };
+        let map = RenderedMap {
+            width: 10,
+            height: 10,
+            rgba: vec![0; 400],
+            summary: String::new(),
+            origin_x: -90,
+            origin_y: -200,
+            scale: 2,
+        };
         // Act / Assert
         for (x, y) in [(0.0f32, 0.0f32), (10.5, 3.25), (40.0, 40.0)] {
             let (px, py) = map.cell_to_px(x, y);
             let (rx, ry) = map.px_to_cell(px, py);
-            assert!((rx - x).abs() < 0.001 && (ry - y).abs() < 0.001, "({x},{y}) -> ({px},{py}) -> ({rx},{ry})");
+            assert!(
+                (rx - x).abs() < 0.001 && (ry - y).abs() < 0.001,
+                "({x},{y}) -> ({px},{py}) -> ({rx},{ry})"
+            );
         }
     }
 }

@@ -204,7 +204,10 @@ mod tests {
     use super::*;
 
     fn header(w: u16, h: u16, n: u16) -> Vec<u8> {
-        [0u16, w, h, n].iter().flat_map(|v| v.to_le_bytes()).collect()
+        [0u16, w, h, n]
+            .iter()
+            .flat_map(|v| v.to_le_bytes())
+            .collect()
     }
 
     fn frame(x: u16, y: u16, w: u16, h: u16, kind: u32, off: u32) -> Vec<u8> {
@@ -292,6 +295,9 @@ mod tests {
 
     #[test]
     fn rejects_non_shp() {
-        assert_eq!(ShpFile::parse(b"[General]\r\n").unwrap_err(), ShpError::BadHeader);
+        assert_eq!(
+            ShpFile::parse(b"[General]\r\n").unwrap_err(),
+            ShpError::BadHeader
+        );
     }
 }

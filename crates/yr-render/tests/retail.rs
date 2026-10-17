@@ -9,8 +9,8 @@ use yr_formats::{IniFile, MapFile, MixArchive, TileSetIndex, TmpFile};
 use yr_sim::terrain::{Ground, Loco, TerrainGrid};
 
 fn install_dir() -> Option<PathBuf> {
-    let dir = PathBuf::from(std::env::var("HOME").ok()?)
-        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    let dir =
+        PathBuf::from(std::env::var("HOME").ok()?).join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
     dir.is_dir().then_some(dir)
 }
 
@@ -37,7 +37,11 @@ fn temperate_map_builds_a_sane_terrain_grid() {
     let map = found.expect("a temperate map exists");
     let mut fs = AssetFs::open(&dir).expect("install opens");
     fs.set_theater(Theater::Temperate);
-    let ini_name = Theater::Temperate.tileset_inis().iter().find(|n| fs.read(n).is_some()).unwrap();
+    let ini_name = Theater::Temperate
+        .tileset_inis()
+        .iter()
+        .find(|n| fs.read(n).is_some())
+        .unwrap();
     let ini = IniFile::parse(&String::from_utf8_lossy(fs.read(ini_name).unwrap()));
     let index = TileSetIndex::parse(&ini, Theater::Temperate.tile_extension());
 
@@ -47,11 +51,15 @@ fn temperate_map_builds_a_sane_terrain_grid() {
     let mut cliff_cell = None;
     for t in &map.tiles {
         let Some(id) = t.tile else { continue };
-        let Some(name) = index.file_for(id) else { continue };
+        let Some(name) = index.file_for(id) else {
+            continue;
+        };
         let tmp = tmps.entry(name.to_string()).or_insert_with(|| {
             TmpFile::parse(fs.read(name).expect("TMP readable")).expect("TMP parses")
         });
-        let Some(cell) = tmp.tiles.get(t.subtile as usize).and_then(Option::as_ref) else { continue };
+        let Some(cell) = tmp.tiles.get(t.subtile as usize).and_then(Option::as_ref) else {
+            continue;
+        };
         rows.push((t.x, t.y, t.level, cell.terrain_type, cell.ramp_type));
         if cell.terrain_type == 9 && water_cell.is_none() {
             water_cell = Some((t.x, t.y));
@@ -62,16 +70,36 @@ fn temperate_map_builds_a_sane_terrain_grid() {
     }
     // Iso tile coordinates run past the Size= rectangle (diamond map),
     // so the grid spans the tile extents.
-    let (w, h) = rows.iter().fold((0usize, 0usize), |(w, h), r| (w.max(r.0 as usize + 1), h.max(r.1 as usize + 1)));
+    let (w, h) = rows.iter().fold((0usize, 0usize), |(w, h), r| {
+        (w.max(r.0 as usize + 1), h.max(r.1 as usize + 1))
+    });
     let grid = TerrainGrid::from_tiles(0, 0, w, h, rows.into_iter());
     let counts = grid.ground_counts();
-    let count = |g: Ground| counts.iter().find(|(k, _)| *k == g).map(|e| e.1).unwrap_or(0);
-    assert!(count(Ground::Water) > 100, "temperate map has water: {counts:?}");
-    assert!(count(Ground::Cliff) > 100, "temperate map has cliffs: {counts:?}");
-    assert!(count(Ground::Clear) > 1_000, "temperate map is mostly clear: {counts:?}");
+    let count = |g: Ground| {
+        counts
+            .iter()
+            .find(|(k, _)| *k == g)
+            .map(|e| e.1)
+            .unwrap_or(0)
+    };
+    assert!(
+        count(Ground::Water) > 100,
+        "temperate map has water: {counts:?}"
+    );
+    assert!(
+        count(Ground::Cliff) > 100,
+        "temperate map has cliffs: {counts:?}"
+    );
+    assert!(
+        count(Ground::Clear) > 1_000,
+        "temperate map is mostly clear: {counts:?}"
+    );
 
     let (wx, wy) = water_cell.expect("water cell found");
-    assert!(!grid.passable(Loco::Track, wx, wy), "vehicles cannot enter water");
+    assert!(
+        !grid.passable(Loco::Track, wx, wy),
+        "vehicles cannot enter water"
+    );
     assert!(grid.passable(Loco::Ship, wx, wy), "ships can enter water");
     let (cx, cy) = cliff_cell.expect("cliff cell found");
     assert!(!grid.passable(Loco::Foot, cx, cy), "cliffs block infantry");
@@ -80,5 +108,9 @@ fn temperate_map_builds_a_sane_terrain_grid() {
     let mut sim = yr_sim::Sim::new(1);
     let before = sim.state_hash();
     sim.set_terrain(grid);
-    assert_ne!(sim.state_hash(), before, "terrain is part of the state hash");
+    assert_ne!(
+        sim.state_hash(),
+        before,
+        "terrain is part of the state hash"
+    );
 }

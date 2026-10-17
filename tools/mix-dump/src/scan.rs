@@ -74,7 +74,10 @@ pub fn cmd_scan(paths: &[&str], verbose: bool) -> Result<(), String> {
         builtin,
         names.len() - builtin
     );
-    println!("{:<12} {:>7} {:>7} {:>12}  examples", "kind", "count", "named", "bytes");
+    println!(
+        "{:<12} {:>7} {:>7} {:>12}  examples",
+        "kind", "count", "named", "bytes"
+    );
     for (kind, b) in &census.kinds {
         println!(
             "{kind:<12} {:>7} {:>7} {:>12}  {}",
@@ -123,7 +126,8 @@ fn walk(data: &[u8], path: &str, depth: usize, names: &NameDb, c: &mut Census, v
     };
     for e in mix.entries() {
         let Some(payload) = mix.get_by_id(e.id) else {
-            c.errors.push(format!("{path}/0x{:08x}: entry out of range", e.id));
+            c.errors
+                .push(format!("{path}/0x{:08x}: entry out of range", e.id));
             continue;
         };
         let hex_label = format!("{path}/0x{:08x}", e.id);
@@ -192,7 +196,11 @@ fn classify(d: &[u8], label: &str, c: &mut Census) -> &'static str {
         return "bink";
     }
     if head == b" FSC" {
-        return if CsfFile::parse(d).is_ok() { "csf" } else { "csf?" };
+        return if CsfFile::parse(d).is_ok() {
+            "csf"
+        } else {
+            "csf?"
+        };
     }
     if d.starts_with(b"Voxel Animation\0") {
         return match VxlFile::parse(d) {
@@ -263,7 +271,9 @@ fn classify(d: &[u8], label: &str, c: &mut Census) -> &'static str {
         [b'F', b'o', b'N', b't', ..] | [b'f', b'o', b'n', b'T', ..] => return "fnt",
         // Classic Westwood font (6POINT/8POINT/GRAD6FNT.FNT): u16 file size,
         // then u16 2 and block offsets.
-        [a, b, 0x02, 0x00, ..] if usize::from(u16::from_le_bytes([*a, *b])) == d.len() => return "fnt",
+        [a, b, 0x02, 0x00, ..] if usize::from(u16::from_le_bytes([*a, *b])) == d.len() => {
+            return "fnt"
+        }
         _ => {}
     }
     if is_ini(d) {
@@ -274,7 +284,11 @@ fn classify(d: &[u8], label: &str, c: &mut Census) -> &'static str {
 
 /// HVA has no magic; its size is fully determined by the header counts.
 fn is_hva(d: &[u8]) -> bool {
-    if d.len() < 24 || !d[..16].iter().all(|&b| b == 0 || b.is_ascii_graphic() || b == b' ') {
+    if d.len() < 24
+        || !d[..16]
+            .iter()
+            .all(|&b| b == 0 || b.is_ascii_graphic() || b == b' ')
+    {
         return false;
     }
     let frames = u32::from_le_bytes([d[16], d[17], d[18], d[19]]) as usize;

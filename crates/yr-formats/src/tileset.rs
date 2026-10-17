@@ -28,10 +28,19 @@ impl TileSetIndex {
             let Some(sec) = ini.section(&format!("TileSet{n:04}")) else {
                 break;
             };
-            let Some(base) = sec.get("FileName") else { continue };
-            let count: u32 = sec.get("TilesInSet").and_then(|v| v.trim().parse().ok()).unwrap_or(0);
+            let Some(base) = sec.get("FileName") else {
+                continue;
+            };
+            let count: u32 = sec
+                .get("TilesInSet")
+                .and_then(|v| v.trim().parse().ok())
+                .unwrap_or(0);
             for i in 1..=count {
-                files.push(format!("{}{i:02}.{}", base.trim().to_ascii_uppercase(), extension.to_ascii_uppercase()));
+                files.push(format!(
+                    "{}{i:02}.{}",
+                    base.trim().to_ascii_uppercase(),
+                    extension.to_ascii_uppercase()
+                ));
             }
         }
         TileSetIndex { files }

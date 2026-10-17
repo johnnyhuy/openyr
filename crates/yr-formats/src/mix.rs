@@ -57,7 +57,10 @@ impl std::fmt::Display for MixError {
             MixError::BadIndex => write!(f, "invalid MIX index"),
             MixError::BadKey => write!(f, "could not derive MIX Blowfish key"),
             MixError::SizeMismatch { expected, actual } => {
-                write!(f, "MIX size identity failed: expected {expected}, actual {actual}")
+                write!(
+                    f,
+                    "MIX size identity failed: expected {expected}, actual {actual}"
+                )
             }
         }
     }
@@ -158,8 +161,7 @@ impl<'a> MixArchive<'a> {
                 cipher.decrypt_block((&mut b).into());
                 plain[block * 8..block * 8 + 8].copy_from_slice(&b);
             }
-            let data_size =
-                u32::from_le_bytes([plain[2], plain[3], plain[4], plain[5]]) as usize;
+            let data_size = u32::from_le_bytes([plain[2], plain[3], plain[4], plain[5]]) as usize;
             let body_start = enc_start + enc_len;
             (count, data_size, plain, body_start)
         } else {

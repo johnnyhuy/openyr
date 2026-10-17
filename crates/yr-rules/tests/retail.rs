@@ -7,8 +7,8 @@ use yr_formats::IniFile;
 use yr_rules::{Armor, Decimal, Rules, Severity, TechnoKind};
 
 fn retail() -> Option<Rules> {
-    let dir = PathBuf::from(std::env::var("HOME").ok()?)
-        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    let dir =
+        PathBuf::from(std::env::var("HOME").ok()?).join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
     if !dir.is_dir() {
         return None;
     }
@@ -28,10 +28,17 @@ fn registries_match_type_lists() {
     assert_eq!(r.aircraft.len(), 12);
     // 403 list entries; NAPSYA is listed twice.
     assert_eq!(r.buildings.len(), 402);
-    assert!(r.issues.iter().any(|i| i.message.contains("NAPSYA listed twice")));
+    assert!(r
+        .issues
+        .iter()
+        .any(|i| i.message.contains("NAPSYA listed twice")));
     // Every referenced weapon, warhead and projectile has a section, and
     // every armor value parses (retail mixes `plate` and `Plate`).
-    let warnings: Vec<_> = r.issues.iter().filter(|i| i.severity == Severity::Warning).collect();
+    let warnings: Vec<_> = r
+        .issues
+        .iter()
+        .filter(|i| i.severity == Severity::Warning)
+        .collect();
     assert!(warnings.is_empty(), "{warnings:#?}");
 }
 
@@ -43,7 +50,10 @@ fn rhino_tank_known_answers() {
     };
     let t = r.techno("HTNK").unwrap();
     assert_eq!(t.kind, TechnoKind::Vehicle);
-    assert_eq!((t.strength, t.armor, t.cost), (Some(400), Some(Armor::Heavy), Some(900)));
+    assert_eq!(
+        (t.strength, t.armor, t.cost),
+        (Some(400), Some(Armor::Heavy), Some(900))
+    );
     assert_eq!(t.primary.as_deref(), Some("120mm"));
     assert!(t.art.as_ref().unwrap().voxel);
     let w = r.weapons.get("120mm").unwrap();
@@ -76,7 +86,11 @@ fn globals_houses_and_skirmish_defaults() {
     };
     // [General] BuildSpeed=.7 (minutes per 1000 credits), exact decimal.
     assert_eq!(rules.globals.build_speed.map(|d| d.units()), Some(700_000));
-    assert_eq!(rules.globals.refund_percent.map(|d| d.units()), Some(500_000), "RefundPercent=50%");
+    assert_eq!(
+        rules.globals.refund_percent.map(|d| d.units()),
+        Some(500_000),
+        "RefundPercent=50%"
+    );
     assert_eq!(rules.globals.atom_damage, Some(1000));
     assert_eq!(rules.globals.bridge_strength, Some(1500));
     assert_eq!(rules.globals.tiberium_grows, Some(true));
@@ -88,6 +102,12 @@ fn globals_houses_and_skirmish_defaults() {
     assert_eq!(usa.side, "GDI");
     assert_eq!(usa.color.as_deref(), Some("Gold"));
     assert_eq!(usa.color_hsv, Some((43, 239, 255)));
-    assert_eq!(rules.houses.get("YuriCountry").map(|h| h.side.as_str()), Some("ThirdSide"));
-    assert_eq!(rules.houses.get("Neutral").map(|h| h.side.as_str()), Some("Civilian"));
+    assert_eq!(
+        rules.houses.get("YuriCountry").map(|h| h.side.as_str()),
+        Some("ThirdSide")
+    );
+    assert_eq!(
+        rules.houses.get("Neutral").map(|h| h.side.as_str()),
+        Some("Civilian")
+    );
 }

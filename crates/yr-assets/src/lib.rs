@@ -77,12 +77,48 @@ impl Theater {
     /// skipped (e.g. retail has no TEMPERATMD.MIX).
     pub fn archives(self) -> &'static [&'static str] {
         match self {
-            Theater::Temperate => &["ISOTEMMD.MIX", "ISOTEMP.MIX", "TEMPERATMD.MIX", "TEMPERAT.MIX", "TEM.MIX"],
-            Theater::Snow => &["ISOSNOMD.MIX", "ISOSNOW.MIX", "SNOWMD.MIX", "SNOW.MIX", "SNO.MIX"],
-            Theater::Urban => &["ISOURBMD.MIX", "ISOURB.MIX", "URBANMD.MIX", "URBAN.MIX", "URB.MIX"],
-            Theater::Desert => &["ISODESMD.MIX", "ISODES.MIX", "DESERTMD.MIX", "DESERT.MIX", "DES.MIX"],
-            Theater::Lunar => &["ISOLUNMD.MIX", "ISOLUN.MIX", "LUNARMD.MIX", "LUNAR.MIX", "LUN.MIX"],
-            Theater::NewUrban => &["ISOUBNMD.MIX", "ISOUBN.MIX", "URBANNMD.MIX", "URBANN.MIX", "UBN.MIX"],
+            Theater::Temperate => &[
+                "ISOTEMMD.MIX",
+                "ISOTEMP.MIX",
+                "TEMPERATMD.MIX",
+                "TEMPERAT.MIX",
+                "TEM.MIX",
+            ],
+            Theater::Snow => &[
+                "ISOSNOMD.MIX",
+                "ISOSNOW.MIX",
+                "SNOWMD.MIX",
+                "SNOW.MIX",
+                "SNO.MIX",
+            ],
+            Theater::Urban => &[
+                "ISOURBMD.MIX",
+                "ISOURB.MIX",
+                "URBANMD.MIX",
+                "URBAN.MIX",
+                "URB.MIX",
+            ],
+            Theater::Desert => &[
+                "ISODESMD.MIX",
+                "ISODES.MIX",
+                "DESERTMD.MIX",
+                "DESERT.MIX",
+                "DES.MIX",
+            ],
+            Theater::Lunar => &[
+                "ISOLUNMD.MIX",
+                "ISOLUN.MIX",
+                "LUNARMD.MIX",
+                "LUNAR.MIX",
+                "LUN.MIX",
+            ],
+            Theater::NewUrban => &[
+                "ISOUBNMD.MIX",
+                "ISOUBN.MIX",
+                "URBANNMD.MIX",
+                "URBANN.MIX",
+                "UBN.MIX",
+            ],
         }
     }
 
@@ -248,7 +284,8 @@ impl AssetFs {
         };
         for (name, data) in files {
             fs.roots.push(Backing::Owned(data));
-            fs.loose.insert(name.to_ascii_uppercase(), fs.roots.len() - 1);
+            fs.loose
+                .insert(name.to_ascii_uppercase(), fs.roots.len() - 1);
         }
         fs.mount_base();
         fs
@@ -268,7 +305,10 @@ impl AssetFs {
                 // Alphabetical ascending as listed by the file system (ModEnc).
                 "<ECACHE>" | "<ELOCAL>" => {
                     let prefix = &name[1..name.len() - 1];
-                    for file in loose.iter().filter(|f| f.starts_with(prefix) && f.ends_with(".MIX")) {
+                    for file in loose
+                        .iter()
+                        .filter(|f| f.starts_with(prefix) && f.ends_with(".MIX"))
+                    {
                         self.mount(file, Group::Base);
                     }
                 }
@@ -300,12 +340,14 @@ impl AssetFs {
 
     /// Read a file by name: loose files first, then mounts in order.
     pub fn read(&self, name: &str) -> Option<&[u8]> {
-        self.find(name).map(|(root, start, len, _)| &self.roots[root][start..start + len])
+        self.find(name)
+            .map(|(root, start, len, _)| &self.roots[root][start..start + len])
     }
 
     /// Where `name` resolves from, without reading it.
     pub fn locate(&self, name: &str) -> Option<Location> {
-        self.find(name).map(|(_, _, size, source)| Location { source, size })
+        self.find(name)
+            .map(|(_, _, size, source)| Location { source, size })
     }
 
     fn find(&self, name: &str) -> Option<(usize, usize, usize, String)> {
@@ -316,7 +358,10 @@ impl AssetFs {
         let crc = mix_id(name);
         let td = mix_id_td(name);
         self.mounts.iter().find_map(|m| {
-            let hit = m.index.get(&crc).or_else(|| m.classic.then(|| m.index.get(&td)).flatten());
+            let hit = m
+                .index
+                .get(&crc)
+                .or_else(|| m.classic.then(|| m.index.get(&td)).flatten());
             hit.map(|&(start, len)| (m.root, start, len, m.label.clone()))
         })
     }
@@ -325,7 +370,11 @@ impl AssetFs {
     /// Returns false when it is absent or not a MIX.
     fn mount(&mut self, name: &str, group: Group) -> bool {
         let upper = name.to_ascii_uppercase();
-        if self.mounts.iter().any(|m| m.label.rsplit('/').next() == Some(upper.as_str())) {
+        if self
+            .mounts
+            .iter()
+            .any(|m| m.label.rsplit('/').next() == Some(upper.as_str()))
+        {
             return false;
         }
         let Some((root, start, len, source)) = self.find(name) else {
@@ -341,10 +390,17 @@ impl AssetFs {
             .iter()
             .filter_map(|e| {
                 let payload = mix.get_by_id(e.id)?;
-                Some((e.id, (start + (payload.as_ptr() as usize - base), payload.len())))
+                Some((
+                    e.id,
+                    (start + (payload.as_ptr() as usize - base), payload.len()),
+                ))
             })
             .collect();
-        let label = if source == "<loose>" { upper } else { format!("{source}/{upper}") };
+        let label = if source == "<loose>" {
+            upper
+        } else {
+            format!("{source}/{upper}")
+        };
         self.mounts.push(Mount {
             label,
             root,
@@ -395,8 +451,14 @@ mod tests {
                     ("ISOTEMMD.MIX", &tiles),
                 ]),
             ),
-            ("EXPANDMD01.MIX".into(), mix(&[("B.TXT", b"from expandmd01")])),
-            ("EXPANDMD02.MIX".into(), mix(&[("B.TXT", b"from expandmd02")])),
+            (
+                "EXPANDMD01.MIX".into(),
+                mix(&[("B.TXT", b"from expandmd01")]),
+            ),
+            (
+                "EXPANDMD02.MIX".into(),
+                mix(&[("B.TXT", b"from expandmd02")]),
+            ),
             ("RULESMD.INI".into(), b"[General]".to_vec()),
         ]
     }
@@ -406,9 +468,20 @@ mod tests {
         let fs = AssetFs::from_files(install());
         let read = |n: &str| String::from_utf8(fs.read(n).unwrap().to_vec()).unwrap();
         assert_eq!(read("a.txt"), "from langmd", "LANGMD before RA2MD");
-        assert_eq!(read("B.TXT"), "from expandmd02", "EXPANDMD99..00, higher first");
-        assert_eq!(read("UNITTEM.PAL"), "cachemd palette", "nested archive mounted");
-        assert_eq!(fs.locate("UNITTEM.PAL").unwrap().source, "RA2MD.MIX/CACHEMD.MIX");
+        assert_eq!(
+            read("B.TXT"),
+            "from expandmd02",
+            "EXPANDMD99..00, higher first"
+        );
+        assert_eq!(
+            read("UNITTEM.PAL"),
+            "cachemd palette",
+            "nested archive mounted"
+        );
+        assert_eq!(
+            fs.locate("UNITTEM.PAL").unwrap().source,
+            "RA2MD.MIX/CACHEMD.MIX"
+        );
         assert_eq!(fs.locate("RULESMD.INI").unwrap().source, "<loose>");
         assert!(fs.read("MISSING.SHP").is_none());
     }

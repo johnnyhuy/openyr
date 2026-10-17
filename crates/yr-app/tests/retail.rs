@@ -18,7 +18,8 @@ fn eb1_skirmish_setup_and_scripted_win() {
         return;
     }
     let mut fs = AssetFs::open(&dir).expect("install opens");
-    let map = MapFile::parse(&String::from_utf8_lossy(fs.read("EB1.MMX").unwrap())).expect("EB1 parses");
+    let map =
+        MapFile::parse(&String::from_utf8_lossy(fs.read("EB1.MMX").unwrap())).expect("EB1 parses");
     let mut rules_ini = IniFile::parse(&String::from_utf8_lossy(fs.read("RULESMD.INI").unwrap()));
     rules_ini.merge_from(&map.ini);
     let art_ini = IniFile::parse(&String::from_utf8_lossy(fs.read("ARTMD.INI").unwrap()));
@@ -27,13 +28,41 @@ fn eb1_skirmish_setup_and_scripted_win() {
 
     let mut session = setup(&mut fs, &map, &rules, &overlay_types, 42).expect("session sets up");
     assert_eq!(session.sim.credits(), 10_000, "rules starting money");
-    let player_units = session.sim.units().iter().filter(|u| u.owner == yr_sim::OWNER_PLAYER).count();
-    let player_bases = session.sim.buildings().iter().filter(|b| b.owner == yr_sim::OWNER_PLAYER).count();
-    let enemy_bases = session.sim.buildings().iter().filter(|b| b.owner == yr_sim::OWNER_ENEMY).count();
+    let player_units = session
+        .sim
+        .units()
+        .iter()
+        .filter(|u| u.owner == yr_sim::OWNER_PLAYER)
+        .count();
+    let player_bases = session
+        .sim
+        .buildings()
+        .iter()
+        .filter(|b| b.owner == yr_sim::OWNER_PLAYER)
+        .count();
+    let enemy_bases = session
+        .sim
+        .buildings()
+        .iter()
+        .filter(|b| b.owner == yr_sim::OWNER_ENEMY)
+        .count();
     assert!(player_units >= 8, "starting force spawned: {player_units}");
-    let neutral_units = session.sim.units().iter().filter(|u| u.owner == yr_sim::OWNER_NEUTRAL).count();
-    assert!(neutral_units >= 1, "map pre-placed units stay neutral: {neutral_units}");
-    let enemy_units = session.sim.units().iter().filter(|u| u.owner == yr_sim::OWNER_ENEMY).count();
+    let neutral_units = session
+        .sim
+        .units()
+        .iter()
+        .filter(|u| u.owner == yr_sim::OWNER_NEUTRAL)
+        .count();
+    assert!(
+        neutral_units >= 1,
+        "map pre-placed units stay neutral: {neutral_units}"
+    );
+    let enemy_units = session
+        .sim
+        .units()
+        .iter()
+        .filter(|u| u.owner == yr_sim::OWNER_ENEMY)
+        .count();
     assert_eq!(enemy_units, 3, "enemy guards spawned");
     assert!(player_bases >= 3, "player base placed: {player_bases}");
     assert!(enemy_bases >= 3, "enemy base placed: {enemy_bases}");

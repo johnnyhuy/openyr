@@ -70,7 +70,14 @@ pub struct Cell {
 
 impl Default for Cell {
     fn default() -> Self {
-        Cell { ground: Ground::Clear, height: 0, ramp: 0, overlay: Overlay::None, building: false, resource: 0 }
+        Cell {
+            ground: Ground::Clear,
+            height: 0,
+            ramp: 0,
+            overlay: Overlay::None,
+            building: false,
+            resource: 0,
+        }
     }
 }
 
@@ -201,7 +208,10 @@ impl TerrainGrid {
                 if c.resource == 0 || !matches!(c.overlay, Overlay::Ore | Overlay::Gem) {
                     continue;
                 }
-                let (dx, dy) = ((i64::from(x) - i64::from(from.0)).abs(), (i64::from(y) - i64::from(from.1)).abs());
+                let (dx, dy) = (
+                    (i64::from(x) - i64::from(from.0)).abs(),
+                    (i64::from(y) - i64::from(from.1)).abs(),
+                );
                 let dist = 10 * (dx + dy) - 6 * dx.min(dy);
                 if best.is_none_or(|(b, _, _, _)| dist < b) {
                     best = Some((dist, x, y, c.overlay));
@@ -234,7 +244,10 @@ impl TerrainGrid {
 
     /// Map cell from grid-local coordinates.
     pub fn cell_at_local(&self, lx: usize, ly: usize) -> (u16, u16) {
-        ((lx as i32 + self.origin_x) as u16, (ly as i32 + self.origin_y) as u16)
+        (
+            (lx as i32 + self.origin_x) as u16,
+            (ly as i32 + self.origin_y) as u16,
+        )
     }
 
     pub fn width(&self) -> usize {
@@ -337,9 +350,17 @@ mod tests {
     #[test]
     fn known_cells_passability() {
         let g = grid();
-        assert_eq!(g.speed_factor(Loco::Track, 0, 0), None, "vehicles cannot enter water");
+        assert_eq!(
+            g.speed_factor(Loco::Track, 0, 0),
+            None,
+            "vehicles cannot enter water"
+        );
         assert_eq!(g.speed_factor(Loco::Ship, 0, 0), Some(Fix::ONE));
-        assert_eq!(g.speed_factor(Loco::Foot, 2, 0), None, "cliff blocks infantry");
+        assert_eq!(
+            g.speed_factor(Loco::Foot, 2, 0),
+            None,
+            "cliff blocks infantry"
+        );
         let road = g.speed_factor(Loco::Track, 1, 0).unwrap();
         assert!(road > Fix::ONE, "roads are fast for tracks: {road:?}");
         assert!(g.passable(Loco::Fly, 2, 2), "aircraft ignore terrain");
@@ -358,6 +379,9 @@ mod tests {
             c.ramp = 1;
         }
         // Manually re-mark: cliff ground still impassable, ramp does not help.
-        assert!(!g.can_step(Loco::Foot, 1, 0, 2, 0), "cliff ground wins over ramp");
+        assert!(
+            !g.can_step(Loco::Foot, 1, 0, 2, 0),
+            "cliff ground wins over ramp"
+        );
     }
 }
