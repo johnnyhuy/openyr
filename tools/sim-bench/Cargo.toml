@@ -1,0 +1,13 @@
+[package]
+name = "sim-bench"
+description = "Headless deterministic sim benchmark: run ticks, print state hash"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "sim-bench"
+path = "src/main.rs"
+
+[dependencies]
+yr-sim = { path = "../../crates/yr-sim" }
