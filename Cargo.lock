@@ -2546,6 +2546,11 @@ dependencies = [
 [[package]]
 name = "yr-sim"
 version = "0.1.0"
+dependencies = [
+ "yr-assets",
+ "yr-formats",
+ "yr-rules",
+]
 
 [[package]]
 name = "zerocopy"

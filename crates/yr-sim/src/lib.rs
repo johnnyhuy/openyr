@@ -9,6 +9,7 @@
 //! flat plane. Terrain, combat and economy arrive in later issues and
 //! plug into the same tick phases.
 
+pub mod combat;
 mod fix;
 mod hash;
 pub mod path;
@@ -17,6 +18,7 @@ pub mod terrain;
 
 pub use fix::Fix;
 pub use rng::Rng;
+pub use combat::WeaponSpec;
 pub use terrain::TerrainGrid;
 
 /// One cell in leptons: positions are in leptons (256 per cell), the
@@ -27,9 +29,28 @@ pub const LEPTONS_PER_CELL: i32 = 256;
 /// slice order at the start of a tick, so replays are command streams.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Command {
-    Spawn { x: Fix, y: Fix, loco: terrain::Loco, speed: Fix },
+    Spawn {
+        x: Fix,
+        y: Fix,
+        loco: terrain::Loco,
+        speed: Fix,
+        hp: i64,
+        armor: u8,
+        weapon: Option<WeaponSpec>,
+    },
     Move { id: u32, x: Fix, y: Fix },
+    Attack { id: u32, target: u32 },
+    Stop { id: u32 },
     Remove { id: u32 },
+}
+
+/// Things that happened during a tick, for the renderer/audio to react
+/// to. Deterministic, drained by the caller after each step.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Event {
+    Fired { shooter: u32, target: u32 },
+    Hit { target: u32, damage: i64 },
+    Died { id: u32 },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -45,6 +66,25 @@ pub struct Unit {
     pub facing: u8,
     /// Remaining waypoints (map cells) from the last A* plan.
     pub path: std::collections::VecDeque<(u16, u16)>,
+    pub hp: i64,
+    pub max_hp: i64,
+    /// Armour class index (`Armor::ALL` order).
+    pub armor: u8,
+    pub weapon: Option<WeaponSpec>,
+    pub cooldown: u32,
+    pub attack: Option<u32>,
+    pub shots: u32,
+}
+
+/// A homing projectile in flight (internal; observed via events).
+#[derive(Debug, Clone, Copy)]
+struct Projectile {
+    x: Fix,
+    y: Fix,
+    owner: u32,
+    target: u32,
+    damage: i64,
+    speed: Fix,
 }
 
 #[derive(Debug, Clone)]
@@ -55,11 +95,13 @@ pub struct Sim {
     /// Kept in id order; all iteration is over this Vec.
     units: Vec<Unit>,
     terrain: Option<TerrainGrid>,
+    projectiles: Vec<Projectile>,
+    events: Vec<Event>,
 }
 
 impl Sim {
     pub fn new(seed: u64) -> Sim {
-        Sim { tick: 0, rng: Rng::new(seed), next_id: 1, units: Vec::new(), terrain: None }
+        Sim { tick: 0, rng: Rng::new(seed), next_id: 1, units: Vec::new(), terrain: None, projectiles: Vec::new(), events: Vec::new() }
     }
 
     /// Attach the scenario terrain (static; fingerprinted into the hash).
@@ -84,7 +126,7 @@ impl Sim {
     pub fn step(&mut self, commands: &[Command]) {
         for cmd in commands {
             match *cmd {
-                Command::Spawn { x, y, loco, speed } => {
+                Command::Spawn { x, y, loco, speed, hp, armor, weapon } => {
                     let id = self.next_id;
                     self.next_id += 1;
                     self.units.push(Unit {
@@ -96,7 +138,26 @@ impl Sim {
                         loco,
                         facing: 128,
                         path: std::collections::VecDeque::new(),
+                        hp,
+                        max_hp: hp,
+                        armor,
+                        weapon,
+                        cooldown: 0,
+                        attack: None,
+                        shots: 0,
                     });
+                }
+                Command::Attack { id, target } => {
+                    if let Some(u) = self.units.iter_mut().find(|u| u.id == id) {
+                        u.attack = Some(target);
+                    }
+                }
+                Command::Stop { id } => {
+                    if let Some(u) = self.units.iter_mut().find(|u| u.id == id) {
+                        u.attack = None;
+                        u.target = None;
+                        u.path.clear();
+                    }
                 }
                 Command::Move { id, x, y } => {
                     if let Some(u) = self.units.iter_mut().find(|u| u.id == id) {
@@ -106,6 +167,20 @@ impl Sim {
                 Command::Remove { id } => {
                     self.units.retain(|u| u.id != id);
                 }
+            }
+        }
+        // Attackers close to range; in-range attackers hold position.
+        for i in 0..self.units.len() {
+            let Some(enemy) = self.units[i].attack else { continue };
+            let (Some(w), Some(e)) = (self.units[i].weapon, self.units.iter().find(|u| u.id == enemy)) else { continue };
+            let (dx, dy) = (e.x - self.units[i].x, e.y - self.units[i].y);
+            if dist2(dx, dy) <= i64::from(w.range.raw()) * i64::from(w.range.raw()) {
+                self.units[i].path.clear();
+                let u = &mut self.units[i];
+                u.target = None;
+                u.facing = octant(dx, dy);
+            } else {
+                self.units[i].target = Some((e.x, e.y));
             }
         }
         // Movement phase (id order). With terrain, units follow A*
@@ -127,7 +202,100 @@ impl Sim {
                 }
             }
         }
+        self.fire_phase();
+        self.projectile_phase();
         self.tick += 1;
+    }
+
+    fn fire_phase(&mut self) {
+        let mut spawned: Vec<Projectile> = Vec::new();
+        let mut instant: Vec<(u32, u32, i64)> = Vec::new();
+        for i in 0..self.units.len() {
+            if self.units[i].cooldown > 0 {
+                self.units[i].cooldown -= 1;
+            }
+            let u = &self.units[i];
+            let (Some(w), Some(enemy_id)) = (u.weapon, u.attack) else { continue };
+            if u.cooldown > 0 {
+                continue;
+            }
+            let Some(e) = self.units.iter().find(|x| x.id == enemy_id) else { continue };
+            let (dx, dy) = (e.x - u.x, e.y - u.y);
+            if dist2(dx, dy) > i64::from(w.range.raw()) * i64::from(w.range.raw()) {
+                continue;
+            }
+            self.events.push(Event::Fired { shooter: u.id, target: enemy_id });
+            let damage = w.damage_against(e.armor);
+            if w.projectile_speed == Fix::ZERO {
+                instant.push((u.id, enemy_id, damage));
+            } else {
+                spawned.push(Projectile { x: u.x, y: u.y, owner: u.id, target: enemy_id, damage, speed: w.projectile_speed });
+            }
+            let u = &mut self.units[i];
+            u.shots += 1;
+            u.cooldown = w.rof_ticks;
+        }
+        self.projectiles.extend(spawned);
+        for (_, target, damage) in instant {
+            self.apply_damage(target, damage);
+        }
+        self.reap_dead();
+    }
+
+    fn projectile_phase(&mut self) {
+        let mut hits: Vec<(u32, i64)> = Vec::new();
+        let mut alive: Vec<Projectile> = Vec::new();
+        for mut p in std::mem::take(&mut self.projectiles) {
+            let Some(e) = self.units.iter().find(|x| x.id == p.target) else { continue };
+            let (tx, ty) = (e.x, e.y);
+            let (dx, dy) = (tx - p.x, ty - p.y);
+            if dist2(dx, dy) <= i64::from(p.speed.raw()) * i64::from(p.speed.raw()) {
+                hits.push((p.target, p.damage));
+            } else {
+                // Axis-clamped homing step (deterministic, no floats).
+                p.x += dx.clamp(-p.speed, p.speed);
+                p.y += dy.clamp(-p.speed, p.speed);
+                alive.push(p);
+            }
+        }
+        self.projectiles = alive;
+        for (target, damage) in hits {
+            self.apply_damage(target, damage);
+        }
+        self.reap_dead();
+    }
+
+    fn apply_damage(&mut self, target: u32, damage: i64) {
+        if let Some(u) = self.units.iter_mut().find(|x| x.id == target) {
+            if u.hp > 0 && damage > 0 {
+                u.hp -= damage;
+                self.events.push(Event::Hit { target, damage });
+            }
+        }
+    }
+
+    fn reap_dead(&mut self) {
+        let dead: Vec<u32> = self.units.iter().filter(|u| u.hp <= 0).map(|u| u.id).collect();
+        if dead.is_empty() {
+            return;
+        }
+        self.units.retain(|u| u.hp > 0);
+        for id in dead {
+            self.events.push(Event::Died { id });
+            for u in &mut self.units {
+                if u.attack == Some(id) {
+                    u.attack = None;
+                    u.target = None;
+                    u.path.clear();
+                }
+            }
+            self.projectiles.retain(|p| p.owner != id);
+        }
+    }
+
+    /// Events since the last drain (renderer/audio consume these).
+    pub fn drain_events(&mut self) -> Vec<Event> {
+        std::mem::take(&mut self.events)
     }
 
     fn move_on_grid(&mut self, i: usize, grid: &TerrainGrid, tx: Fix, ty: Fix) {
@@ -208,6 +376,9 @@ impl Sim {
             h.write_u64(u.loco as u64);
             h.write_u64(u64::from(u.facing));
             h.write_u64(u.path.len() as u64);
+            h.write_i64(u.hp);
+            h.write_u64(u64::from(u.cooldown));
+            h.write_u64(u.attack.map_or(0, u64::from));
             if let Some(&(wx, wy)) = u.path.front() {
                 h.write_u64(u64::from(wx));
                 h.write_u64(u64::from(wy));
@@ -221,8 +392,19 @@ impl Sim {
                 None => h.write_u64(0),
             }
         }
+        h.write_u64(self.projectiles.len() as u64);
+        for p in &self.projectiles {
+            h.write_i64(i64::from(p.x.raw()));
+            h.write_i64(i64::from(p.y.raw()));
+        }
         h.finish()
     }
+}
+
+/// Squared lepton distance (no floats, no sqrt).
+fn dist2(dx: Fix, dy: Fix) -> i64 {
+    let (a, b) = (i64::from(dx.raw()), i64::from(dy.raw()));
+    a * a + b * b
 }
 
 /// Facing (0=north, clockwise, 256 = full circle) from a step delta.
@@ -246,7 +428,7 @@ mod tests {
     use super::*;
 
     fn script(sim: &mut Sim, ticks: u64) -> u64 {
-        sim.step(&[Command::Spawn { x: Fix::from_int(0), y: Fix::from_int(0), loco: terrain::Loco::Track, speed: Fix::from_int(4) }]);
+        sim.step(&[Command::Spawn { x: Fix::from_int(0), y: Fix::from_int(0), loco: terrain::Loco::Track, speed: Fix::from_int(4), hp: 100, armor: 0, weapon: None }]);
         sim.step(&[Command::Move { id: 1, x: Fix::from_int(2560), y: Fix::from_int(1280) }]);
         for _ in 2..ticks {
             sim.step(&[]);
@@ -268,7 +450,7 @@ mod tests {
         let (mut a, b, mut c) = (Sim::new(1), Sim::new(2), Sim::new(1));
         a.next_random();
         assert_ne!(a.state_hash(), b.state_hash());
-        c.step(&[Command::Spawn { x: Fix::ZERO, y: Fix::ZERO, loco: terrain::Loco::Foot, speed: Fix::from_int(2) }]);
+        c.step(&[Command::Spawn { x: Fix::ZERO, y: Fix::ZERO, loco: terrain::Loco::Foot, speed: Fix::from_int(2), hp: 100, armor: 0, weapon: None }]);
         assert_ne!(a.state_hash(), c.state_hash());
     }
 
@@ -276,10 +458,10 @@ mod tests {
     fn removal_and_spawn_ids_are_stable() {
         let mut sim = Sim::new(7);
         sim.step(&[
-            Command::Spawn { x: Fix::ZERO, y: Fix::ZERO, loco: terrain::Loco::Foot, speed: Fix::from_int(2) },
-            Command::Spawn { x: Fix::from_int(256), y: Fix::ZERO, loco: terrain::Loco::Foot, speed: Fix::from_int(2) },
+            Command::Spawn { x: Fix::ZERO, y: Fix::ZERO, loco: terrain::Loco::Foot, speed: Fix::from_int(2), hp: 100, armor: 0, weapon: None },
+            Command::Spawn { x: Fix::from_int(256), y: Fix::ZERO, loco: terrain::Loco::Foot, speed: Fix::from_int(2), hp: 100, armor: 0, weapon: None },
             Command::Remove { id: 1 },
-            Command::Spawn { x: Fix::from_int(512), y: Fix::ZERO, loco: terrain::Loco::Foot, speed: Fix::from_int(2) },
+            Command::Spawn { x: Fix::from_int(512), y: Fix::ZERO, loco: terrain::Loco::Foot, speed: Fix::from_int(2), hp: 100, armor: 0, weapon: None },
         ]);
         let ids: Vec<u32> = sim.units().iter().map(|u| u.id).collect();
         assert_eq!(ids, [2, 3], "ids never reused, order stable");
@@ -301,7 +483,7 @@ mod tests {
         let mut sim = Sim::new(3);
         sim.set_terrain(small_grid());
         let centre = |c: i32| Fix::from_int(c) + Fix::from_raw(128);
-        sim.step(&[Command::Spawn { x: centre(0), y: centre(0), loco: terrain::Loco::Track, speed: Fix::from_int(64) }]);
+        sim.step(&[Command::Spawn { x: centre(0), y: centre(0), loco: terrain::Loco::Track, speed: Fix::from_int(64), hp: 100, armor: 0, weapon: None }]);
         sim.step(&[Command::Move { id: 1, x: centre(5), y: centre(0) }]);
         for _ in 0..500 {
             sim.step(&[]);
@@ -321,8 +503,8 @@ mod tests {
         let centre = |c: i32| Fix::from_int(c) + Fix::from_raw(128);
         // Leader parked in the gap cell; follower ordered through it.
         sim.step(&[
-            Command::Spawn { x: centre(3), y: centre(1), loco: terrain::Loco::Track, speed: Fix::from_int(64) },
-            Command::Spawn { x: centre(0), y: centre(1), loco: terrain::Loco::Track, speed: Fix::from_int(64) },
+            Command::Spawn { x: centre(3), y: centre(1), loco: terrain::Loco::Track, speed: Fix::from_int(64), hp: 100, armor: 0, weapon: None },
+            Command::Spawn { x: centre(0), y: centre(1), loco: terrain::Loco::Track, speed: Fix::from_int(64), hp: 100, armor: 0, weapon: None },
         ]);
         sim.step(&[Command::Move { id: 2, x: centre(5), y: centre(1) }]);
         for _ in 0..40 {
@@ -339,5 +521,56 @@ mod tests {
             }
         }
         assert_eq!(sim.units()[0].x, centre(5), "arrived after the gap freed");
+    }
+
+    fn gun(damage: i64, rof: u32, range_cells: i32, speed: Fix) -> WeaponSpec {
+        let mut verses = [yr_rules::Decimal::ZERO; crate::combat::ARMOR_COUNT];
+        verses[0] = yr_rules::Decimal::ONE;
+        WeaponSpec { damage, rof_ticks: rof, range: Fix::from_int(range_cells), projectile_speed: speed, verses }
+    }
+
+    #[test]
+    fn duel_kills_in_predicted_shots_with_events() {
+        let mut sim = Sim::new(5);
+        let w = gun(50, 10, 10, Fix::ZERO);
+        sim.step(&[
+            Command::Spawn { x: Fix::ZERO, y: Fix::ZERO, loco: terrain::Loco::Track, speed: Fix::from_int(4), hp: 200, armor: 0, weapon: Some(w) },
+            Command::Spawn { x: Fix::from_int(2), y: Fix::ZERO, loco: terrain::Loco::Track, speed: Fix::from_int(4), hp: 120, armor: 0, weapon: None },
+            Command::Attack { id: 1, target: 2 },
+        ]);
+        let mut events = Vec::new();
+        for _ in 0..60 {
+            sim.step(&[]);
+            events.extend(sim.drain_events());
+        }
+        assert_eq!(sim.units().len(), 1, "target died");
+        assert_eq!(sim.units()[0].shots, 3, "120hp / 50dmg = 3 shots");
+        assert_eq!(events.iter().filter(|e| matches!(e, Event::Fired { .. })).count(), 3);
+        assert_eq!(events.last(), Some(&Event::Died { id: 2 }));
+    }
+
+    #[test]
+    fn projectile_travel_delays_the_hit() {
+        let mut sim = Sim::new(5);
+        // 256 leptons/tick over 4 cells (1024 leptons): hits land ~4 ticks after firing.
+        let w = gun(50, 1, 10, Fix::from_int(1));
+        sim.step(&[
+            Command::Spawn { x: Fix::ZERO, y: Fix::ZERO, loco: terrain::Loco::Track, speed: Fix::from_int(4), hp: 200, armor: 0, weapon: Some(w) },
+            Command::Spawn { x: Fix::from_int(4), y: Fix::ZERO, loco: terrain::Loco::Track, speed: Fix::from_int(4), hp: 40, armor: 0, weapon: None },
+            Command::Attack { id: 1, target: 2 },
+        ]);
+        sim.step(&[]);
+        let first = sim.drain_events();
+        assert!(first.iter().any(|e| matches!(e, Event::Fired { .. })), "fired at once: {first:?}");
+        assert!(!first.iter().any(|e| matches!(e, Event::Hit { .. })), "but not yet hit: {first:?}");
+        let mut died_at = None;
+        for t in 0..30 {
+            sim.step(&[]);
+            if sim.drain_events().iter().any(|e| matches!(e, Event::Died { .. })) {
+                died_at = Some(t);
+                break;
+            }
+        }
+        assert!(died_at.is_some(), "projectile eventually kills");
     }
 }
