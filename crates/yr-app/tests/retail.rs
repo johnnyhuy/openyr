@@ -183,3 +183,115 @@ fn eb1_waves_launch_and_headless_playthrough_resolves() {
         "match resolved within 15 minutes"
     );
 }
+
+/// Production sidebar data on EB1: every allied slot resolves with a
+/// retail cost and decoded cameo, the player base hosts a war factory
+/// and barracks, and queued builds roll out of them on schedule.
+#[test]
+fn eb1_sidebar_slots_produce_units() {
+    let dir = PathBuf::from(std::env::var("HOME").unwrap_or_default())
+        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    if !dir.is_dir() {
+        eprintln!("skip: retail install not present");
+        return;
+    }
+    let mut fs = AssetFs::open(&dir).expect("install opens");
+    let map =
+        MapFile::parse(&String::from_utf8_lossy(fs.read("EB1.MMX").unwrap())).expect("EB1 parses");
+    let mut rules_ini = IniFile::parse(&String::from_utf8_lossy(fs.read("RULESMD.INI").unwrap()));
+    rules_ini.merge_from(&map.ini);
+    let art_ini = IniFile::parse(&String::from_utf8_lossy(fs.read("ARTMD.INI").unwrap()));
+    let rules = Rules::load(&rules_ini, &art_ini);
+    let overlay_types = yr_render::type_list(&rules_ini, "OverlayTypes");
+    let mut session = setup(&mut fs, &map, &rules, &overlay_types, 5).expect("session sets up");
+
+    let slots: Vec<(&str, i64)> = session
+        .buildables
+        .iter()
+        .map(|b| (b.id.as_str(), b.cost))
+        .collect();
+    assert_eq!(
+        slots,
+        vec![
+            ("MTNK", 700),
+            ("FV", 600),
+            ("SREF", 1200),
+            ("CMIN", 1400),
+            ("E1", 200),
+            ("GGI", 400),
+            ("SNIPE", 600)
+        ]
+    );
+    for b in &session.buildables {
+        let (w, h, px) = b.cameo.as_ref().unwrap_or_else(|| panic!("{} cameo", b.id));
+        assert_eq!((*w, *h), (60, 48), "{} cameo size", b.id);
+        assert!(px.chunks(4).any(|p| p[3] != 0), "{} cameo has pixels", b.id);
+    }
+    // Retail BuildSpeed: Grizzly 700 credits -> 441 ticks.
+    assert_eq!(session.buildables[0].ticks, 441);
+    let roles: Vec<yr_sim::Role> = session
+        .sim
+        .buildings()
+        .iter()
+        .filter(|b| b.owner == yr_sim::OWNER_PLAYER)
+        .map(|b| b.role)
+        .collect();
+    assert!(roles.contains(&yr_sim::Role::WarFactory), "{roles:?}");
+    assert!(roles.contains(&yr_sim::Role::Barracks), "{roles:?}");
+
+    let cmds = vec![session.produce(0).unwrap(), session.produce(4).unwrap()];
+    session.step(&cmds);
+    let mut produced = Vec::new();
+    for _ in 0..600 {
+        session.step(&[]);
+        for e in session.sim.drain_events() {
+            if let yr_sim::Event::Produced { id, kind } = e {
+                produced.push((session.sim.tick(), id, kind));
+            }
+        }
+    }
+    let kinds: Vec<u16> = produced.iter().map(|p| p.2).collect();
+    assert_eq!(kinds, vec![4, 0], "GI first (shorter), then the Grizzly");
+    for (_, id, _) in &produced {
+        let u = session.sim.units().iter().find(|u| u.id == *id);
+        assert_eq!(u.map(|u| u.owner), Some(yr_sim::OWNER_PLAYER));
+    }
+
+    // The full sandbox loop: build more, then send the army at the enemy
+    // base every 30 s; produced reinforcements turn it into a win.
+    let more: Vec<Command> = [0, 0, 4, 4, 1, 5]
+        .iter()
+        .filter_map(|&i| session.produce(i))
+        .collect();
+    session.step(&more);
+    let mut ticks = 0u64;
+    while session.outcome == Outcome::Ongoing && ticks < 10 * 60 * 15 {
+        ticks += 1;
+        let target = session
+            .sim
+            .buildings()
+            .iter()
+            .find(|b| b.owner == yr_sim::OWNER_ENEMY)
+            .map(|b| b.centre());
+        let orders: Vec<Command> = match target {
+            Some((x, y)) if ticks.is_multiple_of(450) => session
+                .sim
+                .units()
+                .iter()
+                .filter(|u| {
+                    u.owner == yr_sim::OWNER_PLAYER
+                        && u.weapon.is_some()
+                        && u.role == yr_sim::Role::Combat
+                })
+                .map(|u| Command::AttackMove { id: u.id, x, y })
+                .collect(),
+            _ => Vec::new(),
+        };
+        session.step(&orders);
+    }
+    println!(
+        "EB1 produced-army playthrough: {:?} after {ticks} ticks",
+        session.outcome
+    );
+    assert_eq!(session.outcome, Outcome::Won);
+}

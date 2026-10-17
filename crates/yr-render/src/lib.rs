@@ -9,6 +9,8 @@
 //! drawn in the same painter order. GPU sprite batching comes later;
 //! this rasteriser is the correctness reference.
 
+pub mod png;
+
 use std::collections::HashMap;
 use std::fs;
 use yr_assets::{AssetFs, Theater};

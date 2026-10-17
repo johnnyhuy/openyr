@@ -13,7 +13,7 @@ use yr_assets::{AssetFs, Theater};
 use yr_formats::MapFile;
 use yr_rules::{Armor, Rules, TechnoKind};
 use yr_sim::terrain::{Loco, TerrainGrid};
-use yr_sim::{Command, Fix, Role, Sim};
+use yr_sim::{Command, Factory, Fix, Role, Sim, UnitSpec};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Outcome {
@@ -33,7 +33,32 @@ pub struct Session {
     player_at: (u16, u16),
     /// Rules ids + specs needed to spawn wave units mid-match.
     wave_specs: Vec<(String, WaveUnit)>,
+    /// What the player's sidebar can queue, in slot order.
+    pub buildables: Vec<Buildable>,
+    /// Ids of units spawned by waves (they hunt once idle).
+    wave_units: Vec<u32>,
 }
+
+/// Idle wave units re-target every this many ticks.
+const HUNT_TICKS: u64 = 30;
+
+/// One sidebar slot: a rules unit the player's factories can build.
+#[derive(Debug, Clone)]
+pub struct Buildable {
+    pub id: String,
+    pub name: String,
+    pub factory: Factory,
+    pub cost: i64,
+    /// Build time at full power in ticks (rules `BuildSpeed`).
+    pub ticks: u32,
+    /// Cameo as RGBA (w, h, pixels) when the art resolved.
+    pub cameo: Option<(u32, u32, Vec<u8>)>,
+    spec: UnitSpec,
+}
+
+/// Sandbox sidebar picks (allied tech, YR ids), kept when present in rules.
+const VEHICLE_SLOTS: &[&str] = &["MTNK", "FV", "SREF", "CMIN"];
+const INFANTRY_SLOTS: &[&str] = &["E1", "GGI", "SNIPE"];
 
 /// One scripted attack wave: at `tick`, `count` of each unit kind spawn
 /// beside the enemy base and attack-move to the player's start.
@@ -200,7 +225,7 @@ struct BaseSpec<'a> {
     yard: &'a str,
     power_plant: &'a str,
     refinery: &'a str,
-    extra: Option<&'a str>,
+    extra: &'a [&'a str],
 }
 
 struct PlaceCtx<'a> {
@@ -225,11 +250,15 @@ fn place_base(
         (spec.refinery, Role::Refinery),
     ];
     let mut placed: Vec<(String, Role)> = defs.iter().map(|(a, b)| (a.to_string(), *b)).collect();
-    if let Some(e) = spec.extra {
-        placed.push((e.to_string(), Role::Combat));
-    }
+    placed.extend(spec.extra.iter().map(|e| (e.to_string(), Role::Combat)));
     for (id, role) in placed {
         let Some(t) = rules.techno(&id) else { continue };
+        // `Factory=` decides which production queue a building hosts.
+        let role = match t.factory.as_deref() {
+            Some(f) if f.eq_ignore_ascii_case("UnitType") => Role::WarFactory,
+            Some(f) if f.eq_ignore_ascii_case("InfantryType") => Role::Barracks,
+            _ => role,
+        };
         let (fw, fh) = t
             .art
             .as_ref()
@@ -370,7 +399,10 @@ pub fn setup(
     let yard = first_of(rules, &["GACNST", "NACNST", "YACNST"]);
     let plant = first_of(rules, &["GAPOWR", "NAPOWR", "YAPOWR"]);
     let refinery = first_of(rules, &["GAREFN", "NAREFN", "YAREFN"]);
+    let weap = first_of(rules, &["GAWEAP", "NAWEAP", "YAWEAP"]);
+    let barracks = first_of(rules, &["GAPILE", "NAHAND", "YABRCK"]);
     if let (Some(y), Some(p), Some(r)) = (&yard, &plant, &refinery) {
+        let factories: Vec<&str> = weap.iter().chain(&barracks).map(String::as_str).collect();
         let mut ctx = PlaceCtx {
             next_id: &mut next_id,
             taken_cells: &mut taken_cells,
@@ -385,7 +417,7 @@ pub fn setup(
                 yard: y,
                 power_plant: p,
                 refinery: r,
-                extra: None,
+                extra: &factories,
             },
             &mut cmds,
         );
@@ -437,7 +469,7 @@ pub fn setup(
     if had_enemy {
         let enemy_at = waypoints[1];
         if let (Some(y), Some(p), Some(r)) = (&yard, &plant, &refinery) {
-            let weap = first_of(rules, &["GAWEAP", "NAWEAP", "YAWEAP"]);
+            let extra: Vec<&str> = weap.iter().map(String::as_str).collect();
             let mut ctx = PlaceCtx {
                 next_id: &mut next_id,
                 taken_cells: &mut taken_cells,
@@ -452,7 +484,7 @@ pub fn setup(
                     yard: y,
                     power_plant: p,
                     refinery: r,
-                    extra: weap.as_deref(),
+                    extra: &extra,
                 },
                 &mut cmds,
             );
@@ -505,13 +537,126 @@ pub fn setup(
         enemy_at,
         player_at,
         wave_specs,
+        buildables: buildables(fs, rules),
+        wave_units: Vec::new(),
     })
 }
 
+/// Build time in ticks: `Cost * BuildSpeed` minutes per 1000 credits at
+/// 15 ticks/s (900 ticks per minute); exact integer maths on the decimal.
+pub fn build_ticks(cost: i64, build_speed_units: i64) -> u32 {
+    let t = cost.max(0) * build_speed_units * 900 / (1000 * 1_000_000);
+    t.clamp(1, i64::from(u32::MAX)) as u32
+}
+
+fn buildables(fs: &AssetFs, rules: &Rules) -> Vec<Buildable> {
+    let speed = rules.globals.build_speed.map_or(700_000, |d| d.units());
+    let palette = ["CAMEO.PAL", "CAMEOMD.PAL"]
+        .iter()
+        .find_map(|n| fs.read(n).and_then(yr_formats::Palette::parse));
+    let mut out = Vec::new();
+    let slots = VEHICLE_SLOTS
+        .iter()
+        .map(|id| (*id, Factory::Vehicle))
+        .chain(INFANTRY_SLOTS.iter().map(|id| (*id, Factory::Infantry)));
+    for (id, factory) in slots {
+        let Some(t) = rules.techno(id) else { continue };
+        let Some(cost) = t.cost else { continue };
+        let role = if t.harvester == Some(true) {
+            Role::Harvester
+        } else {
+            Role::Combat
+        };
+        let cameo = t
+            .art
+            .as_ref()
+            .and_then(|a| a.cameo.as_deref())
+            .zip(palette.as_ref())
+            .and_then(|(c, pal)| decode_cameo(fs, c, pal));
+        out.push(Buildable {
+            id: id.to_string(),
+            name: t
+                .ui_name
+                .clone()
+                .or(t.name.clone())
+                .unwrap_or_else(|| id.to_string()),
+            factory,
+            cost,
+            ticks: build_ticks(cost, speed),
+            cameo,
+            spec: UnitSpec {
+                loco: techno_loco(t.kind),
+                speed: techno_speed(t),
+                hp: t.strength.unwrap_or(100),
+                armor: armor_idx(t),
+                weapon: t
+                    .primary
+                    .as_deref()
+                    .and_then(|w| yr_sim::WeaponSpec::from_rules(rules, w)),
+                role,
+            },
+        });
+    }
+    out
+}
+
+/// First frame of a cameo SHP through the cameo palette (index 0 clear).
+fn decode_cameo(
+    fs: &AssetFs,
+    name: &str,
+    pal: &yr_formats::Palette,
+) -> Option<(u32, u32, Vec<u8>)> {
+    let data = fs.read(&format!("{name}.SHP"))?;
+    let shp = yr_formats::ShpFile::parse(data).ok()?;
+    let idx = shp.decode_frame_canvas(0).ok()?;
+    let rgba = idx
+        .iter()
+        .flat_map(|&i| if i == 0 { [0, 0, 0, 0] } else { pal.rgba(i) })
+        .collect();
+    Some((u32::from(shp.width), u32::from(shp.height), rgba))
+}
+
 impl Session {
+    /// Queue sidebar slot `slot` (None when out of range).
+    pub fn produce(&self, slot: usize) -> Option<Command> {
+        let b = self.buildables.get(slot)?;
+        Some(Command::Produce {
+            factory: b.factory,
+            kind: u16::try_from(slot).ok()?,
+            spec: b.spec,
+            cost: b.cost,
+            ticks: b.ticks,
+        })
+    }
+
+    /// Cancel the newest queued build of sidebar slot `slot`.
+    pub fn cancel(&self, slot: usize) -> Option<Command> {
+        let b = self.buildables.get(slot)?;
+        Some(Command::CancelProduce {
+            factory: b.factory,
+            kind: u16::try_from(slot).ok()?,
+        })
+    }
+
+    /// Queued count of `slot` and, when it heads its factory queue, the
+    /// build progress as (done, total).
+    pub fn slot_status(&self, slot: usize) -> (usize, Option<(i64, i64)>) {
+        let queue = self.sim.production();
+        let count = queue.iter().filter(|o| usize::from(o.kind) == slot).count();
+        let head = self.buildables.get(slot).and_then(|b| {
+            queue
+                .iter()
+                .find(|o| o.factory == b.factory)
+                .filter(|o| usize::from(o.kind) == slot)
+                .map(|o| o.fraction())
+        });
+        (count, head)
+    }
+
     /// Advance the match and re-judge win/lose on owned entities.
     pub fn step(&mut self, commands: &[Command]) {
         let mut cmds = self.wave_commands();
+        cmds.extend(self.hunt_commands());
         cmds.extend_from_slice(commands);
         self.sim.step(&cmds);
         if self.outcome != Outcome::Ongoing {
@@ -526,6 +671,48 @@ impl Session {
         } else if self.had_enemy && !enemy_alive {
             self.outcome = Outcome::Won;
         }
+    }
+
+    /// Scripted waves press on: a wave unit left idle (its attack-move
+    /// done, target dead) attacks the nearest player building or unit,
+    /// ties broken by entity order. Without this, waves that reach the
+    /// base outside weapon range of a building stall the match. Once the
+    /// enemy base has fallen its guards join the hunt (last stand).
+    fn hunt_commands(&mut self) -> Vec<Command> {
+        let sim = &self.sim;
+        self.wave_units
+            .retain(|id| sim.units().iter().any(|u| u.id == *id));
+        if !sim.tick().is_multiple_of(HUNT_TICKS) || self.outcome != Outcome::Ongoing {
+            return Vec::new();
+        }
+        let targets: Vec<(u32, (Fix, Fix))> = sim
+            .buildings()
+            .iter()
+            .filter(|b| b.owner == PLAYER)
+            .map(|b| (b.id, b.centre()))
+            .chain(
+                sim.units()
+                    .iter()
+                    .filter(|u| u.owner == PLAYER)
+                    .map(|u| (u.id, (u.x, u.y))),
+            )
+            .collect();
+        let last_stand = !sim.buildings().iter().any(|b| b.owner == ENEMY);
+        let mut cmds = Vec::new();
+        for u in sim.units() {
+            let hunter = u.owner == ENEMY && (last_stand || self.wave_units.contains(&u.id));
+            if !hunter || u.weapon.is_none() || u.target.is_some() || u.attack.is_some() {
+                continue;
+            }
+            let d2 = |p: (Fix, Fix)| {
+                let (dx, dy) = (i64::from((p.0 - u.x).raw()), i64::from((p.1 - u.y).raw()));
+                dx * dx + dy * dy
+            };
+            if let Some(&(target, _)) = targets.iter().min_by_key(|(_, p)| d2(*p)) {
+                cmds.push(Command::Attack { id: u.id, target });
+            }
+        }
+        cmds
     }
 
     /// Waves launched so far and the total planned.
@@ -595,6 +782,7 @@ impl Session {
                     weapon: spec.weapon,
                 });
                 cmds.push(Command::AssignOwner { id, owner: ENEMY });
+                self.wave_units.push(id);
                 cmds.push(Command::AttackMove {
                     id,
                     x: dest.0,

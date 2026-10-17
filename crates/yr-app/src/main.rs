@@ -4,7 +4,8 @@
 //! Left-click / box-drag select own units, right-click move or attack
 //! (enemy under cursor), `A` then right-click = attack-move, `S` stop,
 //! `H` harvest, right-drag / arrows pan, wheel or +/- zoom,
-//! Esc quit. Orders go through `yr_sim::Command` only — the UI never
+//! Esc quit. Right-hand sidebar: left-click a cameo queues it at the
+//! war factory/barracks, right-click cancels (refund). Orders go through `yr_sim::Command` only — the UI never
 //! mutates sim state directly (issue #15).
 
 use pixels::{Pixels, SurfaceTexture};
@@ -27,6 +28,13 @@ const PLAYER_COL: [u8; 4] = [64, 255, 128, 255];
 const ENEMY_COL: [u8; 4] = [255, 64, 64, 255];
 const NEUTRAL_COL: [u8; 4] = [180, 180, 180, 255];
 const SELECT_COL: [u8; 4] = [255, 255, 255, 255];
+
+/// Production sidebar: two columns of 60x48 cameos on the right edge.
+const SIDEBAR_W: u32 = 136;
+const CAMEO_W: i32 = 60;
+const CAMEO_H: i32 = 48;
+const CAMEO_GAP: i32 = 4;
+const SIDEBAR_TOP: i32 = 34;
 
 struct View {
     cam_x: f32,
@@ -57,6 +65,8 @@ struct App {
     last_tick: Instant,
     accum: Duration,
     title: String,
+    /// The match result has been printed once.
+    announced: bool,
 }
 
 impl App {
@@ -172,6 +182,25 @@ impl App {
         self.attack_move = false;
     }
 
+    /// Sidebar slot under a frame-space position.
+    fn sidebar_slot_at(&self, pos: (f64, f64)) -> Option<usize> {
+        let session = self.session.as_ref()?;
+        let fw = self.pixels.as_ref()?.texture().width();
+        (0..session.buildables.len()).find(|&i| {
+            let (x, y) = slot_origin(fw, i);
+            pos.0 >= f64::from(x)
+                && pos.0 < f64::from(x + CAMEO_W)
+                && pos.1 >= f64::from(y)
+                && pos.1 < f64::from(y + CAMEO_H)
+        })
+    }
+
+    fn in_sidebar(&self, pos: (f64, f64)) -> bool {
+        self.pixels
+            .as_ref()
+            .is_some_and(|p| pos.0 >= f64::from(p.texture().width() - SIDEBAR_W))
+    }
+
     fn tick_session(&mut self) {
         let Some(session) = &mut self.session else {
             return;
@@ -201,7 +230,8 @@ impl App {
         );
         if title != self.title {
             self.title = title.clone();
-            if session.outcome != Outcome::Ongoing {
+            if session.outcome != Outcome::Ongoing && !self.announced {
+                self.announced = true;
                 println!("OpenYR: match {title}");
             }
             if let Some(w) = &self.window {
@@ -212,10 +242,21 @@ impl App {
     }
 
     fn blit(&mut self) {
-        let (Some(pixels), Some(map)) = (&mut self.pixels, &self.map) else {
+        let Some(mut pixels) = self.pixels.take() else {
             return;
         };
         let (fw, fh) = (pixels.texture().width(), pixels.texture().height());
+        self.compose(pixels.frame_mut(), fw, fh);
+        self.pixels = Some(pixels);
+        self.view.dirty = false;
+    }
+
+    /// Draw the full window frame (map, markers, sidebar, rubber band)
+    /// into an RGBA buffer; shared by the window and `--frame` dumps.
+    fn compose(&self, frame: &mut [u8], fw: u32, fh: u32) {
+        let Some(map) = &self.map else {
+            return;
+        };
         let (mw, mh) = (map.width as i32, map.height as i32);
         // Copy the terrain frame through the viewport, then collect
         // entity markers (needs `map` borrowed while frame is mutably
@@ -237,6 +278,11 @@ impl App {
                 ((mx - view.cam_x) * zoom, (my - view.cam_y) * zoom)
             };
             for b in sim.buildings() {
+                // Neutral map structures are already drawn as art; mark
+                // them only once they take damage.
+                if b.owner == yr_sim::OWNER_NEUTRAL && b.hp >= b.max_hp {
+                    continue;
+                }
                 let (bx, by) = b.centre();
                 let (wx, wy) = to_win(
                     map,
@@ -257,6 +303,9 @@ impl App {
                 });
             }
             for u in sim.units() {
+                if u.owner == yr_sim::OWNER_NEUTRAL && u.hp >= u.max_hp {
+                    continue;
+                }
                 let (wx, wy) = to_win(
                     map,
                     u.x.to_int_floor() as f32 + 0.5,
@@ -273,7 +322,6 @@ impl App {
                 });
             }
         }
-        let frame = pixels.frame_mut();
         for sy in 0..fh as i32 {
             let my = self.view.cam_y + sy as f32 / self.view.zoom;
             for sx in 0..fw as i32 {
@@ -302,13 +350,143 @@ impl App {
                 m.hp,
             );
         }
+        if let Some(session) = &self.session {
+            draw_sidebar(frame, fw, fh, session);
+        }
         // Box-select rubber band.
         if let (Some(a), false) = (self.left_down, self.right_panning) {
             if (self.cursor.0 - a.0).abs() > 6.0 || (self.cursor.1 - a.1).abs() > 6.0 {
                 draw_rect_outline(frame, fw, fh, a, self.cursor, SELECT_COL);
             }
         }
-        self.view.dirty = false;
+    }
+}
+
+fn slot_origin(fw: u32, slot: usize) -> (i32, i32) {
+    let col = (slot % 2) as i32;
+    let row = (slot / 2) as i32;
+    (
+        fw as i32 - SIDEBAR_W as i32 + 6 + col * (CAMEO_W + CAMEO_GAP),
+        SIDEBAR_TOP + row * (CAMEO_H + CAMEO_GAP),
+    )
+}
+
+/// Dark panel, credits readout, then one cameo per buildable with its
+/// queue count and a build-progress wipe; slots whose factory is gone
+/// are dimmed.
+fn draw_sidebar(frame: &mut [u8], fw: u32, fh: u32, session: &Session) {
+    let x0 = (fw - SIDEBAR_W) as i32;
+    for y in 0..fh as i32 {
+        for x in x0..fw as i32 {
+            set_px(frame, fw, fh, x, y, [24, 26, 32, 255]);
+        }
+    }
+    draw_number(
+        frame,
+        fw,
+        fh,
+        x0 + 8,
+        10,
+        session.sim.credits(),
+        [255, 220, 96, 255],
+    );
+    let sim = &session.sim;
+    for (i, b) in session.buildables.iter().enumerate() {
+        let (sx, sy) = slot_origin(fw, i);
+        let host = sim
+            .buildings()
+            .iter()
+            .any(|h| h.owner == yr_sim::OWNER_PLAYER && h.role == b.factory.role());
+        if let Some((w, h, px)) = &b.cameo {
+            for y in 0..(*h as i32).min(CAMEO_H) {
+                for x in 0..(*w as i32).min(CAMEO_W) {
+                    let at = ((y as u32 * w + x as u32) * 4) as usize;
+                    let mut c = [px[at], px[at + 1], px[at + 2], 255];
+                    if px[at + 3] == 0 {
+                        c = [0, 0, 0, 255];
+                    }
+                    set_px(frame, fw, fh, sx + x, sy + y, c);
+                }
+            }
+        } else {
+            for y in 0..CAMEO_H {
+                for x in 0..CAMEO_W {
+                    set_px(frame, fw, fh, sx + x, sy + y, [70, 70, 80, 255]);
+                }
+            }
+        }
+        let (count, head) = session.slot_status(i);
+        // Unbuilt share of the head order darkens from the top.
+        let shade_rows = match head {
+            Some((done, total)) if total > 0 => {
+                (i64::from(CAMEO_H) * (total - done) / total) as i32
+            }
+            _ if !host => CAMEO_H,
+            _ => 0,
+        };
+        for y in 0..shade_rows {
+            for x in 0..CAMEO_W {
+                darken(frame, fw, fh, sx + x, sy + y);
+            }
+        }
+        if count > 0 {
+            draw_number(
+                frame,
+                fw,
+                fh,
+                sx + 3,
+                sy + 3,
+                count as i64,
+                [255, 255, 255, 255],
+            );
+        }
+    }
+}
+
+fn darken(frame: &mut [u8], fw: u32, fh: u32, x: i32, y: i32) {
+    if x >= 0 && y >= 0 && (x as u32) < fw && (y as u32) < fh {
+        let at = ((y as u32 * fw + x as u32) * 4) as usize;
+        for c in &mut frame[at..at + 3] {
+            *c /= 3;
+        }
+    }
+}
+
+/// 3x5 digit glyphs, one row per u8 (bit 2 = left column).
+const DIGITS: [[u8; 5]; 10] = [
+    [7, 5, 5, 5, 7],
+    [2, 6, 2, 2, 7],
+    [7, 1, 7, 4, 7],
+    [7, 1, 7, 1, 7],
+    [5, 5, 7, 1, 1],
+    [7, 4, 7, 1, 7],
+    [7, 4, 7, 5, 7],
+    [7, 1, 1, 1, 1],
+    [7, 5, 7, 5, 7],
+    [7, 5, 7, 1, 7],
+];
+
+/// Draw a non-negative number at 2x scale with a dark backing.
+fn draw_number(frame: &mut [u8], fw: u32, fh: u32, x: i32, y: i32, n: i64, col: [u8; 4]) {
+    let text = n.max(0).to_string();
+    let w = text.len() as i32 * 8;
+    for dy in -1..11 {
+        for dx in -1..w {
+            set_px(frame, fw, fh, x + dx, y + dy, [0, 0, 0, 255]);
+        }
+    }
+    for (k, ch) in text.bytes().enumerate() {
+        let glyph = DIGITS[usize::from(ch - b'0')];
+        for (row, bits) in glyph.iter().enumerate() {
+            for colx in 0..3 {
+                if bits & (4 >> colx) != 0 {
+                    for (ox, oy) in [(0, 0), (1, 0), (0, 1), (1, 1)] {
+                        let px = x + k as i32 * 8 + colx * 2 + ox;
+                        set_px(frame, fw, fh, px, y + row as i32 * 2 + oy, col);
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -438,7 +616,7 @@ impl ApplicationHandler for App {
             }
             Err(e) => eprintln!("OpenYR: session unavailable ({e}); view-only"),
         }
-        println!("OpenYR: left-click/box select, right-click order, A=attack-move, S=stop, H=harvest, right-drag/arrows pan, wheel zoom");
+        println!("OpenYR: left-click/box select, right-click order, A=attack-move, S=stop, H=harvest, right-drag/arrows pan, wheel zoom; sidebar: left-click build, right-click cancel");
         self.window = Some(window);
         self.pixels = Some(pixels);
         self.view.dirty = true;
@@ -458,6 +636,22 @@ impl ApplicationHandler for App {
                 self.shift = m.state().shift_key();
             }
             WindowEvent::MouseInput { state, button, .. } => match (button, state) {
+                (MouseButton::Left, ElementState::Pressed) if self.in_sidebar(self.cursor) => {
+                    if let Some(cmd) = self
+                        .sidebar_slot_at(self.cursor)
+                        .and_then(|i| self.session.as_ref()?.produce(i))
+                    {
+                        self.pending.push(cmd);
+                    }
+                }
+                (MouseButton::Right, ElementState::Pressed) if self.in_sidebar(self.cursor) => {
+                    if let Some(cmd) = self
+                        .sidebar_slot_at(self.cursor)
+                        .and_then(|i| self.session.as_ref()?.cancel(i))
+                    {
+                        self.pending.push(cmd);
+                    }
+                }
                 (MouseButton::Left, ElementState::Pressed) => self.left_down = Some(self.cursor),
                 (MouseButton::Left, ElementState::Released) => {
                     if let Some(a) = self.left_down.take() {
@@ -481,6 +675,18 @@ impl ApplicationHandler for App {
                 _ => {}
             },
             WindowEvent::CursorMoved { position, .. } => {
+                // Work in frame pixels (the surface may be HiDPI-scaled).
+                let position = match &self.pixels {
+                    Some(p) => {
+                        let (x, y) =
+                            match p.window_pos_to_pixel((position.x as f32, position.y as f32)) {
+                                Ok((x, y)) => (x as f64, y as f64),
+                                Err((x, y)) => (x as f64, y as f64),
+                            };
+                        winit::dpi::PhysicalPosition::new(x, y)
+                    }
+                    None => position,
+                };
                 self.cursor = (position.x, position.y);
                 if self.right_down.is_some() {
                     let dx = (position.x - self.last_cursor.0) as f32;
@@ -585,18 +791,8 @@ impl ApplicationHandler for App {
     }
 }
 
-fn main() {
-    let args: Vec<String> = std::env::args().skip(1).collect();
-    let (gamedir, map_name, scale) = match args.as_slice() {
-        [g, m] => (g.clone(), m.clone(), 2),
-        [g, m, s] => (g.clone(), m.clone(), s.parse().unwrap_or(2)),
-        _ => {
-            eprintln!("usage: openyr <gamedir> <map> [scale]");
-            std::process::exit(2);
-        }
-    };
-    let event_loop = EventLoop::new().expect("event loop");
-    let mut app = App {
+fn new_app(gamedir: String, map_name: String, scale: u32) -> App {
+    App {
         gamedir,
         map_name,
         scale,
@@ -623,6 +819,117 @@ fn main() {
         last_tick: Instant::now(),
         accum: Duration::ZERO,
         title: String::new(),
+        announced: false,
+    }
+}
+
+/// `--frames <dir> <tick>...`: play a scripted demo headlessly and dump
+/// the exact window frame at each tick. Script: queue Grizzlies and GIs
+/// at tick 1, then every 450 ticks send the whole player army (armed
+/// units) to attack-move on the enemy base; the camera follows the army.
+fn headless_frames(mut app: App, dir: &str, ticks: &[u64]) -> Result<(), String> {
+    app.map = Some(yr_render::render_map(
+        &app.gamedir,
+        &app.map_name,
+        app.scale,
+    )?);
+    app.session = Some(yr_app::session::load(&app.gamedir, &app.map_name, 42)?);
+    std::fs::create_dir_all(dir).map_err(|e| e.to_string())?;
+    let (fw, fh) = (WIN_W, WIN_H);
+    let last = ticks.iter().copied().max().unwrap_or(0);
+    let mut frame = vec![0u8; (fw * fh * 4) as usize];
+    for t in 1..=last {
+        let session = app.session.as_ref().ok_or("no session")?;
+        if t == 1 {
+            for slot in [0, 0, 0, 4, 4, 4, 1, 5] {
+                if let Some(cmd) = session.produce(slot) {
+                    app.pending.push(cmd);
+                }
+            }
+        }
+        let army: Vec<u32> = session
+            .sim
+            .units()
+            .iter()
+            .filter(|u| u.owner == yr_sim::OWNER_PLAYER && u.weapon.is_some())
+            .map(|u| u.id)
+            .collect();
+        if t % 450 == 0 {
+            let enemy: Vec<_> = session
+                .sim
+                .buildings()
+                .iter()
+                .filter(|b| b.owner == yr_sim::OWNER_ENEMY)
+                .map(|b| b.centre())
+                .collect();
+            if let Some(&(x, y)) = enemy.first() {
+                for &id in &army {
+                    app.pending.push(Command::AttackMove { id, x, y });
+                }
+            }
+        }
+        app.selected = army.iter().copied().collect();
+        app.tick_session();
+        if ticks.contains(&t) {
+            let session = app.session.as_ref().ok_or("no session")?;
+            let map = app.map.as_ref().ok_or("no map")?;
+            let sim = &session.sim;
+            let mine: Vec<_> = sim
+                .units()
+                .iter()
+                .filter(|u| u.owner == yr_sim::OWNER_PLAYER)
+                .collect();
+            if !mine.is_empty() {
+                let n = mine.len() as f32;
+                let cx = mine.iter().map(|u| u.x.to_int_floor() as f32).sum::<f32>() / n;
+                let cy = mine.iter().map(|u| u.y.to_int_floor() as f32).sum::<f32>() / n;
+                let (mx, my) = map.cell_to_px(cx + 0.5, cy + 0.5);
+                app.view.cam_x = mx - (fw - SIDEBAR_W) as f32 / 2.0 / app.view.zoom;
+                app.view.cam_y = my - fh as f32 / 2.0 / app.view.zoom;
+            }
+            app.compose(&mut frame, fw, fh);
+            let out = format!("{dir}/frame-{t:05}.png");
+            std::fs::write(&out, yr_render::png::encode_rgba(fw, fh, &frame))
+                .map_err(|e| e.to_string())?;
+            let count = |o: u8| sim.units().iter().filter(|u| u.owner == o).count();
+            println!(
+                "{out}: tick {t} ${} player {} units / enemy {} units, {} enemy buildings, queue {}, {:?}",
+                sim.credits(),
+                count(yr_sim::OWNER_PLAYER),
+                count(yr_sim::OWNER_ENEMY),
+                sim.buildings().iter().filter(|b| b.owner == yr_sim::OWNER_ENEMY).count(),
+                sim.production().len(),
+                session.outcome,
+            );
+        }
+    }
+    Ok(())
+}
+
+fn main() {
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    if let [g, m, flag, dir, rest @ ..] = args.as_slice() {
+        if flag == "--frames" {
+            let ticks: Vec<u64> = rest.iter().filter_map(|t| t.parse().ok()).collect();
+            let app = new_app(g.clone(), m.clone(), 2);
+            if let Err(e) = headless_frames(app, dir, &ticks) {
+                eprintln!("openyr: {e}");
+                std::process::exit(1);
+            }
+            return;
+        }
+    }
+    let (gamedir, map_name, scale) = match args.as_slice() {
+        [g, m] => (g.clone(), m.clone(), 2),
+        [g, m, s] => (g.clone(), m.clone(), s.parse().unwrap_or(2)),
+        _ => {
+            eprintln!(
+                "usage: openyr <gamedir> <map> [scale] | <gamedir> <map> --frames <dir> <tick>..."
+            );
+            std::process::exit(2);
+        }
     };
+    let event_loop = EventLoop::new().expect("event loop");
+    let mut app = new_app(gamedir, map_name, scale);
     event_loop.run_app(&mut app).expect("run app");
 }
