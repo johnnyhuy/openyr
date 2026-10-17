@@ -21,6 +21,33 @@ pub struct RenderedMap {
     pub height: u32,
     pub rgba: Vec<u8>,
     pub summary: String,
+    /// Iso origin: map pixel `(0, 0)` is cell-space `(-origin_x, -origin_y)`
+    /// before downscaling. Kept so the app can map sim cells <-> pixels.
+    pub origin_x: i32,
+    pub origin_y: i32,
+    /// Downscale factor the buffer was rendered at (1, 2 or 4).
+    pub scale: u32,
+}
+
+impl RenderedMap {
+    /// Centre of cell `(cell_x, cell_y)` (fractional cells allowed) in
+    /// rendered-buffer pixels. Height level is ignored (flat projection).
+    pub fn cell_to_px(&self, cell_x: f32, cell_y: f32) -> (f32, f32) {
+        let cx = (cell_x - cell_y) * HALF_W as f32;
+        let cy = (cell_x + cell_y) * HALF_H as f32 + HALF_H as f32;
+        let s = self.scale.max(1) as f32;
+        ((cx - self.origin_x as f32) / s, (cy - self.origin_y as f32) / s)
+    }
+
+    /// Inverse of [`Self::cell_to_px`]: buffer pixel -> fractional cell.
+    pub fn px_to_cell(&self, px: f32, py: f32) -> (f32, f32) {
+        let s = self.scale.max(1) as f32;
+        let cx = px * s + self.origin_x as f32;
+        let cy = py * s + self.origin_y as f32;
+        let a = cx / HALF_W as f32;
+        let b = (cy - HALF_H as f32) / HALF_H as f32;
+        ((a + b) / 2.0, (b - a) / 2.0)
+    }
 }
 
 const HALF_W: i32 = 30;
@@ -365,6 +392,9 @@ pub fn render_map(gamedir: &str, map_name: &str, scale: u32) -> Result<RenderedM
         width: ow as u32,
         height: oh as u32,
         rgba,
+        origin_x: x0,
+        origin_y: y0,
+        scale,
         summary: format!(
             "{map_name} ({}, {} tiles, {} templates, {missing} missing, {drawn_jobs} object SHPs, {markers} markers, {ow}x{oh} @ scale {scale})",
             map.theater,
@@ -544,4 +574,21 @@ pub fn build_terrain(
         }
     }
     Ok(grid)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn cell_px_round_trip() {
+        // Arrange
+        let map = RenderedMap { width: 10, height: 10, rgba: vec![0; 400], summary: String::new(), origin_x: -90, origin_y: -200, scale: 2 };
+        // Act / Assert
+        for (x, y) in [(0.0f32, 0.0f32), (10.5, 3.25), (40.0, 40.0)] {
+            let (px, py) = map.cell_to_px(x, y);
+            let (rx, ry) = map.px_to_cell(px, py);
+            assert!((rx - x).abs() < 0.001 && (ry - y).abs() < 0.001, "({x},{y}) -> ({px},{py}) -> ({rx},{ry})");
+        }
+    }
 }

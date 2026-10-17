@@ -61,10 +61,10 @@ incremental, testable path where each milestone is independently useful.
 
 - [x] Deterministic core: yr-sim skeleton (fixed-point, RNG, hash);
       terrain grid with passability/speed per locomotor (retail-verified)
-- [ ] Unit movement on the grid (A*, occupancy)
-- [ ] Building placement, harvesting loop, production queues
-- [ ] Weapons/warheads/damage with the original formulas
-- [ ] `sim-bench` headless benchmark; state hashing
+- [x] Unit movement on the grid (A*, occupancy)
+- [x] Building placement, harvesting loop (production queues in M5 sidebar)
+- [x] Weapons/warheads/damage with the original formulas
+- [x] `sim-bench` headless benchmark; state hashing
 
 ## M5 — Playable sandbox (the playable baseline)
 
@@ -72,6 +72,7 @@ Decided 2026-10-17: baseline first (sandbox, scripted spawns, no AI),
 then basic-AI skirmish, then data-driven addons, then roguelite mode.
 
 - [ ] Sandbox loop on one map, no AI (scripted spawns), full input
+      (session setup + in-window selection/orders done; scripted waves left)
 - [ ] Audio hookup (themes, EVA, unit voices)
 - [ ] Save/load (deterministic state dump)
 - [ ] Basic AI skirmish opponent (stage 2)

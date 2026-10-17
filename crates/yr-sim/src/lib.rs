@@ -41,6 +41,8 @@ pub enum Command {
         weapon: Option<WeaponSpec>,
     },
     Move { id: u32, x: Fix, y: Fix },
+    /// Move to a point, engaging any hostile that comes in weapon range.
+    AttackMove { id: u32, x: Fix, y: Fix },
     Attack { id: u32, target: u32 },
     /// Send a harvester into its auto-loop (ore -> refinery -> ore).
     Harvest { id: u32 },
@@ -119,6 +121,8 @@ pub struct Unit {
     pub weapon: Option<WeaponSpec>,
     pub cooldown: u32,
     pub attack: Option<u32>,
+    /// Attack-move destination: resume towards it once no hostile is in range.
+    guard: Option<(Fix, Fix)>,
     pub shots: u32,
     pub role: Role,
     pub owner: u8,
@@ -206,6 +210,7 @@ impl Sim {
                         weapon,
                         cooldown: 0,
                         attack: None,
+                        guard: None,
                         shots: 0,
                         role: Role::Combat,
                         // Unassigned spawns are neutral until AssignOwner.
@@ -252,17 +257,29 @@ impl Sim {
                 Command::Attack { id, target } => {
                     if let Some(u) = self.units.iter_mut().find(|u| u.id == id) {
                         u.attack = Some(target);
+                        u.guard = None;
+                    }
+                }
+                Command::AttackMove { id, x, y } => {
+                    if let Some(u) = self.units.iter_mut().find(|u| u.id == id) {
+                        u.attack = None;
+                        u.guard = Some((x, y));
+                        u.target = Some((x, y));
+                        u.path.clear();
                     }
                 }
                 Command::Stop { id } => {
                     if let Some(u) = self.units.iter_mut().find(|u| u.id == id) {
                         u.attack = None;
+                        u.guard = None;
                         u.target = None;
                         u.path.clear();
                     }
                 }
                 Command::Move { id, x, y } => {
                     if let Some(u) = self.units.iter_mut().find(|u| u.id == id) {
+                        u.attack = None;
+                        u.guard = None;
                         u.target = Some((x, y));
                     }
                 }
@@ -272,6 +289,54 @@ impl Sim {
             }
         }
         self.harvest_phase();
+        // Attack-move: engage the nearest hostile in weapon range, else
+        // keep (or resume) moving to the guarded destination.
+        for i in 0..self.units.len() {
+            let Some(dest) = self.units[i].guard else { continue };
+            if self.units[i].attack.is_some() {
+                continue;
+            }
+            let me = &self.units[i];
+            let hostile = if me.owner == OWNER_NEUTRAL {
+                None
+            } else {
+                me.weapon.and_then(|w| {
+                    let range2 = i64::from(w.range.raw()) * i64::from(w.range.raw());
+                    let mut best: Option<(i64, u32)> = None;
+                    let mut consider = |id: u32, owner: u8, x: Fix, y: Fix| {
+                        if owner == me.owner || owner == OWNER_NEUTRAL {
+                            return;
+                        }
+                        let d = dist2(x - me.x, y - me.y);
+                        if d <= range2 && best.is_none_or(|(bd, _)| d < bd) {
+                            best = Some((d, id));
+                        }
+                    };
+                    for o in &self.units {
+                        if o.id != me.id {
+                            consider(o.id, o.owner, o.x, o.y);
+                        }
+                    }
+                    for b in &self.buildings {
+                        let (bx, by) = b.centre();
+                        consider(b.id, b.owner, bx, by);
+                    }
+                    best.map(|(_, id)| id)
+                })
+            };
+            let u = &mut self.units[i];
+            if let Some(id) = hostile {
+                u.attack = Some(id);
+                u.target = None;
+                u.path.clear();
+            } else if u.target.is_none() {
+                if (u.x, u.y) == dest {
+                    u.guard = None;
+                } else {
+                    u.target = Some(dest);
+                }
+            }
+        }
         // Attackers close to range; in-range attackers hold position.
         for i in 0..self.units.len() {
             let Some(enemy) = self.units[i].attack else { continue };
@@ -689,6 +754,14 @@ impl Sim {
             h.write_i64(u.hp);
             h.write_u64(u64::from(u.cooldown));
             h.write_u64(u.attack.map_or(0, u64::from));
+            match u.guard {
+                Some((gx, gy)) => {
+                    h.write_u64(1);
+                    h.write_i64(i64::from(gx.raw()));
+                    h.write_i64(i64::from(gy.raw()));
+                }
+                None => h.write_u64(0),
+            }
             h.write_i64(u.cargo);
             h.write_u64(u64::from(u.bails));
             if let Some(&(wx, wy)) = u.path.front() {
@@ -866,6 +939,31 @@ mod tests {
         assert_eq!(sim.units()[0].shots, 3, "120hp / 50dmg = 3 shots");
         assert_eq!(events.iter().filter(|e| matches!(e, Event::Fired { .. })).count(), 3);
         assert_eq!(events.last(), Some(&Event::Died { id: 2 }));
+    }
+
+    #[test]
+    fn attack_move_engages_en_route_then_arrives() {
+        // Arrange: attacker at 0, victim 2 cells away, destination 8 cells.
+        let mut sim = Sim::new(5);
+        let w = gun(50, 1, 10, Fix::ZERO);
+        sim.step(&[
+            Command::Spawn { x: Fix::ZERO, y: Fix::ZERO, loco: terrain::Loco::Track, speed: Fix::from_int(4), hp: 500, armor: 0, weapon: Some(w) },
+            Command::Spawn { x: Fix::from_int(2), y: Fix::ZERO, loco: terrain::Loco::Track, speed: Fix::from_int(4), hp: 40, armor: 0, weapon: None },
+            Command::AssignOwner { id: 1, owner: OWNER_PLAYER },
+            Command::AssignOwner { id: 2, owner: OWNER_ENEMY },
+            Command::AttackMove { id: 1, x: Fix::from_int(8), y: Fix::ZERO },
+        ]);
+        // Act: run until the attacker settles at the destination.
+        for _ in 0..200 {
+            sim.step(&[]);
+            if sim.units().len() == 1 && sim.units()[0].target.is_none() {
+                break;
+            }
+        }
+        // Assert: victim died en route and the destination was reached.
+        assert_eq!(sim.units().len(), 1, "hostile engaged and killed en route");
+        assert_eq!(sim.units()[0].x, Fix::from_int(8), "resumed to destination");
+        assert!(sim.units()[0].shots >= 1);
     }
 
     #[test]

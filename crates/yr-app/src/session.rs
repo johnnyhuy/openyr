@@ -205,6 +205,27 @@ fn place_base(
     }
 }
 
+/// Load a session straight from a game dir + map name (window entry point).
+/// Mirrors the retail test: map INI overrides merge into the rules.
+pub fn load(gamedir: &str, map_name: &str, seed: u64) -> Result<Session, String> {
+    let mut fs = AssetFs::open(std::path::Path::new(gamedir)).map_err(|e| e.to_string())?;
+    let raw = match fs.read(map_name) {
+        Some(d) => d.to_vec(),
+        None => std::fs::read(map_name).map_err(|e| format!("{map_name}: {e}"))?,
+    };
+    let map = MapFile::parse(&String::from_utf8_lossy(&raw)).map_err(|e| e.to_string())?;
+    let mut rules_ini = yr_formats::IniFile::parse(&String::from_utf8_lossy(
+        fs.read("RULESMD.INI").ok_or("rulesmd.ini not found")?,
+    ));
+    rules_ini.merge_from(&map.ini);
+    let art_ini = yr_formats::IniFile::parse(&String::from_utf8_lossy(
+        fs.read("ARTMD.INI").ok_or("artmd.ini not found")?,
+    ));
+    let rules = Rules::load(&rules_ini, &art_ini);
+    let overlay_types = yr_render::type_list(&rules_ini, "OverlayTypes");
+    setup(&mut fs, &map, &rules, &overlay_types, seed)
+}
+
 /// Build a session for `map` on the opened install.
 pub fn setup(
     fs: &mut AssetFs,
