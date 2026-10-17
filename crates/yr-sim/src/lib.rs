@@ -46,9 +46,13 @@ pub enum Command {
     Harvest { id: u32 },
     /// Mark a unit's economy role (scenario setup).
     AssignRole { id: u32, role: Role },
+    /// Set a unit's owner (scenario setup).
+    AssignOwner { id: u32, owner: u8 },
     /// Place a building: footprint cells, health, armour, power
     /// (positive produces, negative drains).
-    PlaceBuilding { x: u16, y: u16, w: u16, h: u16, hp: i64, armor: u8, power: i64 },
+    PlaceBuilding { x: u16, y: u16, w: u16, h: u16, hp: i64, armor: u8, power: i64, owner: u8, role: Role },
+    /// Scenario/debug: destroy a unit or building outright.
+    Destroy { id: u32 },
     Stop { id: u32 },
     Remove { id: u32 },
 }
@@ -72,6 +76,11 @@ pub enum Role {
     Refinery,
 }
 
+/// Owner ids used by units and buildings.
+pub const OWNER_PLAYER: u8 = 0;
+pub const OWNER_ENEMY: u8 = 1;
+pub const OWNER_NEUTRAL: u8 = 2;
+
 /// Credits per harvested bail (RA2 bail values).
 pub const BAIL_ORE: i64 = 25;
 pub const BAIL_GEM: i64 = 50;
@@ -86,7 +95,7 @@ enum Harvest {
     Idle,
     ToOre(u16, u16),
     Loading(u32),
-    ToRefinery(u32),
+    ToRefinery(u16, u16),
     Unloading(u32),
 }
 
@@ -112,6 +121,7 @@ pub struct Unit {
     pub attack: Option<u32>,
     pub shots: u32,
     pub role: Role,
+    pub owner: u8,
     /// Credits worth of ore/gems currently carried.
     pub cargo: i64,
     pub bails: u8,
@@ -159,6 +169,12 @@ impl Sim {
         self.terrain.as_ref()
     }
 
+    /// Id the next spawned entity will get (setup code predicts ids
+    /// for queued spawn commands).
+    pub fn next_id_peek(&self) -> u32 {
+        self.next_id
+    }
+
     pub fn tick(&self) -> u64 {
         self.tick
     }
@@ -192,18 +208,34 @@ impl Sim {
                         attack: None,
                         shots: 0,
                         role: Role::Combat,
+                        // Unassigned spawns are neutral until AssignOwner.
+                        owner: OWNER_NEUTRAL,
                         cargo: 0,
                         bails: 0,
                         harvest: Harvest::Idle,
                     });
                 }
-                Command::PlaceBuilding { x, y, w, h, hp, armor, power } => {
+                Command::PlaceBuilding { x, y, w, h, hp, armor, power, owner, role } => {
                     let id = self.next_id;
                     self.next_id += 1;
-                    self.buildings.push(Building { id, cell: (x, y), size: (w, h), hp, max_hp: hp, armor, power });
+                    self.buildings.push(Building { id, cell: (x, y), size: (w, h), hp, max_hp: hp, armor, power, owner, role });
                     if let Some(g) = self.terrain.as_mut() {
                         g.set_building(x, y, w, h, true);
                     }
+                }
+                Command::AssignOwner { id, owner } => {
+                    if let Some(u) = self.units.iter_mut().find(|u| u.id == id) {
+                        u.owner = owner;
+                    }
+                }
+                Command::Destroy { id } => {
+                    if let Some(u) = self.units.iter_mut().find(|u| u.id == id) {
+                        u.hp = 0;
+                    }
+                    if let Some(b) = self.buildings.iter_mut().find(|b| b.id == id) {
+                        b.hp = 0;
+                    }
+                    self.reap_dead();
                 }
                 Command::AssignRole { id, role } => {
                     if let Some(u) = self.units.iter_mut().find(|u| u.id == id) {
@@ -314,8 +346,8 @@ impl Sim {
                         None => {
                             // No ore left: unload whatever we carry.
                             if self.units[i].bails > 0 {
-                                if let Some(r) = self.units.iter().find(|u| u.role == Role::Refinery) {
-                                    self.units[i].harvest = Harvest::ToRefinery(r.id);
+                                if let Some(rc) = self.refinery_cell() {
+                                    self.units[i].harvest = Harvest::ToRefinery(rc.0, rc.1);
                                 } else {
                                     self.units[i].harvest = Harvest::Idle;
                                 }
@@ -337,8 +369,8 @@ impl Sim {
                             _ => BAIL_ORE,
                         };
                         if self.units[i].bails >= HARVESTER_CAPACITY {
-                            if let Some(r) = self.units.iter().find(|u| u.role == Role::Refinery) {
-                                self.units[i].harvest = Harvest::ToRefinery(r.id);
+                            if let Some(rc) = self.refinery_cell() {
+                                self.units[i].harvest = Harvest::ToRefinery(rc.0, rc.1);
                             } else {
                                 self.units[i].harvest = Harvest::Idle;
                             }
@@ -349,12 +381,8 @@ impl Sim {
                         self.units[i].harvest = Harvest::ToOre(u16::MAX, u16::MAX);
                     }
                 }
-                Harvest::ToRefinery(rid) => {
-                    let Some(r) = self.units.iter().find(|u| u.id == rid) else {
-                        self.units[i].harvest = Harvest::Idle;
-                        continue;
-                    };
-                    let rcell = (r.x.to_int_floor().max(0) as u16, r.y.to_int_floor().max(0) as u16);
+                Harvest::ToRefinery(rx, ry) => {
+                    let rcell = (rx, ry);
                     // Unload from an adjacent cell: the refinery's own
                     // cell is occupied by the refinery itself.
                     let adjacent = (i32::from(cell.0) - i32::from(rcell.0)).abs() <= 1
@@ -364,7 +392,7 @@ impl Sim {
                         self.units[i].target = None;
                         self.units[i].path.clear();
                     } else {
-                        self.units[i].target = Some((r.x, r.y));
+                        self.units[i].target = Some((Fix::from_int(i32::from(rcell.0)) + Fix::from_raw(128), Fix::from_int(i32::from(rcell.1)) + Fix::from_raw(128)));
                     }
                 }
                 Harvest::Unloading(mut left) => {
@@ -385,6 +413,19 @@ impl Sim {
         if grid_dirty {
             self.terrain = Some(grid);
         }
+    }
+
+    /// Cell a harvester unloads at: a Refinery-role building's centre
+    /// cell, else a Refinery-role unit's cell.
+    fn refinery_cell(&self) -> Option<(u16, u16)> {
+        if let Some(b) = self.buildings.iter().find(|b| b.role == Role::Refinery) {
+            let (cx, cy) = b.centre();
+            return Some((cx.to_int_floor().max(0) as u16, cy.to_int_floor().max(0) as u16));
+        }
+        self.units
+            .iter()
+            .find(|u| u.role == Role::Refinery)
+            .map(|u| (u.x.to_int_floor().max(0) as u16, u.y.to_int_floor().max(0) as u16))
     }
 
     fn fire_phase(&mut self) {
@@ -556,6 +597,10 @@ impl Sim {
 
     pub fn credits(&self) -> i64 {
         self.credits
+    }
+
+    pub fn set_credits(&mut self, credits: i64) {
+        self.credits = credits;
     }
 
     /// Events since the last drain (renderer/audio consume these).
@@ -860,8 +905,8 @@ mod tests {
         sim.set_terrain(TerrainGrid::new(0, 0, 8, 8));
         // Power plant (+200) and two consumers (-150 each via two placements).
         sim.step(&[
-            Command::PlaceBuilding { x: 0, y: 0, w: 2, h: 2, hp: 1000, armor: 0, power: 200 },
-            Command::PlaceBuilding { x: 4, y: 0, w: 2, h: 2, hp: 500, armor: 0, power: -150 },
+            Command::PlaceBuilding { x: 0, y: 0, w: 2, h: 2, hp: 1000, armor: 0, power: 200, owner: 0, role: Role::Combat },
+            Command::PlaceBuilding { x: 4, y: 0, w: 2, h: 2, hp: 500, armor: 0, power: -150, owner: 0, role: Role::Combat },
         ]);
         assert_eq!(sim.power(), (200, 150));
         assert!(!sim.low_power());
@@ -869,7 +914,7 @@ mod tests {
         let g = sim.terrain().unwrap();
         assert!(!g.passable(terrain::Loco::Foot, 0, 0), "footprint blocks");
         // Add drain past production: low power slows production.
-        sim.step(&[Command::PlaceBuilding { x: 4, y: 4, w: 2, h: 2, hp: 500, armor: 0, power: -150 }]);
+        sim.step(&[Command::PlaceBuilding { x: 4, y: 4, w: 2, h: 2, hp: 500, armor: 0, power: -150, owner: 0, role: Role::Combat }]);
         assert!(sim.low_power());
         let f = sim.production_factor();
         assert!(f < Fix::ONE && f >= Fix::from_raw(128), "low-power factor interpolates: {f:?}");

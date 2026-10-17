@@ -2505,7 +2505,11 @@ version = "0.1.0"
 dependencies = [
  "pixels",
  "winit",
+ "yr-assets",
+ "yr-formats",
  "yr-render",
+ "yr-rules",
+ "yr-sim",
 ]
 
 [[package]]

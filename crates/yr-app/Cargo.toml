@@ -11,5 +11,9 @@ path = "src/main.rs"
 
 [dependencies]
 yr-render = { path = "../yr-render" }
+yr-assets = { path = "../yr-assets" }
+yr-formats = { path = "../yr-formats" }
+yr-rules = { path = "../yr-rules" }
+yr-sim = { path = "../yr-sim" }
 winit = "0.30"
 pixels = "0.15"

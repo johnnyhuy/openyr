@@ -19,6 +19,8 @@ pub struct Building {
     pub armor: u8,
     /// Positive = produced, negative = drained.
     pub power: i64,
+    pub owner: u8,
+    pub role: crate::Role,
 }
 
 impl Building {

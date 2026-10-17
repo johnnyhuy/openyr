@@ -430,7 +430,7 @@ fn draw_voxel(rgba: &mut [u8], w: usize, h: usize, cx: i32, cy: i32, body: &[u8]
 }
 
 /// Ordered values of a `rulesmd.ini` type-list section (`0=FOO`, `1=BAR`).
-fn type_list(ini: &IniFile, section: &str) -> Vec<String> {
+pub fn type_list(ini: &IniFile, section: &str) -> Vec<String> {
     let Some(sec) = ini.section(section) else { return Vec::new() };
     let mut entries: Vec<(u32, String)> = sec
         .entries
@@ -492,4 +492,56 @@ fn house_color(rules: &IniFile, owner: &str) -> [u8; 3] {
     };
     let m = val - c;
     [((r + m) * 255.0) as u8, ((g + m) * 255.0) as u8, ((b + m) * 255.0) as u8]
+}
+
+/// Build the sim terrain grid for a parsed map: TMP terrain types and
+/// ramps per cell, resource bails on ore/gem overlay cells, walls from
+/// wall/fence/sandbag overlays. Grid spans the tile extents (iso
+/// coordinates run past `Size=`; see docs/formats/map.md).
+pub fn build_terrain(
+    fs: &mut yr_assets::AssetFs,
+    map: &MapFile,
+    overlay_types: &[String],
+    theater: yr_assets::Theater,
+) -> Result<yr_sim::TerrainGrid, String> {
+    let ini_name = theater
+        .tileset_inis()
+        .iter()
+        .find(|n| fs.read(n).is_some())
+        .ok_or("tileset INI not found")?;
+    let ini = IniFile::parse(&String::from_utf8_lossy(fs.read(ini_name).ok_or("tileset INI unreadable")?));
+    let index = TileSetIndex::parse(&ini, theater.tile_extension());
+    let mut tmps: std::collections::HashMap<String, TmpFile> = std::collections::HashMap::new();
+    let mut rows: Vec<(u16, u16, u8, u8, u8)> = Vec::new();
+    for t in &map.tiles {
+        let Some(id) = t.tile else { continue };
+        let Some(name) = index.file_for(id) else { continue };
+        let tmp = tmps.entry(name.to_string()).or_insert_with(|| {
+            TmpFile::parse(fs.read(name).expect("TMP readable")).expect("TMP parses")
+        });
+        if let Some(cell) = tmp.tiles.get(t.subtile as usize).and_then(Option::as_ref) {
+            rows.push((t.x, t.y, t.level, cell.terrain_type, cell.ramp_type));
+        }
+    }
+    let (w, h) = rows.iter().fold((0usize, 0usize), |(w, h), r| {
+        (w.max(r.0 as usize + 1), h.max(r.1 as usize + 1))
+    });
+    let mut grid = yr_sim::TerrainGrid::from_tiles(0, 0, w, h, rows.into_iter());
+    // Overlay type indices follow the rules [OverlayTypes] order.
+    for (i, &o) in map.overlay.iter().enumerate() {
+        if o == yr_formats::map::NO_OVERLAY {
+            continue;
+        }
+        let Some(kind) = overlay_types.get(o as usize) else { continue };
+        let (x, y) = ((i % 512) as u16, (i / 512) as u16);
+        let upper = kind.to_ascii_uppercase();
+        if upper.contains("TIB") || upper.starts_with("GEM") {
+            let bails = 2 + (map.overlay_data[i] % 5);
+            let gem = upper.starts_with("GEM");
+            grid.set_resource(x, y, if gem { yr_sim::terrain::Overlay::Gem } else { yr_sim::terrain::Overlay::Ore }, bails);
+        } else if ["WALL", "FENCE", "SAND", "BARB", "CYCL"].iter().any(|k| upper.contains(k)) {
+            grid.set_overlay(x, y, yr_sim::terrain::Overlay::Wall);
+        }
+    }
+    Ok(grid)
 }
