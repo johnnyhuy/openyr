@@ -50,9 +50,15 @@ pub struct ArtInfo {
     pub section: String,
     /// `Voxel=yes`: drawn from `<image>.VXL` (+ turret/barrel) instead of SHP.
     pub voxel: bool,
-    /// `Theater=yes`/`NewTheater=yes`: the art file carries the theater
-    /// extension (e.g. `.TEM`) instead of `.SHP`.
+    /// `Theater=yes`: the art file carries the theater extension
+    /// (e.g. `.TEM`) instead of `.SHP` (terrain objects, overlays).
     pub theater: bool,
+    /// `NewTheater=yes`: the art filename's second character is replaced
+    /// by the theater letter (e.g. `GACNST` -> `GTCNST.SHP`), with the
+    /// generic `G` variant as fallback (buildings).
+    pub new_theater: bool,
+    /// `Foundation=` footprint in cells, e.g. `4x4` (buildings).
+    pub foundation: Option<(u8, u8)>,
     pub cameo: Option<String>,
     pub alt_cameo: Option<String>,
     pub remapable: Option<bool>,
@@ -386,7 +392,12 @@ fn load_techno(
     let art_info = art_sec.map(|a| ArtInfo {
         section: a.name.clone(),
         voxel: a.get_bool("Voxel").unwrap_or(false),
-        theater: a.get_bool("Theater").unwrap_or(false) || a.get_bool("NewTheater").unwrap_or(false),
+        theater: a.get_bool("Theater").unwrap_or(false),
+        new_theater: a.get_bool("NewTheater").unwrap_or(false),
+        foundation: a.get("Foundation").and_then(|v| {
+            let (w, h) = v.trim().split_once(['x', 'X'])?;
+            Some((w.trim().parse().ok()?, h.trim().parse().ok()?))
+        }),
         cameo: reference(Some(a), "Cameo"),
         alt_cameo: reference(Some(a), "AltCameo"),
         remapable: a.get_bool("Remapable"),

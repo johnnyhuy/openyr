@@ -111,3 +111,24 @@ fn theater_object_art_and_unit_palettes_resolve() {
     assert!(fs.read(Theater::Snow.unit_palette()).is_some(), "snow unit palette resolves");
     assert!(fs.read("TIB01.SNO").is_some(), "snow ore art resolves");
 }
+
+#[test]
+fn building_art_resolves_per_theater() {
+    let Some(mut fs) = install() else {
+        eprintln!("skip: retail install not present");
+        return;
+    };
+    // NewTheater=yes: second letter is the theater letter (T/A/U/...),
+    // generic `G` variant in GENERIC.MIX as fallback.
+    fs.set_theater(Theater::Temperate);
+    for name in ["GGCNST.SHP", "CTLAB.SHP"] {
+        let data = fs.read(name).unwrap_or_else(|| panic!("{name} resolves in temperate"));
+        assert!(yr_formats::ShpFile::parse(data).is_ok(), "{name} parses as SHP");
+    }
+    fs.set_theater(Theater::Snow);
+    assert!(fs.read("GACNST.SHP").is_some(), "snow conyard uses the plain A name");
+    fs.set_theater(Theater::Urban);
+    assert!(fs.read("CUPARS04.SHP").is_some(), "urban Paris building resolves");
+    assert_eq!(Theater::Temperate.art_letter(), 'T');
+    assert_eq!(Theater::Snow.art_letter(), 'A');
+}

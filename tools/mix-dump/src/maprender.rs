@@ -163,20 +163,22 @@ pub fn cmd_render_map(args: &[&str]) -> Result<(), String> {
         frame: usize,
         unit: bool,
         marker: Option<[u8; 4]>,
+        shadow: bool,
+        remap: Option<[u8; 3]>,
     }
     let mut jobs: Vec<Job> = Vec::new();
     let mut markers = 0usize;
     let cell_job = |jobs: &mut Vec<Job>, x: u16, y: u16, file: Option<String>, frame: usize, unit: bool, marker: Option<[u8; 4]>| {
         let level = levels.get(&(x, y)).copied().unwrap_or(0);
         let (cx, top) = cell_screen(x, y, level);
-        jobs.push(Job { key: u32::from(x) + u32::from(y), cx, cy: top + HALF_H, file, frame, unit, marker });
+        jobs.push(Job { key: u32::from(x) + u32::from(y), cx, cy: top + HALF_H, file, frame, unit, marker, shadow: false, remap: None });
     };
     for (i, &o) in map.overlay.iter().enumerate() {
         if o == yr_formats::map::NO_OVERLAY {
             continue;
         }
         let Some(kind) = overlay_types.get(o as usize) else { continue };
-        let (image, theater_art) = art_image(&art_ini, kind);
+        let (image, theater_art, _) = art_image(&art_ini, kind);
         let file = art_file(&image, theater_art, theater);
         if load_shp(&vfs, &file, &mut shps) {
             let frame = usize::from(map.overlay_data[i]);
@@ -184,10 +186,13 @@ pub fn cmd_render_map(args: &[&str]) -> Result<(), String> {
         }
     }
     for (x, y, kind) in &map.terrain {
-        let (image, theater_art) = art_image(&art_ini, kind);
+        let (image, theater_art, _) = art_image(&art_ini, kind);
         let file = art_file(&image, theater_art, theater);
         if load_shp(&vfs, &file, &mut shps) {
+            let key = u32::from(*x) + u32::from(*y);
             cell_job(&mut jobs, *x, *y, Some(file), 0, false, None);
+            jobs.last_mut().unwrap().shadow = true;
+            jobs.last_mut().unwrap().key = key;
         }
     }
     let mut object = |jobs: &mut Vec<Job>, obj: &yr_formats::MapObject, shps: &mut HashMap<String, Option<Vec<u8>>>, vfs: &AssetFs| {
@@ -199,17 +204,46 @@ pub fn cmd_render_map(args: &[&str]) -> Result<(), String> {
             return;
         }
         let image = techno.map(|t| t.image.clone()).unwrap_or_else(|| obj.kind.clone());
-        let theater_art = techno.and_then(|t| t.art.as_ref()).map(|a| a.theater).unwrap_or(false);
-        let file = art_file(&image, theater_art, theater);
-        // Buildings are drawn as footprint markers until building art
-        // (foundation + height anchoring) lands; infantry/aircraft as SHP.
+        let art = techno.and_then(|t| t.art.as_ref());
         let is_building = techno.map(|t| t.kind == yr_rules::TechnoKind::Building).unwrap_or(false);
         if is_building {
-            markers += 1;
-            cell_job(jobs, obj.x, obj.y, None, 0, false, Some([255, 0, 200, 255]));
-        } else if load_shp(vfs, &file, shps) {
-            let frame = (obj.facing.unwrap_or(0) / 32) as usize;
-            cell_job(jobs, obj.x, obj.y, Some(file), frame, true, None);
+            // NewTheater=yes buildings: second letter is the theater
+            // letter, generic `G` variant as fallback (docs/formats/map.md).
+            let mut candidates = Vec::new();
+            if image.len() > 1 {
+                candidates.push(format!("{}{}{}.SHP", &image[..1], theater.art_letter(), &image[2..]));
+                candidates.push(format!("{}G{}.SHP", &image[..1], &image[2..]));
+            }
+            candidates.push(format!("{}.SHP", image.to_ascii_uppercase()));
+            let found = candidates.iter().find(|f| load_shp(vfs, f, shps)).cloned();
+            match found {
+                Some(file) => {
+                    let (fx, fy) = art.and_then(|a| a.foundation).unwrap_or((1, 1));
+                    let level = levels.get(&(obj.x, obj.y)).copied().unwrap_or(0);
+                    let (cx, top) = cell_screen(obj.x, obj.y, level);
+                    jobs.push(Job {
+                        key: u32::from(obj.x) + u32::from(obj.y) + u32::from(fx) + u32::from(fy),
+                        cx: cx + (i32::from(fx) - i32::from(fy)) * HALF_H,
+                        cy: top + HALF_H + (i32::from(fx) + i32::from(fy) - 2) * HALF_H / 2,
+                        file: Some(file),
+                        frame: 0,
+                        unit: true,
+                        marker: None,
+                        shadow: true,
+                        remap: Some(house_color(&rules_ini, &obj.owner)),
+                    });
+                }
+                None => {
+                    markers += 1;
+                    eprintln!("no building art for {} ({})", obj.kind, candidates.join(", "));
+                    cell_job(jobs, obj.x, obj.y, None, 0, false, Some([255, 0, 200, 255]));
+                }
+            }
+        } else if load_shp(vfs, &art_file(&image, art.map(|a| a.theater).unwrap_or(false), theater), shps) {
+            let file = art_file(&image, art.map(|a| a.theater).unwrap_or(false), theater);
+            cell_job(jobs, obj.x, obj.y, Some(file), 0, true, None);
+            jobs.last_mut().unwrap().shadow = true;
+            jobs.last_mut().unwrap().remap = Some(house_color(&rules_ini, &obj.owner));
         } else {
             markers += 1;
             cell_job(jobs, obj.x, obj.y, None, 0, true, Some([0, 200, 255, 255]));
@@ -240,6 +274,24 @@ pub fn cmd_render_map(args: &[&str]) -> Result<(), String> {
         let Ok(shp) = ShpFile::parse(bytes) else { continue };
         let frame = if job.frame < shp.frames.len() { job.frame } else { 0 };
         let Ok(canvas) = shp.decode_frame_canvas(frame) else { continue };
+        if job.shadow && shp.frames.len() >= 2 {
+            let shadow_frame = job.frame + shp.frames.len() / 2;
+            if shadow_frame < shp.frames.len() {
+                if let Ok(shadow) = shp.decode_frame_canvas(shadow_frame) {
+                    let (ox, oy) = (cx - shp.width as i32 / 2, cy - shp.height as i32 / 2);
+                    for (p, &index) in shadow.iter().enumerate() {
+                        if index == 0 { continue; }
+                        let (x, y) = (ox + (p % shp.width as usize) as i32, oy + (p / shp.width as usize) as i32);
+                        if x >= 0 && y >= 0 && (x as usize) < w && (y as usize) < h {
+                            let at = (y as usize * w + x as usize) * 4;
+                            rgba[at] /= 2;
+                            rgba[at + 1] /= 2;
+                            rgba[at + 2] /= 2;
+                        }
+                    }
+                }
+            }
+        }
         let palette = if job.unit { &unit_pal } else { &pal };
         let (ox, oy) = (cx - shp.width as i32 / 2, cy - shp.height as i32 / 2);
         for (p, &index) in canvas.iter().enumerate() {
@@ -249,7 +301,13 @@ pub fn cmd_render_map(args: &[&str]) -> Result<(), String> {
             let (x, y) = (ox + (p % shp.width as usize) as i32, oy + (p / shp.width as usize) as i32);
             if x >= 0 && y >= 0 && (x as usize) < w && (y as usize) < h {
                 let at = (y as usize * w + x as usize) * 4;
-                rgba[at..at + 4].copy_from_slice(&palette.rgba(index));
+                if let (Some(base), 16..=31) = (job.remap, index) {
+                    let f = 0.45 + f32::from(index - 16) * 0.055;
+                    let c = |v: u8| (f32::from(v) * f).min(255.0) as u8;
+                    rgba[at..at + 4].copy_from_slice(&[c(base[0]), c(base[1]), c(base[2]), 255]);
+                } else {
+                    rgba[at..at + 4].copy_from_slice(&palette.rgba(index));
+                }
             }
         }
     }
@@ -295,19 +353,17 @@ fn type_list(ini: &IniFile, section: &str) -> Vec<String> {
     entries.into_iter().map(|e| e.1).collect()
 }
 
-/// `(image, theater-art)` for a type: `Image=` in its artmd section,
-/// defaulting to the type ID; theater-art files carry the theater extension.
-fn art_image(art: &IniFile, kind: &str) -> (String, bool) {
+/// `(image, theater-extension, new-theater)` for a type: `Image=` in
+/// its artmd section, defaulting to the type ID.
+fn art_image(art: &IniFile, kind: &str) -> (String, bool, bool) {
     let sec = art.section(kind);
     let image = sec
         .and_then(|s| s.get("Image"))
         .map(|v| v.split(';').next().unwrap_or(v).trim().to_string())
         .filter(|v| !v.is_empty())
         .unwrap_or_else(|| kind.to_string());
-    let theater = sec
-        .map(|s| s.get_bool("Theater").unwrap_or(false) || s.get_bool("NewTheater").unwrap_or(false))
-        .unwrap_or(false);
-    (image, theater)
+    let flag = |k: &str| sec.map(|s| s.get_bool(k).unwrap_or(false)).unwrap_or(false);
+    (image, flag("Theater"), flag("NewTheater"))
 }
 
 fn art_file(image: &str, theater_art: bool, theater: Theater) -> String {
@@ -316,4 +372,32 @@ fn art_file(image: &str, theater_art: bool, theater: Theater) -> String {
     } else {
         format!("{}.SHP", image.to_ascii_uppercase())
     }
+}
+
+/// Owner house colour as RGB: the owner's `Color=` name resolved through
+/// the `[Colors]` HSV table in rules. Neutral grey when unknown.
+fn house_color(rules: &IniFile, owner: &str) -> [u8; 3] {
+    let name = rules
+        .section(owner)
+        .and_then(|s| s.get("Color"))
+        .map(|v| v.split(';').next().unwrap_or(v).trim().to_string())
+        .unwrap_or_else(|| "LightGrey".to_string());
+    let hsv = rules.section("Colors").and_then(|s| s.get(&name)).and_then(|v| {
+        let mut it = v.split(';').next()?.split(',').map(|p| p.trim().parse::<f32>().ok());
+        Some((it.next()??, it.next()??, it.next()??))
+    });
+    let Some((h, sat, val)) = hsv else { return [170, 170, 170] };
+    let (h, sat, val) = (h / 255.0 * 360.0, sat / 255.0, val / 255.0);
+    let c = val * sat;
+    let x = c * (1.0 - ((h / 60.0) % 2.0 - 1.0).abs());
+    let (r, g, b) = match h {
+        h if h < 60.0 => (c, x, 0.0),
+        h if h < 120.0 => (x, c, 0.0),
+        h if h < 180.0 => (0.0, c, x),
+        h if h < 240.0 => (0.0, x, c),
+        h if h < 300.0 => (x, 0.0, c),
+        _ => (c, 0.0, x),
+    };
+    let m = val - c;
+    [((r + m) * 255.0) as u8, ((g + m) * 255.0) as u8, ((b + m) * 255.0) as u8]
 }
