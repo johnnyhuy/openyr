@@ -7,6 +7,7 @@ Native Rust rewrite of Red Alert 2: Yuri's Revenge (macOS first). Not a Wine wra
 - `cargo build --workspace` / `cargo test --workspace` (use `~/.cargo/bin` if cargo is not on PATH)
 - `cargo run -p mix-dump -- list <archive.mix>` to inspect game data
 - Real-data tests read `~/Games/RA2YR/prefix/drive_c/Westwood/RA2`; they skip when it is absent. Never commit game assets.
+- CI (`.github/workflows/ci.yml`, job `test`: fmt + clippy `-D warnings` + test) is a required check: never merge a PR while `test` is failing or pending. Server-side branch protection needs GitHub Pro or a public repo (private/Free returns 403 — attempted 2026-10-17), so until the owner enables one of those, this rule is enforced by convention: check `gh pr checks <n>` before every merge.
 
 ## Architecture rules
 
