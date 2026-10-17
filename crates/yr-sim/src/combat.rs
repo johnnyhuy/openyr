@@ -40,8 +40,15 @@ impl WeaponSpec {
         }
         // Projectile speed: rules `Speed=` for the projectile object is a
         // velocity class; map it onto leptons/tick at 4 leptons per unit.
-        let projectile = w.projectile.as_ref().and_then(|id| rules.projectiles.get(id));
-        let speed_units = if projectile.is_some() { w.speed.unwrap_or(0) } else { 0 };
+        let projectile = w
+            .projectile
+            .as_ref()
+            .and_then(|id| rules.projectiles.get(id));
+        let speed_units = if projectile.is_some() {
+            w.speed.unwrap_or(0)
+        } else {
+            0
+        };
         Some(WeaponSpec {
             damage: w.damage?,
             rof_ticks: w.rof.unwrap_or(0).max(0) as u32,
@@ -54,7 +61,11 @@ impl WeaponSpec {
     /// Damage this weapon deals to armour class `armor` (index into
     /// `Armor::ALL`).
     pub fn damage_against(&self, armor: u8) -> i64 {
-        let verse = self.verses.get(armor as usize).copied().unwrap_or(Decimal::ZERO);
+        let verse = self
+            .verses
+            .get(armor as usize)
+            .copied()
+            .unwrap_or(Decimal::ZERO);
         verse.mul_int(self.damage)
     }
 }
@@ -80,6 +91,9 @@ mod tests {
         spec.verses[2] = Decimal::parse("90%").unwrap();
         assert_eq!(spec.damage_against(2), 58, "floor(65 * 0.9)");
         assert_eq!(spec.damage_against(0), 0);
-        assert_eq!(cells_to_leptons(Decimal::parse("5.75").unwrap()), Fix::from_raw(1472));
+        assert_eq!(
+            cells_to_leptons(Decimal::parse("5.75").unwrap()),
+            Fix::from_raw(1472)
+        );
     }
 }

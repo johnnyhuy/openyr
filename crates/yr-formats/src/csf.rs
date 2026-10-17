@@ -128,7 +128,9 @@ impl<'a> Reader<'a> {
                 let len = self.u32()? as usize;
                 let raw = self.take(len * 2)?;
                 let units: Vec<u16> = raw
-                    .as_chunks::<2>().0.iter()
+                    .as_chunks::<2>()
+                    .0
+                    .iter()
                     .map(|c| !u16::from_le_bytes([c[0], c[1]]))
                     .collect();
                 let value = String::from_utf16_lossy(&units);
@@ -158,7 +160,7 @@ mod tests {
         v.extend_from_slice(&2u32.to_le_bytes()); // labels
         v.extend_from_slice(&2u32.to_le_bytes()); // strings
         v.extend_from_slice(&[0; 8]); // reserved
-        // label 1
+                                      // label 1
         v.extend_from_slice(b" LBL");
         v.extend_from_slice(&1u32.to_le_bytes());
         v.extend_from_slice(&4u32.to_le_bytes());

@@ -16,7 +16,13 @@ impl Default for Sha1 {
 impl Sha1 {
     pub fn new() -> Self {
         Sha1 {
-            state: [0x6745_2301, 0xEFCD_AB89, 0x98BA_DCFE, 0x1032_5476, 0xC3D2_E1F0],
+            state: [
+                0x6745_2301,
+                0xEFCD_AB89,
+                0x98BA_DCFE,
+                0x1032_5476,
+                0xC3D2_E1F0,
+            ],
             block: [0; 64],
             block_len: 0,
             total_len: 0,

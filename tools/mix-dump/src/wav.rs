@@ -34,7 +34,9 @@ fn decode(asset: &str) -> Result<Pcm, String> {
             .iter()
             .find(|e| e.name.eq_ignore_ascii_case(name))
             .ok_or_else(|| format!("{name} not in {idx_spec}"))?;
-        return entry.decode(&load_spec(bag_spec)?).map_err(|e| e.to_string());
+        return entry
+            .decode(&load_spec(bag_spec)?)
+            .map_err(|e| e.to_string());
     }
     let data = load_spec(asset)?;
     if data.starts_with(b"RIFF") {

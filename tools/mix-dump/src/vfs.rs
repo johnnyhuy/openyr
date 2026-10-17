@@ -7,14 +7,17 @@ use std::path::Path;
 use yr_assets::{AssetFs, Theater};
 
 pub fn cmd_vfs(args: &[&str]) -> Result<(), String> {
-    let (dir, rest) = args.split_first().ok_or("usage: mix-dump vfs <gamedir> [--theater <name>] [file...]")?;
+    let (dir, rest) = args
+        .split_first()
+        .ok_or("usage: mix-dump vfs <gamedir> [--theater <name>] [file...]")?;
     let mut fs = AssetFs::open(Path::new(dir)).map_err(|e| format!("{dir}: {e}"))?;
     let mut files = Vec::new();
     let mut it = rest.iter();
     while let Some(&arg) = it.next() {
         if arg == "--theater" {
             let name = it.next().ok_or("--theater needs a name")?;
-            let theater = Theater::from_map_name(name).ok_or_else(|| format!("unknown theater {name}"))?;
+            let theater =
+                Theater::from_map_name(name).ok_or_else(|| format!("unknown theater {name}"))?;
             fs.set_theater(theater);
         } else {
             files.push(arg);

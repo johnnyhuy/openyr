@@ -38,7 +38,9 @@ struct App {
 
 impl App {
     fn blit(&mut self) {
-        let (Some(pixels), Some(map)) = (&mut self.pixels, &self.map) else { return };
+        let (Some(pixels), Some(map)) = (&mut self.pixels, &self.map) else {
+            return;
+        };
         let (fw, fh) = (pixels.texture().width(), pixels.texture().height());
         let frame = pixels.frame_mut();
         let (mw, mh) = (map.width as i32, map.height as i32);
@@ -98,7 +100,11 @@ impl ApplicationHandler for App {
                     self.view.dirty = true;
                 }
             }
-            WindowEvent::MouseInput { state, button: MouseButton::Left, .. } => {
+            WindowEvent::MouseInput {
+                state,
+                button: MouseButton::Left,
+                ..
+            } => {
                 self.pressed = state == ElementState::Pressed;
             }
             WindowEvent::CursorMoved { position, .. } => {
@@ -183,7 +189,12 @@ fn main() {
         window: None,
         pixels: None,
         map: None,
-        view: View { cam_x: 0.0, cam_y: 0.0, zoom: 1.0, dirty: true },
+        view: View {
+            cam_x: 0.0,
+            cam_y: 0.0,
+            zoom: 1.0,
+            dirty: true,
+        },
         pressed: false,
         last_cursor: (0.0, 0.0),
         keys: std::collections::HashSet::new(),

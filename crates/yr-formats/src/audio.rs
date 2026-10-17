@@ -12,11 +12,10 @@ use crate::bytes::Cursor;
 
 const STEPS: [i32; 89] = [
     7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 19, 21, 23, 25, 28, 31, 34, 37, 41, 45, 50, 55, 60, 66,
-    73, 80, 88, 97, 107, 118, 130, 143, 157, 173, 190, 209, 230, 253, 279, 307, 337, 371, 408,
-    449, 494, 544, 598, 658, 724, 796, 876, 963, 1060, 1166, 1282, 1411, 1552, 1707, 1878, 2066,
-    2272, 2499, 2749, 3024, 3327, 3660, 4026, 4428, 4871, 5358, 5894, 6484, 7132, 7845, 8630,
-    9493, 10442, 11487, 12635, 13899, 15289, 16818, 18500, 20350, 22385, 24623, 27086, 29794,
-    32767,
+    73, 80, 88, 97, 107, 118, 130, 143, 157, 173, 190, 209, 230, 253, 279, 307, 337, 371, 408, 449,
+    494, 544, 598, 658, 724, 796, 876, 963, 1060, 1166, 1282, 1411, 1552, 1707, 1878, 2066, 2272,
+    2499, 2749, 3024, 3327, 3660, 4026, 4428, 4871, 5358, 5894, 6484, 7132, 7845, 8630, 9493,
+    10442, 11487, 12635, 13899, 15289, 16818, 18500, 20350, 22385, 24623, 27086, 29794, 32767,
 ];
 const INDEX_ADJUST: [i32; 16] = [-1, -1, -1, -1, 2, 4, 6, 8, -1, -1, -1, -1, 2, 4, 6, 8];
 
@@ -146,7 +145,8 @@ impl AudFile {
         let mut ima = Ima::default();
         // Never trust the header for allocation: each input byte yields at
         // most two samples.
-        let mut samples = Vec::with_capacity((hdr.output_size as usize / 2).min((data.len() - 12) * 2));
+        let mut samples =
+            Vec::with_capacity((hdr.output_size as usize / 2).min((data.len() - 12) * 2));
         let mut c = Cursor::at(data, 12);
         while c.pos() < data.len() {
             let in_size = c.u16().ok_or(AudioError::Truncated)? as usize;
@@ -179,9 +179,14 @@ impl AudFile {
 /// per channel, `i16 predictor, u8 index, u8 reserved` (the predictor is the
 /// first output sample), then 4-byte groups alternating between channels,
 /// each group 8 nibbles low-first.
-pub fn decode_ms_ima(data: &[u8], channels: u16, block_align: usize) -> Result<Vec<i16>, AudioError> {
+pub fn decode_ms_ima(
+    data: &[u8],
+    channels: u16,
+    block_align: usize,
+) -> Result<Vec<i16>, AudioError> {
     let ch = channels as usize;
-    if ch == 0 || ch > 2 || block_align <= 4 * ch || !(block_align - 4 * ch).is_multiple_of(4 * ch) {
+    if ch == 0 || ch > 2 || block_align <= 4 * ch || !(block_align - 4 * ch).is_multiple_of(4 * ch)
+    {
         return Err(AudioError::Unsupported(format!(
             "IMA block {block_align} x {channels} channels"
         )));
@@ -239,7 +244,10 @@ pub fn decode_wav(data: &[u8]) -> Result<Pcm, AudioError> {
             c.skip(1);
         }
     }
-    let (fmt, body) = (fmt.ok_or(AudioError::BadHeader)?, body.ok_or(AudioError::BadHeader)?);
+    let (fmt, body) = (
+        fmt.ok_or(AudioError::BadHeader)?,
+        body.ok_or(AudioError::BadHeader)?,
+    );
     let mut f = Cursor::new(fmt);
     let tag = f.u16().ok_or(AudioError::BadHeader)?;
     let channels = f.u16().ok_or(AudioError::BadHeader)?;
@@ -249,12 +257,18 @@ pub fn decode_wav(data: &[u8]) -> Result<Pcm, AudioError> {
     let bits = f.u16().ok_or(AudioError::BadHeader)?;
     let mut samples = match (tag, bits) {
         (1, 16) => body
-            .as_chunks::<2>().0.iter()
+            .as_chunks::<2>()
+            .0
+            .iter()
             .map(|b| i16::from_le_bytes([b[0], b[1]]))
             .collect(),
         (1, 8) => body.iter().map(|&b| (i16::from(b) - 128) << 8).collect(),
         (0x11, 4) => decode_ms_ima(body, channels, block_align)?,
-        _ => return Err(AudioError::Unsupported(format!("WAV tag {tag:#x}, {bits} bits"))),
+        _ => {
+            return Err(AudioError::Unsupported(format!(
+                "WAV tag {tag:#x}, {bits} bits"
+            )))
+        }
     };
     // The fact chunk gives the true frame count; the last block is padded.
     if let Some(n) = frames {
@@ -282,7 +296,11 @@ pub struct BagEntry {
 
 impl BagEntry {
     pub fn channels(&self) -> u16 {
-        if self.flags & BAG_FLAG_STEREO != 0 { 2 } else { 1 }
+        if self.flags & BAG_FLAG_STEREO != 0 {
+            2
+        } else {
+            1
+        }
     }
 
     /// Decode this entry from the full `AUDIO.BAG` bytes.
@@ -295,13 +313,18 @@ impl BagEntry {
         let samples = if self.flags & BAG_FLAG_IMA != 0 {
             decode_ms_ima(data, channels, self.chunk_size as usize)?
         } else if self.flags & BAG_FLAG_PCM != 0 && self.flags & BAG_FLAG_16BIT != 0 {
-            data.as_chunks::<2>().0.iter()
+            data.as_chunks::<2>()
+                .0
+                .iter()
                 .map(|b| i16::from_le_bytes([b[0], b[1]]))
                 .collect()
         } else if self.flags & BAG_FLAG_PCM != 0 {
             data.iter().map(|&b| (i16::from(b) - 128) << 8).collect()
         } else {
-            return Err(AudioError::Unsupported(format!("bag flags {:#x}", self.flags)));
+            return Err(AudioError::Unsupported(format!(
+                "bag flags {:#x}",
+                self.flags
+            )));
         };
         Ok(Pcm {
             sample_rate: self.sample_rate,
@@ -456,6 +479,9 @@ mod tests {
         }
         let idx = parse_bag_index(&d).unwrap();
         assert_eq!(idx[0].name, "ichratta");
-        assert_eq!((idx[0].flags, idx[0].chunk_size, idx[0].channels()), (12, 512, 1));
+        assert_eq!(
+            (idx[0].flags, idx[0].chunk_size, idx[0].channels()),
+            (12, 512, 1)
+        );
     }
 }

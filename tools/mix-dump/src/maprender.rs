@@ -10,7 +10,8 @@ pub fn cmd_render_map(args: &[&str]) -> Result<(), String> {
     };
     let scale: u32 = args.get(3).map(|s| s.parse().unwrap_or(2)).unwrap_or(2);
     let map = yr_render::render_map(gamedir, map_name, scale)?;
-    fs::write(out, png::encode_rgba(map.width, map.height, &map.rgba)).map_err(|e| e.to_string())?;
+    fs::write(out, png::encode_rgba(map.width, map.height, &map.rgba))
+        .map_err(|e| e.to_string())?;
     println!("rendered {} -> {out}", map.summary);
     Ok(())
 }

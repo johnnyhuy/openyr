@@ -154,15 +154,13 @@ fn cmd_names(path: &str) -> Result<(), String> {
     let mix = MixArchive::parse(&data).map_err(|e| format!("{path}: {e}"))?;
     println!("{:10} {:>10}  name", "id", "size");
     for e in mix.entries() {
-        let name = known_name(e.id)
-            .map(str::to_string)
-            .unwrap_or_else(|| {
-                let head = mix
-                    .get_by_id(e.id)
-                    .map(|d| &d[..d.len().min(8)])
-                    .unwrap_or(&[]);
-                format!("? ({})", sniff(head))
-            });
+        let name = known_name(e.id).map(str::to_string).unwrap_or_else(|| {
+            let head = mix
+                .get_by_id(e.id)
+                .map(|d| &d[..d.len().min(8)])
+                .unwrap_or(&[]);
+            format!("? ({})", sniff(head))
+        });
         println!("0x{:08x} {:>10}  {}", e.id, e.size, name);
     }
     Ok(())

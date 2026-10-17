@@ -101,7 +101,12 @@ impl TechnoType {
     /// Every weapon this type can fire, deduplicated, in declaration order.
     pub fn all_weapons(&self) -> Vec<&str> {
         let mut out: Vec<&str> = Vec::new();
-        let named = [&self.primary, &self.secondary, &self.elite_primary, &self.elite_secondary];
+        let named = [
+            &self.primary,
+            &self.secondary,
+            &self.elite_primary,
+            &self.elite_secondary,
+        ];
         for w in named.into_iter().flatten().chain(self.weapons.iter()) {
             if !out.iter().any(|o| o.eq_ignore_ascii_case(w)) {
                 out.push(w);
@@ -192,7 +197,9 @@ impl<T> Default for Registry<T> {
 
 impl<T> Registry<T> {
     pub fn get(&self, id: &str) -> Option<&T> {
-        self.index.get(&id.to_ascii_uppercase()).map(|&i| &self.items[i])
+        self.index
+            .get(&id.to_ascii_uppercase())
+            .map(|&i| &self.items[i])
     }
 
     pub fn contains(&self, id: &str) -> bool {
@@ -290,11 +297,18 @@ impl Rules {
     pub fn load(rules: &IniFile, art: &IniFile) -> Rules {
         let mut out = Rules::default();
         for kind in TechnoKind::ALL {
-            for (index, id) in type_list(rules, kind.list_section(), &mut out.issues).into_iter().enumerate() {
+            for (index, id) in type_list(rules, kind.list_section(), &mut out.issues)
+                .into_iter()
+                .enumerate()
+            {
                 let t = load_techno(rules, art, &id, kind, index, &mut out.issues);
                 let reg = out.registry_mut(kind);
                 if !reg.insert(&id, t) {
-                    out.issues.push(issue(Severity::Note, kind.list_section(), format!("{id} listed twice; first kept")));
+                    out.issues.push(issue(
+                        Severity::Note,
+                        kind.list_section(),
+                        format!("{id} listed twice; first kept"),
+                    ));
                 }
             }
         }
@@ -303,7 +317,11 @@ impl Rules {
         let refs: Vec<(String, String)> = TechnoKind::ALL
             .iter()
             .flat_map(|&k| out.registry(k).iter())
-            .flat_map(|t| t.all_weapons().into_iter().map(|w| (w.to_string(), t.id.clone())))
+            .flat_map(|t| {
+                t.all_weapons()
+                    .into_iter()
+                    .map(|w| (w.to_string(), t.id.clone()))
+            })
             .collect();
         for (w, user) in refs {
             if out.weapons.contains(&w) {
@@ -311,7 +329,11 @@ impl Rules {
             }
             let weapon = load_weapon(rules, &w);
             if !weapon.defined {
-                out.issues.push(issue(Severity::Warning, &user, format!("weapon {w} has no section")));
+                out.issues.push(issue(
+                    Severity::Warning,
+                    &user,
+                    format!("weapon {w} has no section"),
+                ));
             }
             out.weapons.insert(&w, weapon);
         }
@@ -326,12 +348,20 @@ impl Rules {
             }
         }
 
-        let projectile_ids: Vec<String> = out.weapons.iter().filter_map(|w| w.projectile.clone()).collect();
+        let projectile_ids: Vec<String> = out
+            .weapons
+            .iter()
+            .filter_map(|w| w.projectile.clone())
+            .collect();
         for id in projectile_ids {
             if !out.projectiles.contains(&id) {
                 let p = load_projectile(rules, &id);
                 if !p.defined {
-                    out.issues.push(issue(Severity::Warning, &id, "projectile has no section".into()));
+                    out.issues.push(issue(
+                        Severity::Warning,
+                        &id,
+                        "projectile has no section".into(),
+                    ));
                 }
                 out.projectiles.insert(&id, p);
             }
@@ -362,11 +392,15 @@ impl Rules {
 
     /// Look a techno up in any of the four registries.
     pub fn techno(&self, id: &str) -> Option<&TechnoType> {
-        TechnoKind::ALL.iter().find_map(|&k| self.registry(k).get(id))
+        TechnoKind::ALL
+            .iter()
+            .find_map(|&k| self.registry(k).get(id))
     }
 
     pub fn technos(&self) -> impl Iterator<Item = &TechnoType> {
-        TechnoKind::ALL.into_iter().flat_map(move |k| self.registry(k).iter())
+        TechnoKind::ALL
+            .into_iter()
+            .flat_map(move |k| self.registry(k).iter())
     }
 }
 
@@ -382,7 +416,11 @@ fn issue(severity: Severity, section: &str, message: String) -> Issue {
 /// first position but takes the last value (later lines overwrite).
 fn type_list(rules: &IniFile, section: &str, issues: &mut Vec<Issue>) -> Vec<String> {
     let Some(sec) = rules.section(section) else {
-        issues.push(issue(Severity::Warning, section, "type list missing".into()));
+        issues.push(issue(
+            Severity::Warning,
+            section,
+            "type list missing".into(),
+        ));
         return Vec::new();
     };
     let mut keys: Vec<String> = Vec::new();
@@ -390,14 +428,16 @@ fn type_list(rules: &IniFile, section: &str, issues: &mut Vec<Issue>) -> Vec<Str
     for (k, v) in &sec.entries {
         let key = k.to_ascii_uppercase();
         if values.insert(key.clone(), v.trim().to_string()).is_some() {
-            issues.push(issue(Severity::Note, section, format!("index {k} reused; last value wins")));
+            issues.push(issue(
+                Severity::Note,
+                section,
+                format!("index {k} reused; last value wins"),
+            ));
         } else {
             keys.push(key);
         }
     }
-    keys.iter()
-        .filter_map(|k| parse_ref(&values[k]))
-        .collect()
+    keys.iter().filter_map(|k| parse_ref(&values[k])).collect()
 }
 
 fn int(sec: Option<&IniSection>, key: &str) -> Option<i64> {
@@ -426,12 +466,20 @@ fn load_techno(
 ) -> TechnoType {
     let sec = rules.section(id);
     if sec.is_none() {
-        issues.push(issue(Severity::Note, id, format!("listed in [{}] but has no section", kind.list_section())));
+        issues.push(issue(
+            Severity::Note,
+            id,
+            format!("listed in [{}] but has no section", kind.list_section()),
+        ));
     }
     let armor = sec.and_then(|s| s.get("Armor")).map(|text| {
         let a = Armor::parse(text);
         if a.is_none() {
-            issues.push(issue(Severity::Warning, id, format!("unknown Armor={text}")));
+            issues.push(issue(
+                Severity::Warning,
+                id,
+                format!("unknown Armor={text}"),
+            ));
         }
         a
     });
@@ -460,7 +508,11 @@ fn load_techno(
         remapable: a.get_bool("Remapable"),
     });
     if sec.is_some() && art_info.is_none() {
-        issues.push(issue(Severity::Note, id, format!("no artmd.ini section [{image}]")));
+        issues.push(issue(
+            Severity::Note,
+            id,
+            format!("no artmd.ini section [{image}]"),
+        ));
     }
     TechnoType {
         id: id.to_string(),
@@ -477,8 +529,14 @@ fn load_techno(
         tech_level: int(sec, "TechLevel"),
         sight: int(sec, "Sight"),
         speed: int(sec, "Speed"),
-        owner: sec.and_then(|s| s.get("Owner")).map(parse_list).unwrap_or_default(),
-        prerequisite: sec.and_then(|s| s.get("Prerequisite")).map(parse_list).unwrap_or_default(),
+        owner: sec
+            .and_then(|s| s.get("Owner"))
+            .map(parse_list)
+            .unwrap_or_default(),
+        prerequisite: sec
+            .and_then(|s| s.get("Prerequisite"))
+            .map(parse_list)
+            .unwrap_or_default(),
         primary: reference(sec, "Primary"),
         secondary: reference(sec, "Secondary"),
         elite_primary: reference(sec, "ElitePrimary"),
@@ -502,19 +560,30 @@ fn load_weapon(rules: &IniFile, id: &str) -> WeaponType {
         burst: int(sec, "Burst"),
         projectile: reference(sec, "Projectile"),
         warhead: reference(sec, "Warhead"),
-        report: sec.and_then(|s| s.get("Report")).map(parse_list).unwrap_or_default(),
+        report: sec
+            .and_then(|s| s.get("Report"))
+            .map(parse_list)
+            .unwrap_or_default(),
     }
 }
 
 fn load_warhead(rules: &IniFile, id: &str, issues: &mut Vec<Issue>) -> WarheadType {
     let sec = rules.section(id);
     if sec.is_none() {
-        issues.push(issue(Severity::Warning, id, "warhead has no section".into()));
+        issues.push(issue(
+            Severity::Warning,
+            id,
+            "warhead has no section".into(),
+        ));
     }
     let verses = sec.and_then(|s| s.get("Verses")).and_then(|text| {
         let parts: Vec<Option<Decimal>> = text.split(',').map(Decimal::parse).collect();
         if parts.len() != 11 || parts.iter().any(Option::is_none) {
-            issues.push(issue(Severity::Warning, id, format!("Verses needs 11 values, got {text}")));
+            issues.push(issue(
+                Severity::Warning,
+                id,
+                format!("Verses needs 11 values, got {text}"),
+            ));
             return None;
         }
         let mut v = [Decimal::ONE; 11];
@@ -590,19 +659,33 @@ fn load_skirmish(rules: &IniFile) -> SkirmishDefaults {
 
 fn load_houses(rules: &IniFile) -> Registry<House> {
     let mut out = Registry::default();
-    let Some(sides) = rules.section("Sides") else { return out };
+    let Some(sides) = rules.section("Sides") else {
+        return out;
+    };
     let colors = rules.section("Colors");
     for side in ["GDI", "Nod", "ThirdSide", "Civilian", "Mutant"] {
-        let Some(list) = sides.get(side) else { continue };
+        let Some(list) = sides.get(side) else {
+            continue;
+        };
         for id in parse_list(list) {
             let sec = rules.section(&id);
             let color = reference(sec, "Color");
             let color_hsv = color.as_ref().and_then(|name| {
                 let v = colors?.get(name)?;
-                let mut it = v.split(';').next()?.split(',').map(|p| p.trim().parse::<i64>().ok());
+                let mut it = v
+                    .split(';')
+                    .next()?
+                    .split(',')
+                    .map(|p| p.trim().parse::<i64>().ok());
                 Some((it.next()??, it.next()??, it.next()??))
             });
-            let house = House { side: side.to_string(), color, color_hsv, suffix: reference(sec, "Suffix"), id: id.clone() };
+            let house = House {
+                side: side.to_string(),
+                color,
+                color_hsv,
+                suffix: reference(sec, "Suffix"),
+                id: id.clone(),
+            };
             out.insert(&id, house);
         }
     }
@@ -683,12 +766,18 @@ AG=yes
     fn techno_fields_and_art() {
         let r = load();
         let h = r.techno("HTNK").unwrap();
-        assert_eq!((h.strength, h.armor, h.cost), (Some(400), Some(Armor::Heavy), Some(900)));
+        assert_eq!(
+            (h.strength, h.armor, h.cost),
+            (Some(400), Some(Armor::Heavy), Some(900))
+        );
         assert_eq!(h.owner, ["Russians", "Confederation"]);
         let art = h.art.as_ref().unwrap();
         assert!(art.voxel);
         assert_eq!(art.cameo.as_deref(), Some("HTNKICON"));
-        assert_eq!(r.techno("MTNK").unwrap().art.as_ref().unwrap().section, "GTNK");
+        assert_eq!(
+            r.techno("MTNK").unwrap().art.as_ref().unwrap().section,
+            "GTNK"
+        );
         assert_eq!(r.techno("E1").unwrap().armor, Some(Armor::Flak));
     }
 
@@ -707,13 +796,22 @@ AG=yes
     fn issues_report_data_problems() {
         let r = load();
         let has = |sev, sec: &str, needle: &str| {
-            r.issues.iter().any(|i| i.severity == sev && i.section == sec && i.message.contains(needle))
+            r.issues
+                .iter()
+                .any(|i| i.severity == sev && i.section == sec && i.message.contains(needle))
         };
         assert!(has(Severity::Note, "GHOST", "no section"));
         assert!(has(Severity::Note, "VehicleTypes", "index 1 reused"));
         assert!(has(Severity::Warning, "SA", "Verses needs 11"));
-        assert!(has(Severity::Warning, "Invisible", "projectile has no section"));
+        assert!(has(
+            Severity::Warning,
+            "Invisible",
+            "projectile has no section"
+        ));
         // Unspecified verses fall back to 100%.
-        assert_eq!(r.warheads.get("SA").unwrap().verse(Armor::Flak), Decimal::ONE);
+        assert_eq!(
+            r.warheads.get("SA").unwrap().verse(Armor::Flak),
+            Decimal::ONE
+        );
     }
 }

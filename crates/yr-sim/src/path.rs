@@ -58,7 +58,13 @@ pub fn find_path(
     };
     // (f, h, y, x) packed so Reverse gives a total, deterministic order.
     let key = |f: i64, hh: i64, i: usize| (Reverse(f), Reverse(hh), Reverse(i / w), Reverse(i % w));
-    type HeapKey = (Reverse<i64>, Reverse<i64>, Reverse<usize>, Reverse<usize>, usize);
+    type HeapKey = (
+        Reverse<i64>,
+        Reverse<i64>,
+        Reverse<usize>,
+        Reverse<usize>,
+        usize,
+    );
     let mut open: BinaryHeap<HeapKey> = BinaryHeap::new();
     g_score[start] = 0;
     let h0 = heuristic(start);
@@ -99,7 +105,9 @@ pub fn find_path(
                     continue;
                 }
             }
-            let Some(cost) = enter_cost(grid, loco, mx, my, diag) else { continue };
+            let Some(cost) = enter_cost(grid, loco, mx, my, diag) else {
+                continue;
+            };
             let ni = ny as usize * w + nx as usize;
             let ng = g_score[cur] + cost;
             if ng < g_score[ni] {

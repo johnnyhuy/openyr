@@ -65,7 +65,9 @@ pub fn unpack_chunks(data: &[u8], decode: fn(&[u8], usize) -> Result<Vec<u8>>) -
         let head = data.get(pos..pos + 4).ok_or(DecompressError::Truncated)?;
         let in_size = usize::from(u16::from_le_bytes([head[0], head[1]]));
         let out_size = usize::from(u16::from_le_bytes([head[2], head[3]]));
-        let body = data.get(pos + 4..pos + 4 + in_size).ok_or(DecompressError::Truncated)?;
+        let body = data
+            .get(pos + 4..pos + 4 + in_size)
+            .ok_or(DecompressError::Truncated)?;
         out.extend(decode(body, out_size)?);
         pos += 4 + in_size;
     }
@@ -81,7 +83,10 @@ impl Out {
     fn literal(&mut self, src: &[u8], ip: &mut usize, n: usize) -> Result<()> {
         let s = src.get(*ip..*ip + n).ok_or(DecompressError::Truncated)?;
         if self.buf.len() + n > self.limit {
-            return Err(DecompressError::SizeMismatch { expected: self.limit, actual: self.buf.len() + n });
+            return Err(DecompressError::SizeMismatch {
+                expected: self.limit,
+                actual: self.buf.len() + n,
+            });
         }
         self.buf.extend_from_slice(s);
         *ip += n;
@@ -90,7 +95,11 @@ impl Out {
 
     /// Byte-by-byte copy so overlapping references repeat patterns.
     fn copy_back(&mut self, dist: usize, n: usize) -> Result<()> {
-        let start = self.buf.len().checked_sub(dist).ok_or(DecompressError::BadReference)?;
+        let start = self
+            .buf
+            .len()
+            .checked_sub(dist)
+            .ok_or(DecompressError::BadReference)?;
         self.copy_abs(start, n)
     }
 
@@ -99,7 +108,10 @@ impl Out {
             return Err(DecompressError::BadReference);
         }
         if self.buf.len() + n > self.limit {
-            return Err(DecompressError::SizeMismatch { expected: self.limit, actual: self.buf.len() + n });
+            return Err(DecompressError::SizeMismatch {
+                expected: self.limit,
+                actual: self.buf.len() + n,
+            });
         }
         for i in 0..n {
             let b = self.buf[start + i];
@@ -112,7 +124,10 @@ impl Out {
         if self.buf.len() == self.limit {
             Ok(self.buf)
         } else {
-            Err(DecompressError::SizeMismatch { expected: self.limit, actual: self.buf.len() })
+            Err(DecompressError::SizeMismatch {
+                expected: self.limit,
+                actual: self.buf.len(),
+            })
         }
     }
 }
@@ -149,7 +164,10 @@ pub fn lzo1x_decompress(src: &[u8], out_size: usize) -> Result<Vec<u8>> {
         MatchDone,
         MatchNext(usize),
     }
-    let mut out = Out { buf: Vec::with_capacity(out_size.min(src.len().saturating_mul(255))), limit: out_size };
+    let mut out = Out {
+        buf: Vec::with_capacity(out_size.min(src.len().saturating_mul(255))),
+        limit: out_size,
+    };
     let mut ip = 0;
     let mut state = match src.first() {
         Some(&b) if b > 17 => {
@@ -211,7 +229,10 @@ pub fn lzo1x_decompress(src: &[u8], out_size: usize) -> Result<Vec<u8>> {
                     if dist == 0 {
                         // End-of-stream marker.
                         if ip != src.len() {
-                            return Err(DecompressError::SizeMismatch { expected: src.len(), actual: ip });
+                            return Err(DecompressError::SizeMismatch {
+                                expected: src.len(),
+                                actual: ip,
+                            });
                         }
                         return out.finish();
                     }
@@ -244,7 +265,10 @@ pub fn lzo1x_decompress(src: &[u8], out_size: usize) -> Result<Vec<u8>> {
 /// Westwood LCW ("format 80") decompression into exactly `out_size` bytes.
 /// Copy positions in the long forms are absolute from the output start.
 pub fn lcw_decompress(src: &[u8], out_size: usize) -> Result<Vec<u8>> {
-    let mut out = Out { buf: Vec::with_capacity(out_size.min(src.len().saturating_mul(64))), limit: out_size };
+    let mut out = Out {
+        buf: Vec::with_capacity(out_size.min(src.len().saturating_mul(64))),
+        limit: out_size,
+    };
     let mut ip = 0;
     loop {
         let cmd = byte(src, &mut ip)?;
@@ -263,7 +287,10 @@ pub fn lcw_decompress(src: &[u8], out_size: usize) -> Result<Vec<u8>> {
                 let n = le16(src, &mut ip)?;
                 let v = byte(src, &mut ip)? as u8;
                 if out.buf.len() + n > out.limit {
-                    return Err(DecompressError::SizeMismatch { expected: out.limit, actual: out.buf.len() + n });
+                    return Err(DecompressError::SizeMismatch {
+                        expected: out.limit,
+                        actual: out.buf.len() + n,
+                    });
                 }
                 out.buf.resize(out.buf.len() + n, v);
             }
@@ -301,7 +328,10 @@ mod tests {
         // First byte 17+5: five literals, then the end marker 0x11 0x00 0x00.
         let src = [22, b'h', b'e', b'l', b'l', b'o', 0x11, 0, 0];
         assert_eq!(lzo1x_decompress(&src, 5).unwrap(), b"hello");
-        assert!(lzo1x_decompress(&src, 6).is_err(), "declared size must match");
+        assert!(
+            lzo1x_decompress(&src, 6).is_err(),
+            "declared size must match"
+        );
     }
 
     #[test]
@@ -329,7 +359,10 @@ mod tests {
     fn chunk_container_rejects_oversized_chunk() {
         // Header claims 100 body bytes; only 2 are present.
         let data = [100u8, 0, 2, 0, 0x81, b'!'];
-        assert_eq!(unpack_chunks(&data, lcw_decompress), Err(DecompressError::Truncated));
+        assert_eq!(
+            unpack_chunks(&data, lcw_decompress),
+            Err(DecompressError::Truncated)
+        );
         // Declared output size must match what the chunk actually produces.
         let mut lying = Vec::new();
         lying.extend(3u16.to_le_bytes());

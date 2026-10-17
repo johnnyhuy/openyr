@@ -35,7 +35,9 @@ const NEUTRAL: u8 = yr_sim::OWNER_NEUTRAL;
 /// Start waypoints from `[Waypoints]`: keys 0..=7 sorted, value is
 /// `y * 1000 + x` (the same packing as `[Terrain]` keys).
 pub fn start_waypoints(map: &MapFile) -> Vec<(u16, u16)> {
-    let Some(sec) = map.ini.section("Waypoints") else { return Vec::new() };
+    let Some(sec) = map.ini.section("Waypoints") else {
+        return Vec::new();
+    };
     let mut keys: Vec<(u32, i64)> = sec
         .entries
         .iter()
@@ -43,7 +45,9 @@ pub fn start_waypoints(map: &MapFile) -> Vec<(u16, u16)> {
         .filter(|(k, _)| *k <= 7)
         .collect();
     keys.sort_by_key(|k| k.0);
-    keys.iter().map(|(_, v)| ((v % 1000) as u16, (v / 1000) as u16)).collect()
+    keys.iter()
+        .map(|(_, v)| ((v % 1000) as u16, (v / 1000) as u16))
+        .collect()
 }
 
 fn armor_idx(rules_techno: &yr_rules::TechnoType) -> u8 {
@@ -76,7 +80,10 @@ fn place_unit(
     commands: &mut Vec<Command>,
 ) -> Option<u32> {
     let t = rules.techno(id)?;
-    let weapon = t.primary.as_deref().and_then(|w| yr_sim::WeaponSpec::from_rules(rules, w));
+    let weapon = t
+        .primary
+        .as_deref()
+        .and_then(|w| yr_sim::WeaponSpec::from_rules(rules, w));
     let before = *next_id;
     *next_id += 1;
     commands.push(Command::Spawn {
@@ -93,11 +100,19 @@ fn place_unit(
 }
 
 fn first_of(rules: &Rules, ids: &[&str]) -> Option<String> {
-    ids.iter().find(|id| rules.techno(id).is_some()).map(|s| s.to_string())
+    ids.iter()
+        .find(|id| rules.techno(id).is_some())
+        .map(|s| s.to_string())
 }
 
 /// First passable cell at or after `start`, scanning expanding offsets.
-fn free_cell(grid: &TerrainGrid, loco: Loco, start: (u16, u16), sim: &Sim, taken_cells: &[(u16, u16)]) -> Option<(u16, u16)> {
+fn free_cell(
+    grid: &TerrainGrid,
+    loco: Loco,
+    start: (u16, u16),
+    sim: &Sim,
+    taken_cells: &[(u16, u16)],
+) -> Option<(u16, u16)> {
     for r in 0..12i32 {
         for dy in -r..=r {
             for dx in -r..=r {
@@ -113,9 +128,10 @@ fn free_cell(grid: &TerrainGrid, loco: Loco, start: (u16, u16), sim: &Sim, taken
                     continue;
                 }
                 let taken = taken_cells.contains(&(x, y))
-                    || sim.units().iter().any(|u| {
-                        u.x.to_int_floor() as u16 == x && u.y.to_int_floor() as u16 == y
-                    });
+                    || sim
+                        .units()
+                        .iter()
+                        .any(|u| u.x.to_int_floor() as u16 == x && u.y.to_int_floor() as u16 == y);
                 if !taken {
                     return Some((x, y));
                 }
@@ -159,7 +175,11 @@ fn place_base(
     }
     for (id, role) in placed {
         let Some(t) = rules.techno(&id) else { continue };
-        let (fw, fh) = t.art.as_ref().and_then(|a| a.foundation).unwrap_or((2u8, 2u8));
+        let (fw, fh) = t
+            .art
+            .as_ref()
+            .and_then(|a| a.foundation)
+            .unwrap_or((2u8, 2u8));
         let (fw, fh) = (u16::from(fw), u16::from(fh));
         // Find a free footprint whose cells are all passable now.
         let mut spot = None;
@@ -232,9 +252,15 @@ pub fn setup(
     let mut taken_cells: Vec<(u16, u16)> = Vec::new();
     // Map's own pre-placed objects (neutral unless owned otherwise).
     for obj in &map.structures {
-        let Some(t) = rules.techno(&obj.kind) else { continue };
+        let Some(t) = rules.techno(&obj.kind) else {
+            continue;
+        };
         next_id += 1;
-        let (fw, fh) = t.art.as_ref().and_then(|a| a.foundation).unwrap_or((1u8, 1u8));
+        let (fw, fh) = t
+            .art
+            .as_ref()
+            .and_then(|a| a.foundation)
+            .unwrap_or((1u8, 1u8));
         let (fw, fh) = (u16::from(fw), u16::from(fh));
         cmds.push(Command::PlaceBuilding {
             x: obj.x,
@@ -250,7 +276,14 @@ pub fn setup(
     }
     for obj in map.units.iter().chain(&map.infantry).chain(&map.aircraft) {
         let mut extra = Vec::new();
-        place_unit(&mut next_id, rules, &obj.kind, (obj.x, obj.y), NEUTRAL, &mut extra);
+        place_unit(
+            &mut next_id,
+            rules,
+            &obj.kind,
+            (obj.x, obj.y),
+            NEUTRAL,
+            &mut extra,
+        );
         cmds.extend(extra);
         taken_cells.push((obj.x, obj.y));
     }
@@ -262,8 +295,24 @@ pub fn setup(
     let plant = first_of(rules, &["GAPOWR", "NAPOWR", "YAPOWR"]);
     let refinery = first_of(rules, &["GAREFN", "NAREFN", "YAREFN"]);
     if let (Some(y), Some(p), Some(r)) = (&yard, &plant, &refinery) {
-        let mut ctx = PlaceCtx { next_id: &mut next_id, taken_cells: &mut taken_cells, rules, grid: &grid };
-        place_base(&mut ctx, player_at, PLAYER, &BaseSpec { yard: y, power_plant: p, refinery: r, extra: None }, &mut cmds);
+        let mut ctx = PlaceCtx {
+            next_id: &mut next_id,
+            taken_cells: &mut taken_cells,
+            rules,
+            grid: &grid,
+        };
+        place_base(
+            &mut ctx,
+            player_at,
+            PLAYER,
+            &BaseSpec {
+                yard: y,
+                power_plant: p,
+                refinery: r,
+                extra: None,
+            },
+            &mut cmds,
+        );
     }
     let mcv = first_of(rules, &["MCV", "SMCV", "PCV"]);
     let harv = first_of(rules, &["HARV", "CMON", "AMCV"]);
@@ -283,17 +332,27 @@ pub fn setup(
         force.extend(std::iter::repeat_n(i.clone(), 4));
     }
     let target_count = rules.skirmish.unit_count.unwrap_or(10).max(0) as usize;
-    if force.len() > target_count { force.truncate(target_count); }
+    if force.len() > target_count {
+        force.truncate(target_count);
+    }
     for id in &force {
-        let loco = rules.techno(id).map(|t| techno_loco(t.kind)).unwrap_or(Loco::Track);
-        let Some(cell) = free_cell(&grid, loco, player_at, &sim, &taken_cells) else { continue };
+        let loco = rules
+            .techno(id)
+            .map(|t| techno_loco(t.kind))
+            .unwrap_or(Loco::Track);
+        let Some(cell) = free_cell(&grid, loco, player_at, &sim, &taken_cells) else {
+            continue;
+        };
         taken_cells.push(cell);
         let mut extra = Vec::new();
         let uid = place_unit(&mut next_id, rules, id, cell, PLAYER, &mut extra);
         cmds.extend(extra);
         if let (Some(uid), Some(h)) = (uid, &harv) {
             if id == h {
-                cmds.push(Command::AssignRole { id: uid, role: Role::Harvester });
+                cmds.push(Command::AssignRole {
+                    id: uid,
+                    role: Role::Harvester,
+                });
             }
         }
     }
@@ -303,12 +362,30 @@ pub fn setup(
         let enemy_at = waypoints[1];
         if let (Some(y), Some(p), Some(r)) = (&yard, &plant, &refinery) {
             let weap = first_of(rules, &["GAWEAP", "NAWEAP", "YAWEAP"]);
-            let mut ctx = PlaceCtx { next_id: &mut next_id, taken_cells: &mut taken_cells, rules, grid: &grid };
-            place_base(&mut ctx, enemy_at, ENEMY, &BaseSpec { yard: y, power_plant: p, refinery: r, extra: weap.as_deref() }, &mut cmds);
+            let mut ctx = PlaceCtx {
+                next_id: &mut next_id,
+                taken_cells: &mut taken_cells,
+                rules,
+                grid: &grid,
+            };
+            place_base(
+                &mut ctx,
+                enemy_at,
+                ENEMY,
+                &BaseSpec {
+                    yard: y,
+                    power_plant: p,
+                    refinery: r,
+                    extra: weap.as_deref(),
+                },
+                &mut cmds,
+            );
         }
         if let Some(t) = &tank {
             for _ in 0..3 {
-                let Some(cell) = free_cell(&grid, Loco::Track, enemy_at, &sim, &taken_cells) else { break };
+                let Some(cell) = free_cell(&grid, Loco::Track, enemy_at, &sim, &taken_cells) else {
+                    break;
+                };
                 taken_cells.push(cell);
                 let mut extra = Vec::new();
                 place_unit(&mut next_id, rules, t, cell, ENEMY, &mut extra);
@@ -317,7 +394,11 @@ pub fn setup(
         }
     }
     sim.step(&cmds);
-    Ok(Session { sim, outcome: Outcome::Ongoing, had_enemy })
+    Ok(Session {
+        sim,
+        outcome: Outcome::Ongoing,
+        had_enemy,
+    })
 }
 
 impl Session {

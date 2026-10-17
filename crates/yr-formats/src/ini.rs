@@ -62,7 +62,11 @@ impl IniFile {
             // The section name runs to the first `]`; anything after it is
             // ignored. Retail rulesmd.ini has `[MirageWH]\t// Supposed to be
             // a heat ray.`, which must still open [MirageWH].
-            if let Some(name) = line.strip_prefix('[').and_then(|l| l.split_once(']')).map(|(n, _)| n) {
+            if let Some(name) = line
+                .strip_prefix('[')
+                .and_then(|l| l.split_once(']'))
+                .map(|(n, _)| n)
+            {
                 let name = name.trim().to_string();
                 let key = name.to_ascii_uppercase();
                 current = match file.index.get(&key) {
@@ -160,7 +164,9 @@ mod tests {
     fn text_after_section_header_is_ignored() {
         // Retail rulesmd.ini: a `//` note after the header must not merge the
         // section's keys into the previous one ([LUNARWH]).
-        let ini = IniFile::parse("[LUNARWH]\nVerses=1\n\n[MirageWH]\t// Supposed to be a heat ray.\nVerses=2\n");
+        let ini = IniFile::parse(
+            "[LUNARWH]\nVerses=1\n\n[MirageWH]\t// Supposed to be a heat ray.\nVerses=2\n",
+        );
         assert_eq!(ini.value("LUNARWH", "Verses"), Some("1"));
         assert_eq!(ini.value("MirageWH", "Verses"), Some("2"));
     }
@@ -169,8 +175,22 @@ mod tests {
     fn booleans_use_first_character() {
         let ini = IniFile::parse("[A]\na=yes\nb=True\nc=1\nd=no\ne=False\nf=0\ng=maybe\n");
         let a = ini.section("A").unwrap();
-        let got: Vec<_> = ["a", "b", "c", "d", "e", "f", "g"].iter().map(|k| a.get_bool(k)).collect();
-        assert_eq!(got, [Some(true), Some(true), Some(true), Some(false), Some(false), Some(false), None]);
+        let got: Vec<_> = ["a", "b", "c", "d", "e", "f", "g"]
+            .iter()
+            .map(|k| a.get_bool(k))
+            .collect();
+        assert_eq!(
+            got,
+            [
+                Some(true),
+                Some(true),
+                Some(true),
+                Some(false),
+                Some(false),
+                Some(false),
+                None
+            ]
+        );
     }
 
     #[test]
