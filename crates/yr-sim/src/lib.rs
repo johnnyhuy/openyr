@@ -9,6 +9,7 @@
 //! flat plane. Terrain, combat and economy arrive in later issues and
 //! plug into the same tick phases.
 
+pub mod building;
 pub mod combat;
 mod fix;
 mod hash;
@@ -18,6 +19,7 @@ pub mod terrain;
 
 pub use fix::Fix;
 pub use rng::Rng;
+pub use building::Building;
 pub use combat::WeaponSpec;
 pub use terrain::TerrainGrid;
 
@@ -44,6 +46,9 @@ pub enum Command {
     Harvest { id: u32 },
     /// Mark a unit's economy role (scenario setup).
     AssignRole { id: u32, role: Role },
+    /// Place a building: footprint cells, health, armour, power
+    /// (positive produces, negative drains).
+    PlaceBuilding { x: u16, y: u16, w: u16, h: u16, hp: i64, armor: u8, power: i64 },
     Stop { id: u32 },
     Remove { id: u32 },
 }
@@ -135,11 +140,14 @@ pub struct Sim {
     projectiles: Vec<Projectile>,
     events: Vec<Event>,
     credits: i64,
+    buildings: Vec<Building>,
+    /// (min, max) low-power production speed factors from the rules.
+    low_power_speeds: (Fix, Fix),
 }
 
 impl Sim {
     pub fn new(seed: u64) -> Sim {
-        Sim { tick: 0, rng: Rng::new(seed), next_id: 1, units: Vec::new(), terrain: None, projectiles: Vec::new(), events: Vec::new(), credits: 0 }
+        Sim { tick: 0, rng: Rng::new(seed), next_id: 1, units: Vec::new(), terrain: None, projectiles: Vec::new(), events: Vec::new(), credits: 0, buildings: Vec::new(), low_power_speeds: (Fix::from_raw(128), Fix::ONE) }
     }
 
     /// Attach the scenario terrain (static; fingerprinted into the hash).
@@ -189,6 +197,14 @@ impl Sim {
                         harvest: Harvest::Idle,
                     });
                 }
+                Command::PlaceBuilding { x, y, w, h, hp, armor, power } => {
+                    let id = self.next_id;
+                    self.next_id += 1;
+                    self.buildings.push(Building { id, cell: (x, y), size: (w, h), hp, max_hp: hp, armor, power });
+                    if let Some(g) = self.terrain.as_mut() {
+                        g.set_building(x, y, w, h, true);
+                    }
+                }
                 Command::AssignRole { id, role } => {
                     if let Some(u) = self.units.iter_mut().find(|u| u.id == id) {
                         u.role = role;
@@ -227,15 +243,16 @@ impl Sim {
         // Attackers close to range; in-range attackers hold position.
         for i in 0..self.units.len() {
             let Some(enemy) = self.units[i].attack else { continue };
-            let (Some(w), Some(e)) = (self.units[i].weapon, self.units.iter().find(|u| u.id == enemy)) else { continue };
-            let (dx, dy) = (e.x - self.units[i].x, e.y - self.units[i].y);
+            let (Some(w), Some(e)) = (self.units[i].weapon, self.target_pos(enemy)) else { continue };
+            let (ex, ey) = (e.0, e.1);
+            let (dx, dy) = (ex - self.units[i].x, ey - self.units[i].y);
             if dist2(dx, dy) <= i64::from(w.range.raw()) * i64::from(w.range.raw()) {
                 self.units[i].path.clear();
                 let u = &mut self.units[i];
                 u.target = None;
                 u.facing = octant(dx, dy);
             } else {
-                self.units[i].target = Some((e.x, e.y));
+                self.units[i].target = Some((ex, ey));
             }
         }
         // Movement phase (id order). With terrain, units follow A*
@@ -382,13 +399,13 @@ impl Sim {
             if u.cooldown > 0 {
                 continue;
             }
-            let Some(e) = self.units.iter().find(|x| x.id == enemy_id) else { continue };
-            let (dx, dy) = (e.x - u.x, e.y - u.y);
+            let Some(((ex, ey), earmor)) = self.target_pos(enemy_id).zip(self.target_armor(enemy_id)) else { continue };
+            let (dx, dy) = (ex - u.x, ey - u.y);
             if dist2(dx, dy) > i64::from(w.range.raw()) * i64::from(w.range.raw()) {
                 continue;
             }
             self.events.push(Event::Fired { shooter: u.id, target: enemy_id });
-            let damage = w.damage_against(e.armor);
+            let damage = w.damage_against(earmor);
             if w.projectile_speed == Fix::ZERO {
                 instant.push((u.id, enemy_id, damage));
             } else {
@@ -409,8 +426,7 @@ impl Sim {
         let mut hits: Vec<(u32, i64)> = Vec::new();
         let mut alive: Vec<Projectile> = Vec::new();
         for mut p in std::mem::take(&mut self.projectiles) {
-            let Some(e) = self.units.iter().find(|x| x.id == p.target) else { continue };
-            let (tx, ty) = (e.x, e.y);
+            let Some((tx, ty)) = self.target_pos(p.target) else { continue };
             let (dx, dy) = (tx - p.x, ty - p.y);
             if dist2(dx, dy) <= i64::from(p.speed.raw()) * i64::from(p.speed.raw()) {
                 hits.push((p.target, p.damage));
@@ -434,10 +450,92 @@ impl Sim {
                 u.hp -= damage;
                 self.events.push(Event::Hit { target, damage });
             }
+            return;
+        }
+        if let Some(b) = self.buildings.iter_mut().find(|b| b.id == target) {
+            if b.hp > 0 && damage > 0 {
+                b.hp -= damage;
+                self.events.push(Event::Hit { target, damage });
+            }
         }
     }
 
+    /// Aim point (leptons) for a unit or building id.
+    pub fn target_pos(&self, id: u32) -> Option<(Fix, Fix)> {
+        if let Some(u) = self.units.iter().find(|u| u.id == id) {
+            return Some((u.x, u.y));
+        }
+        self.buildings.iter().find(|b| b.id == id).map(Building::centre)
+    }
+
+    fn target_armor(&self, id: u32) -> Option<u8> {
+        if let Some(u) = self.units.iter().find(|u| u.id == id) {
+            return Some(u.armor);
+        }
+        self.buildings.iter().find(|b| b.id == id).map(|b| b.armor)
+    }
+
+    pub fn buildings(&self) -> &[Building] {
+        &self.buildings
+    }
+
+    /// (produced, drained) power totals.
+    pub fn power(&self) -> (i64, i64) {
+        let mut produced = 0;
+        let mut drained = 0;
+        for b in &self.buildings {
+            if b.power >= 0 {
+                produced += b.power;
+            } else {
+                drained -= b.power;
+            }
+        }
+        (produced, drained)
+    }
+
+    pub fn low_power(&self) -> bool {
+        let (produced, drained) = self.power();
+        drained > produced
+    }
+
+    /// Configure the rules' low-power production speeds
+    /// (`MinLowPowerProductionSpeed`, `MaxLowPowerProductionSpeed`).
+    pub fn set_low_power_speeds(&mut self, min: Fix, max: Fix) {
+        self.low_power_speeds = (min, max);
+    }
+
+    /// Production speed multiplier: 1.0 on full power; on low power it
+    /// interpolates min..max by produced/drain (production issue uses it).
+    pub fn production_factor(&self) -> Fix {
+        let (produced, drained) = self.power();
+        if drained <= produced || drained == 0 {
+            return Fix::ONE;
+        }
+        let (min, max) = self.low_power_speeds;
+        // min + (max-min) * produced/drained, exact fixed-point.
+        let ratio = Fix::from_raw((produced * 256 / drained) as i32);
+        min + (max - min) * ratio
+    }
+
     fn reap_dead(&mut self) {
+        let dead_buildings: Vec<Building> =
+            self.buildings.iter().filter(|b| b.hp <= 0).cloned().collect();
+        if !dead_buildings.is_empty() {
+            self.buildings.retain(|b| b.hp > 0);
+            for b in &dead_buildings {
+                if let Some(g) = self.terrain.as_mut() {
+                    g.set_building(b.cell.0, b.cell.1, b.size.0, b.size.1, false);
+                }
+                self.events.push(Event::Died { id: b.id });
+                for u in &mut self.units {
+                    if u.attack == Some(b.id) {
+                        u.attack = None;
+                        u.target = None;
+                        u.path.clear();
+                    }
+                }
+            }
+        }
         let dead: Vec<u32> = self.units.iter().filter(|u| u.hp <= 0).map(|u| u.id).collect();
         if dead.is_empty() {
             return;
@@ -562,6 +660,12 @@ impl Sim {
             }
         }
         h.write_i64(self.credits);
+        h.write_u64(self.buildings.len() as u64);
+        for b in &self.buildings {
+            h.write_u64(u64::from(b.id));
+            h.write_i64(b.hp);
+            h.write_i64(b.power);
+        }
         h.write_u64(self.projectiles.len() as u64);
         for p in &self.projectiles {
             h.write_i64(i64::from(p.x.raw()));
@@ -748,6 +852,46 @@ mod tests {
         let g = sim.terrain().unwrap();
         assert_eq!(g.cell(6, 0).map(|c| c.resource), Some(0), "ore cell depleted");
         assert_eq!(g.cell(6, 0).map(|c| c.overlay), Some(terrain::Overlay::None));
+    }
+
+    #[test]
+    fn buildings_power_and_footprint_lifecycle() {
+        let mut sim = Sim::new(6);
+        sim.set_terrain(TerrainGrid::new(0, 0, 8, 8));
+        // Power plant (+200) and two consumers (-150 each via two placements).
+        sim.step(&[
+            Command::PlaceBuilding { x: 0, y: 0, w: 2, h: 2, hp: 1000, armor: 0, power: 200 },
+            Command::PlaceBuilding { x: 4, y: 0, w: 2, h: 2, hp: 500, armor: 0, power: -150 },
+        ]);
+        assert_eq!(sim.power(), (200, 150));
+        assert!(!sim.low_power());
+        assert_eq!(sim.production_factor(), Fix::ONE);
+        let g = sim.terrain().unwrap();
+        assert!(!g.passable(terrain::Loco::Foot, 0, 0), "footprint blocks");
+        // Add drain past production: low power slows production.
+        sim.step(&[Command::PlaceBuilding { x: 4, y: 4, w: 2, h: 2, hp: 500, armor: 0, power: -150 }]);
+        assert!(sim.low_power());
+        let f = sim.production_factor();
+        assert!(f < Fix::ONE && f >= Fix::from_raw(128), "low-power factor interpolates: {f:?}");
+        // A tank destroys the consumer at (4,4); footprint frees.
+        let mut verses = [yr_rules::Decimal::ZERO; crate::combat::ARMOR_COUNT];
+        verses[0] = yr_rules::Decimal::ONE;
+        let w = WeaponSpec { damage: 250, rof_ticks: 1, range: Fix::from_int(20), projectile_speed: Fix::ZERO, verses };
+        sim.step(&[
+            Command::Spawn { x: Fix::from_raw(128), y: Fix::from_int(6), loco: terrain::Loco::Track, speed: Fix::from_int(4), hp: 500, armor: 0, weapon: Some(w) },
+            Command::Attack { id: 4, target: 3 },
+        ]);
+        let mut died = false;
+        for _ in 0..50 {
+            sim.step(&[]);
+            died |= sim.drain_events().iter().any(|e| matches!(e, Event::Died { id: 3 }));
+            if died {
+                break;
+            }
+        }
+        assert!(died, "building destroyed");
+        assert!(sim.terrain().unwrap().passable(terrain::Loco::Foot, 4, 4), "footprint freed");
+        assert_eq!(sim.power(), (200, 150), "drain removed with the building");
     }
 
     #[test]
