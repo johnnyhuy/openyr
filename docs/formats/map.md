@@ -124,7 +124,10 @@ cell centre:
   footprint, with palette indices 16–31 (the player-colour ramp)
   remapped to the owner house colour — the owner's `Color=` name
   resolved through the `[Colors]` HSV table in `rulesmd.ini`.
-- Voxel vehicles are still drawn as footprint markers.
+- Voxel vehicles are drawn from their VXL body + `TUR`/`BARL` parts:
+  orthographic iso projection rotated by facing, owner-colour remap,
+  flat shading. Approximate (no HVA frame transforms or normal-based
+  lighting yet); aircraft that are voxel-based use the same path.
 
 Building art resolution (found 2026-10-17 by matching SHP canvas
 sizes and filename hashes across the retail archives): for

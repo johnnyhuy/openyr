@@ -49,7 +49,8 @@ incremental, testable path where each milestone is independently useful.
       infantry/aircraft on the map (`mix-dump render-map`, eyeballed)
 - [x] Structures on the map (NewTheater letter + generic-`G` art,
       foundation anchoring, shadow frames, owner-colour remap)
-- [ ] Voxel vehicles on the map (footprint markers today)
+- [x] Voxel vehicles on the map (VXL body+turret projection; HVA
+      transforms and normal lighting still open)
 - [ ] wgpu/Metal window, integer-scaled 640x480 virtual viewport, pan/zoom
 - [ ] SHP + VXL drawing with palette + shadow pass
 - [ ] Sidebar/cameo UI from `ra2md.csf` strings
