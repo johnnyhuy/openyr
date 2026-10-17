@@ -45,7 +45,10 @@ incremental, testable path where each milestone is independently useful.
       (`docs/formats/map.md`); tile-set index maps tile numbers to TMPs
 - [x] TMP terrain rendering from real maps as PNG (`mix-dump render-map`;
       heights, cliff extras — eyeballed on urban + temperate retail maps)
-- [ ] Overlay objects, `[Terrain]` objects and placed units on the map
+- [x] Overlay objects (ore/gems/walls), `[Terrain]` objects and placed
+      infantry/aircraft on the map (`mix-dump render-map`, eyeballed)
+- [ ] Structures and voxel vehicles on the map (footprint markers today;
+      building art location still unresolved — see `docs/formats/map.md`)
 - [ ] wgpu/Metal window, integer-scaled 640x480 virtual viewport, pan/zoom
 - [ ] SHP + VXL drawing with palette + shadow pass
 - [ ] Sidebar/cameo UI from `ra2md.csf` strings

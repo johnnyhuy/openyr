@@ -110,6 +110,18 @@ impl Theater {
         }
     }
 
+    /// Unit palette (`UNIT*.PAL`) for this theater.
+    pub fn unit_palette(self) -> &'static str {
+        match self {
+            Theater::Temperate => "UNITTEM.PAL",
+            Theater::Snow => "UNITSNO.PAL",
+            Theater::Urban => "UNITURB.PAL",
+            Theater::Desert => "UNITDES.PAL",
+            Theater::Lunar => "UNITLUN.PAL",
+            Theater::NewUrban => "UNITUBN.PAL",
+        }
+    }
+
     /// Tile template file extension (without dot) for this theater.
     pub fn tile_extension(self) -> &'static str {
         match self {

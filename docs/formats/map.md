@@ -103,9 +103,29 @@ cell `(x, y)` at level `h` has its 60×30 diamond centred at
 order; a template's extra overlay is placed relative to the tile's
 diamond inside the template. Rendered retail maps show continuous roads,
 cliff faces aligning with their tops, and shorelines closing — confirming
-the 15 px-per-level step and the extra placement. Not yet drawn: overlay
-objects (ore/gems/walls), `[Terrain]` objects, and placed
-structures/units (all SHP/VXL art).
+the 15 px-per-level step and the extra placement.
+
+Objects are drawn in the same painter order, SHP canvas centred on the
+cell centre:
+
+- Overlay cells: the overlay type (index into `rulesmd.ini`
+  `[OverlayTypes]`) names an SHP under the theater extension
+  (`TIB01.TEM`, `GEM01.TEM`, ...); `[OverlayDataPack]`'s byte is the
+  frame (ore/gem growth stage — `TIB01` has 24 frames of increasing
+  density). Theater palette.
+- `[Terrain]` objects (`TREE01` etc.): same theater-extension SHPs,
+  frame 0, theater palette.
+- Placed infantry/aircraft: `<Image>.SHP` (`Image=` from `rulesmd.ini`,
+  defaulting to the type ID) with the unit palette, frame from facing
+  (`facing / 32`). Infantry art sequences need `artmd.ini` sequence data
+  for correct poses; frame selection here is approximate.
+- Structures and voxel vehicles are drawn as footprint markers for now.
+
+Open question — building art: `GACNST.SHP` was only located in
+`RA2.MIX/SNOW.MIX`; the temperate/urban file name or archive for building
+SHPs is unresolved (candidates by ID, theater extension and generic
+archives were all checked on 2026-10-17). Resolving this is the first
+step of the building-rendering slice.
 
 ## Hostile-input posture
 

@@ -1,17 +1,20 @@
-//! `mix-dump render-map`: draw a real map's terrain (iso tiles + template
-//! extras, height-offset) to PNG through the engine-order VFS.
+//! `mix-dump render-map`: draw a real map (terrain, overlays, terrain
+//! objects and SHP objects) to PNG through the engine-order VFS.
 //!
 //! Geometry: a cell (x, y) has its 60x30 diamond centred at
 //! `((x - y) * 30, (x + y) * 15 - level * 15)`. Tiles are painted in
 //! increasing `x + y` order; each tile's TMP "extra" overlay is placed
 //! relative to that tile's diamond inside its template. Overlay-pack
-//! objects (ore, gems, walls) are not drawn yet.
+//! cells, `[Terrain]` objects and placed infantry/aircraft are drawn as
+//! SHPs in the same painter order. Structures and voxel vehicles are
+//! footprint markers for now: building/VXL art is a separate slice.
 
 use crate::png;
 use std::collections::HashMap;
 use std::fs;
 use yr_assets::{AssetFs, Theater};
-use yr_formats::{IniFile, MapFile, Palette, TileSetIndex, TmpFile};
+use yr_formats::{IniFile, MapFile, Palette, ShpFile, TileSetIndex, TmpFile};
+use yr_rules::Rules;
 
 const HALF_W: i32 = 30;
 const HALF_H: i32 = 15;
@@ -46,6 +49,21 @@ pub fn cmd_render_map(args: &[&str]) -> Result<(), String> {
     let index = TileSetIndex::parse(&ini, theater.tile_extension());
     let pal = Palette::parse(vfs.read(theater.palette()).ok_or("theater palette not found")?)
         .ok_or("palette must be 768 bytes")?;
+    let unit_pal = vfs
+        .read(theater.unit_palette())
+        .and_then(Palette::parse)
+        .unwrap_or_else(|| pal.clone());
+
+    // Game data for objects: map INI overrides merge into rules, as in game.
+    let mut rules_ini = IniFile::parse(&String::from_utf8_lossy(
+        vfs.read("RULESMD.INI").ok_or("rulesmd.ini not found")?,
+    ));
+    rules_ini.merge_from(&map.ini);
+    let art_ini = IniFile::parse(&String::from_utf8_lossy(
+        vfs.read("ARTMD.INI").ok_or("artmd.ini not found")?,
+    ));
+    let rules = Rules::load(&rules_ini, &art_ini);
+    let overlay_types = type_list(&rules_ini, "OverlayTypes");
 
     // Load every template the map references (clear cells use tile 0).
     let mut tmps: HashMap<u32, Option<TmpFile>> = HashMap::new();
@@ -85,6 +103,11 @@ pub fn cmd_render_map(args: &[&str]) -> Result<(), String> {
     if x0 > x1 {
         return Err("map has no drawable tiles".into());
     }
+    // Room for tall object art (trees, infantry) above the terrain.
+    x0 -= 90;
+    y0 -= 200;
+    x1 += 90;
+    y1 += 40;
     let (w, h) = ((x1 - x0) as usize, (y1 - y0) as usize);
     let mut rgba = vec![0u8; w * h * 4];
     for px in rgba.chunks_exact_mut(4) {
@@ -122,6 +145,115 @@ pub fn cmd_render_map(args: &[&str]) -> Result<(), String> {
             }
         }
     }
+    // Object passes in painter order: overlays, [Terrain] objects, placed
+    // infantry/aircraft as SHPs; structures and voxel units as markers.
+    let levels: HashMap<(u16, u16), u8> = map.tiles.iter().map(|t| ((t.x, t.y), t.level)).collect();
+    // SHP bytes are owned here because ShpFile borrows its source data.
+    let mut shps: HashMap<String, Option<Vec<u8>>> = HashMap::new();
+    let load_shp = |vfs: &AssetFs, name: &str, shps: &mut HashMap<String, Option<Vec<u8>>>| {
+        shps.entry(name.to_string())
+            .or_insert_with(|| vfs.read(name).map(<[u8]>::to_vec))
+            .is_some()
+    };
+    struct Job {
+        key: u32,
+        cx: i32,
+        cy: i32,
+        file: Option<String>,
+        frame: usize,
+        unit: bool,
+        marker: Option<[u8; 4]>,
+    }
+    let mut jobs: Vec<Job> = Vec::new();
+    let mut markers = 0usize;
+    let cell_job = |jobs: &mut Vec<Job>, x: u16, y: u16, file: Option<String>, frame: usize, unit: bool, marker: Option<[u8; 4]>| {
+        let level = levels.get(&(x, y)).copied().unwrap_or(0);
+        let (cx, top) = cell_screen(x, y, level);
+        jobs.push(Job { key: u32::from(x) + u32::from(y), cx, cy: top + HALF_H, file, frame, unit, marker });
+    };
+    for (i, &o) in map.overlay.iter().enumerate() {
+        if o == yr_formats::map::NO_OVERLAY {
+            continue;
+        }
+        let Some(kind) = overlay_types.get(o as usize) else { continue };
+        let (image, theater_art) = art_image(&art_ini, kind);
+        let file = art_file(&image, theater_art, theater);
+        if load_shp(&vfs, &file, &mut shps) {
+            let frame = usize::from(map.overlay_data[i]);
+            cell_job(&mut jobs, (i % 512) as u16, (i / 512) as u16, Some(file), frame, false, None);
+        }
+    }
+    for (x, y, kind) in &map.terrain {
+        let (image, theater_art) = art_image(&art_ini, kind);
+        let file = art_file(&image, theater_art, theater);
+        if load_shp(&vfs, &file, &mut shps) {
+            cell_job(&mut jobs, *x, *y, Some(file), 0, false, None);
+        }
+    }
+    let mut object = |jobs: &mut Vec<Job>, obj: &yr_formats::MapObject, shps: &mut HashMap<String, Option<Vec<u8>>>, vfs: &AssetFs| {
+        let techno = rules.techno(&obj.kind);
+        let voxel = techno.and_then(|t| t.art.as_ref()).map(|a| a.voxel).unwrap_or(false);
+        if voxel || obj.kind.is_empty() {
+            markers += 1;
+            cell_job(jobs, obj.x, obj.y, None, 0, true, Some([0, 200, 255, 255]));
+            return;
+        }
+        let image = techno.map(|t| t.image.clone()).unwrap_or_else(|| obj.kind.clone());
+        let theater_art = techno.and_then(|t| t.art.as_ref()).map(|a| a.theater).unwrap_or(false);
+        let file = art_file(&image, theater_art, theater);
+        // Buildings are drawn as footprint markers until building art
+        // (foundation + height anchoring) lands; infantry/aircraft as SHP.
+        let is_building = techno.map(|t| t.kind == yr_rules::TechnoKind::Building).unwrap_or(false);
+        if is_building {
+            markers += 1;
+            cell_job(jobs, obj.x, obj.y, None, 0, false, Some([255, 0, 200, 255]));
+        } else if load_shp(vfs, &file, shps) {
+            let frame = (obj.facing.unwrap_or(0) / 32) as usize;
+            cell_job(jobs, obj.x, obj.y, Some(file), frame, true, None);
+        } else {
+            markers += 1;
+            cell_job(jobs, obj.x, obj.y, None, 0, true, Some([0, 200, 255, 255]));
+        }
+    };
+    for obj in map.structures.iter().chain(&map.units).chain(&map.infantry).chain(&map.aircraft) {
+        object(&mut jobs, obj, &mut shps, &vfs);
+    }
+    let drawn_jobs = jobs.iter().filter(|j| j.file.is_some()).count();
+    jobs.sort_by_key(|j| j.key);
+    for job in &jobs {
+        let (cx, cy) = (job.cx - x0, job.cy - y0);
+        if let Some(color) = job.marker {
+            // Filled 60x30 diamond centred on the cell.
+            for row in 0..30i32 {
+                let width = if row < 15 { 4 + row * 4 } else { 60 - (row - 14) * 4 };
+                for dx in 0..width.max(0) {
+                    let (x, y) = (cx - width / 2 + dx, cy - HALF_H + row);
+                    if x >= 0 && y >= 0 && (x as usize) < w && (y as usize) < h {
+                        let at = (y as usize * w + x as usize) * 4;
+                        rgba[at..at + 4].copy_from_slice(&color);
+                    }
+                }
+            }
+            continue;
+        }
+        let Some(bytes) = job.file.as_ref().and_then(|f| shps.get(f)).and_then(Option::as_ref) else { continue };
+        let Ok(shp) = ShpFile::parse(bytes) else { continue };
+        let frame = if job.frame < shp.frames.len() { job.frame } else { 0 };
+        let Ok(canvas) = shp.decode_frame_canvas(frame) else { continue };
+        let palette = if job.unit { &unit_pal } else { &pal };
+        let (ox, oy) = (cx - shp.width as i32 / 2, cy - shp.height as i32 / 2);
+        for (p, &index) in canvas.iter().enumerate() {
+            if index == 0 {
+                continue;
+            }
+            let (x, y) = (ox + (p % shp.width as usize) as i32, oy + (p / shp.width as usize) as i32);
+            if x >= 0 && y >= 0 && (x as usize) < w && (y as usize) < h {
+                let at = (y as usize * w + x as usize) * 4;
+                rgba[at..at + 4].copy_from_slice(&palette.rgba(index));
+            }
+        }
+    }
+
     // Optional nearest-neighbour downscale for eyeball-sized output.
     let (ow, oh, rgba) = if scale == 1 {
         (w, h, rgba)
@@ -139,10 +271,49 @@ pub fn cmd_render_map(args: &[&str]) -> Result<(), String> {
     };
     fs::write(out, png::encode_rgba(ow as u32, oh as u32, &rgba)).map_err(|e| e.to_string())?;
     println!(
-        "rendered {map_name} ({}, {} tiles, {} templates, {missing} missing) -> {out} ({ow}x{oh}, scale {scale})",
+        "rendered {map_name} ({}, {} tiles, {} templates, {missing} missing, {drawn_jobs} object SHPs, {markers} markers) -> {out} ({ow}x{oh}, scale {scale})",
         map.theater,
         map.tiles.len(),
         tmps.len()
     );
     Ok(())
+}
+
+/// Ordered values of a `rulesmd.ini` type-list section (`0=FOO`, `1=BAR`).
+fn type_list(ini: &IniFile, section: &str) -> Vec<String> {
+    let Some(sec) = ini.section(section) else { return Vec::new() };
+    let mut entries: Vec<(u32, String)> = sec
+        .entries
+        .iter()
+        .filter_map(|(k, v)| {
+            let n: u32 = k.trim().parse().ok()?;
+            let name = v.split(';').next()?.split(',').next()?.trim().to_string();
+            (!name.is_empty()).then_some((n, name))
+        })
+        .collect();
+    entries.sort_by_key(|e| e.0);
+    entries.into_iter().map(|e| e.1).collect()
+}
+
+/// `(image, theater-art)` for a type: `Image=` in its artmd section,
+/// defaulting to the type ID; theater-art files carry the theater extension.
+fn art_image(art: &IniFile, kind: &str) -> (String, bool) {
+    let sec = art.section(kind);
+    let image = sec
+        .and_then(|s| s.get("Image"))
+        .map(|v| v.split(';').next().unwrap_or(v).trim().to_string())
+        .filter(|v| !v.is_empty())
+        .unwrap_or_else(|| kind.to_string());
+    let theater = sec
+        .map(|s| s.get_bool("Theater").unwrap_or(false) || s.get_bool("NewTheater").unwrap_or(false))
+        .unwrap_or(false);
+    (image, theater)
+}
+
+fn art_file(image: &str, theater_art: bool, theater: Theater) -> String {
+    if theater_art {
+        format!("{}.{}", image.to_ascii_uppercase(), theater.tile_extension())
+    } else {
+        format!("{}.SHP", image.to_ascii_uppercase())
+    }
 }

@@ -91,3 +91,23 @@ fn tileset_index_resolves_a_real_map() {
         assert!(tmp.tiles[t.subtile as usize].is_some(), "{name} subtile {} present", t.subtile);
     }
 }
+
+#[test]
+fn theater_object_art_and_unit_palettes_resolve() {
+    let Some(mut fs) = install() else {
+        eprintln!("skip: retail install not present");
+        return;
+    };
+    fs.set_theater(Theater::Temperate);
+    for name in [Theater::Temperate.palette(), Theater::Temperate.unit_palette()] {
+        assert!(fs.read(name).is_some(), "{name} resolves");
+    }
+    // Overlay and terrain-object art is SHP under the theater extension.
+    let tib = yr_formats::ShpFile::parse(fs.read("TIB01.TEM").unwrap()).expect("TIB01 parses as SHP");
+    assert_eq!(tib.frames.len(), 24, "ore growth frames");
+    let tree = yr_formats::ShpFile::parse(fs.read("TREE01.TEM").unwrap()).expect("TREE01 parses as SHP");
+    assert!(!tree.frames.is_empty());
+    fs.set_theater(Theater::Snow);
+    assert!(fs.read(Theater::Snow.unit_palette()).is_some(), "snow unit palette resolves");
+    assert!(fs.read("TIB01.SNO").is_some(), "snow ore art resolves");
+}
