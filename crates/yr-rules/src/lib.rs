@@ -50,6 +50,9 @@ pub struct ArtInfo {
     pub section: String,
     /// `Voxel=yes`: drawn from `<image>.VXL` (+ turret/barrel) instead of SHP.
     pub voxel: bool,
+    /// `Theater=yes`/`NewTheater=yes`: the art file carries the theater
+    /// extension (e.g. `.TEM`) instead of `.SHP`.
+    pub theater: bool,
     pub cameo: Option<String>,
     pub alt_cameo: Option<String>,
     pub remapable: Option<bool>,
@@ -383,6 +386,7 @@ fn load_techno(
     let art_info = art_sec.map(|a| ArtInfo {
         section: a.name.clone(),
         voxel: a.get_bool("Voxel").unwrap_or(false),
+        theater: a.get_bool("Theater").unwrap_or(false) || a.get_bool("NewTheater").unwrap_or(false),
         cameo: reference(Some(a), "Cameo"),
         alt_cameo: reference(Some(a), "AltCameo"),
         remapable: a.get_bool("Remapable"),

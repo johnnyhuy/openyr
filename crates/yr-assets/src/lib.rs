@@ -86,6 +86,54 @@ impl Theater {
         }
     }
 
+    /// Tile-set INI candidates in lookup order (YR `*md.ini` first).
+    pub fn tileset_inis(self) -> &'static [&'static str] {
+        match self {
+            Theater::Temperate => &["TEMPERATMD.INI", "TEMPERAT.INI"],
+            Theater::Snow => &["SNOWMD.INI", "SNOW.INI"],
+            Theater::Urban => &["URBANMD.INI", "URBAN.INI"],
+            Theater::Desert => &["DESERTMD.INI", "DESERT.INI"],
+            Theater::Lunar => &["LUNARMD.INI", "LUNAR.INI"],
+            Theater::NewUrban => &["URBANNMD.INI", "URBAN.INI"],
+        }
+    }
+
+    /// Terrain palette (`ISO*.PAL`) for this theater.
+    pub fn palette(self) -> &'static str {
+        match self {
+            Theater::Temperate => "ISOTEM.PAL",
+            Theater::Snow => "ISOSNO.PAL",
+            Theater::Urban => "ISOURB.PAL",
+            Theater::Desert => "ISODES.PAL",
+            Theater::Lunar => "ISOLUN.PAL",
+            Theater::NewUrban => "ISOUBN.PAL",
+        }
+    }
+
+    /// Unit palette (`UNIT*.PAL`) for this theater.
+    pub fn unit_palette(self) -> &'static str {
+        match self {
+            Theater::Temperate => "UNITTEM.PAL",
+            Theater::Snow => "UNITSNO.PAL",
+            Theater::Urban => "UNITURB.PAL",
+            Theater::Desert => "UNITDES.PAL",
+            Theater::Lunar => "UNITLUN.PAL",
+            Theater::NewUrban => "UNITUBN.PAL",
+        }
+    }
+
+    /// Tile template file extension (without dot) for this theater.
+    pub fn tile_extension(self) -> &'static str {
+        match self {
+            Theater::Temperate => "TEM",
+            Theater::Snow => "SNO",
+            Theater::Urban => "URB",
+            Theater::Desert => "DES",
+            Theater::Lunar => "LUN",
+            Theater::NewUrban => "UBN",
+        }
+    }
+
     /// Theater name as written in map files (`[Map] Theater=`).
     pub fn from_map_name(name: &str) -> Option<Theater> {
         match name.trim().to_ascii_uppercase().as_str() {
