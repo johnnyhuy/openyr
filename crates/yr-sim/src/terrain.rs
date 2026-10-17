@@ -175,6 +175,20 @@ impl TerrainGrid {
         self.rehash();
     }
 
+    pub fn origin(&self) -> (i32, i32) {
+        (self.origin_x, self.origin_y)
+    }
+
+    /// Grid-local index for pathfinding scratch arrays.
+    pub fn local_index(&self, x: u16, y: u16) -> Option<usize> {
+        self.index(x, y)
+    }
+
+    /// Map cell from grid-local coordinates.
+    pub fn cell_at_local(&self, lx: usize, ly: usize) -> (u16, u16) {
+        ((lx as i32 + self.origin_x) as u16, (ly as i32 + self.origin_y) as u16)
+    }
+
     pub fn width(&self) -> usize {
         self.width
     }
