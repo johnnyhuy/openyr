@@ -64,11 +64,13 @@ pub struct Cell {
     pub ramp: u8,
     pub overlay: Overlay,
     pub building: bool,
+    /// Remaining harvestable bails on resource cells (ore/gem).
+    pub resource: u8,
 }
 
 impl Default for Cell {
     fn default() -> Self {
-        Cell { ground: Ground::Clear, height: 0, ramp: 0, overlay: Overlay::None, building: false }
+        Cell { ground: Ground::Clear, height: 0, ramp: 0, overlay: Overlay::None, building: false, resource: 0 }
     }
 }
 
@@ -163,6 +165,52 @@ impl TerrainGrid {
         self.rehash();
     }
 
+    /// Place (or clear) a resource cell with `bails` harvestable loads.
+    pub fn set_resource(&mut self, x: u16, y: u16, kind: Overlay, bails: u8) {
+        if let Some(c) = self.cell_mut(x, y) {
+            c.overlay = kind;
+            c.resource = bails;
+        }
+        self.rehash();
+    }
+
+    /// Take one bail from a resource cell; clears the overlay at zero.
+    /// Returns the overlay kind taken, if any remained.
+    pub fn take_bail(&mut self, x: u16, y: u16) -> Option<Overlay> {
+        let c = self.cell_mut(x, y)?;
+        if c.resource == 0 || !matches!(c.overlay, Overlay::Ore | Overlay::Gem) {
+            return None;
+        }
+        let kind = c.overlay;
+        c.resource -= 1;
+        if c.resource == 0 {
+            c.overlay = Overlay::None;
+        }
+        self.rehash();
+        Some(kind)
+    }
+
+    /// Nearest resource cell to `from` (octile distance; ties broken by
+    /// scan order y-then-x, so the choice is deterministic).
+    pub fn nearest_resource(&self, from: (u16, u16)) -> Option<(u16, u16, Overlay)> {
+        let mut best: Option<(i64, u16, u16, Overlay)> = None;
+        for ly in 0..self.height {
+            for lx in 0..self.width {
+                let (x, y) = self.cell_at_local(lx, ly);
+                let Some(c) = self.cell(x, y) else { continue };
+                if c.resource == 0 || !matches!(c.overlay, Overlay::Ore | Overlay::Gem) {
+                    continue;
+                }
+                let (dx, dy) = ((i64::from(x) - i64::from(from.0)).abs(), (i64::from(y) - i64::from(from.1)).abs());
+                let dist = 10 * (dx + dy) - 6 * dx.min(dy);
+                if best.is_none_or(|(b, _, _, _)| dist < b) {
+                    best = Some((dist, x, y, c.overlay));
+                }
+            }
+        }
+        best.map(|(_, x, y, k)| (x, y, k))
+    }
+
     /// Mark a building footprint (or clear it with `false`).
     pub fn set_building(&mut self, x: u16, y: u16, w: u16, h: u16, present: bool) {
         for dy in 0..h {
@@ -210,6 +258,7 @@ impl TerrainGrid {
             h.write_u64(c.ground as u64);
             h.write_u64(c.overlay as u64);
             h.write_u64(u64::from(c.building));
+            h.write_u64(u64::from(c.resource));
         }
         self.hash = h.finish();
     }
