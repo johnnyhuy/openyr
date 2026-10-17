@@ -17,10 +17,10 @@ pub mod path;
 mod rng;
 pub mod terrain;
 
-pub use fix::Fix;
-pub use rng::Rng;
 pub use building::Building;
 pub use combat::WeaponSpec;
+pub use fix::Fix;
+pub use rng::Rng;
 pub use terrain::TerrainGrid;
 
 /// One cell in leptons: positions are in leptons (256 per cell), the
@@ -40,34 +40,81 @@ pub enum Command {
         armor: u8,
         weapon: Option<WeaponSpec>,
     },
-    Move { id: u32, x: Fix, y: Fix },
+    Move {
+        id: u32,
+        x: Fix,
+        y: Fix,
+    },
     /// Move to a point, engaging any hostile that comes in weapon range.
-    AttackMove { id: u32, x: Fix, y: Fix },
-    Attack { id: u32, target: u32 },
+    AttackMove {
+        id: u32,
+        x: Fix,
+        y: Fix,
+    },
+    Attack {
+        id: u32,
+        target: u32,
+    },
     /// Send a harvester into its auto-loop (ore -> refinery -> ore).
-    Harvest { id: u32 },
+    Harvest {
+        id: u32,
+    },
     /// Mark a unit's economy role (scenario setup).
-    AssignRole { id: u32, role: Role },
+    AssignRole {
+        id: u32,
+        role: Role,
+    },
     /// Set a unit's owner (scenario setup).
-    AssignOwner { id: u32, owner: u8 },
+    AssignOwner {
+        id: u32,
+        owner: u8,
+    },
     /// Place a building: footprint cells, health, armour, power
     /// (positive produces, negative drains).
-    PlaceBuilding { x: u16, y: u16, w: u16, h: u16, hp: i64, armor: u8, power: i64, owner: u8, role: Role },
+    PlaceBuilding {
+        x: u16,
+        y: u16,
+        w: u16,
+        h: u16,
+        hp: i64,
+        armor: u8,
+        power: i64,
+        owner: u8,
+        role: Role,
+    },
     /// Scenario/debug: destroy a unit or building outright.
-    Destroy { id: u32 },
-    Stop { id: u32 },
-    Remove { id: u32 },
+    Destroy {
+        id: u32,
+    },
+    Stop {
+        id: u32,
+    },
+    Remove {
+        id: u32,
+    },
 }
 
 /// Things that happened during a tick, for the renderer/audio to react
 /// to. Deterministic, drained by the caller after each step.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Event {
-    Fired { shooter: u32, target: u32 },
-    Hit { target: u32, damage: i64 },
-    Died { id: u32 },
+    Fired {
+        shooter: u32,
+        target: u32,
+    },
+    Hit {
+        target: u32,
+        damage: i64,
+    },
+    Died {
+        id: u32,
+    },
     /// A harvester finished unloading; `total` is the sim credit pool.
-    Unloaded { id: u32, value: i64, total: i64 },
+    Unloaded {
+        id: u32,
+        value: i64,
+        total: i64,
+    },
 }
 
 /// What a unit is for; drives the economy state machine.
@@ -170,7 +217,18 @@ pub struct Sim {
 
 impl Sim {
     pub fn new(seed: u64) -> Sim {
-        Sim { tick: 0, rng: Rng::new(seed), next_id: 1, units: Vec::new(), terrain: None, projectiles: Vec::new(), events: Vec::new(), credits: 0, buildings: Vec::new(), low_power_speeds: (Fix::from_raw(128), Fix::ONE) }
+        Sim {
+            tick: 0,
+            rng: Rng::new(seed),
+            next_id: 1,
+            units: Vec::new(),
+            terrain: None,
+            projectiles: Vec::new(),
+            events: Vec::new(),
+            credits: 0,
+            buildings: Vec::new(),
+            low_power_speeds: (Fix::from_raw(128), Fix::ONE),
+        }
     }
 
     /// Attach the scenario terrain (static; fingerprinted into the hash).
@@ -201,7 +259,15 @@ impl Sim {
     pub fn step(&mut self, commands: &[Command]) {
         for cmd in commands {
             match *cmd {
-                Command::Spawn { x, y, loco, speed, hp, armor, weapon } => {
+                Command::Spawn {
+                    x,
+                    y,
+                    loco,
+                    speed,
+                    hp,
+                    armor,
+                    weapon,
+                } => {
                     let id = self.next_id;
                     self.next_id += 1;
                     self.units.push(Unit {
@@ -230,10 +296,30 @@ impl Sim {
                         blocked: 0,
                     });
                 }
-                Command::PlaceBuilding { x, y, w, h, hp, armor, power, owner, role } => {
+                Command::PlaceBuilding {
+                    x,
+                    y,
+                    w,
+                    h,
+                    hp,
+                    armor,
+                    power,
+                    owner,
+                    role,
+                } => {
                     let id = self.next_id;
                     self.next_id += 1;
-                    self.buildings.push(Building { id, cell: (x, y), size: (w, h), hp, max_hp: hp, armor, power, owner, role });
+                    self.buildings.push(Building {
+                        id,
+                        cell: (x, y),
+                        size: (w, h),
+                        hp,
+                        max_hp: hp,
+                        armor,
+                        power,
+                        owner,
+                        role,
+                    });
                     if let Some(g) = self.terrain.as_mut() {
                         g.set_building(x, y, w, h, true);
                     }
@@ -304,7 +390,11 @@ impl Sim {
         // Pursuit then follows the normal attack rules below.
         for i in 0..self.units.len() {
             let u = &self.units[i];
-            if u.role != Role::Combat || u.guard.is_some() || u.attack.is_some() || u.target.is_some() {
+            if u.role != Role::Combat
+                || u.guard.is_some()
+                || u.attack.is_some()
+                || u.target.is_some()
+            {
                 continue;
             }
             if let Some(id) = self.nearest_hostile_in_range(i) {
@@ -314,7 +404,9 @@ impl Sim {
         // Attack-move: engage the nearest hostile in weapon range, else
         // keep (or resume) moving to the guarded destination.
         for i in 0..self.units.len() {
-            let Some(dest) = self.units[i].guard else { continue };
+            let Some(dest) = self.units[i].guard else {
+                continue;
+            };
             if self.units[i].attack.is_some() {
                 continue;
             }
@@ -327,7 +419,9 @@ impl Sim {
             } else if u.target.is_none() {
                 // Arrived, or as close as the crowd/terrain allows.
                 let near = Fix::from_int(GUARD_ARRIVE_CELLS);
-                if dist2(dest.0 - u.x, dest.1 - u.y) <= i64::from(near.raw()) * i64::from(near.raw()) {
+                if dist2(dest.0 - u.x, dest.1 - u.y)
+                    <= i64::from(near.raw()) * i64::from(near.raw())
+                {
                     u.guard = None;
                 } else {
                     u.target = Some(dest);
@@ -336,8 +430,12 @@ impl Sim {
         }
         // Attackers close to range; in-range attackers hold position.
         for i in 0..self.units.len() {
-            let Some(enemy) = self.units[i].attack else { continue };
-            let (Some(w), Some(e)) = (self.units[i].weapon, self.target_pos(enemy)) else { continue };
+            let Some(enemy) = self.units[i].attack else {
+                continue;
+            };
+            let (Some(w), Some(e)) = (self.units[i].weapon, self.target_pos(enemy)) else {
+                continue;
+            };
             let (ex, ey) = (e.0, e.1);
             let (dx, dy) = (ex - self.units[i].x, ey - self.units[i].y);
             if dist2(dx, dy) <= i64::from(w.range.raw()) * i64::from(w.range.raw()) {
@@ -353,7 +451,9 @@ impl Sim {
         // waypoints at terrain-adjusted speed; without, direct steps.
         let terrain = self.terrain.clone();
         for i in 0..self.units.len() {
-            let Some((tx, ty)) = self.units[i].target else { continue };
+            let Some((tx, ty)) = self.units[i].target else {
+                continue;
+            };
             match &terrain {
                 Some(grid) => self.move_on_grid(i, grid, tx, ty),
                 None => {
@@ -408,7 +508,9 @@ impl Sim {
     /// Harvester state machine (runs before movement): pick ore, drive,
     /// load bails, return to the first refinery, unload into credits.
     fn harvest_phase(&mut self) {
-        let Some(mut grid) = self.terrain.clone() else { return };
+        let Some(mut grid) = self.terrain.clone() else {
+            return;
+        };
         let mut grid_dirty = false;
         for i in 0..self.units.len() {
             if self.units[i].role != Role::Harvester {
@@ -421,7 +523,9 @@ impl Sim {
             match self.units[i].harvest {
                 Harvest::Idle => {}
                 Harvest::ToOre(tx, ty) => {
-                    let target = if (tx, ty) == (u16::MAX, u16::MAX) || grid.cell(tx, ty).is_none_or(|c| c.resource == 0) {
+                    let target = if (tx, ty) == (u16::MAX, u16::MAX)
+                        || grid.cell(tx, ty).is_none_or(|c| c.resource == 0)
+                    {
                         grid.nearest_resource(cell)
                     } else {
                         grid.cell(tx, ty).map(|c| (tx, ty, c.overlay))
@@ -434,7 +538,10 @@ impl Sim {
                                 self.units[i].target = None;
                                 self.units[i].path.clear();
                             } else {
-                                self.units[i].target = Some((Fix::from_int(i32::from(ox)) + Fix::from_raw(128), Fix::from_int(i32::from(oy)) + Fix::from_raw(128)));
+                                self.units[i].target = Some((
+                                    Fix::from_int(i32::from(ox)) + Fix::from_raw(128),
+                                    Fix::from_int(i32::from(oy)) + Fix::from_raw(128),
+                                ));
                             }
                         }
                         None => {
@@ -486,7 +593,10 @@ impl Sim {
                         self.units[i].target = None;
                         self.units[i].path.clear();
                     } else {
-                        self.units[i].target = Some((Fix::from_int(i32::from(rcell.0)) + Fix::from_raw(128), Fix::from_int(i32::from(rcell.1)) + Fix::from_raw(128)));
+                        self.units[i].target = Some((
+                            Fix::from_int(i32::from(rcell.0)) + Fix::from_raw(128),
+                            Fix::from_int(i32::from(rcell.1)) + Fix::from_raw(128),
+                        ));
                     }
                 }
                 Harvest::Unloading(mut left) => {
@@ -498,7 +608,11 @@ impl Sim {
                         self.credits += value;
                         self.units[i].cargo = 0;
                         self.units[i].bails = 0;
-                        self.events.push(Event::Unloaded { id: self.units[i].id, value, total: self.credits });
+                        self.events.push(Event::Unloaded {
+                            id: self.units[i].id,
+                            value,
+                            total: self.credits,
+                        });
                         self.units[i].harvest = Harvest::ToOre(u16::MAX, u16::MAX);
                     }
                 }
@@ -514,12 +628,20 @@ impl Sim {
     fn refinery_cell(&self) -> Option<(u16, u16)> {
         if let Some(b) = self.buildings.iter().find(|b| b.role == Role::Refinery) {
             let (cx, cy) = b.centre();
-            return Some((cx.to_int_floor().max(0) as u16, cy.to_int_floor().max(0) as u16));
+            return Some((
+                cx.to_int_floor().max(0) as u16,
+                cy.to_int_floor().max(0) as u16,
+            ));
         }
         self.units
             .iter()
             .find(|u| u.role == Role::Refinery)
-            .map(|u| (u.x.to_int_floor().max(0) as u16, u.y.to_int_floor().max(0) as u16))
+            .map(|u| {
+                (
+                    u.x.to_int_floor().max(0) as u16,
+                    u.y.to_int_floor().max(0) as u16,
+                )
+            })
     }
 
     fn fire_phase(&mut self) {
@@ -530,21 +652,37 @@ impl Sim {
                 self.units[i].cooldown -= 1;
             }
             let u = &self.units[i];
-            let (Some(w), Some(enemy_id)) = (u.weapon, u.attack) else { continue };
+            let (Some(w), Some(enemy_id)) = (u.weapon, u.attack) else {
+                continue;
+            };
             if u.cooldown > 0 {
                 continue;
             }
-            let Some(((ex, ey), earmor)) = self.target_pos(enemy_id).zip(self.target_armor(enemy_id)) else { continue };
+            let Some(((ex, ey), earmor)) =
+                self.target_pos(enemy_id).zip(self.target_armor(enemy_id))
+            else {
+                continue;
+            };
             let (dx, dy) = (ex - u.x, ey - u.y);
             if dist2(dx, dy) > i64::from(w.range.raw()) * i64::from(w.range.raw()) {
                 continue;
             }
-            self.events.push(Event::Fired { shooter: u.id, target: enemy_id });
+            self.events.push(Event::Fired {
+                shooter: u.id,
+                target: enemy_id,
+            });
             let damage = w.damage_against(earmor);
             if w.projectile_speed == Fix::ZERO {
                 instant.push((u.id, enemy_id, damage));
             } else {
-                spawned.push(Projectile { x: u.x, y: u.y, owner: u.id, target: enemy_id, damage, speed: w.projectile_speed });
+                spawned.push(Projectile {
+                    x: u.x,
+                    y: u.y,
+                    owner: u.id,
+                    target: enemy_id,
+                    damage,
+                    speed: w.projectile_speed,
+                });
             }
             let u = &mut self.units[i];
             u.shots += 1;
@@ -561,7 +699,9 @@ impl Sim {
         let mut hits: Vec<(u32, i64)> = Vec::new();
         let mut alive: Vec<Projectile> = Vec::new();
         for mut p in std::mem::take(&mut self.projectiles) {
-            let Some((tx, ty)) = self.target_pos(p.target) else { continue };
+            let Some((tx, ty)) = self.target_pos(p.target) else {
+                continue;
+            };
             let (dx, dy) = (tx - p.x, ty - p.y);
             if dist2(dx, dy) <= i64::from(p.speed.raw()) * i64::from(p.speed.raw()) {
                 hits.push((p.target, p.damage));
@@ -600,7 +740,10 @@ impl Sim {
         if let Some(u) = self.units.iter().find(|u| u.id == id) {
             return Some((u.x, u.y));
         }
-        self.buildings.iter().find(|b| b.id == id).map(Building::centre)
+        self.buildings
+            .iter()
+            .find(|b| b.id == id)
+            .map(Building::centre)
     }
 
     fn target_armor(&self, id: u32) -> Option<u8> {
@@ -653,8 +796,12 @@ impl Sim {
     }
 
     fn reap_dead(&mut self) {
-        let dead_buildings: Vec<Building> =
-            self.buildings.iter().filter(|b| b.hp <= 0).cloned().collect();
+        let dead_buildings: Vec<Building> = self
+            .buildings
+            .iter()
+            .filter(|b| b.hp <= 0)
+            .cloned()
+            .collect();
         if !dead_buildings.is_empty() {
             self.buildings.retain(|b| b.hp > 0);
             for b in &dead_buildings {
@@ -671,7 +818,12 @@ impl Sim {
                 }
             }
         }
-        let dead: Vec<u32> = self.units.iter().filter(|u| u.hp <= 0).map(|u| u.id).collect();
+        let dead: Vec<u32> = self
+            .units
+            .iter()
+            .filter(|u| u.hp <= 0)
+            .map(|u| u.id)
+            .collect();
         if dead.is_empty() {
             return;
         }
@@ -774,7 +926,9 @@ impl Sim {
             }
         }
         let (px, py) = (centre(wx), centre(wy));
-        let factor = grid.speed_factor(loco, start.0, start.1).unwrap_or(Fix::ONE);
+        let factor = grid
+            .speed_factor(loco, start.0, start.1)
+            .unwrap_or(Fix::ONE);
         let u = &mut self.units[i];
         u.blocked = 0;
         let step = u.speed * factor;
@@ -890,8 +1044,20 @@ mod tests {
     use super::*;
 
     fn script(sim: &mut Sim, ticks: u64) -> u64 {
-        sim.step(&[Command::Spawn { x: Fix::from_int(0), y: Fix::from_int(0), loco: terrain::Loco::Track, speed: Fix::from_int(4), hp: 100, armor: 0, weapon: None }]);
-        sim.step(&[Command::Move { id: 1, x: Fix::from_int(2560), y: Fix::from_int(1280) }]);
+        sim.step(&[Command::Spawn {
+            x: Fix::from_int(0),
+            y: Fix::from_int(0),
+            loco: terrain::Loco::Track,
+            speed: Fix::from_int(4),
+            hp: 100,
+            armor: 0,
+            weapon: None,
+        }]);
+        sim.step(&[Command::Move {
+            id: 1,
+            x: Fix::from_int(2560),
+            y: Fix::from_int(1280),
+        }]);
         for _ in 2..ticks {
             sim.step(&[]);
         }
@@ -912,7 +1078,15 @@ mod tests {
         let (mut a, b, mut c) = (Sim::new(1), Sim::new(2), Sim::new(1));
         a.next_random();
         assert_ne!(a.state_hash(), b.state_hash());
-        c.step(&[Command::Spawn { x: Fix::ZERO, y: Fix::ZERO, loco: terrain::Loco::Foot, speed: Fix::from_int(2), hp: 100, armor: 0, weapon: None }]);
+        c.step(&[Command::Spawn {
+            x: Fix::ZERO,
+            y: Fix::ZERO,
+            loco: terrain::Loco::Foot,
+            speed: Fix::from_int(2),
+            hp: 100,
+            armor: 0,
+            weapon: None,
+        }]);
         assert_ne!(a.state_hash(), c.state_hash());
     }
 
@@ -920,10 +1094,34 @@ mod tests {
     fn removal_and_spawn_ids_are_stable() {
         let mut sim = Sim::new(7);
         sim.step(&[
-            Command::Spawn { x: Fix::ZERO, y: Fix::ZERO, loco: terrain::Loco::Foot, speed: Fix::from_int(2), hp: 100, armor: 0, weapon: None },
-            Command::Spawn { x: Fix::from_int(256), y: Fix::ZERO, loco: terrain::Loco::Foot, speed: Fix::from_int(2), hp: 100, armor: 0, weapon: None },
+            Command::Spawn {
+                x: Fix::ZERO,
+                y: Fix::ZERO,
+                loco: terrain::Loco::Foot,
+                speed: Fix::from_int(2),
+                hp: 100,
+                armor: 0,
+                weapon: None,
+            },
+            Command::Spawn {
+                x: Fix::from_int(256),
+                y: Fix::ZERO,
+                loco: terrain::Loco::Foot,
+                speed: Fix::from_int(2),
+                hp: 100,
+                armor: 0,
+                weapon: None,
+            },
             Command::Remove { id: 1 },
-            Command::Spawn { x: Fix::from_int(512), y: Fix::ZERO, loco: terrain::Loco::Foot, speed: Fix::from_int(2), hp: 100, armor: 0, weapon: None },
+            Command::Spawn {
+                x: Fix::from_int(512),
+                y: Fix::ZERO,
+                loco: terrain::Loco::Foot,
+                speed: Fix::from_int(2),
+                hp: 100,
+                armor: 0,
+                weapon: None,
+            },
         ]);
         let ids: Vec<u32> = sim.units().iter().map(|u| u.id).collect();
         assert_eq!(ids, [2, 3], "ids never reused, order stable");
@@ -945,8 +1143,20 @@ mod tests {
         let mut sim = Sim::new(3);
         sim.set_terrain(small_grid());
         let centre = |c: i32| Fix::from_int(c) + Fix::from_raw(128);
-        sim.step(&[Command::Spawn { x: centre(0), y: centre(0), loco: terrain::Loco::Track, speed: Fix::from_int(64), hp: 100, armor: 0, weapon: None }]);
-        sim.step(&[Command::Move { id: 1, x: centre(5), y: centre(0) }]);
+        sim.step(&[Command::Spawn {
+            x: centre(0),
+            y: centre(0),
+            loco: terrain::Loco::Track,
+            speed: Fix::from_int(64),
+            hp: 100,
+            armor: 0,
+            weapon: None,
+        }]);
+        sim.step(&[Command::Move {
+            id: 1,
+            x: centre(5),
+            y: centre(0),
+        }]);
         for _ in 0..500 {
             sim.step(&[]);
             if sim.units()[0].target.is_none() {
@@ -954,7 +1164,11 @@ mod tests {
             }
         }
         let u = &sim.units()[0];
-        assert_eq!((u.x, u.y), (centre(5), centre(0)), "arrived through the gap");
+        assert_eq!(
+            (u.x, u.y),
+            (centre(5), centre(0)),
+            "arrived through the gap"
+        );
         assert!(sim.tick() < 500, "did not time out");
     }
 
@@ -965,15 +1179,40 @@ mod tests {
         let centre = |c: i32| Fix::from_int(c) + Fix::from_raw(128);
         // Leader parked in the gap cell; follower ordered through it.
         sim.step(&[
-            Command::Spawn { x: centre(3), y: centre(1), loco: terrain::Loco::Track, speed: Fix::from_int(64), hp: 100, armor: 0, weapon: None },
-            Command::Spawn { x: centre(0), y: centre(1), loco: terrain::Loco::Track, speed: Fix::from_int(64), hp: 100, armor: 0, weapon: None },
+            Command::Spawn {
+                x: centre(3),
+                y: centre(1),
+                loco: terrain::Loco::Track,
+                speed: Fix::from_int(64),
+                hp: 100,
+                armor: 0,
+                weapon: None,
+            },
+            Command::Spawn {
+                x: centre(0),
+                y: centre(1),
+                loco: terrain::Loco::Track,
+                speed: Fix::from_int(64),
+                hp: 100,
+                armor: 0,
+                weapon: None,
+            },
         ]);
-        sim.step(&[Command::Move { id: 2, x: centre(5), y: centre(1) }]);
+        sim.step(&[Command::Move {
+            id: 2,
+            x: centre(5),
+            y: centre(1),
+        }]);
         for _ in 0..40 {
             sim.step(&[]);
         }
         let follower = &sim.units()[1];
-        assert_ne!(follower.x, centre(5), "gap blocked: follower must wait, at {:?}", follower.x);
+        assert_ne!(
+            follower.x,
+            centre(5),
+            "gap blocked: follower must wait, at {:?}",
+            follower.x
+        );
         // Free the gap; follower proceeds.
         sim.step(&[Command::Remove { id: 1 }]);
         for _ in 0..200 {
@@ -988,7 +1227,13 @@ mod tests {
     fn gun(damage: i64, rof: u32, range_cells: i32, speed: Fix) -> WeaponSpec {
         let mut verses = [yr_rules::Decimal::ZERO; crate::combat::ARMOR_COUNT];
         verses[0] = yr_rules::Decimal::ONE;
-        WeaponSpec { damage, rof_ticks: rof, range: Fix::from_int(range_cells), projectile_speed: speed, verses }
+        WeaponSpec {
+            damage,
+            rof_ticks: rof,
+            range: Fix::from_int(range_cells),
+            projectile_speed: speed,
+            verses,
+        }
     }
 
     #[test]
@@ -996,8 +1241,24 @@ mod tests {
         let mut sim = Sim::new(5);
         let w = gun(50, 10, 10, Fix::ZERO);
         sim.step(&[
-            Command::Spawn { x: Fix::ZERO, y: Fix::ZERO, loco: terrain::Loco::Track, speed: Fix::from_int(4), hp: 200, armor: 0, weapon: Some(w) },
-            Command::Spawn { x: Fix::from_int(2), y: Fix::ZERO, loco: terrain::Loco::Track, speed: Fix::from_int(4), hp: 120, armor: 0, weapon: None },
+            Command::Spawn {
+                x: Fix::ZERO,
+                y: Fix::ZERO,
+                loco: terrain::Loco::Track,
+                speed: Fix::from_int(4),
+                hp: 200,
+                armor: 0,
+                weapon: Some(w),
+            },
+            Command::Spawn {
+                x: Fix::from_int(2),
+                y: Fix::ZERO,
+                loco: terrain::Loco::Track,
+                speed: Fix::from_int(4),
+                hp: 120,
+                armor: 0,
+                weapon: None,
+            },
             Command::Attack { id: 1, target: 2 },
         ]);
         let mut events = Vec::new();
@@ -1007,7 +1268,13 @@ mod tests {
         }
         assert_eq!(sim.units().len(), 1, "target died");
         assert_eq!(sim.units()[0].shots, 3, "120hp / 50dmg = 3 shots");
-        assert_eq!(events.iter().filter(|e| matches!(e, Event::Fired { .. })).count(), 3);
+        assert_eq!(
+            events
+                .iter()
+                .filter(|e| matches!(e, Event::Fired { .. }))
+                .count(),
+            3
+        );
         assert_eq!(events.last(), Some(&Event::Died { id: 2 }));
     }
 
@@ -1017,11 +1284,37 @@ mod tests {
         let mut sim = Sim::new(5);
         let w = gun(50, 1, 10, Fix::ZERO);
         sim.step(&[
-            Command::Spawn { x: Fix::ZERO, y: Fix::ZERO, loco: terrain::Loco::Track, speed: Fix::from_int(4), hp: 500, armor: 0, weapon: Some(w) },
-            Command::Spawn { x: Fix::from_int(2), y: Fix::ZERO, loco: terrain::Loco::Track, speed: Fix::from_int(4), hp: 40, armor: 0, weapon: None },
-            Command::AssignOwner { id: 1, owner: OWNER_PLAYER },
-            Command::AssignOwner { id: 2, owner: OWNER_ENEMY },
-            Command::AttackMove { id: 1, x: Fix::from_int(8), y: Fix::ZERO },
+            Command::Spawn {
+                x: Fix::ZERO,
+                y: Fix::ZERO,
+                loco: terrain::Loco::Track,
+                speed: Fix::from_int(4),
+                hp: 500,
+                armor: 0,
+                weapon: Some(w),
+            },
+            Command::Spawn {
+                x: Fix::from_int(2),
+                y: Fix::ZERO,
+                loco: terrain::Loco::Track,
+                speed: Fix::from_int(4),
+                hp: 40,
+                armor: 0,
+                weapon: None,
+            },
+            Command::AssignOwner {
+                id: 1,
+                owner: OWNER_PLAYER,
+            },
+            Command::AssignOwner {
+                id: 2,
+                owner: OWNER_ENEMY,
+            },
+            Command::AttackMove {
+                id: 1,
+                x: Fix::from_int(8),
+                y: Fix::ZERO,
+            },
         ]);
         // Act: run until the attacker settles at the destination.
         for _ in 0..200 {
@@ -1043,15 +1336,39 @@ mod tests {
         let mut sim = Sim::new(9);
         sim.set_terrain(TerrainGrid::new(0, 0, 12, 6));
         let c = |v: i32| Fix::from_int(v) + Fix::from_raw(128);
-        let tank = |y: i32| Command::Spawn { x: c(0), y: c(y), loco: terrain::Loco::Track, speed: Fix::from_int(1), hp: 100, armor: 0, weapon: None };
+        let tank = |y: i32| Command::Spawn {
+            x: c(0),
+            y: c(y),
+            loco: terrain::Loco::Track,
+            speed: Fix::from_int(1),
+            hp: 100,
+            armor: 0,
+            weapon: None,
+        };
         sim.step(&[
-            Command::PlaceBuilding { x: 8, y: 2, w: 2, h: 2, hp: 500, armor: 0, power: 0, owner: OWNER_ENEMY, role: Role::Combat },
+            Command::PlaceBuilding {
+                x: 8,
+                y: 2,
+                w: 2,
+                h: 2,
+                hp: 500,
+                armor: 0,
+                power: 0,
+                owner: OWNER_ENEMY,
+                role: Role::Combat,
+            },
             tank(1),
             tank(2),
             tank(3),
         ]);
         let goal = (Fix::from_int(9), Fix::from_int(3));
-        let orders: Vec<Command> = (2..=4).map(|id| Command::Move { id, x: goal.0, y: goal.1 }).collect();
+        let orders: Vec<Command> = (2..=4)
+            .map(|id| Command::Move {
+                id,
+                x: goal.0,
+                y: goal.1,
+            })
+            .collect();
         sim.step(&orders);
         // Act
         for _ in 0..400 {
@@ -1061,8 +1378,16 @@ mod tests {
         for u in sim.units() {
             assert!(u.target.is_none(), "unit {} settled", u.id);
             let (x, y) = (u.x.to_int_floor(), u.y.to_int_floor());
-            assert!(!((8..10).contains(&x) && (2..4).contains(&y)), "unit {} inside footprint", u.id);
-            assert!(dist2(u.x - goal.0, u.y - goal.1) <= i64::from(Fix::from_int(3).raw()).pow(2), "unit {} at ({x},{y})", u.id);
+            assert!(
+                !((8..10).contains(&x) && (2..4).contains(&y)),
+                "unit {} inside footprint",
+                u.id
+            );
+            assert!(
+                dist2(u.x - goal.0, u.y - goal.1) <= i64::from(Fix::from_int(3).raw()).pow(2),
+                "unit {} at ({x},{y})",
+                u.id
+            );
         }
     }
 
@@ -1085,10 +1410,22 @@ mod tests {
             spawn(2, 40, None),
             spawn(1, 40, None),
             spawn(10, 40, None),
-            Command::AssignOwner { id: 1, owner: OWNER_PLAYER },
-            Command::AssignOwner { id: 2, owner: OWNER_ENEMY },
-            Command::AssignOwner { id: 3, owner: OWNER_NEUTRAL },
-            Command::AssignOwner { id: 4, owner: OWNER_ENEMY },
+            Command::AssignOwner {
+                id: 1,
+                owner: OWNER_PLAYER,
+            },
+            Command::AssignOwner {
+                id: 2,
+                owner: OWNER_ENEMY,
+            },
+            Command::AssignOwner {
+                id: 3,
+                owner: OWNER_NEUTRAL,
+            },
+            Command::AssignOwner {
+                id: 4,
+                owner: OWNER_ENEMY,
+            },
         ]);
         // Act
         for _ in 0..50 {
@@ -1110,10 +1447,32 @@ mod tests {
         sim.set_terrain(grid);
         let centre = |c: i32| Fix::from_int(c) + Fix::from_raw(128);
         sim.step(&[
-            Command::Spawn { x: centre(0), y: centre(0), loco: terrain::Loco::Track, speed: Fix::from_int(256), hp: 100, armor: 0, weapon: None },
-            Command::Spawn { x: centre(1), y: centre(0), loco: terrain::Loco::Track, speed: Fix::from_int(256), hp: 100, armor: 0, weapon: None },
-            Command::AssignRole { id: 1, role: Role::Refinery },
-            Command::AssignRole { id: 2, role: Role::Harvester },
+            Command::Spawn {
+                x: centre(0),
+                y: centre(0),
+                loco: terrain::Loco::Track,
+                speed: Fix::from_int(256),
+                hp: 100,
+                armor: 0,
+                weapon: None,
+            },
+            Command::Spawn {
+                x: centre(1),
+                y: centre(0),
+                loco: terrain::Loco::Track,
+                speed: Fix::from_int(256),
+                hp: 100,
+                armor: 0,
+                weapon: None,
+            },
+            Command::AssignRole {
+                id: 1,
+                role: Role::Refinery,
+            },
+            Command::AssignRole {
+                id: 2,
+                role: Role::Harvester,
+            },
             Command::Harvest { id: 2 },
         ]);
         // Move the refinery marker onto the spawn area cell (0,0) is fine;
@@ -1121,16 +1480,31 @@ mod tests {
         let mut unloads = 0;
         for _ in 0..4000 {
             sim.step(&[]);
-            unloads += sim.drain_events().iter().filter(|e| matches!(e, Event::Unloaded { .. })).count();
+            unloads += sim
+                .drain_events()
+                .iter()
+                .filter(|e| matches!(e, Event::Unloaded { .. }))
+                .count();
             if unloads >= 2 {
                 break;
             }
         }
         assert_eq!(unloads, 2, "harvester completed two loops");
-        assert_eq!(sim.credits(), 2 * i64::from(HARVESTER_CAPACITY) * BAIL_ORE, "20 bails x 25cr per loop");
+        assert_eq!(
+            sim.credits(),
+            2 * i64::from(HARVESTER_CAPACITY) * BAIL_ORE,
+            "20 bails x 25cr per loop"
+        );
         let g = sim.terrain().unwrap();
-        assert_eq!(g.cell(6, 0).map(|c| c.resource), Some(0), "ore cell depleted");
-        assert_eq!(g.cell(6, 0).map(|c| c.overlay), Some(terrain::Overlay::None));
+        assert_eq!(
+            g.cell(6, 0).map(|c| c.resource),
+            Some(0),
+            "ore cell depleted"
+        );
+        assert_eq!(
+            g.cell(6, 0).map(|c| c.overlay),
+            Some(terrain::Overlay::None)
+        );
     }
 
     #[test]
@@ -1139,8 +1513,28 @@ mod tests {
         sim.set_terrain(TerrainGrid::new(0, 0, 8, 8));
         // Power plant (+200) and two consumers (-150 each via two placements).
         sim.step(&[
-            Command::PlaceBuilding { x: 0, y: 0, w: 2, h: 2, hp: 1000, armor: 0, power: 200, owner: 0, role: Role::Combat },
-            Command::PlaceBuilding { x: 4, y: 0, w: 2, h: 2, hp: 500, armor: 0, power: -150, owner: 0, role: Role::Combat },
+            Command::PlaceBuilding {
+                x: 0,
+                y: 0,
+                w: 2,
+                h: 2,
+                hp: 1000,
+                armor: 0,
+                power: 200,
+                owner: 0,
+                role: Role::Combat,
+            },
+            Command::PlaceBuilding {
+                x: 4,
+                y: 0,
+                w: 2,
+                h: 2,
+                hp: 500,
+                armor: 0,
+                power: -150,
+                owner: 0,
+                role: Role::Combat,
+            },
         ]);
         assert_eq!(sim.power(), (200, 150));
         assert!(!sim.low_power());
@@ -1148,28 +1542,61 @@ mod tests {
         let g = sim.terrain().unwrap();
         assert!(!g.passable(terrain::Loco::Foot, 0, 0), "footprint blocks");
         // Add drain past production: low power slows production.
-        sim.step(&[Command::PlaceBuilding { x: 4, y: 4, w: 2, h: 2, hp: 500, armor: 0, power: -150, owner: 0, role: Role::Combat }]);
+        sim.step(&[Command::PlaceBuilding {
+            x: 4,
+            y: 4,
+            w: 2,
+            h: 2,
+            hp: 500,
+            armor: 0,
+            power: -150,
+            owner: 0,
+            role: Role::Combat,
+        }]);
         assert!(sim.low_power());
         let f = sim.production_factor();
-        assert!(f < Fix::ONE && f >= Fix::from_raw(128), "low-power factor interpolates: {f:?}");
+        assert!(
+            f < Fix::ONE && f >= Fix::from_raw(128),
+            "low-power factor interpolates: {f:?}"
+        );
         // A tank destroys the consumer at (4,4); footprint frees.
         let mut verses = [yr_rules::Decimal::ZERO; crate::combat::ARMOR_COUNT];
         verses[0] = yr_rules::Decimal::ONE;
-        let w = WeaponSpec { damage: 250, rof_ticks: 1, range: Fix::from_int(20), projectile_speed: Fix::ZERO, verses };
+        let w = WeaponSpec {
+            damage: 250,
+            rof_ticks: 1,
+            range: Fix::from_int(20),
+            projectile_speed: Fix::ZERO,
+            verses,
+        };
         sim.step(&[
-            Command::Spawn { x: Fix::from_raw(128), y: Fix::from_int(6), loco: terrain::Loco::Track, speed: Fix::from_int(4), hp: 500, armor: 0, weapon: Some(w) },
+            Command::Spawn {
+                x: Fix::from_raw(128),
+                y: Fix::from_int(6),
+                loco: terrain::Loco::Track,
+                speed: Fix::from_int(4),
+                hp: 500,
+                armor: 0,
+                weapon: Some(w),
+            },
             Command::Attack { id: 4, target: 3 },
         ]);
         let mut died = false;
         for _ in 0..50 {
             sim.step(&[]);
-            died |= sim.drain_events().iter().any(|e| matches!(e, Event::Died { id: 3 }));
+            died |= sim
+                .drain_events()
+                .iter()
+                .any(|e| matches!(e, Event::Died { id: 3 }));
             if died {
                 break;
             }
         }
         assert!(died, "building destroyed");
-        assert!(sim.terrain().unwrap().passable(terrain::Loco::Foot, 4, 4), "footprint freed");
+        assert!(
+            sim.terrain().unwrap().passable(terrain::Loco::Foot, 4, 4),
+            "footprint freed"
+        );
         assert_eq!(sim.power(), (200, 150), "drain removed with the building");
     }
 
@@ -1179,18 +1606,44 @@ mod tests {
         // 256 leptons/tick over 4 cells (1024 leptons): hits land ~4 ticks after firing.
         let w = gun(50, 1, 10, Fix::from_int(1));
         sim.step(&[
-            Command::Spawn { x: Fix::ZERO, y: Fix::ZERO, loco: terrain::Loco::Track, speed: Fix::from_int(4), hp: 200, armor: 0, weapon: Some(w) },
-            Command::Spawn { x: Fix::from_int(4), y: Fix::ZERO, loco: terrain::Loco::Track, speed: Fix::from_int(4), hp: 40, armor: 0, weapon: None },
+            Command::Spawn {
+                x: Fix::ZERO,
+                y: Fix::ZERO,
+                loco: terrain::Loco::Track,
+                speed: Fix::from_int(4),
+                hp: 200,
+                armor: 0,
+                weapon: Some(w),
+            },
+            Command::Spawn {
+                x: Fix::from_int(4),
+                y: Fix::ZERO,
+                loco: terrain::Loco::Track,
+                speed: Fix::from_int(4),
+                hp: 40,
+                armor: 0,
+                weapon: None,
+            },
             Command::Attack { id: 1, target: 2 },
         ]);
         sim.step(&[]);
         let first = sim.drain_events();
-        assert!(first.iter().any(|e| matches!(e, Event::Fired { .. })), "fired at once: {first:?}");
-        assert!(!first.iter().any(|e| matches!(e, Event::Hit { .. })), "but not yet hit: {first:?}");
+        assert!(
+            first.iter().any(|e| matches!(e, Event::Fired { .. })),
+            "fired at once: {first:?}"
+        );
+        assert!(
+            !first.iter().any(|e| matches!(e, Event::Hit { .. })),
+            "but not yet hit: {first:?}"
+        );
         let mut died_at = None;
         for t in 0..30 {
             sim.step(&[]);
-            if sim.drain_events().iter().any(|e| matches!(e, Event::Died { .. })) {
+            if sim
+                .drain_events()
+                .iter()
+                .any(|e| matches!(e, Event::Died { .. }))
+            {
                 died_at = Some(t);
                 break;
             }

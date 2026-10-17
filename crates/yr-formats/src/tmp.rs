@@ -158,7 +158,11 @@ fn parse_tile(data: &[u8], base: usize, diamond: usize) -> Option<TmpTile> {
     let at = |ofs: usize, len: usize| data.get(base + ofs..base + ofs + len).map(<[u8]>::to_vec);
     let pixels = c.take(diamond)?.to_vec();
     let has_depth = flags & FLAG_DEPTH != 0;
-    let depth = if has_depth { Some(at(depth_ofs, diamond)?) } else { None };
+    let depth = if has_depth {
+        Some(at(depth_ofs, diamond)?)
+    } else {
+        None
+    };
     let extra = if flags & FLAG_EXTRA != 0 {
         let n = (extra_w as usize).checked_mul(extra_h as usize)?;
         Some(TmpExtra {
@@ -167,7 +171,11 @@ fn parse_tile(data: &[u8], base: usize, diamond: usize) -> Option<TmpTile> {
             width: extra_w,
             height: extra_h,
             pixels: at(extra_ofs, n)?,
-            depth: if has_depth { Some(at(extra_depth_ofs, n)?) } else { None },
+            depth: if has_depth {
+                Some(at(extra_depth_ofs, n)?)
+            } else {
+                None
+            },
         })
     } else {
         None
@@ -253,6 +261,9 @@ mod tests {
 
     #[test]
     fn rejects_garbage() {
-        assert_eq!(TmpFile::parse(b"Voxel Animation\0").unwrap_err(), TmpError::BadHeader);
+        assert_eq!(
+            TmpFile::parse(b"Voxel Animation\0").unwrap_err(),
+            TmpError::BadHeader
+        );
     }
 }

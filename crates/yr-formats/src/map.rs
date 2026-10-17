@@ -1,7 +1,9 @@
 //! RA2/YR map files (`.map`/`.mpr`/`.yrm`): an INI with packed binary
 //! sections. Spec with evidence: `docs/formats/map.md`.
 
-use crate::compress::{base64_decode, lcw_decompress, lzo1x_decompress, unpack_chunks, DecompressError};
+use crate::compress::{
+    base64_decode, lcw_decompress, lzo1x_decompress, unpack_chunks, DecompressError,
+};
 use crate::ini::{IniFile, IniSection};
 
 /// Overlay and overlay-data packs cover a fixed 512x512 cell grid.
@@ -93,12 +95,17 @@ impl MapFile {
                 _ => Err(MapError::BadValue(key)),
             }
         };
-        let theater = map.get("Theater").ok_or(MapError::BadValue("Theater"))?.trim().to_string();
+        let theater = map
+            .get("Theater")
+            .ok_or(MapError::BadValue("Theater"))?
+            .trim()
+            .to_string();
         let size = rect("Size")?;
         let local_size = rect("LocalSize").unwrap_or(size);
 
         let iso = pack(&ini, "IsoMapPack5")?.ok_or(MapError::MissingSection("IsoMapPack5"))?;
-        let raw = unpack_chunks(&iso, lzo1x_decompress).map_err(|e| MapError::Pack("IsoMapPack5", e))?;
+        let raw =
+            unpack_chunks(&iso, lzo1x_decompress).map_err(|e| MapError::Pack("IsoMapPack5", e))?;
         // Retail packs are 11-byte entries plus a 4-byte zero trailer
         // (verified on all 234 retail maps; see docs/formats/map.md). Any
         // other shape is a corrupt or hostile pack, not a partial map.
@@ -111,7 +118,9 @@ impl MapFile {
             return Err(MapError::BadValue("IsoMapPack5"));
         }
         let tiles = raw[..raw.len() - 4]
-            .as_chunks::<11>().0.iter()
+            .as_chunks::<11>()
+            .0
+            .iter()
             .map(|c| {
                 let tile = i32::from_le_bytes([c[4], c[5], c[6], c[7]]);
                 IsoTile {
@@ -138,7 +147,11 @@ impl MapFile {
                     .iter()
                     .filter_map(|(k, v)| {
                         let cell: u32 = k.trim().parse().ok()?;
-                        Some(((cell % 1000) as u16, (cell / 1000) as u16, v.trim().to_string()))
+                        Some((
+                            (cell % 1000) as u16,
+                            (cell / 1000) as u16,
+                            v.trim().to_string(),
+                        ))
                     })
                     .collect()
             })
@@ -179,10 +192,17 @@ fn pack(ini: &IniFile, section: &'static str) -> Result<Option<Vec<u8>>, MapErro
         .collect();
     lines.sort_by_key(|l| l.0);
     let text: String = lines.into_iter().map(|l| l.1).collect();
-    base64_decode(&text).map(Some).map_err(|e| MapError::Pack(section, e))
+    base64_decode(&text)
+        .map(Some)
+        .map_err(|e| MapError::Pack(section, e))
 }
 
-fn overlay_pack(ini: &IniFile, section: &'static str, len: usize, fill: u8) -> Result<Vec<u8>, MapError> {
+fn overlay_pack(
+    ini: &IniFile,
+    section: &'static str,
+    len: usize,
+    fill: u8,
+) -> Result<Vec<u8>, MapError> {
     match pack(ini, section)? {
         Some(data) => {
             let v = unpack_chunks(&data, lcw_decompress).map_err(|e| MapError::Pack(section, e))?;
@@ -226,7 +246,9 @@ mod tests {
         const T: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
         let mut s = String::new();
         for c in data.chunks(3) {
-            let n = (u32::from(c[0]) << 16) | (u32::from(*c.get(1).unwrap_or(&0)) << 8) | u32::from(*c.get(2).unwrap_or(&0));
+            let n = (u32::from(c[0]) << 16)
+                | (u32::from(*c.get(1).unwrap_or(&0)) << 8)
+                | u32::from(*c.get(2).unwrap_or(&0));
             for i in 0..4 {
                 if i <= c.len() {
                     s.push(T[(n >> (18 - 6 * i) & 63) as usize] as char);
@@ -266,11 +288,24 @@ mod tests {
         assert_eq!(map.local_size, (2, 4, 46, 40));
         assert_eq!(
             map.tiles,
-            vec![IsoTile { x: 10, y: 20, tile: Some(5), subtile: 1, level: 3 }]
+            vec![IsoTile {
+                x: 10,
+                y: 20,
+                tile: Some(5),
+                subtile: 1,
+                level: 3
+            }]
         );
         assert_eq!(map.terrain, vec![(10, 20, "TREE01".to_string())]);
         assert_eq!(map.structures[0].kind, "CAAIRP");
-        assert_eq!((map.structures[0].x, map.structures[0].y, map.structures[0].facing), (80, 96, Some(64)));
+        assert_eq!(
+            (
+                map.structures[0].x,
+                map.structures[0].y,
+                map.structures[0].facing
+            ),
+            (80, 96, Some(64))
+        );
         assert!(map.overlay_at(10, 20).is_none());
     }
 
@@ -293,7 +328,10 @@ mod tests {
             "[Map]\nTheater=TEMPERATE\nSize=0,0,50,50\n[IsoMapPack5]\n1={}\n",
             b64(&chunk)
         );
-        assert!(matches!(MapFile::parse(&text), Err(MapError::BadValue("IsoMapPack5"))));
+        assert!(matches!(
+            MapFile::parse(&text),
+            Err(MapError::BadValue("IsoMapPack5"))
+        ));
     }
 
     #[test]
@@ -315,6 +353,9 @@ mod tests {
             b64(&iso_chunk),
             b64(&chunk)
         );
-        assert!(matches!(MapFile::parse(&text), Err(MapError::BadValue("OverlayPack"))));
+        assert!(matches!(
+            MapFile::parse(&text),
+            Err(MapError::BadValue("OverlayPack"))
+        ));
     }
 }

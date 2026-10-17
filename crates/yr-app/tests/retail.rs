@@ -18,7 +18,8 @@ fn eb1_skirmish_setup_and_scripted_win() {
         return;
     }
     let mut fs = AssetFs::open(&dir).expect("install opens");
-    let map = MapFile::parse(&String::from_utf8_lossy(fs.read("EB1.MMX").unwrap())).expect("EB1 parses");
+    let map =
+        MapFile::parse(&String::from_utf8_lossy(fs.read("EB1.MMX").unwrap())).expect("EB1 parses");
     let mut rules_ini = IniFile::parse(&String::from_utf8_lossy(fs.read("RULESMD.INI").unwrap()));
     rules_ini.merge_from(&map.ini);
     let art_ini = IniFile::parse(&String::from_utf8_lossy(fs.read("ARTMD.INI").unwrap()));
@@ -27,13 +28,41 @@ fn eb1_skirmish_setup_and_scripted_win() {
 
     let mut session = setup(&mut fs, &map, &rules, &overlay_types, 42).expect("session sets up");
     assert_eq!(session.sim.credits(), 10_000, "rules starting money");
-    let player_units = session.sim.units().iter().filter(|u| u.owner == yr_sim::OWNER_PLAYER).count();
-    let player_bases = session.sim.buildings().iter().filter(|b| b.owner == yr_sim::OWNER_PLAYER).count();
-    let enemy_bases = session.sim.buildings().iter().filter(|b| b.owner == yr_sim::OWNER_ENEMY).count();
+    let player_units = session
+        .sim
+        .units()
+        .iter()
+        .filter(|u| u.owner == yr_sim::OWNER_PLAYER)
+        .count();
+    let player_bases = session
+        .sim
+        .buildings()
+        .iter()
+        .filter(|b| b.owner == yr_sim::OWNER_PLAYER)
+        .count();
+    let enemy_bases = session
+        .sim
+        .buildings()
+        .iter()
+        .filter(|b| b.owner == yr_sim::OWNER_ENEMY)
+        .count();
     assert!(player_units >= 8, "starting force spawned: {player_units}");
-    let neutral_units = session.sim.units().iter().filter(|u| u.owner == yr_sim::OWNER_NEUTRAL).count();
-    assert!(neutral_units >= 1, "map pre-placed units stay neutral: {neutral_units}");
-    let enemy_units = session.sim.units().iter().filter(|u| u.owner == yr_sim::OWNER_ENEMY).count();
+    let neutral_units = session
+        .sim
+        .units()
+        .iter()
+        .filter(|u| u.owner == yr_sim::OWNER_NEUTRAL)
+        .count();
+    assert!(
+        neutral_units >= 1,
+        "map pre-placed units stay neutral: {neutral_units}"
+    );
+    let enemy_units = session
+        .sim
+        .units()
+        .iter()
+        .filter(|u| u.owner == yr_sim::OWNER_ENEMY)
+        .count();
     assert_eq!(enemy_units, 3, "enemy guards spawned");
     assert!(player_bases >= 3, "player base placed: {player_bases}");
     assert!(enemy_bases >= 3, "enemy base placed: {enemy_bases}");
@@ -78,7 +107,8 @@ fn eb1_waves_launch_and_headless_playthrough_resolves() {
         return;
     }
     let mut fs = AssetFs::open(&dir).expect("install opens");
-    let map = MapFile::parse(&String::from_utf8_lossy(fs.read("EB1.MMX").unwrap())).expect("EB1 parses");
+    let map =
+        MapFile::parse(&String::from_utf8_lossy(fs.read("EB1.MMX").unwrap())).expect("EB1 parses");
     let mut rules_ini = IniFile::parse(&String::from_utf8_lossy(fs.read("RULESMD.INI").unwrap()));
     rules_ini.merge_from(&map.ini);
     let art_ini = IniFile::parse(&String::from_utf8_lossy(fs.read("ARTMD.INI").unwrap()));
@@ -86,10 +116,17 @@ fn eb1_waves_launch_and_headless_playthrough_resolves() {
     let overlay_types = yr_render::type_list(&rules_ini, "OverlayTypes");
     let mut session = setup(&mut fs, &map, &rules, &overlay_types, 7).expect("session sets up");
 
-    let enemy_count = |s: &yr_app::session::Session| s.sim.units().iter().filter(|u| u.owner == yr_sim::OWNER_ENEMY).count();
+    let enemy_count = |s: &yr_app::session::Session| {
+        s.sim
+            .units()
+            .iter()
+            .filter(|u| u.owner == yr_sim::OWNER_ENEMY)
+            .count()
+    };
     let (_, total) = session.waves_progress();
     assert_eq!(total, 5, "wave plan");
-    let first = session.next_wave_in_secs().expect("first wave pending") * yr_app::session::TICKS_PER_SEC;
+    let first =
+        session.next_wave_in_secs().expect("first wave pending") * yr_app::session::TICKS_PER_SEC;
     let before = enemy_count(&session);
     for _ in 0..first {
         session.step(&[]);
@@ -98,21 +135,35 @@ fn eb1_waves_launch_and_headless_playthrough_resolves() {
     assert_eq!(session.waves_progress().0, 1, "first wave launched");
     let after = enemy_count(&session);
     assert!(after > before, "wave units spawned: {before} -> {after}");
-    let marching = session.sim.units().iter().filter(|u| u.owner == yr_sim::OWNER_ENEMY && u.target.is_some()).count();
+    let marching = session
+        .sim
+        .units()
+        .iter()
+        .filter(|u| u.owner == yr_sim::OWNER_ENEMY && u.target.is_some())
+        .count();
     assert!(marching >= 2, "wave marches on the player: {marching}");
 
     // Player counter-attack: every armed player unit attack-moves to the
     // enemy base (centre of its first building), re-issued every 10 s.
     let mut ticks = 0u64;
     while session.outcome == Outcome::Ongoing && ticks < 15 * 60 * 15 {
-        let orders: Vec<Command> = match session.sim.buildings().iter().find(|b| b.owner == yr_sim::OWNER_ENEMY) {
+        let orders: Vec<Command> = match session
+            .sim
+            .buildings()
+            .iter()
+            .find(|b| b.owner == yr_sim::OWNER_ENEMY)
+        {
             Some(b) if ticks.is_multiple_of(150) => {
                 let (x, y) = b.centre();
                 session
                     .sim
                     .units()
                     .iter()
-                    .filter(|u| u.owner == yr_sim::OWNER_PLAYER && u.weapon.is_some() && u.role == yr_sim::Role::Combat)
+                    .filter(|u| {
+                        u.owner == yr_sim::OWNER_PLAYER
+                            && u.weapon.is_some()
+                            && u.role == yr_sim::Role::Combat
+                    })
                     .map(|u| Command::AttackMove { id: u.id, x, y })
                     .collect()
             }
@@ -121,6 +172,14 @@ fn eb1_waves_launch_and_headless_playthrough_resolves() {
         session.step(&orders);
         ticks += 1;
     }
-    println!("EB1 playthrough: {:?} after {ticks} ticks, waves {:?}", session.outcome, session.waves_progress());
-    assert_ne!(session.outcome, Outcome::Ongoing, "match resolved within 15 minutes");
+    println!(
+        "EB1 playthrough: {:?} after {ticks} ticks, waves {:?}",
+        session.outcome,
+        session.waves_progress()
+    );
+    assert_ne!(
+        session.outcome,
+        Outcome::Ongoing,
+        "match resolved within 15 minutes"
+    );
 }

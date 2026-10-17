@@ -41,7 +41,12 @@ pub fn find_path(
 
 /// Nearest cell to `to` that `loco` may stand on, searching square rings
 /// out to `max_r` in fixed (y, x) order; `to` itself when passable.
-pub fn nearest_passable(grid: &TerrainGrid, loco: Loco, to: (u16, u16), max_r: i32) -> Option<(u16, u16)> {
+pub fn nearest_passable(
+    grid: &TerrainGrid,
+    loco: Loco,
+    to: (u16, u16),
+    max_r: i32,
+) -> Option<(u16, u16)> {
     for r in 0..=max_r {
         for dy in -r..=r {
             for dx in -r..=r {
@@ -49,7 +54,9 @@ pub fn nearest_passable(grid: &TerrainGrid, loco: Loco, to: (u16, u16), max_r: i
                     continue;
                 }
                 let (x, y) = (i32::from(to.0) + dx, i32::from(to.1) + dy);
-                let (Ok(x), Ok(y)) = (u16::try_from(x), u16::try_from(y)) else { continue };
+                let (Ok(x), Ok(y)) = (u16::try_from(x), u16::try_from(y)) else {
+                    continue;
+                };
                 if grid.passable(loco, x, y) {
                     return Some((x, y));
                 }
@@ -96,7 +103,13 @@ pub fn find_path_avoiding(
     };
     // (f, h, y, x) packed so Reverse gives a total, deterministic order.
     let key = |f: i64, hh: i64, i: usize| (Reverse(f), Reverse(hh), Reverse(i / w), Reverse(i % w));
-    type HeapKey = (Reverse<i64>, Reverse<i64>, Reverse<usize>, Reverse<usize>, usize);
+    type HeapKey = (
+        Reverse<i64>,
+        Reverse<i64>,
+        Reverse<usize>,
+        Reverse<usize>,
+        usize,
+    );
     let mut open: BinaryHeap<HeapKey> = BinaryHeap::new();
     g_score[start] = 0;
     let h0 = heuristic(start);
@@ -137,7 +150,9 @@ pub fn find_path_avoiding(
                     continue;
                 }
             }
-            let Some(cost) = enter_cost(grid, loco, mx, my, diag) else { continue };
+            let Some(cost) = enter_cost(grid, loco, mx, my, diag) else {
+                continue;
+            };
             let ni = ny as usize * w + nx as usize;
             if blocked[ni] {
                 continue;
@@ -195,7 +210,8 @@ mod tests {
     fn avoiding_routes_around_units_and_nearest_passable_skips_cliffs() {
         let g = grid_with_wall();
         // Block the direct row; the path must step off y=0.
-        let p = find_path_avoiding(&g, Loco::Track, (0, 0), (1, 0), &[(1, 0)]).expect("goal itself never avoided");
+        let p = find_path_avoiding(&g, Loco::Track, (0, 0), (1, 0), &[(1, 0)])
+            .expect("goal itself never avoided");
         assert_eq!(p, vec![(1, 0)]);
         let p = find_path_avoiding(&g, Loco::Track, (0, 4), (4, 4), &[(2, 4)]);
         assert_eq!(p, None, "the only gap is held");

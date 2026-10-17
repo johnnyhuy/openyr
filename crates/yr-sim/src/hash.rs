@@ -6,7 +6,9 @@ pub struct Hasher {
 
 impl Hasher {
     pub fn new() -> Hasher {
-        Hasher { h: 0xcbf2_9ce4_8422_2325 }
+        Hasher {
+            h: 0xcbf2_9ce4_8422_2325,
+        }
     }
 
     pub fn write_u64(&mut self, v: u64) {

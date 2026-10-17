@@ -59,7 +59,13 @@ pub const TICKS_PER_SEC: u64 = 15;
 /// The sandbox's scripted wave plan: first wave after 90 s, then every
 /// 60 s, escalating. Waves stop once the enemy base has no buildings.
 pub fn default_waves(tank: Option<&str>, inf: Option<&str>) -> Vec<Wave> {
-    let plan: [(u64, u8, u8); 5] = [(90, 2, 0), (150, 2, 3), (210, 3, 4), (270, 4, 4), (330, 6, 6)];
+    let plan: [(u64, u8, u8); 5] = [
+        (90, 2, 0),
+        (150, 2, 3),
+        (210, 3, 4),
+        (270, 4, 4),
+        (330, 6, 6),
+    ];
     plan.iter()
         .map(|&(secs, tanks, infs)| {
             let mut units = Vec::new();
@@ -69,7 +75,10 @@ pub fn default_waves(tank: Option<&str>, inf: Option<&str>) -> Vec<Wave> {
             if let (Some(i), true) = (inf, infs > 0) {
                 units.push((i.to_string(), infs));
             }
-            Wave { tick: secs * TICKS_PER_SEC, units }
+            Wave {
+                tick: secs * TICKS_PER_SEC,
+                units,
+            }
         })
         .collect()
 }
@@ -81,7 +90,9 @@ const NEUTRAL: u8 = yr_sim::OWNER_NEUTRAL;
 /// Start waypoints from `[Waypoints]`: keys 0..=7 sorted, value is
 /// `y * 1000 + x` (the same packing as `[Terrain]` keys).
 pub fn start_waypoints(map: &MapFile) -> Vec<(u16, u16)> {
-    let Some(sec) = map.ini.section("Waypoints") else { return Vec::new() };
+    let Some(sec) = map.ini.section("Waypoints") else {
+        return Vec::new();
+    };
     let mut keys: Vec<(u32, i64)> = sec
         .entries
         .iter()
@@ -89,7 +100,9 @@ pub fn start_waypoints(map: &MapFile) -> Vec<(u16, u16)> {
         .filter(|(k, _)| *k <= 7)
         .collect();
     keys.sort_by_key(|k| k.0);
-    keys.iter().map(|(_, v)| ((v % 1000) as u16, (v / 1000) as u16)).collect()
+    keys.iter()
+        .map(|(_, v)| ((v % 1000) as u16, (v / 1000) as u16))
+        .collect()
 }
 
 fn armor_idx(rules_techno: &yr_rules::TechnoType) -> u8 {
@@ -122,7 +135,10 @@ fn place_unit(
     commands: &mut Vec<Command>,
 ) -> Option<u32> {
     let t = rules.techno(id)?;
-    let weapon = t.primary.as_deref().and_then(|w| yr_sim::WeaponSpec::from_rules(rules, w));
+    let weapon = t
+        .primary
+        .as_deref()
+        .and_then(|w| yr_sim::WeaponSpec::from_rules(rules, w));
     let before = *next_id;
     *next_id += 1;
     commands.push(Command::Spawn {
@@ -139,11 +155,19 @@ fn place_unit(
 }
 
 fn first_of(rules: &Rules, ids: &[&str]) -> Option<String> {
-    ids.iter().find(|id| rules.techno(id).is_some()).map(|s| s.to_string())
+    ids.iter()
+        .find(|id| rules.techno(id).is_some())
+        .map(|s| s.to_string())
 }
 
 /// First passable cell at or after `start`, scanning expanding offsets.
-fn free_cell(grid: &TerrainGrid, loco: Loco, start: (u16, u16), sim: &Sim, taken_cells: &[(u16, u16)]) -> Option<(u16, u16)> {
+fn free_cell(
+    grid: &TerrainGrid,
+    loco: Loco,
+    start: (u16, u16),
+    sim: &Sim,
+    taken_cells: &[(u16, u16)],
+) -> Option<(u16, u16)> {
     for r in 0..12i32 {
         for dy in -r..=r {
             for dx in -r..=r {
@@ -159,9 +183,10 @@ fn free_cell(grid: &TerrainGrid, loco: Loco, start: (u16, u16), sim: &Sim, taken
                     continue;
                 }
                 let taken = taken_cells.contains(&(x, y))
-                    || sim.units().iter().any(|u| {
-                        u.x.to_int_floor() as u16 == x && u.y.to_int_floor() as u16 == y
-                    });
+                    || sim
+                        .units()
+                        .iter()
+                        .any(|u| u.x.to_int_floor() as u16 == x && u.y.to_int_floor() as u16 == y);
                 if !taken {
                     return Some((x, y));
                 }
@@ -205,7 +230,11 @@ fn place_base(
     }
     for (id, role) in placed {
         let Some(t) = rules.techno(&id) else { continue };
-        let (fw, fh) = t.art.as_ref().and_then(|a| a.foundation).unwrap_or((2u8, 2u8));
+        let (fw, fh) = t
+            .art
+            .as_ref()
+            .and_then(|a| a.foundation)
+            .unwrap_or((2u8, 2u8));
         let (fw, fh) = (u16::from(fw), u16::from(fh));
         // Find a free footprint whose cells are all passable now.
         let mut spot = None;
@@ -299,9 +328,15 @@ pub fn setup(
     let mut taken_cells: Vec<(u16, u16)> = Vec::new();
     // Map's own pre-placed objects (neutral unless owned otherwise).
     for obj in &map.structures {
-        let Some(t) = rules.techno(&obj.kind) else { continue };
+        let Some(t) = rules.techno(&obj.kind) else {
+            continue;
+        };
         next_id += 1;
-        let (fw, fh) = t.art.as_ref().and_then(|a| a.foundation).unwrap_or((1u8, 1u8));
+        let (fw, fh) = t
+            .art
+            .as_ref()
+            .and_then(|a| a.foundation)
+            .unwrap_or((1u8, 1u8));
         let (fw, fh) = (u16::from(fw), u16::from(fh));
         cmds.push(Command::PlaceBuilding {
             x: obj.x,
@@ -317,7 +352,14 @@ pub fn setup(
     }
     for obj in map.units.iter().chain(&map.infantry).chain(&map.aircraft) {
         let mut extra = Vec::new();
-        place_unit(&mut next_id, rules, &obj.kind, (obj.x, obj.y), NEUTRAL, &mut extra);
+        place_unit(
+            &mut next_id,
+            rules,
+            &obj.kind,
+            (obj.x, obj.y),
+            NEUTRAL,
+            &mut extra,
+        );
         cmds.extend(extra);
         taken_cells.push((obj.x, obj.y));
     }
@@ -329,8 +371,24 @@ pub fn setup(
     let plant = first_of(rules, &["GAPOWR", "NAPOWR", "YAPOWR"]);
     let refinery = first_of(rules, &["GAREFN", "NAREFN", "YAREFN"]);
     if let (Some(y), Some(p), Some(r)) = (&yard, &plant, &refinery) {
-        let mut ctx = PlaceCtx { next_id: &mut next_id, taken_cells: &mut taken_cells, rules, grid: &grid };
-        place_base(&mut ctx, player_at, PLAYER, &BaseSpec { yard: y, power_plant: p, refinery: r, extra: None }, &mut cmds);
+        let mut ctx = PlaceCtx {
+            next_id: &mut next_id,
+            taken_cells: &mut taken_cells,
+            rules,
+            grid: &grid,
+        };
+        place_base(
+            &mut ctx,
+            player_at,
+            PLAYER,
+            &BaseSpec {
+                yard: y,
+                power_plant: p,
+                refinery: r,
+                extra: None,
+            },
+            &mut cmds,
+        );
     }
     let mcv = first_of(rules, &["MCV", "SMCV", "PCV"]);
     let harv = first_of(rules, &["HARV", "CMON", "AMCV"]);
@@ -350,17 +408,27 @@ pub fn setup(
         force.extend(std::iter::repeat_n(i.clone(), 4));
     }
     let target_count = rules.skirmish.unit_count.unwrap_or(10).max(0) as usize;
-    if force.len() > target_count { force.truncate(target_count); }
+    if force.len() > target_count {
+        force.truncate(target_count);
+    }
     for id in &force {
-        let loco = rules.techno(id).map(|t| techno_loco(t.kind)).unwrap_or(Loco::Track);
-        let Some(cell) = free_cell(&grid, loco, player_at, &sim, &taken_cells) else { continue };
+        let loco = rules
+            .techno(id)
+            .map(|t| techno_loco(t.kind))
+            .unwrap_or(Loco::Track);
+        let Some(cell) = free_cell(&grid, loco, player_at, &sim, &taken_cells) else {
+            continue;
+        };
         taken_cells.push(cell);
         let mut extra = Vec::new();
         let uid = place_unit(&mut next_id, rules, id, cell, PLAYER, &mut extra);
         cmds.extend(extra);
         if let (Some(uid), Some(h)) = (uid, &harv) {
             if id == h {
-                cmds.push(Command::AssignRole { id: uid, role: Role::Harvester });
+                cmds.push(Command::AssignRole {
+                    id: uid,
+                    role: Role::Harvester,
+                });
             }
         }
     }
@@ -370,12 +438,30 @@ pub fn setup(
         let enemy_at = waypoints[1];
         if let (Some(y), Some(p), Some(r)) = (&yard, &plant, &refinery) {
             let weap = first_of(rules, &["GAWEAP", "NAWEAP", "YAWEAP"]);
-            let mut ctx = PlaceCtx { next_id: &mut next_id, taken_cells: &mut taken_cells, rules, grid: &grid };
-            place_base(&mut ctx, enemy_at, ENEMY, &BaseSpec { yard: y, power_plant: p, refinery: r, extra: weap.as_deref() }, &mut cmds);
+            let mut ctx = PlaceCtx {
+                next_id: &mut next_id,
+                taken_cells: &mut taken_cells,
+                rules,
+                grid: &grid,
+            };
+            place_base(
+                &mut ctx,
+                enemy_at,
+                ENEMY,
+                &BaseSpec {
+                    yard: y,
+                    power_plant: p,
+                    refinery: r,
+                    extra: weap.as_deref(),
+                },
+                &mut cmds,
+            );
         }
         if let Some(t) = &tank {
             for _ in 0..3 {
-                let Some(cell) = free_cell(&grid, Loco::Track, enemy_at, &sim, &taken_cells) else { break };
+                let Some(cell) = free_cell(&grid, Loco::Track, enemy_at, &sim, &taken_cells) else {
+                    break;
+                };
                 taken_cells.push(cell);
                 let mut extra = Vec::new();
                 place_unit(&mut next_id, rules, t, cell, ENEMY, &mut extra);
@@ -384,7 +470,11 @@ pub fn setup(
         }
     }
     sim.step(&cmds);
-    let waves = if had_enemy { default_waves(tank.as_deref(), inf.as_deref()) } else { Vec::new() };
+    let waves = if had_enemy {
+        default_waves(tank.as_deref(), inf.as_deref())
+    } else {
+        Vec::new()
+    };
     let mut wave_specs: Vec<(String, WaveUnit)> = Vec::new();
     for (id, _) in waves.iter().flat_map(|w| &w.units) {
         if wave_specs.iter().any(|(k, _)| k == id) {
@@ -398,12 +488,24 @@ pub fn setup(
                 speed: techno_speed(t),
                 hp: t.strength.unwrap_or(100),
                 armor: armor_idx(t),
-                weapon: t.primary.as_deref().and_then(|w| yr_sim::WeaponSpec::from_rules(rules, w)),
+                weapon: t
+                    .primary
+                    .as_deref()
+                    .and_then(|w| yr_sim::WeaponSpec::from_rules(rules, w)),
             },
         ));
     }
     let enemy_at = waypoints.get(1).copied().unwrap_or(player_at);
-    Ok(Session { sim, outcome: Outcome::Ongoing, had_enemy, waves, next_wave: 0, enemy_at, player_at, wave_specs })
+    Ok(Session {
+        sim,
+        outcome: Outcome::Ongoing,
+        had_enemy,
+        waves,
+        next_wave: 0,
+        enemy_at,
+        player_at,
+        wave_specs,
+    })
 }
 
 impl Session {
@@ -434,7 +536,11 @@ impl Session {
     /// Seconds until the next wave, if one is still pending.
     pub fn next_wave_in_secs(&self) -> Option<u64> {
         let w = self.waves.get(self.next_wave)?;
-        Some(w.tick.saturating_sub(self.sim.tick()).div_ceil(TICKS_PER_SEC))
+        Some(
+            w.tick
+                .saturating_sub(self.sim.tick())
+                .div_ceil(TICKS_PER_SEC),
+        )
     }
 
     /// Commands for a wave due this tick: spawn beside the enemy base,
@@ -443,7 +549,9 @@ impl Session {
     /// A wave only launches while the enemy still owns a building.
     fn wave_commands(&mut self) -> Vec<Command> {
         let mut cmds = Vec::new();
-        let Some(wave) = self.waves.get(self.next_wave) else { return cmds };
+        let Some(wave) = self.waves.get(self.next_wave) else {
+            return cmds;
+        };
         if self.sim.tick() < wave.tick || self.outcome != Outcome::Ongoing {
             return cmds;
         }
@@ -451,20 +559,29 @@ impl Session {
         if !self.sim.buildings().iter().any(|b| b.owner == ENEMY) {
             return cmds;
         }
-        let Some(grid) = self.sim.terrain().cloned() else { return cmds };
+        let Some(grid) = self.sim.terrain().cloned() else {
+            return cmds;
+        };
         let mut next_id = self.sim.next_id_peek();
         let mut taken: Vec<(u16, u16)> = Vec::new();
         for (kind, count) in &wave.units {
-            let Some((_, spec)) = self.wave_specs.iter().find(|(k, _)| k == kind) else { continue };
+            let Some((_, spec)) = self.wave_specs.iter().find(|(k, _)| k == kind) else {
+                continue;
+            };
             // March on the nearest passable cell to the player's start
             // (the start itself is usually under the construction yard).
-            let Some(goal) = free_cell(&grid, spec.loco, self.player_at, &self.sim, &[]) else { continue };
+            let Some(goal) = free_cell(&grid, spec.loco, self.player_at, &self.sim, &[]) else {
+                continue;
+            };
             let dest = (
                 Fix::from_int(i32::from(goal.0)) + Fix::from_raw(128),
                 Fix::from_int(i32::from(goal.1)) + Fix::from_raw(128),
             );
             for _ in 0..*count {
-                let Some(cell) = free_cell(&grid, spec.loco, self.enemy_at, &self.sim, &taken) else { break };
+                let Some(cell) = free_cell(&grid, spec.loco, self.enemy_at, &self.sim, &taken)
+                else {
+                    break;
+                };
                 taken.push(cell);
                 let id = next_id;
                 next_id += 1;
@@ -478,7 +595,11 @@ impl Session {
                     weapon: spec.weapon,
                 });
                 cmds.push(Command::AssignOwner { id, owner: ENEMY });
-                cmds.push(Command::AttackMove { id, x: dest.0, y: dest.1 });
+                cmds.push(Command::AttackMove {
+                    id,
+                    x: dest.0,
+                    y: dest.1,
+                });
             }
         }
         cmds
