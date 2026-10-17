@@ -76,6 +76,8 @@ pub struct TechnoType {
     /// CSF label for the display name, e.g. `Name:HTNK`.
     pub ui_name: Option<String>,
     pub strength: Option<i64>,
+    /// Building `Power=` (positive produces, negative drains).
+    pub power: Option<i64>,
     pub armor: Option<Armor>,
     pub cost: Option<i64>,
     pub points: Option<i64>,
@@ -468,6 +470,7 @@ fn load_techno(
         name: string(sec, "Name"),
         ui_name: string(sec, "UIName"),
         strength: int(sec, "Strength"),
+        power: int(sec, "Power"),
         armor: armor.flatten(),
         cost: int(sec, "Cost"),
         points: int(sec, "Points"),
