@@ -11,6 +11,7 @@
 
 mod fix;
 mod hash;
+pub mod path;
 mod rng;
 pub mod terrain;
 
@@ -26,19 +27,24 @@ pub const LEPTONS_PER_CELL: i32 = 256;
 /// slice order at the start of a tick, so replays are command streams.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Command {
-    Spawn { x: Fix, y: Fix },
+    Spawn { x: Fix, y: Fix, loco: terrain::Loco, speed: Fix },
     Move { id: u32, x: Fix, y: Fix },
     Remove { id: u32 },
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Unit {
     pub id: u32,
     pub x: Fix,
     pub y: Fix,
     pub target: Option<(Fix, Fix)>,
-    /// Leptons per tick.
+    /// Leptons per tick at 100% terrain speed.
     pub speed: Fix,
+    pub loco: terrain::Loco,
+    /// 0 = north, clockwise in 32nds (renderer-facing direction).
+    pub facing: u8,
+    /// Remaining waypoints (map cells) from the last A* plan.
+    pub path: std::collections::VecDeque<(u16, u16)>,
 }
 
 #[derive(Debug, Clone)]
@@ -78,7 +84,7 @@ impl Sim {
     pub fn step(&mut self, commands: &[Command]) {
         for cmd in commands {
             match *cmd {
-                Command::Spawn { x, y } => {
+                Command::Spawn { x, y, loco, speed } => {
                     let id = self.next_id;
                     self.next_id += 1;
                     self.units.push(Unit {
@@ -86,7 +92,10 @@ impl Sim {
                         x,
                         y,
                         target: None,
-                        speed: Fix::from_int(4),
+                        speed,
+                        loco,
+                        facing: 128,
+                        path: std::collections::VecDeque::new(),
                     });
                 }
                 Command::Move { id, x, y } => {
@@ -99,19 +108,82 @@ impl Sim {
                 }
             }
         }
-        for u in &mut self.units {
-            let Some((tx, ty)) = u.target else { continue };
-            let (dx, dy) = (tx - u.x, ty - u.y);
-            let step = u.speed;
-            // Axis-wise clamped step (skeleton movement; pathfinding
-            // replaces this in the movement issue).
-            u.x += dx.clamp(-step, step);
-            u.y += dy.clamp(-step, step);
-            if u.x == tx && u.y == ty {
-                u.target = None;
+        // Movement phase (id order). With terrain, units follow A*
+        // waypoints at terrain-adjusted speed; without, direct steps.
+        let terrain = self.terrain.clone();
+        for i in 0..self.units.len() {
+            let Some((tx, ty)) = self.units[i].target else { continue };
+            match &terrain {
+                Some(grid) => self.move_on_grid(i, grid, tx, ty),
+                None => {
+                    let u = &mut self.units[i];
+                    let (dx, dy) = (tx - u.x, ty - u.y);
+                    let step = u.speed;
+                    u.x += dx.clamp(-step, step);
+                    u.y += dy.clamp(-step, step);
+                    if u.x == tx && u.y == ty {
+                        u.target = None;
+                    }
+                }
             }
         }
         self.tick += 1;
+    }
+
+    fn move_on_grid(&mut self, i: usize, grid: &TerrainGrid, tx: Fix, ty: Fix) {
+        let (ux, uy, loco) = {
+            let u = &self.units[i];
+            (u.x.to_int_floor(), u.y.to_int_floor(), u.loco)
+        };
+        let (start, goal) = ((ux as u16, uy as u16), (tx.to_int_floor() as u16, ty.to_int_floor() as u16));
+        if self.units[i].path.is_empty() && start != goal {
+            match path::find_path(grid, loco, start, goal) {
+                Some(p) => self.units[i].path = p.into(),
+                None => {
+                    self.units[i].target = None;
+                    return;
+                }
+            }
+        }
+        let Some(&(wx, wy)) = self.units[i].path.front() else {
+            self.units[i].target = None;
+            return;
+        };
+        // Ground units may not enter a cell another ground unit holds.
+        if loco != terrain::Loco::Fly {
+            let occupied = self.units.iter().enumerate().any(|(j, o)| {
+                j != i
+                    && o.loco != terrain::Loco::Fly
+                    && o.x.to_int_floor() as u16 == wx
+                    && o.y.to_int_floor() as u16 == wy
+            });
+            if occupied {
+                return;
+            }
+        }
+        let centre = |c: u16| Fix::from_int(i32::from(c)) + Fix::from_raw(128);
+        let (px, py) = (centre(wx), centre(wy));
+        let factor = grid.speed_factor(loco, start.0, start.1).unwrap_or(Fix::ONE);
+        let u = &mut self.units[i];
+        let step = u.speed * factor;
+        let (dx, dy) = (px - u.x, py - u.y);
+        if dx != Fix::ZERO || dy != Fix::ZERO {
+            u.facing = octant(dx, dy);
+        }
+        u.x += dx.clamp(-step, step);
+        u.y += dy.clamp(-step, step);
+        if u.x == px && u.y == py {
+            u.path.pop_front();
+            if u.path.is_empty() {
+                // Final approach to the exact target leptons.
+                let (dx, dy) = (tx - u.x, ty - u.y);
+                u.x += dx.clamp(-step, step);
+                u.y += dy.clamp(-step, step);
+                if u.x == tx && u.y == ty {
+                    u.target = None;
+                }
+            }
+        }
     }
 
     /// Roll the sim RNG (for combat scatter etc.). Deterministic: the
@@ -133,6 +205,13 @@ impl Sim {
             h.write_i64(i64::from(u.x.raw()));
             h.write_i64(i64::from(u.y.raw()));
             h.write_i64(i64::from(u.speed.raw()));
+            h.write_u64(u.loco as u64);
+            h.write_u64(u64::from(u.facing));
+            h.write_u64(u.path.len() as u64);
+            if let Some(&(wx, wy)) = u.path.front() {
+                h.write_u64(u64::from(wx));
+                h.write_u64(u64::from(wy));
+            }
             match u.target {
                 Some((tx, ty)) => {
                     h.write_u64(1);
@@ -146,12 +225,28 @@ impl Sim {
     }
 }
 
+/// Facing (0=north, clockwise, 256 = full circle) from a step delta.
+fn octant(dx: Fix, dy: Fix) -> u8 {
+    let (sx, sy) = (dx.raw().signum(), dy.raw().signum());
+    match (sx, sy) {
+        (0, -1) => 0,
+        (1, -1) => 32,
+        (1, 0) => 64,
+        (1, 1) => 96,
+        (0, 1) => 128,
+        (-1, 1) => 160,
+        (-1, 0) => 192,
+        (-1, -1) => 224,
+        _ => 128,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     fn script(sim: &mut Sim, ticks: u64) -> u64 {
-        sim.step(&[Command::Spawn { x: Fix::from_int(0), y: Fix::from_int(0) }]);
+        sim.step(&[Command::Spawn { x: Fix::from_int(0), y: Fix::from_int(0), loco: terrain::Loco::Track, speed: Fix::from_int(4) }]);
         sim.step(&[Command::Move { id: 1, x: Fix::from_int(2560), y: Fix::from_int(1280) }]);
         for _ in 2..ticks {
             sim.step(&[]);
@@ -173,7 +268,7 @@ mod tests {
         let (mut a, b, mut c) = (Sim::new(1), Sim::new(2), Sim::new(1));
         a.next_random();
         assert_ne!(a.state_hash(), b.state_hash());
-        c.step(&[Command::Spawn { x: Fix::ZERO, y: Fix::ZERO }]);
+        c.step(&[Command::Spawn { x: Fix::ZERO, y: Fix::ZERO, loco: terrain::Loco::Foot, speed: Fix::from_int(2) }]);
         assert_ne!(a.state_hash(), c.state_hash());
     }
 
@@ -181,12 +276,68 @@ mod tests {
     fn removal_and_spawn_ids_are_stable() {
         let mut sim = Sim::new(7);
         sim.step(&[
-            Command::Spawn { x: Fix::ZERO, y: Fix::ZERO },
-            Command::Spawn { x: Fix::from_int(256), y: Fix::ZERO },
+            Command::Spawn { x: Fix::ZERO, y: Fix::ZERO, loco: terrain::Loco::Foot, speed: Fix::from_int(2) },
+            Command::Spawn { x: Fix::from_int(256), y: Fix::ZERO, loco: terrain::Loco::Foot, speed: Fix::from_int(2) },
             Command::Remove { id: 1 },
-            Command::Spawn { x: Fix::from_int(512), y: Fix::ZERO },
+            Command::Spawn { x: Fix::from_int(512), y: Fix::ZERO, loco: terrain::Loco::Foot, speed: Fix::from_int(2) },
         ]);
         let ids: Vec<u32> = sim.units().iter().map(|u| u.id).collect();
         assert_eq!(ids, [2, 3], "ids never reused, order stable");
+    }
+
+    fn small_grid() -> TerrainGrid {
+        // 6x3: cliff wall at x=3 except gap at y=1.
+        let mut tiles = Vec::new();
+        for y in 0..3u16 {
+            for x in 0..6u16 {
+                tiles.push((x, y, 0, if x == 3 && y != 1 { 15 } else { 13 }, 0));
+            }
+        }
+        TerrainGrid::from_tiles(0, 0, 6, 3, tiles.into_iter())
+    }
+
+    #[test]
+    fn unit_paths_around_obstacles_and_arrives() {
+        let mut sim = Sim::new(3);
+        sim.set_terrain(small_grid());
+        let centre = |c: i32| Fix::from_int(c) + Fix::from_raw(128);
+        sim.step(&[Command::Spawn { x: centre(0), y: centre(0), loco: terrain::Loco::Track, speed: Fix::from_int(64) }]);
+        sim.step(&[Command::Move { id: 1, x: centre(5), y: centre(0) }]);
+        for _ in 0..500 {
+            sim.step(&[]);
+            if sim.units()[0].target.is_none() {
+                break;
+            }
+        }
+        let u = &sim.units()[0];
+        assert_eq!((u.x, u.y), (centre(5), centre(0)), "arrived through the gap");
+        assert!(sim.tick() < 500, "did not time out");
+    }
+
+    #[test]
+    fn ground_units_wait_for_occupied_cells() {
+        let mut sim = Sim::new(3);
+        sim.set_terrain(small_grid());
+        let centre = |c: i32| Fix::from_int(c) + Fix::from_raw(128);
+        // Leader parked in the gap cell; follower ordered through it.
+        sim.step(&[
+            Command::Spawn { x: centre(3), y: centre(1), loco: terrain::Loco::Track, speed: Fix::from_int(64) },
+            Command::Spawn { x: centre(0), y: centre(1), loco: terrain::Loco::Track, speed: Fix::from_int(64) },
+        ]);
+        sim.step(&[Command::Move { id: 2, x: centre(5), y: centre(1) }]);
+        for _ in 0..40 {
+            sim.step(&[]);
+        }
+        let follower = &sim.units()[1];
+        assert_ne!(follower.x, centre(5), "gap blocked: follower must wait, at {:?}", follower.x);
+        // Free the gap; follower proceeds.
+        sim.step(&[Command::Remove { id: 1 }]);
+        for _ in 0..200 {
+            sim.step(&[]);
+            if sim.units()[0].target.is_none() {
+                break;
+            }
+        }
+        assert_eq!(sim.units()[0].x, centre(5), "arrived after the gap freed");
     }
 }

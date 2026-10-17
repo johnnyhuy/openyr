@@ -11,8 +11,8 @@ fn main() {
     let mut sim = Sim::new(seed);
     let start = std::time::Instant::now();
     sim.step(&[
-        Command::Spawn { x: Fix::ZERO, y: Fix::ZERO },
-        Command::Spawn { x: Fix::from_int(2560), y: Fix::ZERO },
+        Command::Spawn { x: Fix::ZERO, y: Fix::ZERO, loco: yr_sim::terrain::Loco::Track, speed: Fix::from_int(4) },
+        Command::Spawn { x: Fix::from_int(2560), y: Fix::ZERO, loco: yr_sim::terrain::Loco::Track, speed: Fix::from_int(4) },
     ]);
     sim.step(&[
         Command::Move { id: 1, x: Fix::from_int(25_600), y: Fix::from_int(12_800) },
