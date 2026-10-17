@@ -220,6 +220,55 @@ impl<T> Registry<T> {
     }
 }
 
+/// Game-wide tuning from `[General]` and `[CombatDamage]`.
+/// `None` means the retail file does not specify it (engine default,
+/// deliberately not guessed here).
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct Globals {
+    pub build_speed: Option<Decimal>,
+    pub buildup_time: Option<Decimal>,
+    pub low_power_penalty_modifier: Option<Decimal>,
+    pub min_low_power_production_speed: Option<Decimal>,
+    pub max_low_power_production_speed: Option<Decimal>,
+    pub wall_build_speed_coefficient: Option<Decimal>,
+    pub refund_percent: Option<Decimal>,
+    pub repair_percent: Option<Decimal>,
+    pub repair_rate: Option<Decimal>,
+    pub repair_step: Option<i64>,
+    pub ore_growth_rate: Option<Decimal>,
+    pub tiberium_grows: Option<bool>,
+    pub tiberium_spreads: Option<bool>,
+    pub harvester_immune: Option<bool>,
+    pub destroyable_bridges: Option<bool>,
+    pub ballistic_scatter: Option<Decimal>,
+    pub bridge_strength: Option<i64>,
+    pub atom_damage: Option<i64>,
+    pub ion_cannon_damage: Option<i64>,
+}
+
+/// Skirmish defaults from `[MultiplayerDialogSettings]`.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct SkirmishDefaults {
+    pub money: Option<i64>,
+    pub min_money: Option<i64>,
+    pub max_money: Option<i64>,
+    pub unit_count: Option<i64>,
+    pub tech_level: Option<i64>,
+}
+
+/// A playable house/country from `[Sides]` (GDI/Nod/ThirdSide/...).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct House {
+    pub id: String,
+    /// The `[Sides]` list it belongs to (e.g. `GDI`, `Nod`, `ThirdSide`).
+    pub side: String,
+    pub color: Option<String>,
+    /// `(hue, saturation, value)` 0-255 from `[Colors]`.
+    pub color_hsv: Option<(i64, i64, i64)>,
+    /// Art prefix letter (art `Suffix=`), e.g. `Allied`/`Soviet`.
+    pub suffix: Option<String>,
+}
+
 #[derive(Debug, Clone, Default)]
 pub struct Rules {
     pub infantry: Registry<TechnoType>,
@@ -229,6 +278,9 @@ pub struct Rules {
     pub weapons: Registry<WeaponType>,
     pub warheads: Registry<WarheadType>,
     pub projectiles: Registry<ProjectileType>,
+    pub globals: Globals,
+    pub skirmish: SkirmishDefaults,
+    pub houses: Registry<House>,
     pub issues: Vec<Issue>,
 }
 
@@ -282,6 +334,9 @@ impl Rules {
                 out.projectiles.insert(&id, p);
             }
         }
+        out.globals = load_globals(rules);
+        out.skirmish = load_skirmish(rules);
+        out.houses = load_houses(rules);
         out
     }
 
@@ -487,6 +542,68 @@ fn load_projectile(rules: &IniFile, id: &str) -> ProjectileType {
         anti_ground: flag("AG"),
         image: reference(sec, "Image"),
     }
+}
+
+fn load_globals(rules: &IniFile) -> Globals {
+    let g = rules.section("General");
+    let c = rules.section("CombatDamage");
+    let dec = |s: Option<&IniSection>, k: &str| s.and_then(|x| x.get(k)).and_then(Decimal::parse);
+    let int = |s: Option<&IniSection>, k: &str| s.and_then(|x| x.get_i64(k));
+    let boolean = |s: Option<&IniSection>, k: &str| s.and_then(|x| x.get_bool(k));
+    Globals {
+        build_speed: dec(g, "BuildSpeed"),
+        buildup_time: dec(g, "BuildupTime"),
+        low_power_penalty_modifier: dec(g, "LowPowerPenaltyModifier"),
+        min_low_power_production_speed: dec(g, "MinLowPowerProductionSpeed"),
+        max_low_power_production_speed: dec(g, "MaxLowPowerProductionSpeed"),
+        wall_build_speed_coefficient: dec(g, "WallBuildSpeedCoefficient"),
+        refund_percent: dec(g, "RefundPercent"),
+        repair_percent: dec(g, "RepairPercent"),
+        repair_rate: dec(g, "RepairRate"),
+        repair_step: int(g, "RepairStep"),
+        ore_growth_rate: dec(g, "GrowthRate"),
+        tiberium_grows: boolean(g, "TiberiumGrows"),
+        tiberium_spreads: boolean(g, "TiberiumSpreads"),
+        harvester_immune: boolean(c, "HarvesterImmune"),
+        destroyable_bridges: boolean(c, "DestroyableBridges"),
+        ballistic_scatter: dec(c, "BallisticScatter"),
+        bridge_strength: int(c, "BridgeStrength"),
+        atom_damage: int(c, "AtomDamage"),
+        ion_cannon_damage: int(c, "IonCannonDamage"),
+    }
+}
+
+fn load_skirmish(rules: &IniFile) -> SkirmishDefaults {
+    let s = rules.section("MultiplayerDialogSettings");
+    let int = |k: &str| s.and_then(|x| x.get_i64(k));
+    SkirmishDefaults {
+        money: int("Money"),
+        min_money: int("MinMoney"),
+        max_money: int("MaxMoney"),
+        unit_count: int("UnitCount"),
+        tech_level: int("TechLevel"),
+    }
+}
+
+fn load_houses(rules: &IniFile) -> Registry<House> {
+    let mut out = Registry::default();
+    let Some(sides) = rules.section("Sides") else { return out };
+    let colors = rules.section("Colors");
+    for side in ["GDI", "Nod", "ThirdSide", "Civilian", "Mutant"] {
+        let Some(list) = sides.get(side) else { continue };
+        for id in parse_list(list) {
+            let sec = rules.section(&id);
+            let color = reference(sec, "Color");
+            let color_hsv = color.as_ref().and_then(|name| {
+                let v = colors?.get(name)?;
+                let mut it = v.split(';').next()?.split(',').map(|p| p.trim().parse::<i64>().ok());
+                Some((it.next()??, it.next()??, it.next()??))
+            });
+            let house = House { side: side.to_string(), color, color_hsv, suffix: reference(sec, "Suffix"), id: id.clone() };
+            out.insert(&id, house);
+        }
+    }
+    out
 }
 
 #[cfg(test)]

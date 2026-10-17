@@ -41,6 +41,14 @@ fn summary(rules: &Rules) {
         rules.warheads.len(),
         rules.projectiles.len()
     );
+    println!(
+        "globals   build_speed {}  refund {}  houses {}  skirmish money {} (units {})",
+        opt(&rules.globals.build_speed),
+        opt(&rules.globals.refund_percent),
+        rules.houses.len(),
+        opt(&rules.skirmish.money),
+        opt(&rules.skirmish.unit_count)
+    );
     let mut issues: Vec<_> = rules.issues.iter().collect();
     issues.sort_by_key(|i| std::cmp::Reverse(i.severity));
     println!("\nissues ({}):", issues.len());
