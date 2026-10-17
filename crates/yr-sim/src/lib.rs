@@ -91,6 +91,13 @@ pub const HARVESTER_CAPACITY: u8 = 20;
 /// Ticks spent loading one bail / unloading the cargo.
 pub const HARVEST_TICKS: u32 = 20;
 pub const UNLOAD_TICKS: u32 = 30;
+/// Attack-move ends once a unit stalls within this many cells of its
+/// destination (a crowd holds the exact cell).
+pub const GUARD_ARRIVE_CELLS: i32 = 3;
+/// Ticks a unit waits on an occupied cell before replanning around units.
+pub const BLOCKED_REPLAN_TICKS: u16 = 10;
+/// How far (cells) a blocked goal is substituted by a standable one.
+pub const GOAL_SEARCH_CELLS: i32 = 6;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Harvest {
@@ -130,6 +137,8 @@ pub struct Unit {
     pub cargo: i64,
     pub bails: u8,
     harvest: Harvest,
+    /// Consecutive ticks spent waiting on a cell another unit holds.
+    blocked: u16,
 }
 
 /// A homing projectile in flight (internal; observed via events).
@@ -218,6 +227,7 @@ impl Sim {
                         cargo: 0,
                         bails: 0,
                         harvest: Harvest::Idle,
+                        blocked: 0,
                     });
                 }
                 Command::PlaceBuilding { x, y, w, h, hp, armor, power, owner, role } => {
@@ -289,6 +299,18 @@ impl Sim {
             }
         }
         self.harvest_phase();
+        // Idle armed units defend themselves: an idle combat unit (no
+        // order of any kind) engages the nearest hostile in weapon range.
+        // Pursuit then follows the normal attack rules below.
+        for i in 0..self.units.len() {
+            let u = &self.units[i];
+            if u.role != Role::Combat || u.guard.is_some() || u.attack.is_some() || u.target.is_some() {
+                continue;
+            }
+            if let Some(id) = self.nearest_hostile_in_range(i) {
+                self.units[i].attack = Some(id);
+            }
+        }
         // Attack-move: engage the nearest hostile in weapon range, else
         // keep (or resume) moving to the guarded destination.
         for i in 0..self.units.len() {
@@ -296,41 +318,16 @@ impl Sim {
             if self.units[i].attack.is_some() {
                 continue;
             }
-            let me = &self.units[i];
-            let hostile = if me.owner == OWNER_NEUTRAL {
-                None
-            } else {
-                me.weapon.and_then(|w| {
-                    let range2 = i64::from(w.range.raw()) * i64::from(w.range.raw());
-                    let mut best: Option<(i64, u32)> = None;
-                    let mut consider = |id: u32, owner: u8, x: Fix, y: Fix| {
-                        if owner == me.owner || owner == OWNER_NEUTRAL {
-                            return;
-                        }
-                        let d = dist2(x - me.x, y - me.y);
-                        if d <= range2 && best.is_none_or(|(bd, _)| d < bd) {
-                            best = Some((d, id));
-                        }
-                    };
-                    for o in &self.units {
-                        if o.id != me.id {
-                            consider(o.id, o.owner, o.x, o.y);
-                        }
-                    }
-                    for b in &self.buildings {
-                        let (bx, by) = b.centre();
-                        consider(b.id, b.owner, bx, by);
-                    }
-                    best.map(|(_, id)| id)
-                })
-            };
+            let hostile = self.nearest_hostile_in_range(i);
             let u = &mut self.units[i];
             if let Some(id) = hostile {
                 u.attack = Some(id);
                 u.target = None;
                 u.path.clear();
             } else if u.target.is_none() {
-                if (u.x, u.y) == dest {
+                // Arrived, or as close as the crowd/terrain allows.
+                let near = Fix::from_int(GUARD_ARRIVE_CELLS);
+                if dist2(dest.0 - u.x, dest.1 - u.y) <= i64::from(near.raw()) * i64::from(near.raw()) {
                     u.guard = None;
                 } else {
                     u.target = Some(dest);
@@ -374,6 +371,38 @@ impl Sim {
         self.fire_phase();
         self.projectile_phase();
         self.tick += 1;
+    }
+
+    /// Nearest hostile (other non-neutral owner) unit or building within
+    /// unit `i`'s weapon range; ties go to the first in id order.
+    /// Neutral and unarmed units never acquire.
+    fn nearest_hostile_in_range(&self, i: usize) -> Option<u32> {
+        let me = &self.units[i];
+        if me.owner == OWNER_NEUTRAL {
+            return None;
+        }
+        let w = me.weapon?;
+        let range2 = i64::from(w.range.raw()) * i64::from(w.range.raw());
+        let mut best: Option<(i64, u32)> = None;
+        let mut consider = |id: u32, owner: u8, x: Fix, y: Fix| {
+            if owner == me.owner || owner == OWNER_NEUTRAL {
+                return;
+            }
+            let d = dist2(x - me.x, y - me.y);
+            if d <= range2 && best.is_none_or(|(bd, _)| d < bd) {
+                best = Some((d, id));
+            }
+        };
+        for o in &self.units {
+            if o.id != me.id {
+                consider(o.id, o.owner, o.x, o.y);
+            }
+        }
+        for b in &self.buildings {
+            let (bx, by) = b.centre();
+            consider(b.id, b.owner, bx, by);
+        }
+        best.map(|(_, id)| id)
     }
 
     /// Harvester state machine (runs before movement): pick ore, drive,
@@ -678,7 +707,20 @@ impl Sim {
             let u = &self.units[i];
             (u.x.to_int_floor(), u.y.to_int_floor(), u.loco)
         };
-        let (start, goal) = ((ux as u16, uy as u16), (tx.to_int_floor() as u16, ty.to_int_floor() as u16));
+        let centre = |c: u16| Fix::from_int(i32::from(c)) + Fix::from_raw(128);
+        let start = (ux as u16, uy as u16);
+        let mut goal = (tx.to_int_floor() as u16, ty.to_int_floor() as u16);
+        let (mut tx, mut ty) = (tx, ty);
+        // A goal no unit can stand on (a building, a cliff) is replaced by
+        // the nearest standable cell; the approach ends at its centre.
+        if !grid.passable(loco, goal.0, goal.1) {
+            let Some(sub) = path::nearest_passable(grid, loco, goal, GOAL_SEARCH_CELLS) else {
+                self.units[i].target = None;
+                return;
+            };
+            goal = sub;
+            (tx, ty) = (centre(sub.0), centre(sub.1));
+        }
         if self.units[i].path.is_empty() && start != goal {
             match path::find_path(grid, loco, start, goal) {
                 Some(p) => self.units[i].path = p.into(),
@@ -694,20 +736,47 @@ impl Sim {
         };
         // Ground units may not enter a cell another ground unit holds.
         if loco != terrain::Loco::Fly {
-            let occupied = self.units.iter().enumerate().any(|(j, o)| {
-                j != i
-                    && o.loco != terrain::Loco::Fly
-                    && o.x.to_int_floor() as u16 == wx
-                    && o.y.to_int_floor() as u16 == wy
-            });
-            if occupied {
+            let holder = |sim: &Sim, cx: u16, cy: u16| {
+                sim.units.iter().enumerate().any(|(j, o)| {
+                    j != i
+                        && o.loco != terrain::Loco::Fly
+                        && o.x.to_int_floor() as u16 == cx
+                        && o.y.to_int_floor() as u16 == cy
+                })
+            };
+            if holder(self, wx, wy) {
+                let u = &mut self.units[i];
+                if u.path.len() == 1 {
+                    // The goal cell itself is held: arrived as near as possible.
+                    u.path.clear();
+                    u.target = None;
+                    u.blocked = 0;
+                    return;
+                }
+                u.blocked += 1;
+                if u.blocked >= BLOCKED_REPLAN_TICKS {
+                    u.blocked = 0;
+                    let avoid: Vec<(u16, u16)> = self
+                        .units
+                        .iter()
+                        .enumerate()
+                        .filter(|(j, o)| *j != i && o.loco != terrain::Loco::Fly)
+                        .map(|(_, o)| (o.x.to_int_floor() as u16, o.y.to_int_floor() as u16))
+                        .collect();
+                    // No detour: keep the old path and wait for the cell.
+                    if let Some(p) = path::find_path_avoiding(grid, loco, start, goal, &avoid) {
+                        if !p.is_empty() {
+                            self.units[i].path = p.into();
+                        }
+                    }
+                }
                 return;
             }
         }
-        let centre = |c: u16| Fix::from_int(i32::from(c)) + Fix::from_raw(128);
         let (px, py) = (centre(wx), centre(wy));
         let factor = grid.speed_factor(loco, start.0, start.1).unwrap_or(Fix::ONE);
         let u = &mut self.units[i];
+        u.blocked = 0;
         let step = u.speed * factor;
         let (dx, dy) = (px - u.x, py - u.y);
         if dx != Fix::ZERO || dy != Fix::ZERO {
@@ -764,6 +833,7 @@ impl Sim {
             }
             h.write_i64(u.cargo);
             h.write_u64(u64::from(u.bails));
+            h.write_u64(u64::from(u.blocked));
             if let Some(&(wx, wy)) = u.path.front() {
                 h.write_u64(u64::from(wx));
                 h.write_u64(u64::from(wy));
@@ -964,6 +1034,72 @@ mod tests {
         assert_eq!(sim.units().len(), 1, "hostile engaged and killed en route");
         assert_eq!(sim.units()[0].x, Fix::from_int(8), "resumed to destination");
         assert!(sim.units()[0].shots >= 1);
+    }
+
+    #[test]
+    fn orders_onto_buildings_and_shared_goals_settle_nearby() {
+        // Arrange: open 12x6 grid, a 2x2 building at (8,2); three tanks
+        // all ordered onto the building's centre.
+        let mut sim = Sim::new(9);
+        sim.set_terrain(TerrainGrid::new(0, 0, 12, 6));
+        let c = |v: i32| Fix::from_int(v) + Fix::from_raw(128);
+        let tank = |y: i32| Command::Spawn { x: c(0), y: c(y), loco: terrain::Loco::Track, speed: Fix::from_int(1), hp: 100, armor: 0, weapon: None };
+        sim.step(&[
+            Command::PlaceBuilding { x: 8, y: 2, w: 2, h: 2, hp: 500, armor: 0, power: 0, owner: OWNER_ENEMY, role: Role::Combat },
+            tank(1),
+            tank(2),
+            tank(3),
+        ]);
+        let goal = (Fix::from_int(9), Fix::from_int(3));
+        let orders: Vec<Command> = (2..=4).map(|id| Command::Move { id, x: goal.0, y: goal.1 }).collect();
+        sim.step(&orders);
+        // Act
+        for _ in 0..400 {
+            sim.step(&[]);
+        }
+        // Assert: everyone stopped, off the footprint, within 3 cells.
+        for u in sim.units() {
+            assert!(u.target.is_none(), "unit {} settled", u.id);
+            let (x, y) = (u.x.to_int_floor(), u.y.to_int_floor());
+            assert!(!((8..10).contains(&x) && (2..4).contains(&y)), "unit {} inside footprint", u.id);
+            assert!(dist2(u.x - goal.0, u.y - goal.1) <= i64::from(Fix::from_int(3).raw()).pow(2), "unit {} at ({x},{y})", u.id);
+        }
+    }
+
+    #[test]
+    fn idle_units_defend_against_hostiles_in_range_only() {
+        // Arrange: idle armed defender (range 3), an enemy 2 cells away,
+        // a neutral 1 cell away and a second enemy out of range (10 cells).
+        let mut sim = Sim::new(6);
+        let spawn = |x: i32, hp: i64, weapon| Command::Spawn {
+            x: Fix::from_int(x),
+            y: Fix::ZERO,
+            loco: terrain::Loco::Track,
+            speed: Fix::from_int(1),
+            hp,
+            armor: 0,
+            weapon,
+        };
+        sim.step(&[
+            spawn(0, 500, Some(gun(50, 1, 3, Fix::ZERO))),
+            spawn(2, 40, None),
+            spawn(1, 40, None),
+            spawn(10, 40, None),
+            Command::AssignOwner { id: 1, owner: OWNER_PLAYER },
+            Command::AssignOwner { id: 2, owner: OWNER_ENEMY },
+            Command::AssignOwner { id: 3, owner: OWNER_NEUTRAL },
+            Command::AssignOwner { id: 4, owner: OWNER_ENEMY },
+        ]);
+        // Act
+        for _ in 0..50 {
+            sim.step(&[]);
+        }
+        // Assert: in-range enemy killed; neutral and distant enemy untouched;
+        // the defender never left its post.
+        let ids: Vec<u32> = sim.units().iter().map(|u| u.id).collect();
+        assert_eq!(ids, vec![1, 3, 4]);
+        assert_eq!(sim.units()[0].x, Fix::ZERO);
+        assert!(sim.units()[0].attack.is_none());
     }
 
     #[test]

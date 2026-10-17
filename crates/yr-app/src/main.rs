@@ -154,8 +154,13 @@ impl App {
         session.step(&cmds);
         let _ = session.sim.drain_events(); // audio lands in #17
         self.selected.retain(|id| session.sim.units().iter().any(|u| u.id == *id));
+        let (launched, total) = session.waves_progress();
+        let waves = match session.next_wave_in_secs() {
+            Some(s) => format!("wave {}/{total} in {s}s", launched + 1),
+            None => format!("waves {launched}/{total}"),
+        };
         let title = format!(
-            "OpenYR — {} | ${} | tick {} | {} selected{} | {:?}",
+            "OpenYR — {} | ${} | tick {} | {waves} | {} selected{} | {:?}",
             self.map_name,
             session.sim.credits(),
             session.sim.tick(),

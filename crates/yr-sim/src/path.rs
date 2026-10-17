@@ -36,6 +36,38 @@ pub fn find_path(
     from: (u16, u16),
     to: (u16, u16),
 ) -> Option<Vec<(u16, u16)>> {
+    find_path_avoiding(grid, loco, from, to, &[])
+}
+
+/// Nearest cell to `to` that `loco` may stand on, searching square rings
+/// out to `max_r` in fixed (y, x) order; `to` itself when passable.
+pub fn nearest_passable(grid: &TerrainGrid, loco: Loco, to: (u16, u16), max_r: i32) -> Option<(u16, u16)> {
+    for r in 0..=max_r {
+        for dy in -r..=r {
+            for dx in -r..=r {
+                if dx.abs() != r && dy.abs() != r {
+                    continue;
+                }
+                let (x, y) = (i32::from(to.0) + dx, i32::from(to.1) + dy);
+                let (Ok(x), Ok(y)) = (u16::try_from(x), u16::try_from(y)) else { continue };
+                if grid.passable(loco, x, y) {
+                    return Some((x, y));
+                }
+            }
+        }
+    }
+    None
+}
+
+/// As [`find_path`], additionally treating `avoid` cells (e.g. cells
+/// other units stand on) as blocked, except the goal itself.
+pub fn find_path_avoiding(
+    grid: &TerrainGrid,
+    loco: Loco,
+    from: (u16, u16),
+    to: (u16, u16),
+    avoid: &[(u16, u16)],
+) -> Option<Vec<(u16, u16)>> {
     if from == to {
         return Some(Vec::new());
     }
@@ -49,6 +81,12 @@ pub fn find_path(
     let mut closed = vec![false; n];
     let start = grid.local_index(from.0, from.1)?;
     let goal = grid.local_index(to.0, to.1)?;
+    let mut blocked = vec![false; n];
+    for &(x, y) in avoid {
+        if let Some(i) = grid.local_index(x, y) {
+            blocked[i] = i != goal;
+        }
+    }
     let heuristic = |i: usize| -> i64 {
         let (x, y) = ((i % w) as i64, (i / w) as i64);
         let (gx, gy) = ((goal % w) as i64, (goal / w) as i64);
@@ -101,6 +139,9 @@ pub fn find_path(
             }
             let Some(cost) = enter_cost(grid, loco, mx, my, diag) else { continue };
             let ni = ny as usize * w + nx as usize;
+            if blocked[ni] {
+                continue;
+            }
             let ng = g_score[cur] + cost;
             if ng < g_score[ni] {
                 g_score[ni] = ng;
@@ -148,5 +189,18 @@ mod tests {
         assert_eq!(find_path(&g, Loco::Foot, (0, 0), (2, 0)), None);
         // Ships go nowhere on land.
         assert_eq!(find_path(&g, Loco::Ship, (0, 0), (4, 0)), None);
+    }
+
+    #[test]
+    fn avoiding_routes_around_units_and_nearest_passable_skips_cliffs() {
+        let g = grid_with_wall();
+        // Block the direct row; the path must step off y=0.
+        let p = find_path_avoiding(&g, Loco::Track, (0, 0), (1, 0), &[(1, 0)]).expect("goal itself never avoided");
+        assert_eq!(p, vec![(1, 0)]);
+        let p = find_path_avoiding(&g, Loco::Track, (0, 4), (4, 4), &[(2, 4)]);
+        assert_eq!(p, None, "the only gap is held");
+        // Cliff (2,0): nearest standable cell is a neighbour in ring order.
+        assert_eq!(nearest_passable(&g, Loco::Track, (2, 0), 2), Some((1, 0)));
+        assert_eq!(nearest_passable(&g, Loco::Track, (0, 0), 2), Some((0, 0)));
     }
 }
