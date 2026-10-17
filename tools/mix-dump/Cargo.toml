@@ -13,3 +13,4 @@ path = "src/main.rs"
 yr-assets = { path = "../../crates/yr-assets" }
 yr-rules = { path = "../../crates/yr-rules" }
 yr-formats = { path = "../../crates/yr-formats" }
+yr-render = { path = "../../crates/yr-render" }

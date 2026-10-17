@@ -17,7 +17,7 @@ impl Palette {
             return None;
         }
         let mut entries = [(0u8, 0u8, 0u8); 256];
-        for (i, chunk) in data[..768].chunks_exact(3).enumerate() {
+        for (i, chunk) in data[..768].as_chunks::<3>().0.iter().enumerate() {
             entries[i] = (chunk[0], chunk[1], chunk[2]);
         }
         Some(Palette { entries })

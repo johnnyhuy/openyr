@@ -51,7 +51,8 @@ incremental, testable path where each milestone is independently useful.
       foundation anchoring, shadow frames, owner-colour remap)
 - [x] Voxel vehicles on the map (VXL body+turret projection; HVA
       transforms and normal lighting still open)
-- [ ] wgpu/Metal window, integer-scaled 640x480 virtual viewport, pan/zoom
+- [x] Native window (`openyr`, winit+pixels/wgpu): rendered map with
+      drag/WASD pan and wheel zoom; screenshot-vs-PNG check still open, pan/zoom
 - [ ] SHP + VXL drawing with palette + shadow pass
 - [ ] Sidebar/cameo UI from `ra2md.csf` strings
 
@@ -62,11 +63,15 @@ incremental, testable path where each milestone is independently useful.
 - [ ] Weapons/warheads/damage with the original formulas
 - [ ] `sim-bench` headless benchmark; state hashing
 
-## M5 — Playable sandbox
+## M5 — Playable sandbox (the playable baseline)
 
-- [ ] Skirmish loop on one map, no AI (scripted spawns), full input
+Decided 2026-10-17: baseline first (sandbox, scripted spawns, no AI),
+then basic-AI skirmish, then data-driven addons, then roguelite mode.
+
+- [ ] Sandbox loop on one map, no AI (scripted spawns), full input
 - [ ] Audio hookup (themes, EVA, unit voices)
 - [ ] Save/load (deterministic state dump)
+- [ ] Basic AI skirmish opponent (stage 2)
 
 ## M6 — Fidelity pass
 
@@ -74,9 +79,9 @@ incremental, testable path where each milestone is independently useful.
 - [ ] AI (original team/attack logic), superweapons, chronosphere-style teleports
 - [ ] Replays: read `.rmx` command streams and re-simulate
 
-## M7 — Modding surface
+## M7 — Modding surface (pulled forward, right after the baseline)
 
-- [ ] Data-driven unit definitions (INI overrides + new asset slots)
+- [ ] Addon packs: data-driven unit definitions (INI overrides + new asset slots)
 - [ ] QoL patch layer (widescreen UI, hotkeys, queue controls, resolution)
 - [ ] Docs for adding units
 
@@ -85,6 +90,12 @@ incremental, testable path where each milestone is independently useful.
 - [ ] Reference-image-based new sprites/voxels and sounds (original creations,
       inspired-by only — see `docs/legal.md`)
 - [ ] Balance pass, skirmish validation
+
+## R — Roguelite mode (after the baseline)
+
+- [ ] Run structure: chained short battles, escalating scripted forces,
+      survivors/credits carry over, seeded determinism
+- [ ] Between-battle upgrade choices (1 of 3) and persistent local unlocks
 
 ## Deferred / non-goals
 

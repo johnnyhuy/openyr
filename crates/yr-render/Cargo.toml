@@ -1,0 +1,11 @@
+[package]
+name = "yr-render"
+description = "Software map renderer shared by mix-dump and the yr-app window"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+yr-assets = { path = "../yr-assets" }
+yr-formats = { path = "../yr-formats" }
+yr-rules = { path = "../yr-rules" }

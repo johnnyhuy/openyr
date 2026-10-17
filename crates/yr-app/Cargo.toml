@@ -1,0 +1,15 @@
+[package]
+name = "yr-app"
+description = "OpenYR native window: pan/zoom map view (winit + pixels)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "openyr"
+path = "src/main.rs"
+
+[dependencies]
+yr-render = { path = "../yr-render" }
+winit = "0.30"
+pixels = "0.15"

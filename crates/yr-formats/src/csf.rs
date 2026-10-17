@@ -128,7 +128,7 @@ impl<'a> Reader<'a> {
                 let len = self.u32()? as usize;
                 let raw = self.take(len * 2)?;
                 let units: Vec<u16> = raw
-                    .chunks_exact(2)
+                    .as_chunks::<2>().0.iter()
                     .map(|c| !u16::from_le_bytes([c[0], c[1]]))
                     .collect();
                 let value = String::from_utf16_lossy(&units);
