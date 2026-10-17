@@ -12,8 +12,8 @@ use yr_formats::{
 };
 
 fn corpus() -> Option<PathBuf> {
-    let dir = PathBuf::from(std::env::var("HOME").ok()?)
-        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    let dir =
+        PathBuf::from(std::env::var("HOME").ok()?).join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
     dir.is_dir().then_some(dir)
 }
 
@@ -76,7 +76,10 @@ fn langmd_mix_csf_known_answer() {
     assert_eq!(csf.entries.len(), 5211);
     // Sanity: real labels resolve to real strings.
     assert!(csf.entries.iter().all(|e| !e.label.is_empty()));
-    assert!(csf.entries.iter().any(|e| e.value.as_deref().map(|v| !v.is_empty()).unwrap_or(false)));
+    assert!(csf
+        .entries
+        .iter()
+        .any(|e| e.value.as_deref().map(|v| !v.is_empty()).unwrap_or(false)));
     // WRTS records carry the EVA sound stem (e.g. VOX:ceva001 -> ceva001e).
     let vox = csf
         .entries
@@ -167,7 +170,10 @@ fn cameo_shp_is_60x48() {
     assert_eq!((shp.width, shp.height, shp.frames.len()), (60, 48, 1));
     let px = shp.decode_frame(0).unwrap();
     assert_eq!(px.len(), 60 * 48);
-    assert!(px.iter().filter(|&&p| p != 0).count() > 60 * 48 / 2, "cameo is mostly opaque");
+    assert!(
+        px.iter().filter(|&&p| p != 0).count() > 60 * 48 / 2,
+        "cameo is mostly opaque"
+    );
 }
 
 #[test]
@@ -250,9 +256,13 @@ fn pcx_both_flavours_decode() {
         panic!("expected 24-bit");
     };
     // The Soviet emblem is dominated by red: R exceeds B on average.
-    let (r, b) = rgb.as_chunks::<3>().0.iter().fold((0u64, 0u64), |(r, b), p| {
-        (r + u64::from(p[0]), b + u64::from(p[2]))
-    });
+    let (r, b) = rgb
+        .as_chunks::<3>()
+        .0
+        .iter()
+        .fold((0u64, 0u64), |(r, b), p| {
+            (r + u64::from(p[0]), b + u64::from(p[2]))
+        });
     assert!(r > b * 2, "plane order is R, G, B");
 }
 
@@ -265,7 +275,9 @@ fn classic_header_archives_use_crc_ids() {
     };
     let mix = MixArchive::parse(&audio).unwrap();
     assert_eq!(mix.version(), yr_formats::MixVersion::Classic);
-    let wav = mix.get("CEVA060.WAV").expect("EVA line resolves by CRC name");
+    let wav = mix
+        .get("CEVA060.WAV")
+        .expect("EVA line resolves by CRC name");
     assert_eq!(&wav[..4], b"RIFF");
     assert_eq!(mix.resolve("CEVA060.WAV"), Some(mix_id("CEVA060.WAV")));
 }
@@ -293,7 +305,10 @@ fn audio_containers_decode() {
     let atta = index.iter().find(|e| e.name == "ichratta").unwrap();
     assert_eq!((atta.flags, atta.chunk_size), (12, 512));
     let pcm = atta.decode(&bag).expect("bag entry decodes");
-    assert_eq!(pcm.samples.len(), 71148 / 512 * 1017 + (71148 % 512 - 4) * 2 + 1);
+    assert_eq!(
+        pcm.samples.len(),
+        71148 / 512 * 1017 + (71148 % 512 - 4) * 2 + 1
+    );
 
     let pcm = yr_formats::audio::decode_wav(&wav).expect("EVA WAV decodes");
     assert_eq!(pcm.samples.len(), 26383, "fact chunk frame count");
@@ -310,7 +325,13 @@ fn all_retail_maps_parse_and_align() {
         return;
     };
     let mut maps = 0usize;
-    for top in ["multimd.mix", "mapsmd03.mix", "expandmd01.mix", "maps01.mix", "maps02.mix"] {
+    for top in [
+        "multimd.mix",
+        "mapsmd03.mix",
+        "expandmd01.mix",
+        "maps01.mix",
+        "maps02.mix",
+    ] {
         let data = fs::read(dir.join(top)).expect("archive readable");
         let mix = MixArchive::parse(&data).expect("archive parses");
         for e in mix.entries() {
@@ -318,16 +339,32 @@ fn all_retail_maps_parse_and_align() {
             if !text.contains("[IsoMapPack5]") {
                 continue;
             }
-            let m = MapFile::parse(&text).unwrap_or_else(|err| panic!("{top}/0x{:08x}: {err}", e.id));
+            let m =
+                MapFile::parse(&text).unwrap_or_else(|err| panic!("{top}/0x{:08x}: {err}", e.id));
             maps += 1;
             let cells: std::collections::HashSet<(u16, u16)> =
                 m.tiles.iter().map(|t| (t.x, t.y)).collect();
             assert_eq!(cells.len(), m.tiles.len(), "{top}: duplicate iso cells");
             for (x, y, _) in &m.terrain {
-                assert!(cells.contains(&(*x, *y)), "{top}: terrain at ({x},{y}) has a tile");
+                assert!(
+                    cells.contains(&(*x, *y)),
+                    "{top}: terrain at ({x},{y}) has a tile"
+                );
             }
-            for s in m.structures.iter().chain(&m.units).chain(&m.infantry).chain(&m.aircraft) {
-                assert!(cells.contains(&(s.x, s.y)), "{top}: {} at ({},{}) has a tile", s.kind, s.x, s.y);
+            for s in m
+                .structures
+                .iter()
+                .chain(&m.units)
+                .chain(&m.infantry)
+                .chain(&m.aircraft)
+            {
+                assert!(
+                    cells.contains(&(s.x, s.y)),
+                    "{top}: {} at ({},{}) has a tile",
+                    s.kind,
+                    s.x,
+                    s.y
+                );
             }
             for (i, &o) in m.overlay.iter().enumerate() {
                 if o != 0xFF {
@@ -335,7 +372,10 @@ fn all_retail_maps_parse_and_align() {
                     assert!(cells.contains(&c), "{top}: overlay cell {c:?} has a tile");
                 }
             }
-            assert!(m.tiles.iter().all(|t| t.level <= 12), "{top}: levels in range");
+            assert!(
+                m.tiles.iter().all(|t| t.level <= 12),
+                "{top}: levels in range"
+            );
         }
     }
     assert_eq!(maps, 234, "retail map count");

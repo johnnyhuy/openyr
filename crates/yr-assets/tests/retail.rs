@@ -6,9 +6,10 @@ use yr_assets::{AssetFs, Theater};
 use yr_formats::{IniFile, ShpFile, TmpFile};
 
 fn install() -> Option<AssetFs> {
-    let dir = PathBuf::from(std::env::var("HOME").ok()?)
-        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
-    dir.is_dir().then(|| AssetFs::open(&dir).expect("install opens"))
+    let dir =
+        PathBuf::from(std::env::var("HOME").ok()?).join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    dir.is_dir()
+        .then(|| AssetFs::open(&dir).expect("install opens"))
 }
 
 #[test]
@@ -24,8 +25,14 @@ fn patch_rules_shadow_original() {
     assert!(rules.section("General").is_some());
 
     assert_eq!(fs.locate("RA2MD.CSF").unwrap().source, "LANGMD.MIX");
-    assert_eq!(fs.locate("UNITTEM.PAL").unwrap().source, "RA2.MIX/CACHE.MIX");
-    assert_eq!(fs.locate("CEVA060.WAV").unwrap().source, "LANGMD.MIX/AUDIOMD.MIX");
+    assert_eq!(
+        fs.locate("UNITTEM.PAL").unwrap().source,
+        "RA2.MIX/CACHE.MIX"
+    );
+    assert_eq!(
+        fs.locate("CEVA060.WAV").unwrap().source,
+        "LANGMD.MIX/AUDIOMD.MIX"
+    );
 }
 
 #[test]
@@ -35,7 +42,12 @@ fn nested_archives_mount_in_engine_order() {
         return;
     };
     let mounts: Vec<&str> = fs.mounts().collect();
-    let pos = |m: &str| mounts.iter().position(|x| *x == m).unwrap_or_else(|| panic!("{m} mounted"));
+    let pos = |m: &str| {
+        mounts
+            .iter()
+            .position(|x| *x == m)
+            .unwrap_or_else(|| panic!("{m} mounted"))
+    };
     assert!(pos("LANGMD.MIX") < pos("EXPANDMD01.MIX"));
     assert!(pos("EXPANDMD01.MIX") < pos("RA2MD.MIX"));
     assert!(pos("RA2MD.MIX/CACHEMD.MIX") < pos("RA2.MIX/CACHE.MIX"));
@@ -78,17 +90,32 @@ fn tileset_index_resolves_a_real_map() {
         .expect("tileset INI present");
     let ini = IniFile::parse(&String::from_utf8_lossy(fs.read(ini_name).unwrap()));
     let index = yr_formats::TileSetIndex::parse(&ini, theater.tile_extension());
-    assert!(index.files.len() > 800, "{} tiles in {ini_name}", index.files.len());
+    assert!(
+        index.files.len() > 800,
+        "{} tiles in {ini_name}",
+        index.files.len()
+    );
     let mut tmps = std::collections::HashMap::new();
     for t in &map.tiles {
         let Some(id) = t.tile else { continue };
-        let name = index.file_for(id).unwrap_or_else(|| panic!("tile {id} in index"));
+        let name = index
+            .file_for(id)
+            .unwrap_or_else(|| panic!("tile {id} in index"));
         let tmp = tmps.entry(name.to_string()).or_insert_with(|| {
-            TmpFile::parse(fs.read(name).unwrap_or_else(|| panic!("{name} readable"))).expect("TMP parses")
+            TmpFile::parse(fs.read(name).unwrap_or_else(|| panic!("{name} readable")))
+                .expect("TMP parses")
         });
         assert_eq!((tmp.tile_width, tmp.tile_height), (60, 30));
-        assert!((t.subtile as usize) < tmp.tiles.len(), "{name} has subtile {}", t.subtile);
-        assert!(tmp.tiles[t.subtile as usize].is_some(), "{name} subtile {} present", t.subtile);
+        assert!(
+            (t.subtile as usize) < tmp.tiles.len(),
+            "{name} has subtile {}",
+            t.subtile
+        );
+        assert!(
+            tmp.tiles[t.subtile as usize].is_some(),
+            "{name} subtile {} present",
+            t.subtile
+        );
     }
 }
 
@@ -99,16 +126,24 @@ fn theater_object_art_and_unit_palettes_resolve() {
         return;
     };
     fs.set_theater(Theater::Temperate);
-    for name in [Theater::Temperate.palette(), Theater::Temperate.unit_palette()] {
+    for name in [
+        Theater::Temperate.palette(),
+        Theater::Temperate.unit_palette(),
+    ] {
         assert!(fs.read(name).is_some(), "{name} resolves");
     }
     // Overlay and terrain-object art is SHP under the theater extension.
-    let tib = yr_formats::ShpFile::parse(fs.read("TIB01.TEM").unwrap()).expect("TIB01 parses as SHP");
+    let tib =
+        yr_formats::ShpFile::parse(fs.read("TIB01.TEM").unwrap()).expect("TIB01 parses as SHP");
     assert_eq!(tib.frames.len(), 24, "ore growth frames");
-    let tree = yr_formats::ShpFile::parse(fs.read("TREE01.TEM").unwrap()).expect("TREE01 parses as SHP");
+    let tree =
+        yr_formats::ShpFile::parse(fs.read("TREE01.TEM").unwrap()).expect("TREE01 parses as SHP");
     assert!(!tree.frames.is_empty());
     fs.set_theater(Theater::Snow);
-    assert!(fs.read(Theater::Snow.unit_palette()).is_some(), "snow unit palette resolves");
+    assert!(
+        fs.read(Theater::Snow.unit_palette()).is_some(),
+        "snow unit palette resolves"
+    );
     assert!(fs.read("TIB01.SNO").is_some(), "snow ore art resolves");
 }
 
@@ -122,13 +157,24 @@ fn building_art_resolves_per_theater() {
     // generic `G` variant in GENERIC.MIX as fallback.
     fs.set_theater(Theater::Temperate);
     for name in ["GGCNST.SHP", "CTLAB.SHP"] {
-        let data = fs.read(name).unwrap_or_else(|| panic!("{name} resolves in temperate"));
-        assert!(yr_formats::ShpFile::parse(data).is_ok(), "{name} parses as SHP");
+        let data = fs
+            .read(name)
+            .unwrap_or_else(|| panic!("{name} resolves in temperate"));
+        assert!(
+            yr_formats::ShpFile::parse(data).is_ok(),
+            "{name} parses as SHP"
+        );
     }
     fs.set_theater(Theater::Snow);
-    assert!(fs.read("GACNST.SHP").is_some(), "snow conyard uses the plain A name");
+    assert!(
+        fs.read("GACNST.SHP").is_some(),
+        "snow conyard uses the plain A name"
+    );
     fs.set_theater(Theater::Urban);
-    assert!(fs.read("CUPARS04.SHP").is_some(), "urban Paris building resolves");
+    assert!(
+        fs.read("CUPARS04.SHP").is_some(),
+        "urban Paris building resolves"
+    );
     assert_eq!(Theater::Temperate.art_letter(), 'T');
     assert_eq!(Theater::Snow.art_letter(), 'A');
 }

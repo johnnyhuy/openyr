@@ -83,7 +83,9 @@ impl PcxImage {
         // stream into one buffer of `bytes_per_line * planes * height`.
         let stride = bytes_per_line * planes as usize;
         let body_end = if planes == 1 {
-            data.len().checked_sub(PALETTE_TRAILER).ok_or(PcxError::MissingPalette)?
+            data.len()
+                .checked_sub(PALETTE_TRAILER)
+                .ok_or(PcxError::MissingPalette)?
         } else {
             data.len()
         };
@@ -139,7 +141,9 @@ impl PcxImage {
                 })
                 .collect(),
             PcxPixels::Rgb(rgb) => rgb
-                .as_chunks::<3>().0.iter()
+                .as_chunks::<3>()
+                .0
+                .iter()
                 .flat_map(|p| [p[0], p[1], p[2], 255])
                 .collect(),
         }
@@ -225,6 +229,9 @@ mod tests {
         let mut d = header(4, 4, 3, 4);
         d.extend([0xC5, 1]);
         assert_eq!(PcxImage::parse(&d).unwrap_err(), PcxError::Truncated);
-        assert_eq!(PcxImage::parse(&[0u8; 200]).unwrap_err(), PcxError::BadHeader);
+        assert_eq!(
+            PcxImage::parse(&[0u8; 200]).unwrap_err(),
+            PcxError::BadHeader
+        );
     }
 }

@@ -260,8 +260,20 @@ mod tests {
         assert_eq!(
             l.voxels,
             vec![
-                Voxel { x: 0, y: 0, z: 1, color: 11, normal: 101 },
-                Voxel { x: 0, y: 0, z: 2, color: 12, normal: 102 },
+                Voxel {
+                    x: 0,
+                    y: 0,
+                    z: 1,
+                    color: 11,
+                    normal: 101
+                },
+                Voxel {
+                    x: 0,
+                    y: 0,
+                    z: 2,
+                    color: 12,
+                    normal: 102
+                },
             ]
         );
     }

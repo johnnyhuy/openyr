@@ -19,7 +19,10 @@ fn rhino_duel_matches_rules_prediction() {
     let rules = Rules::load(&ini("RULESMD.INI"), &ini("ARTMD.INI"));
     let htnk = rules.techno("HTNK").expect("HTNK exists");
     let strength = htnk.strength.expect("strength");
-    let armor_idx = yr_rules::Armor::ALL.iter().position(|a| *a == htnk.armor.unwrap()).unwrap() as u8;
+    let armor_idx = yr_rules::Armor::ALL
+        .iter()
+        .position(|a| *a == htnk.armor.unwrap())
+        .unwrap() as u8;
     let spec = WeaponSpec::from_rules(&rules, "105mm").expect("105mm resolves");
     let per_shot = spec.damage_against(armor_idx);
     assert!(per_shot > 0, "105mm hurts plate");
@@ -35,17 +38,29 @@ fn rhino_duel_matches_rules_prediction() {
         weapon,
     };
     let mut sim = Sim::new(9);
-    sim.step(&[spawn(0, Some(spec)), spawn(512, None), Command::Attack { id: 1, target: 2 }]);
+    sim.step(&[
+        spawn(0, Some(spec)),
+        spawn(512, None),
+        Command::Attack { id: 1, target: 2 },
+    ]);
     let mut died = false;
     for _ in 0..20_000 {
         sim.step(&[]);
-        if sim.drain_events().iter().any(|e| matches!(e, Event::Died { id: 2 })) {
+        if sim
+            .drain_events()
+            .iter()
+            .any(|e| matches!(e, Event::Died { id: 2 }))
+        {
             died = true;
             break;
         }
     }
     assert!(died, "rhino eventually dies");
     assert_eq!(sim.units().len(), 1);
-    assert_eq!(i64::from(sim.units()[0].shots), expected_shots, "kill took the predicted shots");
+    assert_eq!(
+        i64::from(sim.units()[0].shots),
+        expected_shots,
+        "kill took the predicted shots"
+    );
     println!("HTNK duel: {per_shot} dmg/shot, {expected_shots} shots as predicted");
 }

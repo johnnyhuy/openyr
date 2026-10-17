@@ -90,6 +90,9 @@ mod tests {
         assert_eq!(a * b, Fix::from_raw(192)); // 0.75
         assert_eq!(Fix::from_int(3).to_int_floor(), 3);
         assert_eq!(Fix::from_raw(-1).to_int_floor(), -1);
-        assert_eq!((Fix::from_int(10) - Fix::from_int(25)).abs(), Fix::from_int(15));
+        assert_eq!(
+            (Fix::from_int(10) - Fix::from_int(25)).abs(),
+            Fix::from_int(15)
+        );
     }
 }
