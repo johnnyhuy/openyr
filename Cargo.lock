@@ -2532,6 +2532,7 @@ dependencies = [
  "yr-assets",
  "yr-formats",
  "yr-rules",
+ "yr-sim",
 ]
 
 [[package]]
