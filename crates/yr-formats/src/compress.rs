@@ -326,6 +326,22 @@ mod tests {
     }
 
     #[test]
+    fn chunk_container_rejects_oversized_chunk() {
+        // Header claims 100 body bytes; only 2 are present.
+        let data = [100u8, 0, 2, 0, 0x81, b'!'];
+        assert_eq!(unpack_chunks(&data, lcw_decompress), Err(DecompressError::Truncated));
+        // Declared output size must match what the chunk actually produces.
+        let mut lying = Vec::new();
+        lying.extend(3u16.to_le_bytes());
+        lying.extend(99u16.to_le_bytes());
+        lying.extend([0x81, b'!', 0x80]);
+        assert!(matches!(
+            unpack_chunks(&lying, lcw_decompress),
+            Err(DecompressError::SizeMismatch { .. })
+        ));
+    }
+
+    #[test]
     fn chunk_container() {
         let mut data = Vec::new();
         for chunk in [&[0x82u8, b'h', b'i', 0x80][..], &[0x81, b'!', 0x80]] {

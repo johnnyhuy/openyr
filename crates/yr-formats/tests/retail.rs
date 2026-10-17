@@ -7,7 +7,8 @@
 use std::fs;
 use std::path::PathBuf;
 use yr_formats::{
-    mix_id, CsfFile, HvaFile, IniFile, MixArchive, PcxImage, PcxPixels, ShpFile, TmpFile, VxlFile,
+    mix_id, CsfFile, HvaFile, IniFile, MapFile, MixArchive, PcxImage, PcxPixels, ShpFile, TmpFile,
+    VxlFile,
 };
 
 fn corpus() -> Option<PathBuf> {
@@ -296,4 +297,46 @@ fn audio_containers_decode() {
 
     let pcm = yr_formats::audio::decode_wav(&wav).expect("EVA WAV decodes");
     assert_eq!(pcm.samples.len(), 26383, "fact chunk frame count");
+}
+
+#[test]
+fn all_retail_maps_parse_and_align() {
+    // Every map in the retail multiplayer/map archives must parse, and the
+    // three coordinate systems (iso tiles, [Terrain] keys, overlay grid,
+    // placed objects) must agree on the (x, y) convention. See
+    // docs/formats/map.md for the probe evidence behind these invariants.
+    let Some(dir) = corpus() else {
+        eprintln!("skip: retail corpus not present");
+        return;
+    };
+    let mut maps = 0usize;
+    for top in ["multimd.mix", "mapsmd03.mix", "expandmd01.mix", "maps01.mix", "maps02.mix"] {
+        let data = fs::read(dir.join(top)).expect("archive readable");
+        let mix = MixArchive::parse(&data).expect("archive parses");
+        for e in mix.entries() {
+            let text = String::from_utf8_lossy(mix.get_by_id(e.id).unwrap());
+            if !text.contains("[IsoMapPack5]") {
+                continue;
+            }
+            let m = MapFile::parse(&text).unwrap_or_else(|err| panic!("{top}/0x{:08x}: {err}", e.id));
+            maps += 1;
+            let cells: std::collections::HashSet<(u16, u16)> =
+                m.tiles.iter().map(|t| (t.x, t.y)).collect();
+            assert_eq!(cells.len(), m.tiles.len(), "{top}: duplicate iso cells");
+            for (x, y, _) in &m.terrain {
+                assert!(cells.contains(&(*x, *y)), "{top}: terrain at ({x},{y}) has a tile");
+            }
+            for s in m.structures.iter().chain(&m.units).chain(&m.infantry).chain(&m.aircraft) {
+                assert!(cells.contains(&(s.x, s.y)), "{top}: {} at ({},{}) has a tile", s.kind, s.x, s.y);
+            }
+            for (i, &o) in m.overlay.iter().enumerate() {
+                if o != 0xFF {
+                    let c = ((i % 512) as u16, (i / 512) as u16);
+                    assert!(cells.contains(&c), "{top}: overlay cell {c:?} has a tile");
+                }
+            }
+            assert!(m.tiles.iter().all(|t| t.level <= 12), "{top}: levels in range");
+        }
+    }
+    assert_eq!(maps, 234, "retail map count");
 }

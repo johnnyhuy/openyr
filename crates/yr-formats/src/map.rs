@@ -99,7 +99,18 @@ impl MapFile {
 
         let iso = pack(&ini, "IsoMapPack5")?.ok_or(MapError::MissingSection("IsoMapPack5"))?;
         let raw = unpack_chunks(&iso, lzo1x_decompress).map_err(|e| MapError::Pack("IsoMapPack5", e))?;
-        let tiles = raw
+        // Retail packs are 11-byte entries plus a 4-byte zero trailer
+        // (verified on all 234 retail maps; see docs/formats/map.md). Any
+        // other shape is a corrupt or hostile pack, not a partial map.
+        if raw.len() < 4 || (raw.len() - 4) % 11 != 0 || raw[raw.len() - 4..] != [0, 0, 0, 0] {
+            return Err(MapError::BadValue("IsoMapPack5"));
+        }
+        // At most one entry per overlay-grid cell (retail maps have no
+        // duplicate cells); more than that is a hostile pack.
+        if raw.len() - 4 > 11 * OVERLAY_GRID * OVERLAY_GRID {
+            return Err(MapError::BadValue("IsoMapPack5"));
+        }
+        let tiles = raw[..raw.len() - 4]
             .chunks_exact(11)
             .map(|c| {
                 let tile = i32::from_le_bytes([c[4], c[5], c[6], c[7]]);
@@ -174,8 +185,12 @@ fn pack(ini: &IniFile, section: &'static str) -> Result<Option<Vec<u8>>, MapErro
 fn overlay_pack(ini: &IniFile, section: &'static str, len: usize, fill: u8) -> Result<Vec<u8>, MapError> {
     match pack(ini, section)? {
         Some(data) => {
-            let mut v = unpack_chunks(&data, lcw_decompress).map_err(|e| MapError::Pack(section, e))?;
-            v.resize(len, fill);
+            let v = unpack_chunks(&data, lcw_decompress).map_err(|e| MapError::Pack(section, e))?;
+            // Retail packs decode to exactly the 512x512 grid; a different
+            // size means the pack is corrupt, not a smaller map.
+            if v.len() != len {
+                return Err(MapError::BadValue(section));
+            }
             Ok(v)
         }
         None => Ok(vec![fill; len]),
@@ -232,12 +247,13 @@ mod tests {
         entry.extend(20u16.to_le_bytes());
         entry.extend(5i32.to_le_bytes());
         entry.extend([1, 3, 0]);
-        let mut lzo = vec![17 + 11];
+        entry.extend([0, 0, 0, 0]); // 4-byte zero trailer
+        let mut lzo = vec![17 + 15];
         lzo.extend(&entry);
         lzo.extend([0x11, 0, 0]);
         let mut chunk = Vec::new();
         chunk.extend((lzo.len() as u16).to_le_bytes());
-        chunk.extend(11u16.to_le_bytes());
+        chunk.extend(15u16.to_le_bytes());
         chunk.extend(&lzo);
         let text = format!(
             "[Map]\nTheater=TEMPERATE\nSize=0,0,50,50\nLocalSize=2,4,46,40\n\
@@ -256,5 +272,49 @@ mod tests {
         assert_eq!(map.structures[0].kind, "CAAIRP");
         assert_eq!((map.structures[0].x, map.structures[0].y, map.structures[0].facing), (80, 96, Some(64)));
         assert!(map.overlay_at(10, 20).is_none());
+    }
+
+    #[test]
+    fn rejects_iso_pack_without_zero_trailer() {
+        // Same pack as above but with the trailer bytes corrupted.
+        let mut entry = Vec::new();
+        entry.extend(10u16.to_le_bytes());
+        entry.extend(20u16.to_le_bytes());
+        entry.extend(5i32.to_le_bytes());
+        entry.extend([1, 3, 0, 9, 9, 9, 9]);
+        let mut lzo = vec![17 + 15];
+        lzo.extend(&entry);
+        lzo.extend([0x11, 0, 0]);
+        let mut chunk = Vec::new();
+        chunk.extend((lzo.len() as u16).to_le_bytes());
+        chunk.extend(15u16.to_le_bytes());
+        chunk.extend(&lzo);
+        let text = format!(
+            "[Map]\nTheater=TEMPERATE\nSize=0,0,50,50\n[IsoMapPack5]\n1={}\n",
+            b64(&chunk)
+        );
+        assert!(matches!(MapFile::parse(&text), Err(MapError::BadValue("IsoMapPack5"))));
+    }
+
+    #[test]
+    fn rejects_short_overlay_pack() {
+        // OverlayPack decoding to 3 bytes instead of the 512x512 grid.
+        let lcw = [0x83, b'a', b'b', b'c', 0x80];
+        let mut chunk = Vec::new();
+        chunk.extend((lcw.len() as u16).to_le_bytes());
+        chunk.extend(3u16.to_le_bytes());
+        chunk.extend(lcw);
+        // Minimal valid iso pack: just the trailer.
+        let mut iso_lzo = vec![17 + 4, 0, 0, 0, 0, 0x11, 0, 0];
+        let mut iso_chunk = Vec::new();
+        iso_chunk.extend((iso_lzo.len() as u16).to_le_bytes());
+        iso_chunk.extend(4u16.to_le_bytes());
+        iso_chunk.append(&mut iso_lzo);
+        let text = format!(
+            "[Map]\nTheater=TEMPERATE\nSize=0,0,50,50\n[IsoMapPack5]\n1={}\n[OverlayPack]\n1={}\n",
+            b64(&iso_chunk),
+            b64(&chunk)
+        );
+        assert!(matches!(MapFile::parse(&text), Err(MapError::BadValue("OverlayPack"))));
     }
 }

@@ -41,8 +41,12 @@ incremental, testable path where each milestone is independently useful.
 
 ## M3 — Renderer v1
 
-- [ ] wgpu/Metal window, integer-scaled 640x480 virtual viewport
-- [ ] TMP terrain rendering from a real map (`mapsmd03.mix`)
+- [x] Map parsing: LZO/IsoMapPack5 + overlay packs, all 234 retail maps
+      (`docs/formats/map.md`); tile-set index maps tile numbers to TMPs
+- [x] TMP terrain rendering from real maps as PNG (`mix-dump render-map`;
+      heights, cliff extras — eyeballed on urban + temperate retail maps)
+- [ ] Overlay objects, `[Terrain]` objects and placed units on the map
+- [ ] wgpu/Metal window, integer-scaled 640x480 virtual viewport, pan/zoom
 - [ ] SHP + VXL drawing with palette + shadow pass
 - [ ] Sidebar/cameo UI from `ra2md.csf` strings
 

@@ -17,6 +17,7 @@ pub mod pal;
 pub mod pcx;
 pub mod sha1;
 pub mod shp;
+pub mod tileset;
 pub mod tmp;
 pub mod vxl;
 
@@ -30,5 +31,6 @@ pub use mix::{MixArchive, MixEntry, MixError, MixVersion};
 pub use pal::Palette;
 pub use pcx::{PcxError, PcxImage, PcxPixels};
 pub use shp::{ShpError, ShpFile, ShpFrame};
+pub use tileset::TileSetIndex;
 pub use tmp::{TmpError, TmpFile, TmpTile};
 pub use vxl::{Voxel, VxlError, VxlFile, VxlLimb};

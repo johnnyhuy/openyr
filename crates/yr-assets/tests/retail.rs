@@ -60,3 +60,34 @@ fn theater_selects_terrain() {
     let shp = ShpFile::parse(fs.read("GACNST.SHP").unwrap()).unwrap();
     assert_eq!((shp.width, shp.height), (284, 226));
 }
+
+#[test]
+fn tileset_index_resolves_a_real_map() {
+    let Some(mut fs) = install() else {
+        eprintln!("skip: retail install not present");
+        return;
+    };
+    let map = yr_formats::MapFile::parse(&String::from_utf8_lossy(fs.read("EB1.MMX").unwrap()))
+        .expect("EB1.MMX parses");
+    let theater = Theater::from_map_name(&map.theater).expect("known theater");
+    fs.set_theater(theater);
+    let ini_name = theater
+        .tileset_inis()
+        .iter()
+        .find(|n| fs.read(n).is_some())
+        .expect("tileset INI present");
+    let ini = IniFile::parse(&String::from_utf8_lossy(fs.read(ini_name).unwrap()));
+    let index = yr_formats::TileSetIndex::parse(&ini, theater.tile_extension());
+    assert!(index.files.len() > 800, "{} tiles in {ini_name}", index.files.len());
+    let mut tmps = std::collections::HashMap::new();
+    for t in &map.tiles {
+        let Some(id) = t.tile else { continue };
+        let name = index.file_for(id).unwrap_or_else(|| panic!("tile {id} in index"));
+        let tmp = tmps.entry(name.to_string()).or_insert_with(|| {
+            TmpFile::parse(fs.read(name).unwrap_or_else(|| panic!("{name} readable"))).expect("TMP parses")
+        });
+        assert_eq!((tmp.tile_width, tmp.tile_height), (60, 30));
+        assert!((t.subtile as usize) < tmp.tiles.len(), "{name} has subtile {}", t.subtile);
+        assert!(tmp.tiles[t.subtile as usize].is_some(), "{name} subtile {} present", t.subtile);
+    }
+}
