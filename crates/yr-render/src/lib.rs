@@ -94,6 +94,10 @@ pub fn render_map(gamedir: &str, map_name: &str, scale: u32) -> Result<RenderedM
         .read(theater.unit_palette())
         .and_then(Palette::parse)
         .unwrap_or_else(|| pal.clone());
+    let theater_pal = vfs
+        .read(theater.theater_palette())
+        .and_then(Palette::parse)
+        .unwrap_or_else(|| pal.clone());
 
     // Game data for objects: map INI overrides merge into rules, as in game.
     let mut rules_ini = IniFile::parse(&String::from_utf8_lossy(
@@ -213,6 +217,8 @@ pub fn render_map(gamedir: &str, map_name: &str, scale: u32) -> Result<RenderedM
         file: Option<String>,
         frame: usize,
         unit: bool,
+        /// Ore/gems: drawn with the theater object palette.
+        tiberium: bool,
         marker: Option<[u8; 4]>,
         shadow: bool,
         remap: Option<[u8; 3]>,
@@ -236,6 +242,7 @@ pub fn render_map(gamedir: &str, map_name: &str, scale: u32) -> Result<RenderedM
             file,
             frame,
             unit,
+            tiberium: false,
             marker,
             shadow: false,
             remap: None,
@@ -262,6 +269,10 @@ pub fn render_map(gamedir: &str, map_name: &str, scale: u32) -> Result<RenderedM
                 false,
                 None,
             );
+            jobs.last_mut().unwrap().tiberium = rules_ini
+                .section(kind)
+                .and_then(|s| s.get_bool("Tiberium"))
+                .unwrap_or(false);
         }
     }
     for (x, y, kind) in &map.terrain {
@@ -341,6 +352,7 @@ pub fn render_map(gamedir: &str, map_name: &str, scale: u32) -> Result<RenderedM
                         file: Some(file),
                         frame: 0,
                         unit: true,
+                        tiberium: false,
                         marker: None,
                         shadow: true,
                         remap: Some(house_color(&rules_ini, &obj.owner)),
@@ -462,7 +474,13 @@ pub fn render_map(gamedir: &str, map_name: &str, scale: u32) -> Result<RenderedM
                 }
             }
         }
-        let palette = if job.unit { &unit_pal } else { &pal };
+        let palette = if job.unit {
+            &unit_pal
+        } else if job.tiberium {
+            &theater_pal
+        } else {
+            &pal
+        };
         let (ox, oy) = (cx - shp.width as i32 / 2, cy - shp.height as i32 / 2);
         for (p, &index) in canvas.iter().enumerate() {
             if index == 0 {
