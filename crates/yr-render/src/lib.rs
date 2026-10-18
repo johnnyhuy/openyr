@@ -10,6 +10,7 @@
 //! this rasteriser is the correctness reference.
 
 pub mod png;
+pub mod sprites;
 
 use std::collections::HashMap;
 use std::fs;
@@ -32,11 +33,12 @@ pub struct RenderedMap {
 }
 
 impl RenderedMap {
-    /// Centre of cell `(cell_x, cell_y)` (fractional cells allowed) in
-    /// rendered-buffer pixels. Height level is ignored (flat projection).
+    /// Rendered-buffer pixel of cell-space point `(cell_x, cell_y)`: cell
+    /// `(x, y)` spans `[x, x + 1)`, so its centre is `(x + 0.5, y + 0.5)`.
+    /// Height level is ignored (flat projection).
     pub fn cell_to_px(&self, cell_x: f32, cell_y: f32) -> (f32, f32) {
         let cx = (cell_x - cell_y) * HALF_W as f32;
-        let cy = (cell_x + cell_y) * HALF_H as f32 + HALF_H as f32;
+        let cy = (cell_x + cell_y) * HALF_H as f32;
         let s = self.scale.max(1) as f32;
         (
             (cx - self.origin_x as f32) / s,
@@ -50,7 +52,7 @@ impl RenderedMap {
         let cx = px * s + self.origin_x as f32;
         let cy = py * s + self.origin_y as f32;
         let a = cx / HALF_W as f32;
-        let b = (cy - HALF_H as f32) / HALF_H as f32;
+        let b = cy / HALF_H as f32;
         ((a + b) / 2.0, (b - a) / 2.0)
     }
 }
@@ -325,17 +327,7 @@ pub fn render_map(gamedir: &str, map_name: &str, scale: u32) -> Result<RenderedM
         if is_building {
             // NewTheater=yes buildings: second letter is the theater
             // letter, generic `G` variant as fallback (docs/formats/map.md).
-            let mut candidates = Vec::new();
-            if image.len() > 1 {
-                candidates.push(format!(
-                    "{}{}{}.SHP",
-                    &image[..1],
-                    theater.art_letter(),
-                    &image[2..]
-                ));
-                candidates.push(format!("{}G{}.SHP", &image[..1], &image[2..]));
-            }
-            candidates.push(format!("{}.SHP", image.to_ascii_uppercase()));
+            let candidates = building_shp_candidates(&image, theater);
             let found = candidates.iter().find(|f| load_shp(vfs, f, shps)).cloned();
             match found {
                 Some(file) => {
@@ -482,13 +474,7 @@ pub fn render_map(gamedir: &str, map_name: &str, scale: u32) -> Result<RenderedM
             );
             if x >= 0 && y >= 0 && (x as usize) < w && (y as usize) < h {
                 let at = (y as usize * w + x as usize) * 4;
-                if let (Some(base), 16..=31) = (job.remap, index) {
-                    let f = 0.45 + f32::from(index - 16) * 0.055;
-                    let c = |v: u8| (f32::from(v) * f).min(255.0) as u8;
-                    rgba[at..at + 4].copy_from_slice(&[c(base[0]), c(base[1]), c(base[2]), 255]);
-                } else {
-                    rgba[at..at + 4].copy_from_slice(&palette.rgba(index));
-                }
+                rgba[at..at + 4].copy_from_slice(&remap_rgba(palette, index, job.remap));
             }
         }
     }
@@ -529,7 +515,7 @@ pub fn render_map(gamedir: &str, map_name: &str, scale: u32) -> Result<RenderedM
 /// facing rotates the model around Z. Approximate: turret raised to the
 /// body top, flat shading (palette colours carry most of the form).
 #[allow(clippy::too_many_arguments)]
-fn draw_voxel(
+pub(crate) fn draw_voxel(
     rgba: &mut [u8],
     w: usize,
     h: usize,
@@ -598,13 +584,7 @@ fn draw_voxel(
     for (x, y, _, color) in &pts {
         let px = cx + ((x - (x0 + x1) / 2.0) * scale) as i32;
         let py = cy + ((y - (y0 + y1) / 2.0) * scale) as i32;
-        let rgba_c = if let (Some(base), 16..=31) = (remap, *color) {
-            let f = 0.45 + f32::from(color - 16) * 0.055;
-            let c = |v: u8| (f32::from(v) * f).min(255.0) as u8;
-            [c(base[0]), c(base[1]), c(base[2]), 255]
-        } else {
-            pal.rgba(*color)
-        };
+        let rgba_c = remap_rgba(pal, *color, remap);
         for dy in 0..size {
             for dx in 0..size {
                 let (x, y) = (px + dx, py + dy);
@@ -614,6 +594,37 @@ fn draw_voxel(
                 }
             }
         }
+    }
+}
+
+/// SHP names to try for building image `image`: NewTheater art swaps the
+/// second letter for the theater letter, with the generic `G` variant
+/// as fallback (docs/formats/map.md), then the plain image name.
+pub(crate) fn building_shp_candidates(image: &str, theater: Theater) -> Vec<String> {
+    let mut candidates = Vec::new();
+    if image.len() > 1 && image.is_char_boundary(1) && image.is_char_boundary(2) {
+        candidates.push(format!(
+            "{}{}{}.SHP",
+            &image[..1],
+            theater.art_letter(),
+            &image[2..]
+        ));
+        candidates.push(format!("{}G{}.SHP", &image[..1], &image[2..]));
+    }
+    candidates.push(format!("{}.SHP", image.to_ascii_uppercase()));
+    candidates
+}
+
+/// Palette colour of `index`, with the house remap range (16..=31)
+/// shaded from `remap` when given.
+pub(crate) fn remap_rgba(pal: &Palette, index: u8, remap: Option<[u8; 3]>) -> [u8; 4] {
+    match (remap, index) {
+        (Some(base), 16..=31) => {
+            let f = 0.45 + f32::from(index - 16) * 0.055;
+            let c = |v: u8| (f32::from(v) * f).min(255.0) as u8;
+            [c(base[0]), c(base[1]), c(base[2]), 255]
+        }
+        _ => pal.rgba(index),
     }
 }
 
@@ -662,7 +673,7 @@ fn art_file(image: &str, theater_art: bool, theater: Theater) -> String {
 
 /// Owner house colour as RGB: the owner's `Color=` name resolved through
 /// the `[Colors]` HSV table in rules. Neutral grey when unknown.
-fn house_color(rules: &IniFile, owner: &str) -> [u8; 3] {
+pub(crate) fn house_color(rules: &IniFile, owner: &str) -> [u8; 3] {
     let name = rules
         .section(owner)
         .and_then(|s| s.get("Color"))

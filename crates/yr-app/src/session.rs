@@ -37,6 +37,9 @@ pub struct Session {
     pub buildables: Vec<Buildable>,
     /// Ids of units spawned by waves (they hunt once idle).
     wave_units: Vec<u32>,
+    /// Rules ids by sim `kind` tag (units and buildings); the first
+    /// entries are the sidebar slots, so a `Produce` kind indexes here too.
+    pub kinds: Vec<String>,
 }
 
 /// Idle wave units re-target every this many ticks.
@@ -152,6 +155,7 @@ fn techno_speed(t: &yr_rules::TechnoType) -> Fix {
 }
 
 fn place_unit(
+    kinds: &mut Vec<String>,
     next_id: &mut u32,
     rules: &Rules,
     id: &str,
@@ -167,6 +171,7 @@ fn place_unit(
     let before = *next_id;
     *next_id += 1;
     commands.push(Command::Spawn {
+        kind: intern(kinds, id),
         x: Fix::from_int(i32::from(cell.0)) + Fix::from_raw(128),
         y: Fix::from_int(i32::from(cell.1)) + Fix::from_raw(128),
         loco: techno_loco(t.kind),
@@ -177,6 +182,15 @@ fn place_unit(
     });
     commands.push(Command::AssignOwner { id: before, owner });
     Some(before)
+}
+
+/// Index of rules id `id` in the session kind table, appending it once.
+fn intern(kinds: &mut Vec<String>, id: &str) -> u16 {
+    let i = kinds.iter().position(|k| k == id).unwrap_or_else(|| {
+        kinds.push(id.to_string());
+        kinds.len() - 1
+    });
+    u16::try_from(i).unwrap_or(u16::MAX)
 }
 
 fn first_of(rules: &Rules, ids: &[&str]) -> Option<String> {
@@ -231,6 +245,7 @@ struct BaseSpec<'a> {
 struct PlaceCtx<'a> {
     next_id: &'a mut u32,
     taken_cells: &'a mut Vec<(u16, u16)>,
+    kinds: &'a mut Vec<String>,
     rules: &'a Rules,
     grid: &'a TerrainGrid,
 }
@@ -296,6 +311,7 @@ fn place_base(
         }
         *next_id += 1;
         commands.push(Command::PlaceBuilding {
+            kind: intern(ctx.kinds, &id),
             x,
             y,
             w: fw,
@@ -352,6 +368,8 @@ pub fn setup(
     sim.set_terrain(grid.clone());
     sim.set_credits(rules.skirmish.money.unwrap_or(10_000));
 
+    let buildables = buildables(fs, rules);
+    let mut kinds: Vec<String> = buildables.iter().map(|b| b.id.clone()).collect();
     let mut cmds: Vec<Command> = Vec::new();
     let mut next_id = sim.next_id_peek();
     let mut taken_cells: Vec<(u16, u16)> = Vec::new();
@@ -368,6 +386,7 @@ pub fn setup(
             .unwrap_or((1u8, 1u8));
         let (fw, fh) = (u16::from(fw), u16::from(fh));
         cmds.push(Command::PlaceBuilding {
+            kind: intern(&mut kinds, &obj.kind),
             x: obj.x,
             y: obj.y,
             w: fw,
@@ -382,6 +401,7 @@ pub fn setup(
     for obj in map.units.iter().chain(&map.infantry).chain(&map.aircraft) {
         let mut extra = Vec::new();
         place_unit(
+            &mut kinds,
             &mut next_id,
             rules,
             &obj.kind,
@@ -406,6 +426,7 @@ pub fn setup(
         let mut ctx = PlaceCtx {
             next_id: &mut next_id,
             taken_cells: &mut taken_cells,
+            kinds: &mut kinds,
             rules,
             grid: &grid,
         };
@@ -453,7 +474,15 @@ pub fn setup(
         };
         taken_cells.push(cell);
         let mut extra = Vec::new();
-        let uid = place_unit(&mut next_id, rules, id, cell, PLAYER, &mut extra);
+        let uid = place_unit(
+            &mut kinds,
+            &mut next_id,
+            rules,
+            id,
+            cell,
+            PLAYER,
+            &mut extra,
+        );
         cmds.extend(extra);
         if let (Some(uid), Some(h)) = (uid, &harv) {
             if id == h {
@@ -473,6 +502,7 @@ pub fn setup(
             let mut ctx = PlaceCtx {
                 next_id: &mut next_id,
                 taken_cells: &mut taken_cells,
+                kinds: &mut kinds,
                 rules,
                 grid: &grid,
             };
@@ -496,7 +526,7 @@ pub fn setup(
                 };
                 taken_cells.push(cell);
                 let mut extra = Vec::new();
-                place_unit(&mut next_id, rules, t, cell, ENEMY, &mut extra);
+                place_unit(&mut kinds, &mut next_id, rules, t, cell, ENEMY, &mut extra);
                 cmds.extend(extra);
             }
         }
@@ -537,7 +567,8 @@ pub fn setup(
         enemy_at,
         player_at,
         wave_specs,
-        buildables: buildables(fs, rules),
+        buildables,
+        kinds,
         wave_units: Vec::new(),
     })
 }
@@ -773,6 +804,7 @@ impl Session {
                 let id = next_id;
                 next_id += 1;
                 cmds.push(Command::Spawn {
+                    kind: intern(&mut self.kinds, kind),
                     x: Fix::from_int(i32::from(cell.0)) + Fix::from_raw(128),
                     y: Fix::from_int(i32::from(cell.1)) + Fix::from_raw(128),
                     loco: spec.loco,

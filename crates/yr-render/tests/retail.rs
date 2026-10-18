@@ -114,3 +114,40 @@ fn temperate_map_builds_a_sane_terrain_grid() {
         "terrain is part of the state hash"
     );
 }
+
+/// Live-object sprites resolve for the sandbox's units and base on EB1:
+/// infantry SHP, voxel tank, NewTheater building art. With
+/// `OPENYR_SPRITE_DUMP=<dir>` the 8 tank octants are written as PNGs
+/// (eyeball check of facing).
+#[test]
+fn sprite_bank_resolves_sandbox_art() {
+    let Some(dir) = install_dir() else {
+        eprintln!("skip: retail install not present");
+        return;
+    };
+    let mut bank =
+        yr_render::sprites::SpriteBank::open(dir.to_str().unwrap(), "EB1.MMX").expect("bank opens");
+    let remap = bank.house_color("Americans");
+    for id in [
+        "E1", "MTNK", "GACNST", "GAWEAP", "GAPILE", "GAREFN", "GAPOWR",
+    ] {
+        let s = bank.get(id, 0, remap).unwrap_or_else(|| panic!("{id} art"));
+        assert!(s.w > 0 && s.h > 0, "{id} empty");
+        assert!(
+            s.rgba.as_chunks::<4>().0.iter().any(|p| p[3] == 255),
+            "{id} blank"
+        );
+    }
+    // Infantry facings pick distinct standing frames.
+    let a = bank.get("E1", 0, remap).unwrap().rgba.clone();
+    let b = bank.get("E1", 128, remap).unwrap().rgba.clone();
+    assert_ne!(a, b, "facing changes the infantry frame");
+    if let Ok(out) = std::env::var("OPENYR_SPRITE_DUMP") {
+        std::fs::create_dir_all(&out).unwrap();
+        for o in 0..8u8 {
+            let s = bank.get("MTNK", o * 32, remap).unwrap();
+            let png = yr_render::png::encode_rgba(s.w, s.h, &s.rgba);
+            std::fs::write(format!("{out}/mtnk-sim{:03}.png", o * 32), png).unwrap();
+        }
+    }
+}

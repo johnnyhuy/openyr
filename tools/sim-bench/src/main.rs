@@ -12,6 +12,7 @@ fn main() {
     let start = std::time::Instant::now();
     sim.step(&[
         Command::Spawn {
+            kind: 0,
             x: Fix::ZERO,
             y: Fix::ZERO,
             loco: yr_sim::terrain::Loco::Track,
@@ -21,6 +22,7 @@ fn main() {
             weapon: None,
         },
         Command::Spawn {
+            kind: 0,
             x: Fix::from_int(2560),
             y: Fix::ZERO,
             loco: yr_sim::terrain::Loco::Track,

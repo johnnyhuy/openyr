@@ -34,6 +34,9 @@ pub const LEPTONS_PER_CELL: i32 = 256;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Command {
     Spawn {
+        /// Caller type tag (e.g. a rules-id index), kept on the unit for
+        /// rendering; opaque to the sim.
+        kind: u16,
         x: Fix,
         y: Fix,
         loco: terrain::Loco,
@@ -74,6 +77,8 @@ pub enum Command {
     /// Place a building: footprint cells, health, armour, power
     /// (positive produces, negative drains).
     PlaceBuilding {
+        /// Caller type tag, kept on the building (see `Spawn`).
+        kind: u16,
         x: u16,
         y: u16,
         w: u16,
@@ -184,6 +189,8 @@ enum Harvest {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Unit {
     pub id: u32,
+    /// Caller type tag from `Spawn`/`Produce` (renderer art lookup).
+    pub kind: u16,
     pub x: Fix,
     pub y: Fix,
     pub target: Option<(Fix, Fix)>,
@@ -289,6 +296,7 @@ impl Sim {
         for cmd in commands {
             match *cmd {
                 Command::Spawn {
+                    kind,
                     x,
                     y,
                     loco,
@@ -301,6 +309,7 @@ impl Sim {
                     self.next_id += 1;
                     self.units.push(Unit {
                         id,
+                        kind,
                         x,
                         y,
                         target: None,
@@ -326,6 +335,7 @@ impl Sim {
                     });
                 }
                 Command::PlaceBuilding {
+                    kind,
                     x,
                     y,
                     w,
@@ -340,6 +350,7 @@ impl Sim {
                     self.next_id += 1;
                     self.buildings.push(Building {
                         id,
+                        kind,
                         cell: (x, y),
                         size: (w, h),
                         hp,
@@ -935,6 +946,7 @@ impl Sim {
             let s = order.spec;
             self.units.push(Unit {
                 id,
+                kind: order.kind,
                 x: Fix::from_int(i32::from(cell.0)) + Fix::from_raw(128),
                 y: Fix::from_int(i32::from(cell.1)) + Fix::from_raw(128),
                 target: None,
@@ -1139,6 +1151,7 @@ impl Sim {
             h.write_i64(i64::from(u.speed.raw()));
             h.write_u64(u.loco as u64);
             h.write_u64(u64::from(u.facing));
+            h.write_u64(u64::from(u.kind));
             h.write_u64(u.path.len() as u64);
             h.write_i64(u.hp);
             h.write_u64(u64::from(u.cooldown));
@@ -1171,6 +1184,7 @@ impl Sim {
         h.write_u64(self.buildings.len() as u64);
         for b in &self.buildings {
             h.write_u64(u64::from(b.id));
+            h.write_u64(u64::from(b.kind));
             h.write_i64(b.hp);
             h.write_i64(b.power);
         }
@@ -1218,6 +1232,7 @@ mod tests {
 
     fn script(sim: &mut Sim, ticks: u64) -> u64 {
         sim.step(&[Command::Spawn {
+            kind: 0,
             x: Fix::from_int(0),
             y: Fix::from_int(0),
             loco: terrain::Loco::Track,
@@ -1252,6 +1267,7 @@ mod tests {
         a.next_random();
         assert_ne!(a.state_hash(), b.state_hash());
         c.step(&[Command::Spawn {
+            kind: 0,
             x: Fix::ZERO,
             y: Fix::ZERO,
             loco: terrain::Loco::Foot,
@@ -1268,6 +1284,7 @@ mod tests {
         let mut sim = Sim::new(7);
         sim.step(&[
             Command::Spawn {
+                kind: 0,
                 x: Fix::ZERO,
                 y: Fix::ZERO,
                 loco: terrain::Loco::Foot,
@@ -1277,6 +1294,7 @@ mod tests {
                 weapon: None,
             },
             Command::Spawn {
+                kind: 0,
                 x: Fix::from_int(256),
                 y: Fix::ZERO,
                 loco: terrain::Loco::Foot,
@@ -1287,6 +1305,7 @@ mod tests {
             },
             Command::Remove { id: 1 },
             Command::Spawn {
+                kind: 0,
                 x: Fix::from_int(512),
                 y: Fix::ZERO,
                 loco: terrain::Loco::Foot,
@@ -1317,6 +1336,7 @@ mod tests {
         sim.set_terrain(small_grid());
         let centre = |c: i32| Fix::from_int(c) + Fix::from_raw(128);
         sim.step(&[Command::Spawn {
+            kind: 0,
             x: centre(0),
             y: centre(0),
             loco: terrain::Loco::Track,
@@ -1353,6 +1373,7 @@ mod tests {
         // Leader parked in the gap cell; follower ordered through it.
         sim.step(&[
             Command::Spawn {
+                kind: 0,
                 x: centre(3),
                 y: centre(1),
                 loco: terrain::Loco::Track,
@@ -1362,6 +1383,7 @@ mod tests {
                 weapon: None,
             },
             Command::Spawn {
+                kind: 0,
                 x: centre(0),
                 y: centre(1),
                 loco: terrain::Loco::Track,
@@ -1415,6 +1437,7 @@ mod tests {
         let w = gun(50, 10, 10, Fix::ZERO);
         sim.step(&[
             Command::Spawn {
+                kind: 0,
                 x: Fix::ZERO,
                 y: Fix::ZERO,
                 loco: terrain::Loco::Track,
@@ -1424,6 +1447,7 @@ mod tests {
                 weapon: Some(w),
             },
             Command::Spawn {
+                kind: 0,
                 x: Fix::from_int(2),
                 y: Fix::ZERO,
                 loco: terrain::Loco::Track,
@@ -1458,6 +1482,7 @@ mod tests {
         let w = gun(50, 1, 10, Fix::ZERO);
         sim.step(&[
             Command::Spawn {
+                kind: 0,
                 x: Fix::ZERO,
                 y: Fix::ZERO,
                 loco: terrain::Loco::Track,
@@ -1467,6 +1492,7 @@ mod tests {
                 weapon: Some(w),
             },
             Command::Spawn {
+                kind: 0,
                 x: Fix::from_int(2),
                 y: Fix::ZERO,
                 loco: terrain::Loco::Track,
@@ -1510,6 +1536,7 @@ mod tests {
         sim.set_terrain(TerrainGrid::new(0, 0, 12, 6));
         let c = |v: i32| Fix::from_int(v) + Fix::from_raw(128);
         let tank = |y: i32| Command::Spawn {
+            kind: 0,
             x: c(0),
             y: c(y),
             loco: terrain::Loco::Track,
@@ -1520,6 +1547,7 @@ mod tests {
         };
         sim.step(&[
             Command::PlaceBuilding {
+                kind: 0,
                 x: 8,
                 y: 2,
                 w: 2,
@@ -1570,6 +1598,7 @@ mod tests {
         // a neutral 1 cell away and a second enemy out of range (10 cells).
         let mut sim = Sim::new(6);
         let spawn = |x: i32, hp: i64, weapon| Command::Spawn {
+            kind: 0,
             x: Fix::from_int(x),
             y: Fix::ZERO,
             loco: terrain::Loco::Track,
@@ -1621,6 +1650,7 @@ mod tests {
         let centre = |c: i32| Fix::from_int(c) + Fix::from_raw(128);
         sim.step(&[
             Command::Spawn {
+                kind: 0,
                 x: centre(0),
                 y: centre(0),
                 loco: terrain::Loco::Track,
@@ -1630,6 +1660,7 @@ mod tests {
                 weapon: None,
             },
             Command::Spawn {
+                kind: 0,
                 x: centre(1),
                 y: centre(0),
                 loco: terrain::Loco::Track,
@@ -1687,6 +1718,7 @@ mod tests {
         // Power plant (+200) and two consumers (-150 each via two placements).
         sim.step(&[
             Command::PlaceBuilding {
+                kind: 0,
                 x: 0,
                 y: 0,
                 w: 2,
@@ -1698,6 +1730,7 @@ mod tests {
                 role: Role::Combat,
             },
             Command::PlaceBuilding {
+                kind: 0,
                 x: 4,
                 y: 0,
                 w: 2,
@@ -1716,6 +1749,7 @@ mod tests {
         assert!(!g.passable(terrain::Loco::Foot, 0, 0), "footprint blocks");
         // Add drain past production: low power slows production.
         sim.step(&[Command::PlaceBuilding {
+            kind: 0,
             x: 4,
             y: 4,
             w: 2,
@@ -1744,6 +1778,7 @@ mod tests {
         };
         sim.step(&[
             Command::Spawn {
+                kind: 0,
                 x: Fix::from_raw(128),
                 y: Fix::from_int(6),
                 loco: terrain::Loco::Track,
@@ -1780,6 +1815,7 @@ mod tests {
         let w = gun(50, 1, 10, Fix::from_int(1));
         sim.step(&[
             Command::Spawn {
+                kind: 0,
                 x: Fix::ZERO,
                 y: Fix::ZERO,
                 loco: terrain::Loco::Track,
@@ -1789,6 +1825,7 @@ mod tests {
                 weapon: Some(w),
             },
             Command::Spawn {
+                kind: 0,
                 x: Fix::from_int(4),
                 y: Fix::ZERO,
                 loco: terrain::Loco::Track,
@@ -1854,6 +1891,7 @@ mod tests {
         }
         assert_eq!((sim.credits(), sim.production()[0].progress), (150, 0));
         sim.step(&[Command::PlaceBuilding {
+            kind: 0,
             x: 2,
             y: 2,
             w: 3,
@@ -1906,6 +1944,7 @@ mod tests {
             sim.set_credits(1000);
             sim.step(&[
                 Command::PlaceBuilding {
+                    kind: 0,
                     x: 0,
                     y: 0,
                     w: 2,
