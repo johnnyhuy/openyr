@@ -80,6 +80,11 @@ pub struct TechnoType {
     pub power: Option<i64>,
     pub armor: Option<Armor>,
     pub cost: Option<i64>,
+    /// `Factory=`: what a building produces (`UnitType`, `InfantryType`,
+    /// `BuildingType`, `AircraftType`).
+    pub factory: Option<String>,
+    /// `Harvester=`: gathers ore/gems for a refinery.
+    pub harvester: Option<bool>,
     pub points: Option<i64>,
     pub tech_level: Option<i64>,
     pub sight: Option<i64>,
@@ -525,6 +530,8 @@ fn load_techno(
         power: int(sec, "Power"),
         armor: armor.flatten(),
         cost: int(sec, "Cost"),
+        factory: string(sec, "Factory"),
+        harvester: sec.and_then(|x| x.get_bool("Harvester")),
         points: int(sec, "Points"),
         tech_level: int(sec, "TechLevel"),
         sight: int(sec, "Sight"),

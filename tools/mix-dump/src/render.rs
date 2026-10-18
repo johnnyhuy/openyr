@@ -4,9 +4,9 @@
 //! Asset specs are `<archive.mix>:<nested/path>`, e.g.
 //! `ra2.mix:SNOW.MIX/GACNST.SHP`.
 
-use crate::png;
 use std::fs;
 use yr_formats::{Palette, PcxImage, ShpFile, TmpFile};
+use yr_render::png;
 
 /// `palette` is required for SHP/TMP; PCX carries its own colours.
 pub fn cmd_render(asset: &str, palette: Option<&str>, out: &str) -> Result<(), String> {

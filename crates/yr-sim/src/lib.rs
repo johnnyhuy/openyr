@@ -14,12 +14,14 @@ pub mod combat;
 mod fix;
 mod hash;
 pub mod path;
+pub mod production;
 mod rng;
 pub mod terrain;
 
 pub use building::Building;
 pub use combat::WeaponSpec;
 pub use fix::Fix;
+pub use production::{BuildOrder, Factory, UnitSpec};
 pub use rng::Rng;
 pub use terrain::TerrainGrid;
 
@@ -89,6 +91,21 @@ pub enum Command {
     Stop {
         id: u32,
     },
+    /// Queue a unit at the player's factory of `factory` kind; `kind` is
+    /// the caller's type index, echoed in [`Event::Produced`].
+    Produce {
+        factory: Factory,
+        kind: u16,
+        spec: UnitSpec,
+        cost: i64,
+        ticks: u32,
+    },
+    /// Cancel the newest order of `kind` in `factory`'s queue; refunds
+    /// what it had drawn.
+    CancelProduce {
+        factory: Factory,
+        kind: u16,
+    },
     Remove {
         id: u32,
     },
@@ -115,6 +132,11 @@ pub enum Event {
         value: i64,
         total: i64,
     },
+    /// A factory finished a build and the unit `id` rolled out.
+    Produced {
+        id: u32,
+        kind: u16,
+    },
 }
 
 /// What a unit is for; drives the economy state machine.
@@ -123,6 +145,10 @@ pub enum Role {
     Combat,
     Harvester,
     Refinery,
+    /// Building that hosts the vehicle production queue.
+    WarFactory,
+    /// Building that hosts the infantry production queue.
+    Barracks,
 }
 
 /// Owner ids used by units and buildings.
@@ -213,6 +239,8 @@ pub struct Sim {
     buildings: Vec<Building>,
     /// (min, max) low-power production speed factors from the rules.
     low_power_speeds: (Fix, Fix),
+    /// Player build orders, queue order; heads are per factory kind.
+    production: Vec<BuildOrder>,
 }
 
 impl Sim {
@@ -228,6 +256,7 @@ impl Sim {
             credits: 0,
             buildings: Vec::new(),
             low_power_speeds: (Fix::from_raw(128), Fix::ONE),
+            production: Vec::new(),
         }
     }
 
@@ -382,8 +411,35 @@ impl Sim {
                 Command::Remove { id } => {
                     self.units.retain(|u| u.id != id);
                 }
+                Command::Produce {
+                    factory,
+                    kind,
+                    spec,
+                    cost,
+                    ticks,
+                } => {
+                    self.production.push(BuildOrder {
+                        factory,
+                        kind,
+                        spec,
+                        cost: cost.max(0),
+                        ticks: ticks.max(1),
+                        progress: 0,
+                        paid: 0,
+                    });
+                }
+                Command::CancelProduce { factory, kind } => {
+                    if let Some(i) = self
+                        .production
+                        .iter()
+                        .rposition(|o| o.factory == factory && o.kind == kind)
+                    {
+                        self.credits += self.production.remove(i).paid;
+                    }
+                }
             }
         }
+        self.production_phase();
         self.harvest_phase();
         // Idle armed units defend themselves: an idle combat unit (no
         // order of any kind) engages the nearest hostile in weapon range.
@@ -841,6 +897,116 @@ impl Sim {
         }
     }
 
+    /// Player build orders in queue order (heads first per factory).
+    pub fn production(&self) -> &[BuildOrder] {
+        &self.production
+    }
+
+    /// Advance the head order of each factory queue (fixed `Factory::ALL`
+    /// order). A finished order rolls out next to the first live
+    /// player building of its role, on the nearest free standable cell.
+    fn production_phase(&mut self) {
+        let factor = self.production_factor();
+        for factory in Factory::ALL {
+            let Some(i) = self.production.iter().position(|o| o.factory == factory) else {
+                continue;
+            };
+            let Some(host) = self
+                .buildings
+                .iter()
+                .find(|b| b.owner == OWNER_PLAYER && b.role == factory.role())
+                .map(|b| (b.cell, b.size))
+            else {
+                continue;
+            };
+            if let Some(drawn) = self.production[i].advance(factor, self.credits) {
+                self.credits -= drawn;
+            }
+            if !self.production[i].done() {
+                continue;
+            }
+            let order = self.production[i];
+            let Some(cell) = self.exit_cell(order.spec.loco, host.0, host.1) else {
+                continue; // blocked exit: hold the finished unit
+            };
+            self.production.remove(i);
+            let id = self.next_id;
+            self.next_id += 1;
+            let s = order.spec;
+            self.units.push(Unit {
+                id,
+                x: Fix::from_int(i32::from(cell.0)) + Fix::from_raw(128),
+                y: Fix::from_int(i32::from(cell.1)) + Fix::from_raw(128),
+                target: None,
+                speed: s.speed,
+                loco: s.loco,
+                facing: 128,
+                path: std::collections::VecDeque::new(),
+                hp: s.hp,
+                max_hp: s.hp,
+                armor: s.armor,
+                weapon: s.weapon,
+                cooldown: 0,
+                attack: None,
+                guard: None,
+                shots: 0,
+                role: s.role,
+                owner: OWNER_PLAYER,
+                cargo: 0,
+                bails: 0,
+                harvest: if s.role == Role::Harvester {
+                    Harvest::ToOre(u16::MAX, u16::MAX)
+                } else {
+                    Harvest::Idle
+                },
+                blocked: 0,
+            });
+            self.events.push(Event::Produced {
+                id,
+                kind: order.kind,
+            });
+        }
+    }
+
+    /// Free standable cell around a footprint, scanning rings outward
+    /// from the cell below its bottom edge (where factories open).
+    fn exit_cell(
+        &self,
+        loco: terrain::Loco,
+        cell: (u16, u16),
+        size: (u16, u16),
+    ) -> Option<(u16, u16)> {
+        let origin = (
+            i32::from(cell.0) + i32::from(size.0) / 2,
+            i32::from(cell.1) + i32::from(size.1),
+        );
+        let free = |x: i32, y: i32| -> Option<(u16, u16)> {
+            let (x, y) = (u16::try_from(x).ok()?, u16::try_from(y).ok()?);
+            let standable = match &self.terrain {
+                Some(g) => g.passable(loco, x, y),
+                None => true,
+            };
+            let taken = self
+                .units
+                .iter()
+                .any(|u| u.x.to_int_floor() == i32::from(x) && u.y.to_int_floor() == i32::from(y));
+            (standable && !taken).then_some((x, y))
+        };
+        for r in 0..=GOAL_SEARCH_CELLS * 2 {
+            for dy in -r..=r {
+                for dx in -r..=r {
+                    if dx.abs() != r && dy.abs() != r {
+                        continue;
+                    }
+                    if let Some(c) = free(origin.0 + dx, origin.1 + dy) {
+                        return Some(c);
+                    }
+                }
+            }
+        }
+        None
+    }
+
     pub fn credits(&self) -> i64 {
         self.credits
     }
@@ -1007,6 +1173,13 @@ impl Sim {
             h.write_u64(u64::from(b.id));
             h.write_i64(b.hp);
             h.write_i64(b.power);
+        }
+        h.write_u64(self.production.len() as u64);
+        for o in &self.production {
+            h.write_u64(o.factory as u64);
+            h.write_u64(u64::from(o.kind));
+            h.write_i64(o.progress);
+            h.write_i64(o.paid);
         }
         h.write_u64(self.projectiles.len() as u64);
         for p in &self.projectiles {
@@ -1649,5 +1822,122 @@ mod tests {
             }
         }
         assert!(died_at.is_some(), "projectile eventually kills");
+    }
+
+    fn tank_spec() -> UnitSpec {
+        UnitSpec {
+            loco: terrain::Loco::Track,
+            speed: Fix::from_int(1),
+            hp: 300,
+            armor: 0,
+            weapon: None,
+            role: Role::Combat,
+        }
+    }
+
+    #[test]
+    fn factory_draws_credits_stalls_cancels_and_rolls_out() {
+        let mut sim = Sim::new(9);
+        sim.set_terrain(TerrainGrid::new(0, 0, 12, 12));
+        sim.set_credits(150);
+        let produce = |kind| Command::Produce {
+            factory: Factory::Vehicle,
+            kind,
+            spec: tank_spec(),
+            cost: 100,
+            ticks: 10,
+        };
+        // No war factory yet: the order waits and draws nothing.
+        sim.step(&[produce(0)]);
+        for _ in 0..20 {
+            sim.step(&[]);
+        }
+        assert_eq!((sim.credits(), sim.production()[0].progress), (150, 0));
+        sim.step(&[Command::PlaceBuilding {
+            x: 2,
+            y: 2,
+            w: 3,
+            h: 3,
+            hp: 1000,
+            armor: 0,
+            power: 0,
+            owner: OWNER_PLAYER,
+            role: Role::WarFactory,
+        }]);
+        let factory_id = sim.buildings()[0].id;
+        // 10 ticks at full speed; the first runs in the placement tick.
+        let mut produced = Vec::new();
+        for _ in 0..12 {
+            sim.step(&[]);
+            for e in sim.drain_events() {
+                if let Event::Produced { id, kind } = e {
+                    produced.push((id, kind));
+                }
+            }
+        }
+        assert_eq!(produced, vec![(factory_id + 1, 0)]);
+        assert_eq!(sim.credits(), 50);
+        let u = &sim.units()[0];
+        assert_eq!(u.owner, OWNER_PLAYER);
+        // Rolled out just below the footprint (rows 2..5), not on it.
+        assert_eq!((u.x.to_int_floor(), u.y.to_int_floor()), (3, 5));
+        // 50 credits left: a second 100-credit build stalls halfway.
+        sim.step(&[produce(1)]);
+        for _ in 0..30 {
+            sim.step(&[]);
+        }
+        let o = sim.production()[0];
+        assert_eq!((o.paid, sim.credits()), (50, 0));
+        assert!(o.progress < o.total());
+        // Cancel refunds what was drawn.
+        sim.step(&[Command::CancelProduce {
+            factory: Factory::Vehicle,
+            kind: 1,
+        }]);
+        assert!(sim.production().is_empty());
+        assert_eq!(sim.credits(), 50);
+    }
+
+    #[test]
+    fn production_is_deterministic_and_hashed() {
+        let run = |cancel: bool| {
+            let mut sim = Sim::new(3);
+            sim.set_terrain(TerrainGrid::new(0, 0, 8, 8));
+            sim.set_credits(1000);
+            sim.step(&[
+                Command::PlaceBuilding {
+                    x: 0,
+                    y: 0,
+                    w: 2,
+                    h: 2,
+                    hp: 500,
+                    armor: 0,
+                    power: 0,
+                    owner: OWNER_PLAYER,
+                    role: Role::Barracks,
+                },
+                Command::Produce {
+                    factory: Factory::Infantry,
+                    kind: 2,
+                    spec: tank_spec(),
+                    cost: 200,
+                    ticks: 50,
+                },
+            ]);
+            for t in 0..20 {
+                let cmds = if cancel && t == 5 {
+                    vec![Command::CancelProduce {
+                        factory: Factory::Infantry,
+                        kind: 2,
+                    }]
+                } else {
+                    Vec::new()
+                };
+                sim.step(&cmds);
+            }
+            sim.state_hash()
+        };
+        assert_eq!(run(false), run(false));
+        assert_ne!(run(false), run(true));
     }
 }

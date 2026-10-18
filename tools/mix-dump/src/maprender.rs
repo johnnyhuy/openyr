@@ -1,7 +1,7 @@
 //! `mix-dump render-map`: PNG front-end over the shared yr-render rasteriser.
 
-use crate::png;
 use std::fs;
+use yr_render::png;
 
 pub fn cmd_render_map(args: &[&str]) -> Result<(), String> {
     let (gamedir, map_name, out) = match args {

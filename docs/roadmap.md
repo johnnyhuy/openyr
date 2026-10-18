@@ -55,7 +55,8 @@ incremental, testable path where each milestone is independently useful.
 - [x] Native window (`openyr`, winit+pixels/wgpu): rendered map with
       drag/WASD pan and wheel zoom; screenshot-vs-PNG check still open, pan/zoom
 - [ ] SHP + VXL drawing with palette + shadow pass
-- [ ] Sidebar/cameo UI from `ra2md.csf` strings
+- [ ] Sidebar/cameo UI from `ra2md.csf` strings (cameo build sidebar
+      done in M5; CSF names, tabs and building placement still open)
 
 ## M4 — Simulation v1
 
@@ -71,12 +72,16 @@ incremental, testable path where each milestone is independently useful.
 Decided 2026-10-17: baseline first (sandbox, scripted spawns, no AI),
 then basic-AI skirmish, then data-driven addons, then roguelite mode.
 
-- [ ] Sandbox loop on one map, no AI (scripted spawns), full input
-      (session setup + in-window selection/orders + scripted waves done:
+- [x] Sandbox loop on one map, no AI (scripted spawns), full input
+      (session setup + in-window selection/orders + scripted waves:
       5 escalating attack-move waves from the enemy base, stopping once
-      its buildings fall; idle units self-defend; orders onto buildings
-      or crowded cells settle nearby. Headless EB1 playthrough resolves.
-      Left: in-window manual playthrough capture, production sidebar #16)
+      its buildings fall; idle wave units hunt the nearest player target,
+      base guards join once their base falls; idle units self-defend.
+      Production sidebar (#16): retail cameos, `Cost=`, `BuildSpeed`
+      build times, gradual payment, stall on no credits, cancel refund,
+      low-power slowdown, roll-out from `Factory=` buildings. Headless
+      EB1: no production -> Lost, produced army -> Won. Proof frames via
+      `openyr <gamedir> EB1.MMX --frames <dir> <tick>...`)
 - [ ] Audio hookup (themes, EVA, unit voices)
 - [ ] Save/load (deterministic state dump)
 - [ ] Basic AI skirmish opponent (stage 2)
