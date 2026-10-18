@@ -54,7 +54,11 @@ incremental, testable path where each milestone is independently useful.
       transforms and normal lighting still open)
 - [x] Native window (`openyr`, winit+pixels/wgpu): rendered map with
       drag/WASD pan and wheel zoom; screenshot-vs-PNG check still open, pan/zoom
-- [ ] SHP + VXL drawing with palette + shadow pass
+- [x] SHP + VXL drawing with palette + shadow pass for live sim objects
+      (`yr-render::sprites`: building art on the footprint, infantry
+      standing frames per octant, voxel tanks, house-colour remap,
+      half-alpha shadows; window + `--frames` dumps). Walk/fire
+      sequences, building active anims and HVA transforms still open (#6)
 - [ ] Sidebar/cameo UI from `ra2md.csf` strings (cameo build sidebar
       done in M5; CSF names, tabs and building placement still open)
 

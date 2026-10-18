@@ -29,6 +29,7 @@ fn rhino_duel_matches_rules_prediction() {
     let expected_shots = (strength + per_shot - 1) / per_shot;
 
     let spawn = |x: i32, weapon| Command::Spawn {
+        kind: 0,
         x: Fix::from_int(x),
         y: Fix::ZERO,
         loco: yr_sim::terrain::Loco::Track,

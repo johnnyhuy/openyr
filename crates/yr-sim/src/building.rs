@@ -10,6 +10,8 @@ use crate::Fix;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Building {
     pub id: u32,
+    /// Caller type tag from `PlaceBuilding` (renderer art lookup).
+    pub kind: u16,
     /// Top-left footprint cell and size in cells.
     pub cell: (u16, u16),
     pub size: (u16, u16),

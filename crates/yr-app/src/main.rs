@@ -50,6 +50,8 @@ struct App {
     window: Option<std::sync::Arc<Window>>,
     pixels: Option<Pixels<'static>>,
     map: Option<yr_render::RenderedMap>,
+    /// Retail art for live units/buildings (decoded lazily while drawing).
+    sprites: Option<std::cell::RefCell<yr_render::sprites::SpriteBank>>,
     session: Option<Session>,
     view: View,
     selected: BTreeSet<u32>,
@@ -262,21 +264,41 @@ impl App {
         // entity markers (needs `map` borrowed while frame is mutably
         // borrowed, so gather screen positions first).
         struct Marker {
+            /// Painter-order key (cell x + y of the object's front).
+            depth: f32,
+            /// Window position of the sprite anchor.
+            ax: f32,
+            ay: f32,
+            /// Window position of the ground centre (markers, bars).
             wx: f32,
             wy: f32,
             half_w: f32,
             col: [u8; 4],
             selected: bool,
             hp: f32,
+            /// Rules id + sim facing + owner, when art may exist.
+            art: Option<(String, u8, u8)>,
         }
         let mut markers: Vec<Marker> = Vec::new();
         if let Some(session) = &self.session {
             let sim = &session.sim;
             let zoom = self.view.zoom;
-            let to_win = |map: &yr_render::RenderedMap, cx: f32, cy: f32, view: &View| {
-                let (mx, my) = map.cell_to_px(cx, cy);
-                ((mx - view.cam_x) * zoom, (my - view.cam_y) * zoom)
+            let lift = |x: i32, y: i32| {
+                let level = sim
+                    .terrain()
+                    .and_then(|g| g.cell(x.max(0) as u16, y.max(0) as u16))
+                    .map_or(0, |c| c.height);
+                f32::from(level) * 15.0 / map.scale.max(1) as f32 * zoom
             };
+            let to_win = |cx: f32, cy: f32| {
+                let (mx, my) = map.cell_to_px(cx, cy);
+                let lifted = lift(cx.floor() as i32, cy.floor() as i32);
+                (
+                    (mx - self.view.cam_x) * zoom,
+                    (my - self.view.cam_y) * zoom - lifted,
+                )
+            };
+            let kind_id = |k: u16| session.kinds.get(usize::from(k)).cloned();
             for b in sim.buildings() {
                 // Neutral map structures are already drawn as art; mark
                 // them only once they take damage.
@@ -284,44 +306,49 @@ impl App {
                     continue;
                 }
                 let (bx, by) = b.centre();
-                let (wx, wy) = to_win(
-                    map,
-                    bx.to_int_floor() as f32 + 0.5,
-                    by.to_int_floor() as f32 + 0.5,
-                    &self.view,
-                );
+                let (wx, wy) = to_win(bx.raw() as f32 / 256.0, by.raw() as f32 / 256.0);
+                let (ax, ay) = to_win(f32::from(b.cell.0) + 0.5, f32::from(b.cell.1) + 0.5);
                 let half = ((f32::from(b.size.0 + b.size.1)) * 15.0 / map.scale.max(1) as f32
                     * zoom)
                     .max(8.0);
                 markers.push(Marker {
+                    depth: f32::from(b.cell.0 + b.size.0 + b.cell.1 + b.size.1) - 1.0,
+                    ax,
+                    ay,
                     wx,
                     wy,
                     half_w: half,
                     col: owner_col(b.owner),
                     selected: false,
                     hp: hp_frac(b.hp, b.max_hp),
+                    art: (b.owner != yr_sim::OWNER_NEUTRAL)
+                        .then(|| kind_id(b.kind).map(|k| (k, 0, b.owner)))
+                        .flatten(),
                 });
             }
             for u in sim.units() {
                 if u.owner == yr_sim::OWNER_NEUTRAL && u.hp >= u.max_hp {
                     continue;
                 }
-                let (wx, wy) = to_win(
-                    map,
-                    u.x.to_int_floor() as f32 + 0.5,
-                    u.y.to_int_floor() as f32 + 0.5,
-                    &self.view,
-                );
+                let (fx, fy) = (u.x.raw() as f32 / 256.0, u.y.raw() as f32 / 256.0);
+                let (wx, wy) = to_win(fx, fy);
                 markers.push(Marker {
+                    depth: fx + fy,
+                    ax: wx,
+                    ay: wy,
                     wx,
                     wy,
                     half_w: (14.0 * zoom).max(5.0),
                     col: owner_col(u.owner),
                     selected: self.selected.contains(&u.id),
                     hp: hp_frac(u.hp, u.max_hp),
+                    art: (u.owner != yr_sim::OWNER_NEUTRAL)
+                        .then(|| kind_id(u.kind).map(|k| (k, u.facing, u.owner)))
+                        .flatten(),
                 });
             }
         }
+        markers.sort_by(|a, b| a.depth.total_cmp(&b.depth));
         for sy in 0..fh as i32 {
             let my = self.view.cam_y + sy as f32 / self.view.zoom;
             for sx in 0..fw as i32 {
@@ -335,20 +362,45 @@ impl App {
                 }
             }
         }
+        // Sprites in painter order; types without art fall back to a
+        // filled owner-colour diamond.
+        let k = self.view.zoom / map.scale.max(1) as f32;
+        let mut bank = self.sprites.as_ref().map(|b| b.borrow_mut());
         for m in &markers {
-            draw_diamond(frame, fw, fh, m.wx, m.wy, m.half_w, m.col);
+            let drawn = match (&m.art, bank.as_mut()) {
+                (Some((id, facing, owner)), Some(bank)) => {
+                    let remap = owner_remap(bank, *owner);
+                    match bank.get(id, *facing, remap) {
+                        Some(s) => {
+                            blit_sprite(frame, fw, fh, s, m.ax, m.ay, k);
+                            true
+                        }
+                        None => false,
+                    }
+                }
+                _ => false,
+            };
+            if !drawn {
+                draw_diamond(frame, fw, fh, m.wx, m.wy, m.half_w, m.col);
+            }
+        }
+        drop(bank);
+        for m in &markers {
             if m.selected {
                 draw_diamond_outline(frame, fw, fh, m.wx, m.wy, m.half_w + 4.0, SELECT_COL);
             }
-            draw_health(
-                frame,
-                fw,
-                fh,
-                m.wx,
-                m.wy - m.half_w * 0.5 - 8.0,
-                m.half_w * 2.0,
-                m.hp,
-            );
+            // As in game: health only on selected or damaged objects.
+            if m.selected || m.hp < 1.0 {
+                draw_health(
+                    frame,
+                    fw,
+                    fh,
+                    m.wx,
+                    m.wy - m.half_w * 0.5 - 8.0,
+                    m.half_w * 1.2,
+                    m.hp,
+                );
+            }
         }
         if let Some(session) = &self.session {
             draw_sidebar(frame, fw, fh, session);
@@ -498,6 +550,63 @@ fn owner_col(owner: u8) -> [u8; 4] {
     }
 }
 
+/// House colour for sim owners: the player plays the Allies' first
+/// country, the scripted enemy the Soviets' (`[Colors]` via rules).
+fn owner_remap(bank: &yr_render::sprites::SpriteBank, owner: u8) -> [u8; 3] {
+    match owner {
+        yr_sim::OWNER_PLAYER => bank.house_color("Americans"),
+        yr_sim::OWNER_ENEMY => bank.house_color("Russians"),
+        _ => bank.house_color(""),
+    }
+}
+
+/// Nearest-neighbour blit of `s` with its anchor at window `(ax, ay)`,
+/// `k` window pixels per sprite pixel. Shadow pixels halve the frame.
+fn blit_sprite(
+    frame: &mut [u8],
+    fw: u32,
+    fh: u32,
+    s: &yr_render::sprites::Sprite,
+    ax: f32,
+    ay: f32,
+    k: f32,
+) {
+    if k <= 0.0 {
+        return;
+    }
+    let x0 = (ax - s.ax as f32 * k).round() as i32;
+    let y0 = (ay - s.ay as f32 * k).round() as i32;
+    let (dw, dh) = (
+        (s.w as f32 * k).ceil() as i32,
+        (s.h as f32 * k).ceil() as i32,
+    );
+    for dy in 0..dh {
+        let py = y0 + dy;
+        let sy = ((dy as f32 + 0.5) / k) as u32;
+        if py < 0 || py >= fh as i32 || sy >= s.h {
+            continue;
+        }
+        for dx in 0..dw {
+            let px = x0 + dx;
+            let sx = ((dx as f32 + 0.5) / k) as u32;
+            if px < 0 || px >= fw as i32 || sx >= s.w {
+                continue;
+            }
+            let src = ((sy * s.w + sx) * 4) as usize;
+            let dst = ((py as u32 * fw + px as u32) * 4) as usize;
+            match s.rgba[src + 3] {
+                0 => {}
+                yr_render::sprites::SHADOW_ALPHA => {
+                    for c in &mut frame[dst..dst + 3] {
+                        *c /= 2;
+                    }
+                }
+                _ => frame[dst..dst + 4].copy_from_slice(&s.rgba[src..src + 4]),
+            }
+        }
+    }
+}
+
 fn hp_frac(hp: i64, max: i64) -> f32 {
     if max <= 0 {
         0.0
@@ -597,6 +706,7 @@ impl ApplicationHandler for App {
                 self.view.cam_x = (map.width as f32 - WIN_W as f32) / 2.0;
                 self.view.cam_y = (map.height as f32 - WIN_H as f32) / 2.0;
                 self.map = Some(map);
+                self.sprites = load_sprites(&self.gamedir, &self.map_name);
             }
             Err(e) => {
                 eprintln!("OpenYR: cannot render {}: {e}", self.map_name);
@@ -791,6 +901,19 @@ impl ApplicationHandler for App {
     }
 }
 
+fn load_sprites(
+    gamedir: &str,
+    map_name: &str,
+) -> Option<std::cell::RefCell<yr_render::sprites::SpriteBank>> {
+    match yr_render::sprites::SpriteBank::open(gamedir, map_name) {
+        Ok(b) => Some(std::cell::RefCell::new(b)),
+        Err(e) => {
+            eprintln!("OpenYR: no object art ({e}); drawing markers");
+            None
+        }
+    }
+}
+
 fn new_app(gamedir: String, map_name: String, scale: u32) -> App {
     App {
         gamedir,
@@ -799,6 +922,7 @@ fn new_app(gamedir: String, map_name: String, scale: u32) -> App {
         window: None,
         pixels: None,
         map: None,
+        sprites: None,
         session: None,
         view: View {
             cam_x: 0.0,
@@ -833,6 +957,7 @@ fn headless_frames(mut app: App, dir: &str, ticks: &[u64]) -> Result<(), String>
         &app.map_name,
         app.scale,
     )?);
+    app.sprites = load_sprites(&app.gamedir, &app.map_name);
     app.session = Some(yr_app::session::load(&app.gamedir, &app.map_name, 42)?);
     std::fs::create_dir_all(dir).map_err(|e| e.to_string())?;
     let (fw, fh) = (WIN_W, WIN_H);

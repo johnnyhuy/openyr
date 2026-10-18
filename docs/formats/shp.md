@@ -60,6 +60,13 @@ files (83,626 non-empty frames) with zero errors:
   shadows). Shadow pixels are coverage masks: draw them as translucent black,
   not via the palette. Visual check: `mix-dump render` (the cameo, the snow
   Construction Yard and the urban road templates render correctly).
+- Infantry SHPs start with the 8-frame standing ("Ready") sequence, one
+  frame per screen octant, **counter-clockwise from screen up**: frame 0
+  faces up (back to the camera), 1 up-left, 2 left, 3 down-left, 4 down
+  (facing the camera), 5 down-right, 6 right, 7 up-right. The shadow
+  frames follow the body frames as for buildings (`frames / 2` offset).
+  Observed on `RA2.MIX/CONQUER.MIX/GI.SHP` (`mix-dump render` with
+  `UNITTEM.PAL`); used by `yr-render::sprites`.
 
 ## Sources
 
