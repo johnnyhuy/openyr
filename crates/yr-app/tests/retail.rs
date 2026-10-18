@@ -94,3 +94,92 @@ fn eb1_skirmish_setup_and_scripted_win() {
     assert_eq!(session.outcome, Outcome::Won);
     println!("EB1 session: {player_units} player units, {player_bases} player buildings, {enemy_bases} enemy buildings -> Won");
 }
+
+/// Headless playthrough: scripted waves launch on schedule and march on
+/// the player; the player attack-moves everything at the enemy base and
+/// the match resolves (Won or Lost) without a crash.
+#[test]
+fn eb1_waves_launch_and_headless_playthrough_resolves() {
+    let dir = PathBuf::from(std::env::var("HOME").unwrap_or_default())
+        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    if !dir.is_dir() {
+        eprintln!("skip: retail install not present");
+        return;
+    }
+    let mut fs = AssetFs::open(&dir).expect("install opens");
+    let map =
+        MapFile::parse(&String::from_utf8_lossy(fs.read("EB1.MMX").unwrap())).expect("EB1 parses");
+    let mut rules_ini = IniFile::parse(&String::from_utf8_lossy(fs.read("RULESMD.INI").unwrap()));
+    rules_ini.merge_from(&map.ini);
+    let art_ini = IniFile::parse(&String::from_utf8_lossy(fs.read("ARTMD.INI").unwrap()));
+    let rules = Rules::load(&rules_ini, &art_ini);
+    let overlay_types = yr_render::type_list(&rules_ini, "OverlayTypes");
+    let mut session = setup(&mut fs, &map, &rules, &overlay_types, 7).expect("session sets up");
+
+    let enemy_count = |s: &yr_app::session::Session| {
+        s.sim
+            .units()
+            .iter()
+            .filter(|u| u.owner == yr_sim::OWNER_ENEMY)
+            .count()
+    };
+    let (_, total) = session.waves_progress();
+    assert_eq!(total, 5, "wave plan");
+    let first =
+        session.next_wave_in_secs().expect("first wave pending") * yr_app::session::TICKS_PER_SEC;
+    let before = enemy_count(&session);
+    for _ in 0..first {
+        session.step(&[]);
+    }
+    session.step(&[]);
+    assert_eq!(session.waves_progress().0, 1, "first wave launched");
+    let after = enemy_count(&session);
+    assert!(after > before, "wave units spawned: {before} -> {after}");
+    let marching = session
+        .sim
+        .units()
+        .iter()
+        .filter(|u| u.owner == yr_sim::OWNER_ENEMY && u.target.is_some())
+        .count();
+    assert!(marching >= 2, "wave marches on the player: {marching}");
+
+    // Player counter-attack: every armed player unit attack-moves to the
+    // enemy base (centre of its first building), re-issued every 10 s.
+    let mut ticks = 0u64;
+    while session.outcome == Outcome::Ongoing && ticks < 15 * 60 * 15 {
+        let orders: Vec<Command> = match session
+            .sim
+            .buildings()
+            .iter()
+            .find(|b| b.owner == yr_sim::OWNER_ENEMY)
+        {
+            Some(b) if ticks.is_multiple_of(150) => {
+                let (x, y) = b.centre();
+                session
+                    .sim
+                    .units()
+                    .iter()
+                    .filter(|u| {
+                        u.owner == yr_sim::OWNER_PLAYER
+                            && u.weapon.is_some()
+                            && u.role == yr_sim::Role::Combat
+                    })
+                    .map(|u| Command::AttackMove { id: u.id, x, y })
+                    .collect()
+            }
+            _ => Vec::new(),
+        };
+        session.step(&orders);
+        ticks += 1;
+    }
+    println!(
+        "EB1 playthrough: {:?} after {ticks} ticks, waves {:?}",
+        session.outcome,
+        session.waves_progress()
+    );
+    assert_ne!(
+        session.outcome,
+        Outcome::Ongoing,
+        "match resolved within 15 minutes"
+    );
+}

@@ -26,6 +26,61 @@ pub struct Session {
     pub sim: Sim,
     pub outcome: Outcome,
     had_enemy: bool,
+    waves: Vec<Wave>,
+    next_wave: usize,
+    /// Enemy rally (spawn) and player base cells for scripted waves.
+    enemy_at: (u16, u16),
+    player_at: (u16, u16),
+    /// Rules ids + specs needed to spawn wave units mid-match.
+    wave_specs: Vec<(String, WaveUnit)>,
+}
+
+/// One scripted attack wave: at `tick`, `count` of each unit kind spawn
+/// beside the enemy base and attack-move to the player's start.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Wave {
+    pub tick: u64,
+    pub units: Vec<(String, u8)>,
+}
+
+/// Spawn parameters resolved from rules once at setup.
+#[derive(Debug, Clone, Copy)]
+struct WaveUnit {
+    loco: Loco,
+    speed: Fix,
+    hp: i64,
+    armor: u8,
+    weapon: Option<yr_sim::WeaponSpec>,
+}
+
+/// Ticks per second the session runs at (the window steps at 15 Hz).
+pub const TICKS_PER_SEC: u64 = 15;
+
+/// The sandbox's scripted wave plan: first wave after 90 s, then every
+/// 60 s, escalating. Waves stop once the enemy base has no buildings.
+pub fn default_waves(tank: Option<&str>, inf: Option<&str>) -> Vec<Wave> {
+    let plan: [(u64, u8, u8); 5] = [
+        (90, 2, 0),
+        (150, 2, 3),
+        (210, 3, 4),
+        (270, 4, 4),
+        (330, 6, 6),
+    ];
+    plan.iter()
+        .map(|&(secs, tanks, infs)| {
+            let mut units = Vec::new();
+            if let Some(t) = tank {
+                units.push((t.to_string(), tanks));
+            }
+            if let (Some(i), true) = (inf, infs > 0) {
+                units.push((i.to_string(), infs));
+            }
+            Wave {
+                tick: secs * TICKS_PER_SEC,
+                units,
+            }
+        })
+        .collect()
 }
 
 const PLAYER: u8 = yr_sim::OWNER_PLAYER;
@@ -415,17 +470,50 @@ pub fn setup(
         }
     }
     sim.step(&cmds);
+    let waves = if had_enemy {
+        default_waves(tank.as_deref(), inf.as_deref())
+    } else {
+        Vec::new()
+    };
+    let mut wave_specs: Vec<(String, WaveUnit)> = Vec::new();
+    for (id, _) in waves.iter().flat_map(|w| &w.units) {
+        if wave_specs.iter().any(|(k, _)| k == id) {
+            continue;
+        }
+        let Some(t) = rules.techno(id) else { continue };
+        wave_specs.push((
+            id.clone(),
+            WaveUnit {
+                loco: techno_loco(t.kind),
+                speed: techno_speed(t),
+                hp: t.strength.unwrap_or(100),
+                armor: armor_idx(t),
+                weapon: t
+                    .primary
+                    .as_deref()
+                    .and_then(|w| yr_sim::WeaponSpec::from_rules(rules, w)),
+            },
+        ));
+    }
+    let enemy_at = waypoints.get(1).copied().unwrap_or(player_at);
     Ok(Session {
         sim,
         outcome: Outcome::Ongoing,
         had_enemy,
+        waves,
+        next_wave: 0,
+        enemy_at,
+        player_at,
+        wave_specs,
     })
 }
 
 impl Session {
     /// Advance the match and re-judge win/lose on owned entities.
     pub fn step(&mut self, commands: &[Command]) {
-        self.sim.step(commands);
+        let mut cmds = self.wave_commands();
+        cmds.extend_from_slice(commands);
+        self.sim.step(&cmds);
         if self.outcome != Outcome::Ongoing {
             return;
         }
@@ -438,5 +526,82 @@ impl Session {
         } else if self.had_enemy && !enemy_alive {
             self.outcome = Outcome::Won;
         }
+    }
+
+    /// Waves launched so far and the total planned.
+    pub fn waves_progress(&self) -> (usize, usize) {
+        (self.next_wave, self.waves.len())
+    }
+
+    /// Seconds until the next wave, if one is still pending.
+    pub fn next_wave_in_secs(&self) -> Option<u64> {
+        let w = self.waves.get(self.next_wave)?;
+        Some(
+            w.tick
+                .saturating_sub(self.sim.tick())
+                .div_ceil(TICKS_PER_SEC),
+        )
+    }
+
+    /// Commands for a wave due this tick: spawn beside the enemy base,
+    /// hand to the enemy, attack-move on the player's start. Ids are
+    /// predicted from `next_id_peek` (spawns run first in the slice).
+    /// A wave only launches while the enemy still owns a building.
+    fn wave_commands(&mut self) -> Vec<Command> {
+        let mut cmds = Vec::new();
+        let Some(wave) = self.waves.get(self.next_wave) else {
+            return cmds;
+        };
+        if self.sim.tick() < wave.tick || self.outcome != Outcome::Ongoing {
+            return cmds;
+        }
+        self.next_wave += 1;
+        if !self.sim.buildings().iter().any(|b| b.owner == ENEMY) {
+            return cmds;
+        }
+        let Some(grid) = self.sim.terrain().cloned() else {
+            return cmds;
+        };
+        let mut next_id = self.sim.next_id_peek();
+        let mut taken: Vec<(u16, u16)> = Vec::new();
+        for (kind, count) in &wave.units {
+            let Some((_, spec)) = self.wave_specs.iter().find(|(k, _)| k == kind) else {
+                continue;
+            };
+            // March on the nearest passable cell to the player's start
+            // (the start itself is usually under the construction yard).
+            let Some(goal) = free_cell(&grid, spec.loco, self.player_at, &self.sim, &[]) else {
+                continue;
+            };
+            let dest = (
+                Fix::from_int(i32::from(goal.0)) + Fix::from_raw(128),
+                Fix::from_int(i32::from(goal.1)) + Fix::from_raw(128),
+            );
+            for _ in 0..*count {
+                let Some(cell) = free_cell(&grid, spec.loco, self.enemy_at, &self.sim, &taken)
+                else {
+                    break;
+                };
+                taken.push(cell);
+                let id = next_id;
+                next_id += 1;
+                cmds.push(Command::Spawn {
+                    x: Fix::from_int(i32::from(cell.0)) + Fix::from_raw(128),
+                    y: Fix::from_int(i32::from(cell.1)) + Fix::from_raw(128),
+                    loco: spec.loco,
+                    speed: spec.speed,
+                    hp: spec.hp,
+                    armor: spec.armor,
+                    weapon: spec.weapon,
+                });
+                cmds.push(Command::AssignOwner { id, owner: ENEMY });
+                cmds.push(Command::AttackMove {
+                    id,
+                    x: dest.0,
+                    y: dest.1,
+                });
+            }
+        }
+        cmds
     }
 }

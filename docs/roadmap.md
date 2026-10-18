@@ -72,7 +72,11 @@ Decided 2026-10-17: baseline first (sandbox, scripted spawns, no AI),
 then basic-AI skirmish, then data-driven addons, then roguelite mode.
 
 - [ ] Sandbox loop on one map, no AI (scripted spawns), full input
-      (session setup + in-window selection/orders done; scripted waves left)
+      (session setup + in-window selection/orders + scripted waves done:
+      5 escalating attack-move waves from the enemy base, stopping once
+      its buildings fall; idle units self-defend; orders onto buildings
+      or crowded cells settle nearby. Headless EB1 playthrough resolves.
+      Left: in-window manual playthrough capture, production sidebar #16)
 - [ ] Audio hookup (themes, EVA, unit voices)
 - [ ] Save/load (deterministic state dump)
 - [ ] Basic AI skirmish opponent (stage 2)
