@@ -160,6 +160,19 @@ impl Theater {
         }
     }
 
+    /// Theater object palette (`TEMPERAT.PAL` etc.). Ore/gem overlay SHPs
+    /// index into this one; under the `ISO*.PAL` they decode as noise.
+    pub fn theater_palette(self) -> &'static str {
+        match self {
+            Theater::Temperate => "TEMPERAT.PAL",
+            Theater::Snow => "SNOW.PAL",
+            Theater::Urban => "URBAN.PAL",
+            Theater::Desert => "DESERT.PAL",
+            Theater::Lunar => "LUNAR.PAL",
+            Theater::NewUrban => "URBANN.PAL",
+        }
+    }
+
     /// Unit palette (`UNIT*.PAL`) for this theater.
     pub fn unit_palette(self) -> &'static str {
         match self {

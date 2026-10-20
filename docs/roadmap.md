@@ -86,6 +86,11 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       low-power slowdown, roll-out from `Factory=` buildings. Headless
       EB1: no production -> Lost, produced army -> Won. Proof frames via
       `openyr <gamedir> EB1.MMX --frames <dir> <tick>...`)
+- [x] Playable prototype verified 2026-10-19: EB1.MMX loads and
+      renders, the window session goes live with orders and the
+      production sidebar, and the scripted skirmish plays to `Won`
+      headlessly (`openyr <gamedir> EB1.MMX --frames <dir> 900 1500 1800`).
+      Proof frames are kept outside the repo (they contain retail art).
 - [ ] Audio hookup (themes, EVA, unit voices)
 - [ ] Save/load (deterministic state dump)
 - [ ] Basic AI skirmish opponent (stage 2)

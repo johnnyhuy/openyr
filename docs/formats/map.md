@@ -112,7 +112,13 @@ cell centre:
   `[OverlayTypes]`) names an SHP under the theater extension
   (`TIB01.TEM`, `GEM01.TEM`, ...); `[OverlayDataPack]`'s byte is the
   frame (ore/gem growth stage — `TIB01` has 24 frames of increasing
-  density). Theater palette.
+  density). Overlays whose rules section has `Tiberium=yes` (ore
+  `TIB*`, gems `GEM*`) index the theater *object* palette
+  (`TEMPERAT.PAL`, `SNOW.PAL`, `URBAN.PAL`, `DESERT.PAL`, `LUNAR.PAL`,
+  `URBANN.PAL`): rendered with `ISO*.PAL` they decode as rainbow noise,
+  with the object palette `TIB01.URB` is gold ore and `GEM01.URB`
+  multicoloured gems (eyeballed, EB1.MMX, 2026-10-19). Other overlays
+  (walls, fences, props) are still drawn with `ISO*.PAL` — unverified.
 - `[Terrain]` objects (`TREE01` etc.): same theater-extension SHPs,
   frame 0, theater palette.
 - Placed infantry/aircraft: `<Image>.SHP` (`Image=` from `rulesmd.ini`,
