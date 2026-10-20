@@ -9,6 +9,30 @@ Native Rust rewrite of Red Alert 2: Yuri's Revenge (macOS first). Not a Wine wra
 - Real-data tests read `~/Games/RA2YR/prefix/drive_c/Westwood/RA2`; they skip when it is absent. Never commit game assets.
 - CI (`.github/workflows/ci.yml`, job `test`: fmt + clippy `-D warnings` + test) is a required check: never merge a PR while `test` is failing or pending. Server-side branch protection needs GitHub Pro or a public repo (private/Free returns 403 — attempted 2026-10-17), so until the owner enables one of those, this rule is enforced by convention: check `gh pr checks <n>` before every merge.
 
+## Sweep and merge
+
+Run this before starting new work, every time. Stale PRs and branches are the biggest source of wasted context here.
+
+- `gh pr list --repo johnnyhuy/openyr --state open --limit 50 --json number,title,headRefName,mergeable,mergeStateStatus,isDraft`
+- Merge every conflict-free PR with green checks: `gh pr merge <n> --squash --delete-branch`.
+- Merge complete drafts. Leave genuinely incomplete ones and say so.
+- Resolve merge conflicts on the branch rather than closing and reopening. Formatting-only conflicts are usually rustfmt colliding with hand-written code — take the rustfmt side, then confirm `cargo fmt --check`.
+- Close duplicates and superseded PRs with a comment explaining why. Never close a PR carrying work that exists nowhere else without saying so.
+- Delete branches on origin once their PR is merged or closed.
+- Check whether a branch is actually dead before deleting it. Squash merges break ancestry, so `merge-base --is-ancestor` always reports false — compare trees instead (`git diff --name-only origin/main origin/<branch>`) and confirm the work exists in the current layout under `crates/`.
+- If auto mode blocks a merge, fall back to `gh api -X PUT repos/johnnyhuy/openyr/pulls/<n>/merge -f merge_method=squash -f sha=<head-sha>` rather than just reporting it. Cap retries at two per run, then name the blocked PR in the output.
+- The PR list should be empty when a run finishes.
+
+## Evidence on every PR
+
+A PR with no screenshot, GIF, video, or terminal recording is an incomplete slice.
+
+- Capture in this order, falling through on failure without retrying a known-blocked path: live `screencapture -x` → `screencapture -V` recording → headless `--frames` (always available, same draw code as the window) → `script`/`asciinema` for non-visual slices.
+- Headless capture: `cargo run --release -- <gamedir> EB1.MMX --frames <dir> 300 900 1500 2400`. Choose ticks that actually show the change.
+- The frames contain EA artwork, so **never commit them**. Upload to a draft release (`gh release create <tag> --draft` then `gh release upload`) and link from the PR body. `proof/<slice>/` on a PR branch is the fallback only, and must be dropped before merge.
+- PR body order: what changed → exact verification commands and their pass/fail results → proof images with tick numbers or timestamps → reviewer notes. Write it to a file under `.tmp/` and use `gh pr edit <n> --body-file`.
+- Run output must carry the PR URL and the proof link, and must state which capture paths were permission-blocked so the next run skips them.
+
 ## Architecture rules
 
 - `crates/yr-formats` is pure parsing only — no filesystem writes, no platform code.
