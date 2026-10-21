@@ -2,7 +2,7 @@
 //!
 //! Ground classes come from the TMP `terrain_type` byte. The mapping was
 //! measured on the retail corpus (dominant type per tile-set filename
-//! prefix, temperate/urban/snow — see docs/formats/map.md):
+//! prefix, temperate/urban/snow, see docs/formats/map.md):
 //! 9 water, 10 beach, 11 paved, 12 road, 13 clear, 14 rough, 15 cliff.
 //! Rarer values (tunnels, bridge pieces) fall back to clear for now.
 //!

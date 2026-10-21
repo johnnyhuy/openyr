@@ -1,4 +1,4 @@
-//! mix-dump — inspect and extract MIX archives from a game install.
+//! mix-dump, inspect and extract MIX archives from a game install.
 //!
 //! Usage:
 //!   mix-dump info <archive.mix>

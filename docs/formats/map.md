@@ -32,7 +32,7 @@ in_size bytes`; each chunk decompresses independently to exactly
 are LZO1X ("format 5"); overlay chunks are Westwood LCW ("format 80").
 Both decoders require exact input consumption and exact output size.
 
-## `[IsoMapPack5]` — terrain cells
+## `[IsoMapPack5]`: terrain cells
 
 Decompressed layout: a sequence of 11-byte entries followed by a 4-byte
 zero trailer. Every retail map satisfies `(len - 4) % 11 == 0` with a zero
@@ -102,7 +102,7 @@ cell `(x, y)` at level `h` has its 60×30 diamond centred at
 `((x - y) * 30, (x + y) * 15 - h * 15)`, painted in increasing `x + y`
 order; a template's extra overlay is placed relative to the tile's
 diamond inside the template. Rendered retail maps show continuous roads,
-cliff faces aligning with their tops, and shorelines closing — confirming
+cliff faces aligning with their tops, and shorelines closing, confirming
 the 15 px-per-level step and the extra placement.
 
 Objects are drawn in the same painter order, SHP canvas centred on the
@@ -111,14 +111,14 @@ cell centre:
 - Overlay cells: the overlay type (index into `rulesmd.ini`
   `[OverlayTypes]`) names an SHP under the theater extension
   (`TIB01.TEM`, `GEM01.TEM`, ...); `[OverlayDataPack]`'s byte is the
-  frame (ore/gem growth stage — `TIB01` has 24 frames of increasing
+  frame (ore/gem growth stage, via `TIB01` has 24 frames of increasing
   density). Overlays whose rules section has `Tiberium=yes` (ore
   `TIB*`, gems `GEM*`) index the theater *object* palette
   (`TEMPERAT.PAL`, `SNOW.PAL`, `URBAN.PAL`, `DESERT.PAL`, `LUNAR.PAL`,
   `URBANN.PAL`): rendered with `ISO*.PAL` they decode as rainbow noise,
   with the object palette `TIB01.URB` is gold ore and `GEM01.URB`
   multicoloured gems (eyeballed, EB1.MMX, 2026-10-19). Other overlays
-  (walls, fences, props) are still drawn with `ISO*.PAL` — unverified.
+  (walls, fences, props) are still drawn with `ISO*.PAL`, unverified.
 - `[Terrain]` objects (`TREE01` etc.): same theater-extension SHPs,
   frame 0, theater palette.
 - Placed infantry/aircraft: `<Image>.SHP` (`Image=` from `rulesmd.ini`,
@@ -128,7 +128,7 @@ cell centre:
 - Structures are drawn as real SHPs: frame 0 plus its shadow frame
   (the second half of the SHP), centred on the art `Foundation=`
   footprint, with palette indices 16–31 (the player-colour ramp)
-  remapped to the owner house colour — the owner's `Color=` name
+  remapped to the owner house colour, the owner's `Color=` name
   resolved through the `[Colors]` HSV table in `rulesmd.ini`.
 - Voxel vehicles are drawn from their VXL body + `TUR`/`BARL` parts:
   orthographic iso projection rotated by facing, owner-colour remap,
@@ -138,7 +138,7 @@ cell centre:
 Building art resolution (found 2026-10-17 by matching SHP canvas
 sizes and filename hashes across the retail archives): for
 `NewTheater=yes` art, the filename's second character is the theater
-letter — `T` temperate, `A` snow, `U` urban, `D` desert, `L` lunar,
+letter, via `T` temperate, `A` snow, `U` urban, `D` desert, `L` lunar,
 `N` new urban (e.g. civilian `CALAB` -> `CTLAB.SHP` in `ISOTEMP.MIX`,
 `CULAB.SHP` in `ISOURB.MIX`). Player buildings often have no theater
 variant; the generic `G` variant in `GENERIC.MIX` is the fallback

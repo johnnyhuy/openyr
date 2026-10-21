@@ -5,7 +5,7 @@
 //! (enemy under cursor), `A` then right-click = attack-move, `S` stop,
 //! `H` harvest, right-drag / arrows pan, wheel or +/- zoom,
 //! Esc quit. Right-hand sidebar: left-click a cameo queues it at the
-//! war factory/barracks, right-click cancels (refund). Orders go through `yr_sim::Command` only — the UI never
+//! war factory/barracks, right-click cancels (refund). Orders go through `yr_sim::Command` only, the UI never
 //! mutates sim state directly (issue #15).
 
 use pixels::{Pixels, SurfaceTexture};
@@ -218,7 +218,7 @@ impl App {
             None => format!("waves {launched}/{total}"),
         };
         let title = format!(
-            "OpenYR — {} | ${} | tick {} | {waves} | {} selected{} | {:?}",
+            "OpenYR: {} | ${} | tick {} | {waves} | {} selected{} | {:?}",
             self.map_name,
             session.sim.credits(),
             session.sim.tick(),
@@ -694,7 +694,7 @@ impl ApplicationHandler for App {
             return;
         }
         let attrs = Window::default_attributes()
-            .with_title(format!("OpenYR — {}", self.map_name))
+            .with_title(format!("OpenYR: {}", self.map_name))
             .with_inner_size(LogicalSize::new(WIN_W, WIN_H));
         let window = std::sync::Arc::new(el.create_window(attrs).expect("create window"));
         let size = window.inner_size();
@@ -717,7 +717,7 @@ impl ApplicationHandler for App {
         match yr_app::session::load(&self.gamedir, &self.map_name, 42) {
             Ok(s) => {
                 println!(
-                    "OpenYR: session live — {} units, {} buildings, ${}",
+                    "OpenYR: session live, {} units, {} buildings, ${}",
                     s.sim.units().len(),
                     s.sim.buildings().len(),
                     s.sim.credits()

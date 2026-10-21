@@ -1,6 +1,6 @@
 # OpenYR
 
-A native, reverse-engineered rewrite of **Command & Conquer: Red Alert 2 — Yuri's Revenge** for modern macOS (Apple Silicon first). Long-term goal: a faithful, moddable engine that runs the original game assets natively — no Wine — so we can ship patches, quality-of-life fixes and new units.
+A native, reverse-engineered rewrite of **Command & Conquer: Red Alert 2: Yuri's Revenge** for modern macOS (Apple Silicon first). Long-term goal: a faithful, moddable engine that runs the original game assets natively, no Wine, so we can ship patches, quality-of-life fixes and new units.
 
 > Working name. This is a from-scratch engine in Rust that reads the original Westwood data files (MIX/CSF/INI/SHP/VXL/…). It ships **no EA assets**; you supply your own legally owned game install.
 
@@ -14,7 +14,7 @@ Wine runs YR on macOS, but it is a compatibility layer: resolution, input, colou
 
 ## Status
 
-**Pre-alpha — asset layer in progress.** See [docs/roadmap.md](docs/roadmap.md).
+**Pre-alpha, asset layer in progress.** See [docs/roadmap.md](docs/roadmap.md).
 
 | Area | State |
 |---|---|

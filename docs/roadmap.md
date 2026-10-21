@@ -4,13 +4,13 @@ Precedent says 2–3.5 years to a faithful playable port with a small team (re3 
 with ~6 people; OpenRCT2 ~3.5y). We are one person plus agents, aiming for an
 incremental, testable path where each milestone is independently useful.
 
-## M0 — Research and repo (done)
+## M0: Research and repo (done)
 
 - Precedent study: `docs/research/`
 - Repo, licence, method: `docs/legal.md`
 - Wine testbed retained as reference oracle at `~/Games/RA2YR`
 
-## M1 — Asset layer (done 2026-10-17; open items carried forward)
+## M1: Asset layer (done 2026-10-17; open items carried forward)
 
 - [x] MIX reader: classic + flagged headers, SHA1 trailer, encrypted (RSA/Blowfish) headers
 - [x] Filename hash (TS/CRC32 variant) with known-answer tests
@@ -30,7 +30,7 @@ incremental, testable path where each milestone is independently useful.
 - [x] MIX name database: every nested archive named; ~88% of all entries named
       via INI-derived candidates with content-kind collision rejection
 
-## M2 — Typed game data
+## M2: Typed game data
 
 - [x] Parse `rulesmd.ini`/`artmd.ini` into typed technos/weapons/warheads/projectiles (`yr-rules`)
 - [x] `mix-dump rules <gamedir> <ID>`: resolved unit, weapon chain, damage table, art provenance
@@ -40,12 +40,12 @@ incremental, testable path where each milestone is independently useful.
 - [ ] Engine defaults per key, verified against the Wine oracle
 - [ ] Name database: close the remaining ~12% (RA2-only VXLs, PCX, audio)
 
-## M3 — Renderer v1
+## M3: Renderer v1
 
 - [x] Map parsing: LZO/IsoMapPack5 + overlay packs, all 234 retail maps
       (`docs/formats/map.md`); tile-set index maps tile numbers to TMPs
 - [x] TMP terrain rendering from real maps as PNG (`mix-dump render-map`;
-      heights, cliff extras — eyeballed on urban + temperate retail maps)
+      heights, cliff extras, eyeballed on urban + temperate retail maps)
 - [x] Overlay objects (ore/gems/walls), `[Terrain]` objects and placed
       infantry/aircraft on the map (`mix-dump render-map`, eyeballed)
 - [x] Structures on the map (NewTheater letter + generic-`G` art,
@@ -62,7 +62,7 @@ incremental, testable path where each milestone is independently useful.
 - [ ] Sidebar/cameo UI from `ra2md.csf` strings (cameo build sidebar
       done in M5; CSF names, tabs and building placement still open)
 
-## M4 — Simulation v1
+## M4: Simulation v1
 
 - [x] Deterministic core: yr-sim skeleton (fixed-point, RNG, hash);
       terrain grid with passability/speed per locomotor (retail-verified)
@@ -71,7 +71,7 @@ incremental, testable path where each milestone is independently useful.
 - [x] Weapons/warheads/damage with the original formulas
 - [x] `sim-bench` headless benchmark; state hashing
 
-## M5 — Playable sandbox (the playable baseline)
+## M5: Playable sandbox (the playable baseline)
 
 Decided 2026-10-17: baseline first (sandbox, scripted spawns, no AI),
 then basic-AI skirmish, then data-driven addons, then roguelite mode.
@@ -95,25 +95,25 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
 - [ ] Save/load (deterministic state dump)
 - [ ] Basic AI skirmish opponent (stage 2)
 
-## M6 — Fidelity pass
+## M6: Fidelity pass
 
 - [ ] `parity-digest`: state-hash comparison vs Wine oracle runs
 - [ ] AI (original team/attack logic), superweapons, chronosphere-style teleports
 - [ ] Replays: read `.rmx` command streams and re-simulate
 
-## M7 — Modding surface (pulled forward, right after the baseline)
+## M7: Modding surface (pulled forward, right after the baseline)
 
 - [ ] Addon packs: data-driven unit definitions (INI overrides + new asset slots)
 - [ ] QoL patch layer (widescreen UI, hotkeys, queue controls, resolution)
 - [ ] Docs for adding units
 
-## M8 — RA3-style units
+## M8: RA3-style units
 
 - [ ] Reference-image-based new sprites/voxels and sounds (original creations,
-      inspired-by only — see `docs/legal.md`)
+      inspired-by only, see `docs/legal.md`)
 - [ ] Balance pass, skirmish validation
 
-## R — Roguelite mode (after the baseline)
+## R: Roguelite mode (after the baseline)
 
 - [ ] Run structure: chained short battles, escalating scripted forces,
       survivors/credits carry over, seeded determinism

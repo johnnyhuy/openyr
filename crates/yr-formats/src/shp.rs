@@ -1,4 +1,4 @@
-//! SHP (TS/RA2 variant) sprite reader — cameos, buildings, infantry, anims.
+//! SHP (TS/RA2 variant) sprite reader, cameos, buildings, infantry, anims.
 //!
 //! Spec with evidence: `docs/formats/shp.md`. Frames are palette-indexed;
 //! index 0 is transparent.
