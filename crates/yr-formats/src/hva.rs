@@ -1,4 +1,4 @@
-//! HVA (hierarchical voxel animation) reader — per-frame limb transforms
+//! HVA (hierarchical voxel animation) reader, per-frame limb transforms
 //! that pair with a VXL model of the same name.
 //!
 //! Spec with evidence: `docs/formats/vxl.md` (HVA section).

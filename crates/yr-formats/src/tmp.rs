@@ -51,7 +51,7 @@ pub struct TmpTile {
     pub y: i32,
     /// Cell elevation in height levels.
     pub height: i8,
-    /// Terrain class index (clear, water, rock, road, ... — see docs).
+    /// Terrain class index (clear, water, rock, road, ..., see docs).
     pub terrain_type: u8,
     /// Slope/ramp shape for elevated terrain (0 = flat).
     pub ramp_type: u8,

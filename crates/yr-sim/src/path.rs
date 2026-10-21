@@ -1,7 +1,7 @@
 //! A* pathfinding over the terrain grid.
 //!
 //! Deterministic by construction: fixed neighbour order, integer costs,
-//! and heap ties broken by (f, h, y, x) — never by hash or insertion
+//! and heap ties broken by (f, h, y, x), never by hash or insertion
 //! order. Diagonal steps cost 141% and may not cut corners past
 //! impassable orthogonal neighbours.
 

@@ -258,7 +258,7 @@ impl<'a> MixArchive<'a> {
         }
     }
 
-    /// SHA-1 of the body only — used to discover trailer semantics.
+    /// SHA-1 of the body only, used to discover trailer semantics.
     pub fn body_sha1(&self) -> [u8; 20] {
         sha1(&self.data[self.body_range()])
     }

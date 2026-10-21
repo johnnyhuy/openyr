@@ -1,5 +1,5 @@
 //! sim-bench: run a scripted deterministic sim and print the state hash.
-//! Usage: `sim-bench [ticks] [seed]` — identical arguments must always
+//! Usage: `sim-bench [ticks] [seed]`, identical arguments must always
 //! print identical hashes (the parity acid test in miniature).
 
 use yr_sim::{Command, Fix, Sim};

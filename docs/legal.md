@@ -2,7 +2,7 @@
 
 This project is a **from-scratch engine** for a game whose source code has never
 been released (EA's February 2025 source release covered Generals/Zero Hour,
-Renegade, Tiberian Dawn and Red Alert 1 — **not** Tiberian Sun or Red Alert 2/YR).
+Renegade, Tiberian Dawn and Red Alert 1, **not** Tiberian Sun or Red Alert 2/YR).
 Everything here is built by observation and documentation.
 
 ## Rules
@@ -17,7 +17,7 @@ Everything here is built by observation and documentation.
    (e.g. the Westwood MIX public key, which is a number) are recorded in
    `docs/formats/` with evidence from our own binary inspection.
 4. **New content must be original.** RA3-inspired units are original creations in
-   the *style* of the genre — no traced or extracted EA art, no EA voice lines, no
+   the *style* of the genre, no traced or extracted EA art, no EA voice lines, no
    trademarked logos or names in shipped assets.
 
 ## Precedent summary (detail in `docs/research/`)
@@ -28,7 +28,7 @@ Everything here is built by observation and documentation.
 | DevilutionX (Diablo) | No recorded action | Alive; user-supplied MPQs, non-commercial licence |
 | OpenRCT2 | No recorded action | Alive; requires original data files |
 | OpenRA | Tolerated, C&C community engagement | Alive |
-| Thyme (Generals) | — | Pre-2025 source release; GPL-2.0 |
+| Thyme (Generals) | No recorded action | Pre-2025 source release; GPL-2.0 |
 | GeneralsGameCode | EA released source 2025 | GPL-3.0 official continuation |
 
 Lessons: require user-owned data, keep the engine separate from assets, avoid
@@ -41,7 +41,7 @@ blessing for RA2/YR reimplementations.
 
 This repo is currently **local and private**. Publishing is a deliberate decision
 to take later: keep it private until M3+ shows the shape of the work, then publish
-engine code only (it already excludes assets). Not legal advice — just the
+engine code only (it already excludes assets). Not legal advice, just the
 precautionary posture adopted from the precedents.
 
 ## Licence

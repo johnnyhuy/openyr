@@ -1,4 +1,4 @@
-//! CSF (compiled string file) reader — `RA2MD.CSF` and friends.
+//! CSF (compiled string file) reader, via `RA2MD.CSF` and friends.
 //!
 //! Spec with evidence: `docs/formats/csf.md`.
 
@@ -26,7 +26,7 @@ pub struct CsfEntry {
     pub label: String,
     /// `None` for "NRTS" (null) strings.
     pub value: Option<String>,
-    /// "WRTS" records carry an extra ASCII reference after the value — the
+    /// "WRTS" records carry an extra ASCII reference after the value, the
     /// EVA/voice sound file stem in retail data (e.g. `ceva001e`).
     pub sound: Option<String>,
 }

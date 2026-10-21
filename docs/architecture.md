@@ -65,24 +65,24 @@ headless mode exist from day one.
 - wgpu Metal backend (OpenGL is deprecated on macOS); integer-scaled pixel viewport
   for the 640x480-era UI, native resolution for cursor/UI chrome
 - cursor confinement for edge-scrolling is a known pain point (winit `Confined` is
-  unreliable on macOS) — budget AppKit-level work here
+  unreliable on macOS), budget AppKit-level work here
 - distribution: app bundle, Developer ID + hardened runtime + notarisation from CI
   (OpenRA's build scripts are the template); ad-hoc signing for local dev builds
 
 ### Clean-room discipline
 
 File-format and behaviour knowledge comes from observation (binary inspection of
-retail files, behaviour under Wine) and from published documentation — not from
+retail files, behaviour under Wine) and from published documentation, not from
 copying YRpp/Phobos/XCC source into this repo. Format evidence lives in
 `docs/formats/`. See `docs/legal.md`.
 
 ## Testing strategy
 
-1. **Retail corpus tests** — parsers validated against the user's own archives
+1. **Retail corpus tests**: parsers validated against the user's own archives
    (`langmd.mix`, `theme.mix` plaintext; `ra2md.mix`, `expandmd01.mix` encrypted).
    Known-answer tests: `RA2MD.CSF` hash must match its index ID, header sizes must
    match file sizes exactly, CSF counts must round-trip.
-2. **Property/edge tests** — truncated files, empty archives, odd name lengths for
+2. **Property/edge tests**: truncated files, empty archives, odd name lengths for
    the hash function.
-3. **Parity tooling** (later) — `parity-digest` compares sim state hashes against
+3. **Parity tooling** (later), via `parity-digest` compares sim state hashes against
    the Wine install as oracle.

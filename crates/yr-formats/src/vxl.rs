@@ -1,4 +1,4 @@
-//! VXL voxel model reader — vehicle bodies, turrets, barrels.
+//! VXL voxel model reader, vehicle bodies, turrets, barrels.
 //!
 //! Spec with evidence: `docs/formats/vxl.md`. A file holds one or more limbs
 //! (sections); each limb is a sparse grid of (colour, normal) voxels with its

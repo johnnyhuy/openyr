@@ -4,7 +4,7 @@ Evidence-based spec for the `.mix` container used by RA2/YR. Sources: XCC-format
 documentation (Olaf van der Spek), EA's bundled XCC reader in
 `CNC_TS_and_RA2_Mission_Editor`, and **our own hexdump/parse of the retail files**
 at `~/Games/RA2YR/prefix/drive_c/Westwood/RA2` (2026-10-16). Where the two
-disagreed, retail data won — see "Empirical notes" at the bottom.
+disagreed, retail data won, see "Empirical notes" at the bottom.
 
 ## Layout
 
@@ -18,7 +18,7 @@ u16 file_count
 u32 data_size            total size of the body
 index: file_count * { u32 id, u32 offset, u32 size }   (offset relative to body start)
 body: raw file data (data_size bytes)
-[u8 sha1[20]]            only if flags & CHECKSUM — trailer after the body
+[u8 sha1[20]]            only if flags & CHECKSUM, trailer after the body
 ```
 
 Flag bits (in the 3rd byte of the flags word):
@@ -60,7 +60,7 @@ Names are hashed to `u32` IDs. For RA2/YR (the TS scheme):
 2. Pad to a multiple of 4 bytes: if `l & 3 != 0`, append one byte with value
    `l & 3`, then append `name[l & ~3]` (the first byte of the tail) `3 - (l & 3)`
    times. (e.g. `RA2MD.CSF` (9) -> `RA2MD.CSF \x01 F F`.)
-3. `id = CRC-32(padded)` — standard ZIP CRC-32 (poly `0xEDB88320`, init
+3. `id = CRC-32(padded)`, standard ZIP CRC-32 (poly `0xEDB88320`, init
    `0xFFFFFFFF`, final XOR), e.g. `zlib.crc32`.
 
 This is **not** the older rotate-and-add TD/RA1 hash
@@ -89,7 +89,7 @@ rotate-and-add hash gives `0xdb4f6217` (absent). The entry's payload begins with
 the CSF magic, confirming the mapping.
 
 The documented constant `0x54C2D545` ("local mix database.dat") is the
-**rotate-and-add** hash of that name — the TD/RA1 scheme. XCC-written archives
+**rotate-and-add** hash of that name, the TD/RA1 scheme. XCC-written archives
 carry that entry; the hash scheme of the *host* archive still applies to all
 normal entries.
 
@@ -177,6 +177,6 @@ and generic (`G`) variants. Build-ups (`MK`) ship for every theater.
 
 ## Related
 
-- `langmd.mix` contains a nested MIX (`flags 0x00030000`) — nested MIXes must be
+- `langmd.mix` contains a nested MIX (`flags 0x00030000`), nested MIXes must be
   recursed into (XCC `m_mix_expansion` behaviour).
 - `.mmx` files (e.g. `EB1.mix` as `EB1.mmx`) are map archives in the same format.
