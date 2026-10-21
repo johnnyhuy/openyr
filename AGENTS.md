@@ -23,6 +23,20 @@ Run this before starting new work, every time. Stale PRs and branches are the bi
 - If auto mode blocks a merge, fall back to `gh api -X PUT repos/johnnyhuy/openyr/pulls/<n>/merge -f merge_method=squash -f sha=<head-sha>` rather than just reporting it. Cap retries at two per run, then name the blocked PR in the output.
 - The PR list should be empty when a run finishes.
 
+## Issues
+
+The issue list is the backlog of record. Keep it honest in both directions.
+
+- Read `gh issue list --repo johnnyhuy/openyr --state open --limit 50` before picking work, alongside `docs/roadmap.md`. Roadmap bullets and issues should describe the same work; where they disagree, the roadmap is the source of truth and the issue needs correcting.
+- **Close what shipped.** When a merge lands the work behind an issue, close it. Prefer a `Closes #N` in the commit message so the link survives the squash; otherwise `gh issue close <n> --comment "<evidence>"`.
+- Verify before closing. Check the issue's acceptance criteria against `main`, not against the branch that closed it. A `[x]` roadmap bullet plus a live path in `main` is the standard test. Close it even when a follow-up remains, but note the remainder on the follow-up issue.
+- **Open what was discovered.** A bug found during a run gets an issue before the run ends, even when it is not fixed yet. One issue per distinct defect.
+- A bug found and fixed in the same run: still file it, then close it in the same run with the fix reference. The history is worth more than the empty count.
+- Title format follows the existing convention: `[M<n>] <what> (<area>)`. Keep the milestone prefix so the list stays sortable.
+- Label with `bug` for defects and `enhancement` for planned work. Add `wontfix` when declining, with the reason in a comment, then close.
+- Before filing, search: `gh issue list --repo johnnyhuy/openyr --state all --search "<terms>"`. Comment on the existing issue rather than opening a near-duplicate.
+- Never close an issue as a side effect of unrelated work. Close it in the run that delivered it, or leave it and say why not.
+
 ## Evidence on every PR
 
 A PR with no screenshot, GIF, video, or terminal recording is an incomplete slice.
