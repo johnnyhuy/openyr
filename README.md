@@ -14,7 +14,7 @@ Wine runs YR on macOS, but it is a compatibility layer: resolution, input, colou
 
 ## Status
 
-**Pre-alpha, asset layer in progress.** See [docs/roadmap.md](docs/roadmap.md).
+Pre-alpha playable sandbox on retail data. See [docs/roadmap.md](docs/roadmap.md).
 
 | Area | State |
 |---|---|
@@ -29,9 +29,10 @@ Wine runs YR on macOS, but it is a compatibility layer: resolution, input, colou
 | Audio (AUD, sound bank, IMA WAV; bit-exact vs ffmpeg) | done |
 | `yr-assets` VFS (engine lookup order) | done |
 | Typed rules: technos, weapons, warheads (M2) | in progress |
-| Renderer (M3) | next |
-| Simulation | not started |
-| Renderer / macOS app | not started |
+| Renderer (M3) | map and live retail art, animation polish pending |
+| Simulation | movement, combat, economy, production, scripted skirmish |
+| macOS app | live window, selection/orders, unit production sidebar |
+| Audio playback | retail theme, voices, weapon reports and EVA via CoreAudio |
 
 ## Layout
 
@@ -55,7 +56,28 @@ when present (skipped otherwise), so they double as a parity check against retai
 
 ## Using your own game data
 
-Point the tools at your own install:
+Launch a match with your own install:
+
+```sh
+cargo run --release -p yr-app -- "/path/to/RA2" EB1.MMX
+```
+
+Left-click or drag to select, right-click to order, A then right-click to
+attack-move, S to stop, H to harvest, and M to mute/unmute. The sidebar
+queues units with left-click and cancels with right-click. Arrow keys or
+right-drag pan; the wheel zooms; Esc quits. Audio starts automatically and
+missing samples or an unavailable output device leave the match running.
+
+To capture a scripted match without a window:
+
+```sh
+cargo run --release -p yr-app -- "/path/to/RA2" EB1.MMX --frames /tmp/openyr-proof 300 900 1500 1800
+```
+
+This writes PNG frames, `audio.wav` and `audio-cues.tsv`. They contain retail
+art and sound, so keep them outside the repository.
+
+Point the inspection tools at the same install:
 
 ```sh
 cargo run -p mix-dump -- list "/path/to/RA2/langmd.mix"

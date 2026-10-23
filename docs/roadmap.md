@@ -53,7 +53,8 @@ incremental, testable path where each milestone is independently useful.
 - [x] Voxel vehicles on the map (VXL body+turret projection; HVA
       transforms and normal lighting still open)
 - [x] Native window (`openyr`, winit+pixels/wgpu): rendered map with
-      drag/WASD pan and wheel zoom; screenshot-vs-PNG check still open, pan/zoom
+      drag/WASD pan and wheel zoom; initial redraw after session loading (#50);
+      screenshot-vs-PNG check still open
 - [x] SHP + VXL drawing with palette + shadow pass for live sim objects
       (`yr-render::sprites`: building art on the footprint, infantry
       standing frames per octant, voxel tanks, house-colour remap,
@@ -91,7 +92,11 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       production sidebar, and the scripted skirmish plays to `Won`
       headlessly (`openyr <gamedir> EB1.MMX --frames <dir> 900 1500 1800`).
       Proof frames are kept outside the repo (they contain retail art).
-- [ ] Audio hookup (themes, EVA, unit voices)
+- [x] Audio hookup (#17): retail theme loop, selection/order responses,
+      weapon reports, death sounds and EVA notifications through CPAL/CoreAudio;
+      M toggles mute. `--frames` exports the shared mix and a cue log alongside
+      proof frames. Spatial audio, pitch variation and playlist controls remain
+      fidelity work (`docs/formats/audio.md`).
 - [ ] Save/load (deterministic state dump)
 - [ ] Basic AI skirmish opponent (stage 2)
 
