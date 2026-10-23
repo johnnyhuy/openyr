@@ -83,3 +83,50 @@ bit-exactly only with its own:
   bank entries (both stereo IMA entries plus 25 mono), the latter by wrapping
   each entry in a `0x11` WAV header. ffmpeg emits the padded tail of the
   final WAV block; we truncate to the `fact` count.
+
+## Runtime lookup and playback (retail EB1, 2026-10-23)
+
+`yr-app::audio` keeps audio outside the deterministic simulation. The window
+opens the default output through [CPAL](https://docs.rs/cpal/0.18.2/cpal/),
+which uses CoreAudio on macOS. Missing files or an unavailable device leave
+the match running silently. M toggles mute without pausing playback.
+
+Observed in the retail INIs and archives:
+
+- `rulesmd.ini` assigns `VoiceSelect`, `VoiceMove` and `VoiceAttack` to
+  sound definitions. `E1` uses `GISelect`, `GIMove` and `GIAttackCommand`.
+  Its `Primary=M60` resolves to `Report=GIAttack` when a `Fired` event arrives.
+  `DieSound` is resolved from the last known type after a `Died` event.
+- `soundmd.ini` has whitespace-separated sample stems in `Sounds`, sometimes
+  prefixed with `$` for voices. `GISelect` lists `$igisea` through `$igisef`.
+  `Volume=85` becomes 0.85 gain. The application cycles sample variants using
+  its own counter, leaving the simulation RNG untouched.
+- `evamd.ini` maps event names directly to side-specific samples. The current
+  sandbox uses `Allied`: `EVA_UnitReady` maps to `ceva062`, training to
+  `ceva066`, victory to `ceva022`, defeat to `ceva023`. CSF sound references
+  are a fallback when an EVA event is supplied as a `VOX:*` label.
+- Both sound banks must stay paired with their own index. In this install,
+  `AUDIO.IDX` resolves to `LANGMD.MIX/AUDIOMD.MIX` (2,285 entries), while
+  `LANGUAGE.MIX/AUDIO.MIX` has 1,153 more. The VFS winner is searched first,
+  then the YR and RA2 archive banks. Loose WAV/AUD samples take precedence.
+- `thememd.ini` lists `BrainFreeze` as the first normal theme, with
+  `Sound=BrainFre`. Its stereo IMA WAV is in `THEMEMD.MIX`. The app loops
+  the first normal theme whose PCM decodes, skipping menu/loading themes.
+
+The mixer converts mono/stereo PCM to the output rate using linear
+interpolation. Music runs at 18 percent, voices/EVA at 80 percent and
+weapon/death effects at 50 percent, multiplied by the definition's volume.
+Responses replace earlier responses; EVA lines play serially with at most
+eight waiting. At most 32 voices and 64 device commands are retained.
+Repeated EVA notifications have cooldowns to avoid a line for every casualty.
+The callback receives decoded PCM only; archive reads and decoding stay on
+the app thread. This is a first playback pass, without spatial attenuation,
+pitch variation (`FShift`), original sound priorities, or playlist controls.
+
+`openyr <gamedir> EB1.MMX --frames <dir> 300 900 1500 1800` now writes
+`audio.wav` (44,100 Hz stereo PCM) and `audio-cues.tsv` beside the frames.
+The cue log records simulation ticks at which sounds are submitted; EVA
+playback can start later because speech is serialized. The WAV uses the
+same mixer as the device callback and lasts one fifteenth of a second per
+tick. It is an offline mix, not a microphone or device-loopback recording.
+These outputs contain retail audio/art and must remain outside git.

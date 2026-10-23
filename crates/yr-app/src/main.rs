@@ -4,7 +4,7 @@
 //! Left-click / box-drag select own units, right-click move or attack
 //! (enemy under cursor), `A` then right-click = attack-move, `S` stop,
 //! `H` harvest, right-drag / arrows pan, wheel or +/- zoom,
-//! Esc quit. Right-hand sidebar: left-click a cameo queues it at the
+//! M toggles audio, Esc quits. Right-hand sidebar: left-click a cameo queues it at the
 //! war factory/barracks, right-click cancels (refund). Orders go through `yr_sim::Command` only, the UI never
 //! mutates sim state directly (issue #15).
 
@@ -53,6 +53,7 @@ struct App {
     /// Retail art for live units/buildings (decoded lazily while drawing).
     sprites: Option<std::cell::RefCell<yr_render::sprites::SpriteBank>>,
     session: Option<Session>,
+    audio: Option<yr_app::audio::AudioScene>,
     view: View,
     selected: BTreeSet<u32>,
     pending: Vec<Command>,
@@ -72,6 +73,15 @@ struct App {
 }
 
 impl App {
+    fn report_audio(&self) {
+        if let Some(audio) = &self.audio {
+            println!(
+                "OpenYR: audio callback delivered {} frames",
+                audio.frames_played()
+            );
+        }
+    }
+
     fn window_to_map(&self, pos: (f64, f64)) -> (f32, f32) {
         (
             self.view.cam_x + pos.0 as f32 / self.view.zoom,
@@ -128,6 +138,7 @@ impl App {
                 self.selected.insert(u.id);
             }
         }
+        self.selection_audio();
         self.view.dirty = true;
     }
 
@@ -160,7 +171,14 @@ impl App {
                 self.selected.insert(u.id);
             }
         }
+        self.selection_audio();
         self.view.dirty = true;
+    }
+
+    fn selection_audio(&mut self) {
+        if let (Some(audio), Some(session)) = (&mut self.audio, &self.session) {
+            audio.select(session, self.selected.iter().copied());
+        }
     }
 
     fn issue_order(&mut self, pos: (f64, f64)) {
@@ -208,8 +226,18 @@ impl App {
             return;
         };
         let cmds = std::mem::take(&mut self.pending);
+        if let Some(audio) = &mut self.audio {
+            audio.commands(session, &cmds);
+        }
         session.step(&cmds);
-        let _ = session.sim.drain_events(); // audio lands in #17
+        let events = session.sim.drain_events();
+        if let Some(audio) = &mut self.audio {
+            audio.update(session, &events);
+            if audio.device_failed() {
+                eprintln!("OpenYR: audio device stopped; continuing silently");
+                self.audio = None;
+            }
+        }
         self.selected
             .retain(|id| session.sim.units().iter().any(|u| u.id == *id));
         let (launched, total) = session.waves_progress();
@@ -722,11 +750,16 @@ impl ApplicationHandler for App {
                     s.sim.buildings().len(),
                     s.sim.credits()
                 );
+                match yr_app::audio::AudioScene::live(&self.gamedir, &self.map_name, &s) {
+                    Ok(audio) => self.audio = Some(audio),
+                    Err(e) => eprintln!("OpenYR: audio unavailable ({e}); continuing silently"),
+                }
                 self.session = Some(s);
             }
             Err(e) => eprintln!("OpenYR: session unavailable ({e}); view-only"),
         }
-        println!("OpenYR: left-click/box select, right-click order, A=attack-move, S=stop, H=harvest, right-drag/arrows pan, wheel zoom; sidebar: left-click build, right-click cancel");
+        println!("OpenYR: left-click/box select, right-click order, A=attack-move, S=stop, H=harvest, M=mute, right-drag/arrows pan, wheel zoom; sidebar: left-click build, right-click cancel");
+        window.request_redraw();
         self.window = Some(window);
         self.pixels = Some(pixels);
         self.view.dirty = true;
@@ -735,7 +768,10 @@ impl ApplicationHandler for App {
 
     fn window_event(&mut self, el: &ActiveEventLoop, _id: WindowId, event: WindowEvent) {
         match event {
-            WindowEvent::CloseRequested => el.exit(),
+            WindowEvent::CloseRequested => {
+                self.report_audio();
+                el.exit();
+            }
             WindowEvent::Resized(size) => {
                 if let Some(p) = &mut self.pixels {
                     let _ = p.resize_surface(size.width.max(1), size.height.max(1));
@@ -833,12 +869,18 @@ impl ApplicationHandler for App {
                                     if self.attack_move {
                                         self.attack_move = false;
                                     } else {
+                                        self.report_audio();
                                         el.exit();
                                     }
                                 }
                                 KeyCode::Equal => self.view.zoom = (self.view.zoom * 1.2).min(4.0),
                                 KeyCode::Minus => self.view.zoom = (self.view.zoom / 1.2).max(0.25),
                                 KeyCode::KeyA => self.attack_move = true,
+                                KeyCode::KeyM if !event.repeat => {
+                                    if let Some(audio) = &self.audio {
+                                        audio.toggle_mute();
+                                    }
+                                }
                                 KeyCode::KeyS => {
                                     for &id in &self.selected {
                                         self.pending.push(Command::Stop { id });
@@ -924,6 +966,7 @@ fn new_app(gamedir: String, map_name: String, scale: u32) -> App {
         map: None,
         sprites: None,
         session: None,
+        audio: None,
         view: View {
             cam_x: 0.0,
             cam_y: 0.0,
@@ -960,6 +1003,12 @@ fn headless_frames(mut app: App, dir: &str, ticks: &[u64]) -> Result<(), String>
     app.sprites = load_sprites(&app.gamedir, &app.map_name);
     app.session = Some(yr_app::session::load(&app.gamedir, &app.map_name, 42)?);
     std::fs::create_dir_all(dir).map_err(|e| e.to_string())?;
+    app.audio = Some(yr_app::audio::AudioScene::capture(
+        &app.gamedir,
+        &app.map_name,
+        app.session.as_ref().ok_or("no session")?,
+        dir,
+    )?);
     let (fw, fh) = (WIN_W, WIN_H);
     let last = ticks.iter().copied().max().unwrap_or(0);
     let mut frame = vec![0u8; (fw * fh * 4) as usize];
@@ -994,6 +1043,9 @@ fn headless_frames(mut app: App, dir: &str, ticks: &[u64]) -> Result<(), String>
             }
         }
         app.selected = army.iter().copied().collect();
+        if t == 1 {
+            app.selection_audio();
+        }
         app.tick_session();
         if ticks.contains(&t) {
             let session = app.session.as_ref().ok_or("no session")?;
@@ -1028,6 +1080,10 @@ fn headless_frames(mut app: App, dir: &str, ticks: &[u64]) -> Result<(), String>
             );
         }
     }
+    if let Some(audio) = app.audio.take() {
+        audio.finish()?;
+    }
+    println!("{dir}/audio.wav: stereo 44100 Hz, {last} ticks; cues in {dir}/audio-cues.tsv");
     Ok(())
 }
 
