@@ -59,6 +59,52 @@ the raw INI lines.
 - `MirageWH` loads as its own warhead (wood 30%), and `LUNARWH` keeps its own
   `Verses`.
 
+## Structures and placement (issue #46)
+
+Keys read for buildings, with retail evidence from `rulesmd.ini`:
+
+| Key | Meaning | Retail evidence |
+|---|---|---|
+| `Prerequisite=` | Type ids or generic tokens that must be owned | `GAREFN`: `POWER,GACNST`; `GAWEAP`: `PROC,GAPILE,GACNST` |
+| `PrerequisitePower=` etc. in `[General]` | Buildings behind the tokens `POWER`, `FACTORY`, `BARRACKS`, `RADAR`, `TECH`, `PROC` (`PROC` also takes `PrerequisiteProcAlternate=`) | `PrerequisitePower=GAPOWR,NAPOWR,NANRCT,YAPOWR`; `PrerequisiteProcAlternate=SMIN` |
+| `Adjacent=` | Most empty cells allowed between the new footprint and an owned base building | 2 on most structures, 4 on defences, 8 on walls, 12 on shipyards |
+| `BaseNormal=` | `no` means the building does not extend the buildable area | defences (`GAPILL`, `ATESLA`, `NASAM`) and walls |
+| `FreeUnit=` | Unit that rolls out once the building is placed | `GAREFN`: `CMIN`, `NAREFN`: `HARV` |
+| `Refinery=` | Takes harvester deliveries | `GAREFN`, `NAREFN` |
+| `ConstructionYard=`, `Factory=BuildingType` | Hosts the structure queue | `GACNST` (also `TechLevel=-1`: deployed from an MCV, never built) |
+| `Wall=`, `WaterBound=` | Walls (overlay-like) and shipyards | `GAWALL`, `GAYARD` |
+| `RequiredHouses=`, `ForbiddenHouses=` | Country gates | `AMRADR` Americans only, `GAAIRC` not Americans, `SNIPE` British only |
+
+YR does not gate sides through `Owner=`: every retail structure lists all
+ten playable countries there (`GAPOWR` includes `Russians` and
+`YuriCountry`). The side gate is the construction yard in `Prerequisite=`
+(`GAPOWR` needs `GACNST`, `NAPOWR` needs `NACNST`). The sidebar therefore
+offers the structures whose `Prerequisite=` names the player's yard, with
+`TechLevel=` from 1 to the skirmish level (10), filtered by the player's
+country. `[Countries]` lists `0=Americans` first ("dialog returns 0 for the
+first listing"), so the sandbox player is American. Walls, shipyards and
+the yard are left out. On EB1 that gives 16 Allied structures after the
+unit slots.
+
+Placement rules in the sim (`Sim::can_place`), shared by the window ghost
+and the `PlaceProduced` command:
+
+- every footprint cell is on the grid, has no ramp and sits at one height
+  level;
+- every cell is land a tracked unit could enter (no water, cliff, wall or
+  building) with no overlay (ore, gems, debris) and no ground unit on it;
+- some footprint cell comes within `Adjacent=` empty cells (Chebyshev) of a
+  building the same owner has with `BaseNormal=` not `no`. `Adjacent=0`
+  therefore means touching, the ModEnc reading; the exact radius and the
+  ore and slope rules are not yet verified against the Wine oracle.
+
+A structure costs and builds like a unit (gradual payment, `BuildSpeed`
+time, low-power slowdown), one at a time, then waits at the head of its
+queue until placed; cancelling a finished one refunds the full `Cost=`.
+Audio: `EVA_ConstructionComplete` when it finishes, and the sound named by
+`[AudioVisual] BuildingSlam=` (`PlaceBuilding`, sample `uplace`) when it goes
+down.
+
 ## Not yet modelled
 
 - Ares-style `Inherit=`/`+=` (not vanilla).

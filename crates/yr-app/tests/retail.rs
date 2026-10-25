@@ -210,6 +210,8 @@ fn eb1_sidebar_slots_produce_units() {
         .iter()
         .map(|b| (b.id.as_str(), b.cost))
         .collect();
+    // Sandbox unit picks (the British-only sniper is not American), then
+    // every Allied structure from `[BuildingTypes]` in rules order.
     assert_eq!(
         slots,
         vec![
@@ -219,7 +221,22 @@ fn eb1_sidebar_slots_produce_units() {
             ("CMIN", 1400),
             ("E1", 200),
             ("GGI", 400),
-            ("SNIPE", 600)
+            ("GAPOWR", 800),
+            ("GAREFN", 2000),
+            ("GAPILE", 500),
+            ("GADEPT", 800),
+            ("GATECH", 2000),
+            ("GAWEAP", 2000),
+            ("NASAM", 1000),
+            ("GACSPH", 2500),
+            ("GAWEAT", 5000),
+            ("ATESLA", 1500),
+            ("GASPYSAT", 1500),
+            ("GAGAP", 1000),
+            ("GAPILL", 500),
+            ("GAOREP", 2500),
+            ("AMRADR", 1000),
+            ("GAROBO", 600),
         ]
     );
     for b in &session.buildables {
@@ -294,4 +311,192 @@ fn eb1_sidebar_slots_produce_units() {
         session.outcome
     );
     assert_eq!(session.outcome, Outcome::Won);
+}
+
+fn eb1_session(seed: u64) -> Option<yr_app::session::Session> {
+    let dir = PathBuf::from(std::env::var("HOME").unwrap_or_default())
+        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    if !dir.is_dir() {
+        eprintln!("skip: retail install not present");
+        return None;
+    }
+    let mut fs = AssetFs::open(&dir).expect("install opens");
+    let map =
+        MapFile::parse(&String::from_utf8_lossy(fs.read("EB1.MMX").unwrap())).expect("EB1 parses");
+    let mut rules_ini = IniFile::parse(&String::from_utf8_lossy(fs.read("RULESMD.INI").unwrap()));
+    rules_ini.merge_from(&map.ini);
+    let art_ini = IniFile::parse(&String::from_utf8_lossy(fs.read("ARTMD.INI").unwrap()));
+    let rules = Rules::load(&rules_ini, &art_ini);
+    let overlay_types = yr_render::type_list(&rules_ini, "OverlayTypes");
+    Some(setup(&mut fs, &map, &rules, &overlay_types, seed).expect("session sets up"))
+}
+
+fn slot_of(session: &yr_app::session::Session, id: &str) -> usize {
+    session
+        .buildables
+        .iter()
+        .position(|b| b.id == id)
+        .unwrap_or_else(|| panic!("{id} slot"))
+}
+
+/// Queue structure `slot`, step until it is ready, return the ticks taken.
+fn build_ready(session: &mut yr_app::session::Session, slot: usize) -> u64 {
+    let cmd = session.produce(slot).expect("structure queues");
+    session.step(&[cmd]);
+    let mut ticks = 1;
+    while session.ready_structure() != Some(slot) {
+        session.step(&[]);
+        ticks += 1;
+        assert!(ticks < 5000, "structure never finished");
+    }
+    ticks
+}
+
+/// First valid origin for `slot` in rings around the player's yard.
+fn spot_near_yard(session: &yr_app::session::Session, slot: usize) -> ((u16, u16), (u16, u16)) {
+    let yard = session
+        .sim
+        .buildings()
+        .iter()
+        .find(|b| b.owner == yr_sim::OWNER_PLAYER && b.role == yr_sim::Role::ConstructionYard)
+        .expect("player construction yard")
+        .cell;
+    for r in 0..16i32 {
+        for dy in -r..=r {
+            for dx in -r..=r {
+                let o = (
+                    (i32::from(yard.0) + dx) as u16,
+                    (i32::from(yard.1) + dy) as u16,
+                );
+                if session.can_place(slot, o) {
+                    return (yard, o);
+                }
+            }
+        }
+    }
+    panic!("no valid spot near the yard");
+}
+
+/// Issue #46: structures build at the construction yard, wait, and go
+/// down only on valid ground; a placed power plant powers, a placed
+/// refinery brings its free harvester, a placed war factory produces.
+#[test]
+fn eb1_structures_build_place_and_work() {
+    let Some(mut session) = eb1_session(11) else {
+        return;
+    };
+    let plant = slot_of(&session, "GAPOWR");
+    let lab = slot_of(&session, "GATECH");
+    assert!(session.prerequisites_met(plant), "GACNST owned");
+    assert!(!session.prerequisites_met(lab), "no radar yet");
+    assert!(
+        session.produce(lab).is_none(),
+        "missing prerequisite refuses"
+    );
+
+    let credits = session.sim.credits();
+    let ticks = build_ready(&mut session, plant);
+    assert_eq!(session.sim.credits(), credits - 800, "full Cost= drawn");
+    assert!(
+        ticks >= u64::from(session.buildables[plant].ticks),
+        "not instant"
+    );
+    assert!(
+        session.produce(slot_of(&session, "GAREFN")).is_none(),
+        "one structure at a time"
+    );
+
+    let (yard, good) = spot_near_yard(&session, plant);
+    assert!(!session.can_place(plant, yard), "on the construction yard");
+    assert!(session.place(plant, yard).is_none());
+    assert!(
+        !session.can_place(plant, (good.0 + 40, good.1 + 40)),
+        "far from the base"
+    );
+    assert!(!session.can_place(plant, (0, 0)), "off the playable grid");
+
+    // Determinism: the hash reflects the placement.
+    let mut unplaced = session.sim.clone();
+    let (power_before, _) = session.sim.power();
+    let buildings_before = session.sim.buildings().len();
+    let cmd = session.place(plant, good).expect("valid spot places");
+    session.step(&[cmd]);
+    unplaced.step(&[]);
+    assert_ne!(session.sim.state_hash(), unplaced.state_hash());
+    assert_eq!(session.sim.buildings().len(), buildings_before + 1);
+    assert_eq!(
+        session.sim.power().0,
+        power_before + 200,
+        "power plant powers"
+    );
+    assert_eq!(session.ready_structure(), None);
+    let placed = session.sim.buildings().last().unwrap();
+    assert_eq!((placed.cell, placed.owner), (good, yr_sim::OWNER_PLAYER));
+
+    // Refinery: placement brings its `FreeUnit=` harvester.
+    let refinery = slot_of(&session, "GAREFN");
+    build_ready(&mut session, refinery);
+    let (_, spot) = spot_near_yard(&session, refinery);
+    let units_before: Vec<u32> = session.sim.units().iter().map(|u| u.id).collect();
+    session.step(&[session.place(refinery, spot).unwrap()]);
+    let free = session
+        .sim
+        .units()
+        .iter()
+        .find(|u| !units_before.contains(&u.id))
+        .expect("free harvester");
+    assert_eq!(session.kinds[usize::from(free.kind)], "CMIN");
+    assert_eq!(
+        (free.owner, free.role),
+        (yr_sim::OWNER_PLAYER, yr_sim::Role::Harvester)
+    );
+    assert_eq!(
+        session.sim.buildings().last().unwrap().role,
+        yr_sim::Role::Refinery
+    );
+
+    // Cancel after completion refunds the full cost.
+    let pile = slot_of(&session, "GAPILE");
+    build_ready(&mut session, pile);
+    let before = session.sim.credits();
+    session.step(&[session.cancel(pile).unwrap()]);
+    assert_eq!(session.sim.credits(), before + 500);
+    assert_eq!(session.ready_structure(), None);
+
+    // A second war factory placed on the map takes over production once
+    // the starting one is gone.
+    let weap = slot_of(&session, "GAWEAP");
+    build_ready(&mut session, weap);
+    let (_, spot) = spot_near_yard(&session, weap);
+    session.step(&[session.place(weap, spot).unwrap()]);
+    let new_weap = session.sim.buildings().last().unwrap().id;
+    let old: Vec<Command> = session
+        .sim
+        .buildings()
+        .iter()
+        .filter(|b| {
+            b.owner == yr_sim::OWNER_PLAYER
+                && b.role == yr_sim::Role::WarFactory
+                && b.id != new_weap
+        })
+        .map(|b| Command::Destroy { id: b.id })
+        .collect();
+    assert!(!old.is_empty());
+    session.step(&old);
+    let tank = session.produce(0).expect("tank queues at the new factory");
+    session.step(&[tank]);
+    let mut rolled = false;
+    for _ in 0..2000 {
+        session.step(&[]);
+        if session
+            .sim
+            .drain_events()
+            .iter()
+            .any(|e| matches!(e, yr_sim::Event::Produced { kind: 0, .. }))
+        {
+            rolled = true;
+            break;
+        }
+    }
+    assert!(rolled, "placed war factory produces");
 }

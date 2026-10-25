@@ -5,8 +5,10 @@
 //! (enemy under cursor), `A` then right-click = attack-move, `S` stop,
 //! `H` harvest, right-drag / arrows pan, wheel or +/- zoom,
 //! M toggles audio, Esc quits. Right-hand sidebar: left-click a cameo queues it at the
-//! war factory/barracks, right-click cancels (refund). Orders go through `yr_sim::Command` only, the UI never
-//! mutates sim state directly (issue #15).
+//! war factory/barracks/construction yard, right-click cancels (refund). A finished
+//! structure (green outline) is placed by clicking its cameo, then a map cell under a
+//! green ghost; right-click or Esc backs out of placement (issue #46). Orders go through
+//! `yr_sim::Command` only, the UI never mutates sim state directly (issue #15).
 
 use pixels::{Pixels, SurfaceTexture};
 use std::collections::BTreeSet;
@@ -28,6 +30,10 @@ const PLAYER_COL: [u8; 4] = [64, 255, 128, 255];
 const ENEMY_COL: [u8; 4] = [255, 64, 64, 255];
 const NEUTRAL_COL: [u8; 4] = [180, 180, 180, 255];
 const SELECT_COL: [u8; 4] = [255, 255, 255, 255];
+const READY_COL: [u8; 4] = [96, 255, 96, 255];
+/// Placement ghost tints (RGB + blend weight out of 255).
+const GHOST_OK: [u8; 4] = [64, 255, 96, 110];
+const GHOST_BAD: [u8; 4] = [255, 48, 48, 130];
 
 /// Production sidebar: two columns of 60x48 cameos on the right edge.
 const SIDEBAR_W: u32 = 136;
@@ -70,6 +76,8 @@ struct App {
     title: String,
     /// The match result has been printed once.
     announced: bool,
+    /// Sidebar slot of the finished structure being placed.
+    placing: Option<usize>,
 }
 
 impl App {
@@ -202,6 +210,45 @@ impl App {
         self.attack_move = false;
     }
 
+    /// Footprint origin and validity for the structure being placed,
+    /// with the cursor over the map.
+    fn placement_target(&self) -> Option<(usize, (u16, u16), bool)> {
+        let slot = self.placing?;
+        if self.in_sidebar(self.cursor) {
+            return None;
+        }
+        let session = self.session.as_ref()?;
+        let cell = self.window_to_cell(self.cursor)?;
+        let origin =
+            session.placement_origin(slot, (cell.0.floor() as i32, cell.1.floor() as i32))?;
+        Some((slot, origin, session.can_place(slot, origin)))
+    }
+
+    /// Left-click on the map while placing: put the structure down when
+    /// the ghost is green, otherwise keep placing.
+    fn try_place(&mut self) {
+        let Some((slot, origin, true)) = self.placement_target() else {
+            return;
+        };
+        if let Some(cmd) = self.session.as_ref().and_then(|s| s.place(slot, origin)) {
+            self.pending.push(cmd);
+            self.placing = None;
+        }
+    }
+
+    /// Left-click on a cameo: start placing a finished structure, else
+    /// queue the slot.
+    fn sidebar_click(&mut self, slot: usize) {
+        let Some(session) = self.session.as_ref() else {
+            return;
+        };
+        if session.ready_structure() == Some(slot) {
+            self.placing = Some(slot);
+        } else if let Some(cmd) = session.produce(slot) {
+            self.pending.push(cmd);
+        }
+    }
+
     /// Sidebar slot under a frame-space position.
     fn sidebar_slot_at(&self, pos: (f64, f64)) -> Option<usize> {
         let session = self.session.as_ref()?;
@@ -240,6 +287,9 @@ impl App {
         }
         self.selected
             .retain(|id| session.sim.units().iter().any(|u| u.id == *id));
+        if self.placing.is_some() && session.ready_structure() != self.placing {
+            self.placing = None;
+        }
         let (launched, total) = session.waves_progress();
         let waves = match session.next_wave_in_secs() {
             Some(s) => format!("wave {}/{total} in {s}s", launched + 1),
@@ -251,7 +301,9 @@ impl App {
             session.sim.credits(),
             session.sim.tick(),
             self.selected.len(),
-            if self.attack_move {
+            if self.placing.is_some() {
+                " | PLACING"
+            } else if self.attack_move {
                 " | ATTACK-MOVE"
             } else {
                 ""
@@ -308,6 +360,10 @@ impl App {
             art: Option<(String, u8, u8)>,
         }
         let mut markers: Vec<Marker> = Vec::new();
+        // Placement ghost: window centres of the footprint cells.
+        let mut ghost: Vec<(f32, f32)> = Vec::new();
+        let mut ghost_ok = false;
+        let cell_half = 30.0 / map.scale.max(1) as f32 * self.view.zoom;
         if let Some(session) = &self.session {
             let sim = &session.sim;
             let zoom = self.view.zoom;
@@ -327,6 +383,16 @@ impl App {
                 )
             };
             let kind_id = |k: u16| session.kinds.get(usize::from(k)).cloned();
+            if let Some((slot, (ox, oy), ok)) = self.placement_target() {
+                let (w, h) = session.buildables[slot].footprint().unwrap_or((1, 1));
+                ghost_ok = ok;
+                for dy in 0..h {
+                    for dx in 0..w {
+                        let (cx, cy) = (f32::from(ox + dx) + 0.5, f32::from(oy + dy) + 0.5);
+                        ghost.push(to_win(cx, cy));
+                    }
+                }
+            }
             for b in sim.buildings() {
                 // Neutral map structures are already drawn as art; mark
                 // them only once they take damage.
@@ -430,8 +496,21 @@ impl App {
                 );
             }
         }
+        let tint = if ghost_ok { GHOST_OK } else { GHOST_BAD };
+        for &(gx, gy) in &ghost {
+            blend_diamond(frame, fw, fh, gx, gy, cell_half - 1.0, tint);
+            draw_diamond_outline(
+                frame,
+                fw,
+                fh,
+                gx,
+                gy,
+                cell_half,
+                [tint[0], tint[1], tint[2], 255],
+            );
+        }
         if let Some(session) = &self.session {
-            draw_sidebar(frame, fw, fh, session);
+            draw_sidebar(frame, fw, fh, session, self.placing);
         }
         // Box-select rubber band.
         if let (Some(a), false) = (self.left_down, self.right_panning) {
@@ -452,9 +531,10 @@ fn slot_origin(fw: u32, slot: usize) -> (i32, i32) {
 }
 
 /// Dark panel, credits readout, then one cameo per buildable with its
-/// queue count and a build-progress wipe; slots whose factory is gone
-/// are dimmed.
-fn draw_sidebar(frame: &mut [u8], fw: u32, fh: u32, session: &Session) {
+/// queue count and a build-progress wipe; slots whose factory is gone or
+/// whose prerequisites are missing are dimmed. A finished structure gets
+/// a green outline, the one being placed a white one.
+fn draw_sidebar(frame: &mut [u8], fw: u32, fh: u32, session: &Session, placing: Option<usize>) {
     let x0 = (fw - SIDEBAR_W) as i32;
     for y in 0..fh as i32 {
         for x in x0..fw as i32 {
@@ -476,7 +556,8 @@ fn draw_sidebar(frame: &mut [u8], fw: u32, fh: u32, session: &Session) {
         let host = sim
             .buildings()
             .iter()
-            .any(|h| h.owner == yr_sim::OWNER_PLAYER && h.role == b.factory.role());
+            .any(|h| h.owner == yr_sim::OWNER_PLAYER && h.role == b.factory.role())
+            && session.prerequisites_met(i);
         if let Some((w, h, px)) = &b.cameo {
             for y in 0..(*h as i32).min(CAMEO_H) {
                 for x in 0..(*w as i32).min(CAMEO_W) {
@@ -519,6 +600,23 @@ fn draw_sidebar(frame: &mut [u8], fw: u32, fh: u32, session: &Session) {
                 count as i64,
                 [255, 255, 255, 255],
             );
+        }
+        let outline = if placing == Some(i) {
+            Some(SELECT_COL)
+        } else if session.ready_structure() == Some(i) {
+            Some(READY_COL)
+        } else {
+            None
+        };
+        if let Some(col) = outline {
+            for inset in 0..2 {
+                let a = (f64::from(sx + inset), f64::from(sy + inset));
+                let b = (
+                    f64::from(sx + CAMEO_W - 1 - inset),
+                    f64::from(sy + CAMEO_H - 1 - inset),
+                );
+                draw_rect_outline(frame, fw, fh, a, b, col);
+            }
         }
     }
 }
@@ -661,6 +759,26 @@ fn draw_diamond(frame: &mut [u8], fw: u32, fh: u32, cx: f32, cy: f32, half_w: f3
     }
 }
 
+/// Fill a cell diamond, blending `col` (alpha = weight) over the frame.
+fn blend_diamond(frame: &mut [u8], fw: u32, fh: u32, cx: f32, cy: f32, half_w: f32, col: [u8; 4]) {
+    let half_h = (half_w * 0.5).max(1.0);
+    let a = u32::from(col[3]);
+    for dy in -(half_h as i32)..=(half_h as i32) {
+        let w = (half_w - (dy as f32).abs() * half_w / half_h).max(0.0);
+        for dx in -(w as i32)..=(w as i32) {
+            let (x, y) = (cx as i32 + dx, cy as i32 + dy);
+            if x < 0 || y < 0 || x as u32 >= fw || y as u32 >= fh {
+                continue;
+            }
+            let at = ((y as u32 * fw + x as u32) * 4) as usize;
+            for c in 0..3 {
+                let v = u32::from(frame[at + c]) * (255 - a) + u32::from(col[c]) * a;
+                frame[at + c] = (v / 255) as u8;
+            }
+        }
+    }
+}
+
 fn draw_diamond_outline(
     frame: &mut [u8],
     fw: u32,
@@ -758,7 +876,7 @@ impl ApplicationHandler for App {
             }
             Err(e) => eprintln!("OpenYR: session unavailable ({e}); view-only"),
         }
-        println!("OpenYR: left-click/box select, right-click order, A=attack-move, S=stop, H=harvest, M=mute, right-drag/arrows pan, wheel zoom; sidebar: left-click build, right-click cancel");
+        println!("OpenYR: left-click/box select, right-click order, A=attack-move, S=stop, H=harvest, M=mute, right-drag/arrows pan, wheel zoom; sidebar: left-click build or place a ready structure, right-click cancel");
         window.request_redraw();
         self.window = Some(window);
         self.pixels = Some(pixels);
@@ -783,20 +901,25 @@ impl ApplicationHandler for App {
             }
             WindowEvent::MouseInput { state, button, .. } => match (button, state) {
                 (MouseButton::Left, ElementState::Pressed) if self.in_sidebar(self.cursor) => {
-                    if let Some(cmd) = self
-                        .sidebar_slot_at(self.cursor)
-                        .and_then(|i| self.session.as_ref()?.produce(i))
-                    {
-                        self.pending.push(cmd);
+                    if let Some(slot) = self.sidebar_slot_at(self.cursor) {
+                        self.sidebar_click(slot);
                     }
                 }
                 (MouseButton::Right, ElementState::Pressed) if self.in_sidebar(self.cursor) => {
-                    if let Some(cmd) = self
-                        .sidebar_slot_at(self.cursor)
-                        .and_then(|i| self.session.as_ref()?.cancel(i))
-                    {
-                        self.pending.push(cmd);
+                    if let Some(slot) = self.sidebar_slot_at(self.cursor) {
+                        if self.placing == Some(slot) {
+                            self.placing = None;
+                        }
+                        if let Some(cmd) = self.session.as_ref().and_then(|s| s.cancel(slot)) {
+                            self.pending.push(cmd);
+                        }
                     }
+                }
+                (MouseButton::Left, ElementState::Pressed) if self.placing.is_some() => {
+                    self.try_place();
+                }
+                (MouseButton::Right, ElementState::Pressed) if self.placing.is_some() => {
+                    self.placing = None;
                 }
                 (MouseButton::Left, ElementState::Pressed) => self.left_down = Some(self.cursor),
                 (MouseButton::Left, ElementState::Released) => {
@@ -866,7 +989,9 @@ impl ApplicationHandler for App {
                             self.keys.insert(code);
                             match code {
                                 KeyCode::Escape => {
-                                    if self.attack_move {
+                                    if self.placing.is_some() {
+                                        self.placing = None;
+                                    } else if self.attack_move {
                                         self.attack_move = false;
                                     } else {
                                         self.report_audio();
@@ -987,13 +1112,54 @@ fn new_app(gamedir: String, map_name: String, scale: u32) -> App {
         accum: Duration::ZERO,
         title: String::new(),
         announced: false,
+        placing: None,
     }
+}
+
+/// Structures the headless demo builds and places, in order.
+const DEMO_STRUCTURES: [&str; 2] = ["GAPOWR", "GAREFN"];
+/// Ticks the demo ghost spends on a blocked spot, then on a valid one,
+/// before the structure goes down; the camera stays on it a while after.
+const DEMO_GHOST_TICKS: u64 = 40;
+const DEMO_FOCUS_TICKS: u64 = 200;
+
+/// A finished structure the headless demo is showing as a ghost.
+#[derive(Clone, Copy)]
+struct DemoGhost {
+    slot: usize,
+    ready: u64,
+    /// Over the construction yard (red), then the valid spot (green).
+    blocked: (u16, u16),
+    valid: (u16, u16),
+}
+
+/// First valid footprint origin for `slot` in rings around `near`.
+fn demo_spot(session: &Session, slot: usize, near: (u16, u16)) -> Option<(u16, u16)> {
+    for r in 0..16i32 {
+        for dy in -r..=r {
+            for dx in -r..=r {
+                if dx.abs() != r && dy.abs() != r {
+                    continue;
+                }
+                let x = u16::try_from(i32::from(near.0) + dx).ok()?;
+                let y = u16::try_from(i32::from(near.1) + dy).ok()?;
+                if session.can_place(slot, (x, y)) {
+                    return Some((x, y));
+                }
+            }
+        }
+    }
+    None
 }
 
 /// `--frames <dir> <tick>...`: play a scripted demo headlessly and dump
 /// the exact window frame at each tick. Script: queue Grizzlies and GIs
 /// at tick 1, then every 450 ticks send the whole player army (armed
 /// units) to attack-move on the enemy base; the camera follows the army.
+/// Alongside, the construction yard builds `DEMO_STRUCTURES` one after
+/// another: each finished one is shown as a red ghost over the yard, then
+/// a green ghost on the nearest valid spot, then placed, with the camera
+/// on it.
 fn headless_frames(mut app: App, dir: &str, ticks: &[u64]) -> Result<(), String> {
     app.map = Some(yr_render::render_map(
         &app.gamedir,
@@ -1012,6 +1178,11 @@ fn headless_frames(mut app: App, dir: &str, ticks: &[u64]) -> Result<(), String>
     let (fw, fh) = (WIN_W, WIN_H);
     let last = ticks.iter().copied().max().unwrap_or(0);
     let mut frame = vec![0u8; (fw * fh * 4) as usize];
+    let mut next_structure = 0usize;
+    let mut queue_at = Some(1u64);
+    let mut demo: Option<DemoGhost> = None;
+    // Map cell the camera holds on until a tick (placement close-ups).
+    let mut focus: Option<((u16, u16), u64)> = None;
     for t in 1..=last {
         let session = app.session.as_ref().ok_or("no session")?;
         if t == 1 {
@@ -1019,6 +1190,68 @@ fn headless_frames(mut app: App, dir: &str, ticks: &[u64]) -> Result<(), String>
                 if let Some(cmd) = session.produce(slot) {
                     app.pending.push(cmd);
                 }
+            }
+        }
+        if queue_at == Some(t) {
+            queue_at = None;
+            let slot = DEMO_STRUCTURES
+                .get(next_structure)
+                .and_then(|id| session.buildables.iter().position(|b| b.id == *id));
+            if let Some(cmd) = slot.and_then(|s| session.produce(s)) {
+                println!("tick {t}: queued {}", DEMO_STRUCTURES[next_structure]);
+                app.pending.push(cmd);
+            }
+        }
+        let yard = session
+            .sim
+            .buildings()
+            .iter()
+            .find(|b| b.owner == yr_sim::OWNER_PLAYER && b.role == yr_sim::Role::ConstructionYard)
+            .map(|b| b.cell);
+        if let (None, Some(slot), Some(yard)) = (demo, session.ready_structure(), yard) {
+            if let Some(good) = demo_spot(session, slot, yard) {
+                println!(
+                    "tick {t}: {} ready; blocked ghost at {yard:?}, valid spot {good:?}",
+                    session.buildables[slot].id
+                );
+                demo = Some(DemoGhost {
+                    slot,
+                    ready: t,
+                    blocked: yard,
+                    valid: good,
+                });
+                app.placing = Some(slot);
+            }
+        }
+        if let Some(DemoGhost {
+            slot,
+            ready,
+            blocked: bad,
+            valid: good,
+        }) = demo
+        {
+            let (w, h) = session.buildables[slot].footprint().unwrap_or((1, 1));
+            let target = if t - ready < DEMO_GHOST_TICKS {
+                bad
+            } else {
+                good
+            };
+            // Cursor cell that puts the footprint's top-left on `target`.
+            let cursor = (target.0 + (w - 1) / 2, target.1 + (h - 1) / 2);
+            focus = Some((cursor, t + DEMO_FOCUS_TICKS));
+            if t - ready == 2 * DEMO_GHOST_TICKS {
+                debug_assert!(!session.can_place(slot, bad) && session.can_place(slot, good));
+                if let Some(cmd) = session.place(slot, good) {
+                    println!(
+                        "tick {t}: placed {} at {good:?}",
+                        session.buildables[slot].id
+                    );
+                    app.pending.push(cmd);
+                }
+                app.placing = None;
+                demo = None;
+                next_structure += 1;
+                queue_at = Some(t + 1);
             }
         }
         let army: Vec<u32> = session
@@ -1056,25 +1289,43 @@ fn headless_frames(mut app: App, dir: &str, ticks: &[u64]) -> Result<(), String>
                 .iter()
                 .filter(|u| u.owner == yr_sim::OWNER_PLAYER)
                 .collect();
-            if !mine.is_empty() {
-                let n = mine.len() as f32;
-                let cx = mine.iter().map(|u| u.x.to_int_floor() as f32).sum::<f32>() / n;
-                let cy = mine.iter().map(|u| u.y.to_int_floor() as f32).sum::<f32>() / n;
+            let held = focus.filter(|(_, until)| t <= *until).map(|(c, _)| c);
+            let centre = match held {
+                Some(c) => Some((f32::from(c.0), f32::from(c.1))),
+                None if !mine.is_empty() => {
+                    let n = mine.len() as f32;
+                    let cx = mine.iter().map(|u| u.x.to_int_floor() as f32).sum::<f32>() / n;
+                    let cy = mine.iter().map(|u| u.y.to_int_floor() as f32).sum::<f32>() / n;
+                    Some((cx, cy))
+                }
+                None => None,
+            };
+            if let Some((cx, cy)) = centre {
                 let (mx, my) = map.cell_to_px(cx + 0.5, cy + 0.5);
-                app.view.cam_x = mx - (fw - SIDEBAR_W) as f32 / 2.0 / app.view.zoom;
-                app.view.cam_y = my - fh as f32 / 2.0 / app.view.zoom;
+                let (vw, vh) = ((fw - SIDEBAR_W) as f32 / 2.0, fh as f32 / 2.0);
+                app.view.cam_x = mx - vw / app.view.zoom;
+                app.view.cam_y = my - vh / app.view.zoom;
+                // The ghost follows the cursor: park it mid-view.
+                app.cursor = (f64::from(vw), f64::from(vh));
             }
             app.compose(&mut frame, fw, fh);
             let out = format!("{dir}/frame-{t:05}.png");
             std::fs::write(&out, yr_render::png::encode_rgba(fw, fh, &frame))
                 .map_err(|e| e.to_string())?;
             let count = |o: u8| sim.units().iter().filter(|u| u.owner == o).count();
+            let ghost = match app.placement_target() {
+                Some((_, origin, true)) => format!(", green ghost at {origin:?}"),
+                Some((_, origin, false)) => format!(", red ghost at {origin:?}"),
+                None => String::new(),
+            };
             println!(
-                "{out}: tick {t} ${} player {} units / enemy {} units, {} enemy buildings, queue {}, {:?}",
+                "{out}: tick {t} ${} player {} units / {} buildings / enemy {} units, {} enemy buildings, power {:?}, queue {}{ghost}, {:?}",
                 sim.credits(),
                 count(yr_sim::OWNER_PLAYER),
+                sim.buildings().iter().filter(|b| b.owner == yr_sim::OWNER_PLAYER).count(),
                 count(yr_sim::OWNER_ENEMY),
                 sim.buildings().iter().filter(|b| b.owner == yr_sim::OWNER_ENEMY).count(),
+                sim.power(),
                 sim.production().len(),
                 session.outcome,
             );

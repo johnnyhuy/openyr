@@ -61,7 +61,8 @@ incremental, testable path where each milestone is independently useful.
       half-alpha shadows; window + `--frames` dumps). Walk/fire
       sequences, building active anims and HVA transforms still open (#6)
 - [ ] Sidebar/cameo UI from `ra2md.csf` strings (cameo build sidebar
-      done in M5; CSF names, tabs and building placement still open)
+      done in M5, structure placement done (#46); CSF names and tabs
+      still open (#47))
 
 ## M4: Simulation v1
 
@@ -97,6 +98,14 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       M toggles mute. `--frames` exports the shared mix and a cue log alongside
       proof frames. Spatial audio, pitch variation and playlist controls remain
       fidelity work (`docs/formats/audio.md`).
+- [x] Structure placement from the sidebar (#46): rules-sourced Allied
+      structures gated by `Prerequisite=` (generic `POWER`/`PROC`/...
+      groups) and country, built at the construction yard one at a time,
+      placed through a green/red footprint ghost under the sim's own
+      rules (flat clear land, no units, `Adjacent=` reach to a
+      `BaseNormal` building); refineries bring their `FreeUnit=`
+      harvester; finished structures cancel for a full refund
+      (`docs/formats/rules.md`)
 - [ ] Save/load (deterministic state dump)
 - [ ] Basic AI skirmish opponent (stage 2)
 

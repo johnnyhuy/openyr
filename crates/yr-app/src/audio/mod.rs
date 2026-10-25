@@ -160,10 +160,7 @@ impl AudioScene {
         }
         for cmd in commands {
             if let Command::Produce { factory, .. } = cmd {
-                let role = match factory {
-                    Factory::Infantry => yr_sim::Role::Barracks,
-                    Factory::Vehicle => yr_sim::Role::WarFactory,
-                };
+                let role = factory.role();
                 if session
                     .sim
                     .buildings()
@@ -201,6 +198,20 @@ impl AudioScene {
                     }
                 }
                 Event::Produced { .. } => self.event(tick, "EVA_UnitReady", Bus::Eva, 15),
+                Event::Ready { .. } => {
+                    self.event(tick, "EVA_ConstructionComplete", Bus::Eva, 15);
+                }
+                Event::Placed { .. } => {
+                    // `[AudioVisual] BuildingSlam=`: the placement thud.
+                    let slam = self
+                        .bank
+                        .rules
+                        .value("AudioVisual", "BuildingSlam")
+                        .map(str::to_string);
+                    if let Some(name) = slam {
+                        self.event(tick, &name, Bus::Effect, 1);
+                    }
+                }
                 Event::Died { id } => {
                     let sound = self
                         .entities
