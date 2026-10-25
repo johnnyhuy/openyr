@@ -105,7 +105,7 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       rules (flat clear land, no units, `Adjacent=` reach to a
       `BaseNormal` building); refineries bring their `FreeUnit=`
       harvester; finished structures cancel for a full refund
-      (`docs/formats/rules.md`)
+      (`docs/formats/rules.md`). Power is judged per owner (#52)
 - [ ] Save/load (deterministic state dump)
 - [ ] Basic AI skirmish opponent (stage 2)
 

@@ -872,11 +872,17 @@ impl Sim {
         &self.buildings
     }
 
-    /// (produced, drained) power totals.
+    /// The player's (produced, drained) power totals. Only the player
+    /// produces, so low power and the production factor judge these.
     pub fn power(&self) -> (i64, i64) {
+        self.power_of(OWNER_PLAYER)
+    }
+
+    /// (produced, drained) power totals of `owner`'s buildings.
+    pub fn power_of(&self, owner: u8) -> (i64, i64) {
         let mut produced = 0;
         let mut drained = 0;
-        for b in &self.buildings {
+        for b in self.buildings.iter().filter(|b| b.owner == owner) {
             if b.power >= 0 {
                 produced += b.power;
             } else {
@@ -2305,6 +2311,34 @@ mod tests {
             sim.can_place(OWNER_PLAYER, &spec, 2, 6),
             "2 cells from the yard"
         );
+    }
+
+    #[test]
+    fn power_counts_only_the_owners_buildings() {
+        let mut sim = Sim::new(4);
+        sim.set_terrain(TerrainGrid::new(0, 0, 16, 16));
+        let plant = |x, power, owner| Command::PlaceBuilding {
+            kind: 0,
+            x,
+            y: 0,
+            w: 2,
+            h: 2,
+            hp: 500,
+            armor: 0,
+            power,
+            owner,
+            role: Role::Combat,
+        };
+        sim.step(&[
+            plant(0, 200, OWNER_PLAYER),
+            plant(2, -150, OWNER_PLAYER),
+            plant(4, -500, OWNER_ENEMY),
+            plant(6, -300, OWNER_NEUTRAL),
+        ]);
+        assert_eq!(sim.power(), (200, 150));
+        assert_eq!(sim.power_of(OWNER_ENEMY), (0, 500));
+        assert!(!sim.low_power(), "other owners' drain is not the player's");
+        assert_eq!(sim.production_factor(), Fix::ONE);
     }
 
     #[test]
