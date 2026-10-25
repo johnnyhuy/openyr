@@ -6,6 +6,8 @@
 //! builds one item at a time per factory kind, cancelling refunds what
 //! was spent, and low power slows progress by the production factor.
 //! A queue with no live factory building of its kind does not progress.
+//! Structures build at the construction yard and, once done, wait at the
+//! head of their queue until placed on the map (`Command::PlaceProduced`).
 //!
 //! Credits are one pool (the player's, see `Sim::credits`), so only the
 //! player produces; the scripted enemy gets its forces from waves.
@@ -20,16 +22,19 @@ pub enum Factory {
     Vehicle,
     /// Barracks: infantry.
     Infantry,
+    /// Construction yard: structures, placed by the player when done.
+    Building,
 }
 
 impl Factory {
-    pub const ALL: [Factory; 2] = [Factory::Vehicle, Factory::Infantry];
+    pub const ALL: [Factory; 3] = [Factory::Vehicle, Factory::Infantry, Factory::Building];
 
     /// The building role that hosts this queue.
     pub fn role(self) -> Role {
         match self {
             Factory::Vehicle => Role::WarFactory,
             Factory::Infantry => Role::Barracks,
+            Factory::Building => Role::ConstructionYard,
         }
     }
 }
@@ -46,13 +51,44 @@ pub struct UnitSpec {
     pub role: Role,
 }
 
+/// Everything the sim needs to put a structure on the map.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct BuildingSpec {
+    /// Footprint in cells.
+    pub w: u16,
+    pub h: u16,
+    pub hp: i64,
+    pub armor: u8,
+    /// Positive = produced, negative = drained.
+    pub power: i64,
+    pub role: Role,
+    /// Rules `Adjacent=`: the most empty cells allowed between the
+    /// footprint and a base building of the same owner.
+    pub adjacent: u8,
+    /// Rules `BaseNormal=`: whether it lets later buildings place
+    /// against it (defences and walls do not).
+    pub base_normal: bool,
+    /// Rules `FreeUnit=`: a unit (kind tag, spec) that rolls out beside
+    /// the building once it is placed.
+    pub free_unit: Option<(u16, UnitSpec)>,
+}
+
+/// What a build order turns into when done.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Product {
+    /// Rolls out of the factory by itself.
+    Unit(UnitSpec),
+    /// Waits for the player to place it.
+    Building(BuildingSpec),
+}
+
 /// One queued build. `kind` is a caller-chosen type index (the UI's
 /// buildable slot) echoed back in events.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct BuildOrder {
     pub factory: Factory,
     pub kind: u16,
-    pub spec: UnitSpec,
+    pub product: Product,
     pub cost: i64,
     /// Build time in ticks at full speed (>= 1).
     pub ticks: u32,
@@ -104,14 +140,14 @@ mod tests {
         BuildOrder {
             factory: Factory::Vehicle,
             kind: 0,
-            spec: UnitSpec {
+            product: Product::Unit(UnitSpec {
                 loco: Loco::Track,
                 speed: Fix::from_int(1),
                 hp: 100,
                 armor: 0,
                 weapon: None,
                 role: Role::Combat,
-            },
+            }),
             cost,
             ticks,
             progress: 0,

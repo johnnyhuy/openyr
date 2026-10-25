@@ -21,7 +21,7 @@ pub mod terrain;
 pub use building::Building;
 pub use combat::WeaponSpec;
 pub use fix::Fix;
-pub use production::{BuildOrder, Factory, UnitSpec};
+pub use production::{BuildOrder, BuildingSpec, Factory, Product, UnitSpec};
 pub use rng::Rng;
 pub use terrain::TerrainGrid;
 
@@ -96,14 +96,24 @@ pub enum Command {
     Stop {
         id: u32,
     },
-    /// Queue a unit at the player's factory of `factory` kind; `kind` is
-    /// the caller's type index, echoed in [`Event::Produced`].
+    /// Queue a build at the player's factory of `factory` kind; `kind` is
+    /// the caller's type index, echoed in [`Event::Produced`] /
+    /// [`Event::Placed`].
     Produce {
         factory: Factory,
         kind: u16,
-        spec: UnitSpec,
+        product: Product,
         cost: i64,
         ticks: u32,
+    },
+    /// Put the finished structure of `kind` (head of the building queue)
+    /// on the map with its top-left footprint cell at `(x, y)`. Ignored
+    /// unless it is done, a construction yard still stands, and
+    /// [`Sim::can_place`] allows the spot.
+    PlaceProduced {
+        kind: u16,
+        x: u16,
+        y: u16,
     },
     /// Cancel the newest order of `kind` in `factory`'s queue; refunds
     /// what it had drawn.
@@ -142,6 +152,15 @@ pub enum Event {
         id: u32,
         kind: u16,
     },
+    /// A structure finished building and waits to be placed.
+    Ready {
+        kind: u16,
+    },
+    /// A produced structure `id` was placed on the map.
+    Placed {
+        id: u32,
+        kind: u16,
+    },
 }
 
 /// What a unit is for; drives the economy state machine.
@@ -154,6 +173,8 @@ pub enum Role {
     WarFactory,
     /// Building that hosts the infantry production queue.
     Barracks,
+    /// Building that hosts the structure queue.
+    ConstructionYard,
 }
 
 /// Owner ids used by units and buildings.
@@ -346,22 +367,49 @@ impl Sim {
                     owner,
                     role,
                 } => {
-                    let id = self.next_id;
-                    self.next_id += 1;
-                    self.buildings.push(Building {
-                        id,
-                        kind,
-                        cell: (x, y),
-                        size: (w, h),
+                    let spec = BuildingSpec {
+                        w,
+                        h,
                         hp,
-                        max_hp: hp,
                         armor,
                         power,
-                        owner,
                         role,
-                    });
-                    if let Some(g) = self.terrain.as_mut() {
-                        g.set_building(x, y, w, h, true);
+                        adjacent: 0,
+                        base_normal: true,
+                        free_unit: None,
+                    };
+                    self.place_structure(kind, x, y, &spec, owner);
+                }
+                Command::PlaceProduced { kind, x, y } => {
+                    let Some(i) = self
+                        .production
+                        .iter()
+                        .position(|o| o.factory == Factory::Building)
+                    else {
+                        continue;
+                    };
+                    let order = self.production[i];
+                    let Product::Building(spec) = order.product else {
+                        continue;
+                    };
+                    let yard = self
+                        .buildings
+                        .iter()
+                        .any(|b| b.owner == OWNER_PLAYER && b.role == Factory::Building.role());
+                    if order.kind != kind
+                        || !order.done()
+                        || !yard
+                        || !self.can_place(OWNER_PLAYER, &spec, x, y)
+                    {
+                        continue;
+                    }
+                    self.production.remove(i);
+                    let id = self.place_structure(kind, x, y, &spec, OWNER_PLAYER);
+                    self.events.push(Event::Placed { id, kind });
+                    if let Some((unit_kind, unit)) = spec.free_unit {
+                        if let Some(cell) = self.exit_cell(unit.loco, (x, y), (spec.w, spec.h)) {
+                            self.spawn_owned(unit_kind, &unit, cell, OWNER_PLAYER);
+                        }
                     }
                 }
                 Command::AssignOwner { id, owner } => {
@@ -425,14 +473,14 @@ impl Sim {
                 Command::Produce {
                     factory,
                     kind,
-                    spec,
+                    product,
                     cost,
                     ticks,
                 } => {
                     self.production.push(BuildOrder {
                         factory,
                         kind,
-                        spec,
+                        product,
                         cost: cost.max(0),
                         ticks: ticks.max(1),
                         progress: 0,
@@ -824,11 +872,17 @@ impl Sim {
         &self.buildings
     }
 
-    /// (produced, drained) power totals.
+    /// The player's (produced, drained) power totals. Only the player
+    /// produces, so low power and the production factor judge these.
     pub fn power(&self) -> (i64, i64) {
+        self.power_of(OWNER_PLAYER)
+    }
+
+    /// (produced, drained) power totals of `owner`'s buildings.
+    pub fn power_of(&self, owner: u8) -> (i64, i64) {
         let mut produced = 0;
         let mut drained = 0;
-        for b in &self.buildings {
+        for b in self.buildings.iter().filter(|b| b.owner == owner) {
             if b.power >= 0 {
                 produced += b.power;
             } else {
@@ -914,8 +968,9 @@ impl Sim {
     }
 
     /// Advance the head order of each factory queue (fixed `Factory::ALL`
-    /// order). A finished order rolls out next to the first live
-    /// player building of its role, on the nearest free standable cell.
+    /// order). A finished unit rolls out next to the first live player
+    /// building of its role, on the nearest free standable cell; a
+    /// finished structure stays at the head until it is placed.
     fn production_phase(&mut self) {
         let factor = self.production_factor();
         for factory in Factory::ALL {
@@ -930,6 +985,7 @@ impl Sim {
             else {
                 continue;
             };
+            let was_done = self.production[i].done();
             if let Some(drawn) = self.production[i].advance(factor, self.credits) {
                 self.credits -= drawn;
             }
@@ -937,47 +993,148 @@ impl Sim {
                 continue;
             }
             let order = self.production[i];
-            let Some(cell) = self.exit_cell(order.spec.loco, host.0, host.1) else {
+            let spec = match order.product {
+                Product::Unit(spec) => spec,
+                Product::Building(_) => {
+                    if !was_done {
+                        self.events.push(Event::Ready { kind: order.kind });
+                    }
+                    continue;
+                }
+            };
+            let Some(cell) = self.exit_cell(spec.loco, host.0, host.1) else {
                 continue; // blocked exit: hold the finished unit
             };
             self.production.remove(i);
-            let id = self.next_id;
-            self.next_id += 1;
-            let s = order.spec;
-            self.units.push(Unit {
-                id,
-                kind: order.kind,
-                x: Fix::from_int(i32::from(cell.0)) + Fix::from_raw(128),
-                y: Fix::from_int(i32::from(cell.1)) + Fix::from_raw(128),
-                target: None,
-                speed: s.speed,
-                loco: s.loco,
-                facing: 128,
-                path: std::collections::VecDeque::new(),
-                hp: s.hp,
-                max_hp: s.hp,
-                armor: s.armor,
-                weapon: s.weapon,
-                cooldown: 0,
-                attack: None,
-                guard: None,
-                shots: 0,
-                role: s.role,
-                owner: OWNER_PLAYER,
-                cargo: 0,
-                bails: 0,
-                harvest: if s.role == Role::Harvester {
-                    Harvest::ToOre(u16::MAX, u16::MAX)
-                } else {
-                    Harvest::Idle
-                },
-                blocked: 0,
-            });
+            let id = self.spawn_owned(order.kind, &spec, cell, OWNER_PLAYER);
             self.events.push(Event::Produced {
                 id,
                 kind: order.kind,
             });
         }
+    }
+
+    /// Spawn a unit from `spec` at the centre of `cell` for `owner`;
+    /// harvesters start their loop straight away. Returns its id.
+    fn spawn_owned(&mut self, kind: u16, s: &UnitSpec, cell: (u16, u16), owner: u8) -> u32 {
+        let id = self.next_id;
+        self.next_id += 1;
+        self.units.push(Unit {
+            id,
+            kind,
+            x: Fix::from_int(i32::from(cell.0)) + Fix::from_raw(128),
+            y: Fix::from_int(i32::from(cell.1)) + Fix::from_raw(128),
+            target: None,
+            speed: s.speed,
+            loco: s.loco,
+            facing: 128,
+            path: std::collections::VecDeque::new(),
+            hp: s.hp,
+            max_hp: s.hp,
+            armor: s.armor,
+            weapon: s.weapon,
+            cooldown: 0,
+            attack: None,
+            guard: None,
+            shots: 0,
+            role: s.role,
+            owner,
+            cargo: 0,
+            bails: 0,
+            harvest: if s.role == Role::Harvester {
+                Harvest::ToOre(u16::MAX, u16::MAX)
+            } else {
+                Harvest::Idle
+            },
+            blocked: 0,
+        });
+        id
+    }
+
+    /// Add a building and mark its footprint on the grid. Returns its id.
+    fn place_structure(
+        &mut self,
+        kind: u16,
+        x: u16,
+        y: u16,
+        spec: &BuildingSpec,
+        owner: u8,
+    ) -> u32 {
+        let id = self.next_id;
+        self.next_id += 1;
+        self.buildings.push(Building {
+            id,
+            kind,
+            cell: (x, y),
+            size: (spec.w, spec.h),
+            hp: spec.hp,
+            max_hp: spec.hp,
+            armor: spec.armor,
+            power: spec.power,
+            owner,
+            role: spec.role,
+            base_normal: spec.base_normal,
+        });
+        if let Some(g) = self.terrain.as_mut() {
+            g.set_building(x, y, spec.w, spec.h, true);
+        }
+        id
+    }
+
+    /// Whether `owner` may put `spec`'s footprint with its top-left cell
+    /// at `(x, y)`. Every cell must be on the grid, flat (no ramp, one
+    /// height level), open land a tracked unit could enter (no water,
+    /// cliff, wall or building), free of overlay (ore, gems, debris) and
+    /// of ground units; and the footprint must come within
+    /// `spec.adjacent` empty cells of a base building `owner` already has
+    /// (`BaseNormal=` buildings only). The UI asks this for its ghost.
+    pub fn can_place(&self, owner: u8, spec: &BuildingSpec, x: u16, y: u16) -> bool {
+        let Some(grid) = &self.terrain else {
+            return false;
+        };
+        let (w, h) = (spec.w.max(1), spec.h.max(1));
+        let (Some(x1), Some(y1)) = (x.checked_add(w), y.checked_add(h)) else {
+            return false;
+        };
+        let Some(level) = grid.cell(x, y).map(|c| c.height) else {
+            return false;
+        };
+        for cy in y..y1 {
+            for cx in x..x1 {
+                let Some(c) = grid.cell(cx, cy) else {
+                    return false;
+                };
+                if c.ramp != 0
+                    || c.height != level
+                    || c.overlay != terrain::Overlay::None
+                    || !grid.passable(terrain::Loco::Track, cx, cy)
+                {
+                    return false;
+                }
+            }
+        }
+        let (x0, y0, x1, y1) = (i32::from(x), i32::from(y), i32::from(x1), i32::from(y1));
+        let blocked = self.units.iter().any(|u| {
+            let (ux, uy) = (u.x.to_int_floor(), u.y.to_int_floor());
+            u.loco != terrain::Loco::Fly && ux >= x0 && ux < x1 && uy >= y0 && uy < y1
+        });
+        if blocked {
+            return false;
+        }
+        // Gap of up to `adjacent` cells: grow the footprint by adjacent + 1
+        // and look for an overlapping base building.
+        let reach = i32::from(spec.adjacent) + 1;
+        let (ax0, ay0, ax1, ay1) = (x0 - reach, y0 - reach, x1 + reach, y1 + reach);
+        self.buildings.iter().any(|b| {
+            let (bx, by) = (i32::from(b.cell.0), i32::from(b.cell.1));
+            let (bw, bh) = (i32::from(b.size.0), i32::from(b.size.1));
+            b.owner == owner
+                && b.base_normal
+                && bx < ax1
+                && bx + bw > ax0
+                && by < ay1
+                && by + bh > ay0
+        })
     }
 
     /// Free standable cell around a footprint, scanning rings outward
@@ -1185,6 +1342,10 @@ impl Sim {
         for b in &self.buildings {
             h.write_u64(u64::from(b.id));
             h.write_u64(u64::from(b.kind));
+            h.write_u64(u64::from(b.cell.0));
+            h.write_u64(u64::from(b.cell.1));
+            h.write_u64(u64::from(b.size.0));
+            h.write_u64(u64::from(b.size.1));
             h.write_i64(b.hp);
             h.write_i64(b.power);
         }
@@ -1880,7 +2041,7 @@ mod tests {
         let produce = |kind| Command::Produce {
             factory: Factory::Vehicle,
             kind,
-            spec: tank_spec(),
+            product: Product::Unit(tank_spec()),
             cost: 100,
             ticks: 10,
         };
@@ -1958,7 +2119,7 @@ mod tests {
                 Command::Produce {
                     factory: Factory::Infantry,
                     kind: 2,
-                    spec: tank_spec(),
+                    product: Product::Unit(tank_spec()),
                     cost: 200,
                     ticks: 50,
                 },
@@ -1978,5 +2139,278 @@ mod tests {
         };
         assert_eq!(run(false), run(false));
         assert_ne!(run(false), run(true));
+    }
+
+    fn yard_at(x: u16, y: u16) -> Command {
+        Command::PlaceBuilding {
+            kind: 0,
+            x,
+            y,
+            w: 2,
+            h: 2,
+            hp: 1000,
+            armor: 0,
+            power: 0,
+            owner: OWNER_PLAYER,
+            role: Role::ConstructionYard,
+        }
+    }
+
+    fn plant_spec() -> BuildingSpec {
+        BuildingSpec {
+            w: 2,
+            h: 2,
+            hp: 750,
+            armor: 0,
+            power: 200,
+            role: Role::Combat,
+            adjacent: 2,
+            base_normal: true,
+            free_unit: None,
+        }
+    }
+
+    fn build(kind: u16, spec: BuildingSpec) -> Command {
+        Command::Produce {
+            factory: Factory::Building,
+            kind,
+            product: Product::Building(spec),
+            cost: 100,
+            ticks: 10,
+        }
+    }
+
+    /// Yard at (2,2)-(3,3), a finished 2x2 structure of kind 7 waiting.
+    fn sim_with_ready(spec: BuildingSpec) -> Sim {
+        let mut sim = Sim::new(5);
+        sim.set_terrain(TerrainGrid::new(0, 0, 16, 16));
+        sim.set_credits(1000);
+        sim.step(&[yard_at(2, 2), build(7, spec)]);
+        for _ in 0..12 {
+            sim.step(&[]);
+        }
+        sim
+    }
+
+    #[test]
+    fn structure_builds_then_waits_for_placement() {
+        let mut sim = Sim::new(5);
+        sim.set_terrain(TerrainGrid::new(0, 0, 16, 16));
+        sim.set_credits(1000);
+        // No construction yard: the order waits and draws nothing.
+        sim.step(&[build(7, plant_spec())]);
+        sim.step(&[]);
+        assert_eq!((sim.credits(), sim.production()[0].progress), (1000, 0));
+        sim.step(&[yard_at(2, 2)]);
+        let mut ready = 0;
+        for _ in 0..30 {
+            sim.step(&[]);
+            for e in sim.drain_events() {
+                assert!(
+                    !matches!(e, Event::Produced { .. }),
+                    "structures never roll out"
+                );
+                if e == (Event::Ready { kind: 7 }) {
+                    ready += 1;
+                }
+            }
+        }
+        assert_eq!(ready, 1, "Ready fires once");
+        assert_eq!(sim.credits(), 900, "full cost drawn while building");
+        assert!(sim.production()[0].done(), "held at the head of the queue");
+        assert_eq!(sim.buildings().len(), 1);
+    }
+
+    #[test]
+    fn placement_rejects_bad_spots_and_accepts_adjacent_ground() {
+        let mut sim = sim_with_ready(plant_spec());
+        let place = |x, y| Command::PlaceProduced { kind: 7, x, y };
+        // A neutral tank parked at (5,2).
+        sim.step(&[Command::Spawn {
+            kind: 1,
+            x: Fix::from_int(5) + Fix::from_raw(128),
+            y: Fix::from_int(2) + Fix::from_raw(128),
+            loco: terrain::Loco::Track,
+            speed: Fix::ZERO,
+            hp: 100,
+            armor: 0,
+            weapon: None,
+        }]);
+        let spec = plant_spec();
+        assert!(!sim.can_place(OWNER_PLAYER, &spec, 2, 2), "on the yard");
+        assert!(!sim.can_place(OWNER_PLAYER, &spec, 5, 2), "on a unit");
+        assert!(
+            !sim.can_place(OWNER_PLAYER, &spec, 7, 2),
+            "3 cells from the base"
+        );
+        assert!(
+            !sim.can_place(OWNER_PLAYER, &spec, 15, 2),
+            "off the grid edge"
+        );
+        assert!(
+            !sim.can_place(OWNER_ENEMY, &spec, 6, 2),
+            "not the enemy's base"
+        );
+        assert!(
+            sim.can_place(OWNER_PLAYER, &spec, 6, 2),
+            "2 empty cells away"
+        );
+        for bad in [place(2, 2), place(5, 2), place(7, 2), place(15, 2)] {
+            sim.step(&[bad]);
+        }
+        sim.step(&[Command::PlaceProduced {
+            kind: 8,
+            x: 6,
+            y: 2,
+        }]);
+        assert_eq!(sim.buildings().len(), 1, "every bad placement ignored");
+        assert_eq!(sim.production().len(), 1);
+        sim.step(&[place(6, 2)]);
+        let placed: Vec<_> = sim
+            .drain_events()
+            .into_iter()
+            .filter(|e| matches!(e, Event::Placed { kind: 7, .. }))
+            .collect();
+        assert_eq!(placed.len(), 1);
+        assert!(sim.production().is_empty());
+        let b = sim.buildings().last().unwrap();
+        assert_eq!((b.cell, b.size, b.owner), ((6, 2), (2, 2), OWNER_PLAYER));
+        assert_eq!(sim.power(), (200, 0));
+        let g = sim.terrain().unwrap();
+        assert!(g.cell(7, 3).unwrap().building, "footprint blocks movement");
+    }
+
+    #[test]
+    fn placement_needs_flat_clear_land_and_base_buildings() {
+        let mut sim = sim_with_ready(BuildingSpec {
+            base_normal: false,
+            ..plant_spec()
+        });
+        let spec = plant_spec();
+        let mut grid = sim.terrain().unwrap().clone();
+        grid.set_resource(5, 2, terrain::Overlay::Ore, 3);
+        grid.cell_mut(5, 5).unwrap().ramp = 1;
+        grid.cell_mut(0, 1).unwrap().ground = terrain::Ground::Water;
+        sim.set_terrain(grid);
+        assert!(
+            !sim.can_place(OWNER_PLAYER, &spec, 4, 2),
+            "ore under the footprint"
+        );
+        assert!(!sim.can_place(OWNER_PLAYER, &spec, 4, 5), "sloped cell");
+        assert!(!sim.can_place(OWNER_PLAYER, &spec, 0, 0), "water");
+        // A defence (BaseNormal=no) below the yard (rows 4-5) does not
+        // extend the base: row 7 is 1 cell from it but 3 from the yard.
+        sim.step(&[Command::PlaceProduced {
+            kind: 7,
+            x: 2,
+            y: 4,
+        }]);
+        assert_eq!(sim.buildings().len(), 2, "defence placed");
+        assert!(!sim.can_place(OWNER_PLAYER, &spec, 2, 7));
+        assert!(
+            sim.can_place(OWNER_PLAYER, &spec, 2, 6),
+            "2 cells from the yard"
+        );
+    }
+
+    #[test]
+    fn power_counts_only_the_owners_buildings() {
+        let mut sim = Sim::new(4);
+        sim.set_terrain(TerrainGrid::new(0, 0, 16, 16));
+        let plant = |x, power, owner| Command::PlaceBuilding {
+            kind: 0,
+            x,
+            y: 0,
+            w: 2,
+            h: 2,
+            hp: 500,
+            armor: 0,
+            power,
+            owner,
+            role: Role::Combat,
+        };
+        sim.step(&[
+            plant(0, 200, OWNER_PLAYER),
+            plant(2, -150, OWNER_PLAYER),
+            plant(4, -500, OWNER_ENEMY),
+            plant(6, -300, OWNER_NEUTRAL),
+        ]);
+        assert_eq!(sim.power(), (200, 150));
+        assert_eq!(sim.power_of(OWNER_ENEMY), (0, 500));
+        assert!(!sim.low_power(), "other owners' drain is not the player's");
+        assert_eq!(sim.production_factor(), Fix::ONE);
+    }
+
+    #[test]
+    fn finished_structure_cancels_for_full_refund() {
+        let mut sim = sim_with_ready(plant_spec());
+        assert_eq!(sim.credits(), 900);
+        sim.step(&[Command::CancelProduce {
+            factory: Factory::Building,
+            kind: 7,
+        }]);
+        assert_eq!(sim.credits(), 1000);
+        assert!(sim.production().is_empty());
+    }
+
+    #[test]
+    fn free_unit_rolls_out_and_starts_harvesting() {
+        let harvester = UnitSpec {
+            role: Role::Harvester,
+            ..tank_spec()
+        };
+        let mut sim = sim_with_ready(BuildingSpec {
+            role: Role::Refinery,
+            free_unit: Some((3, harvester)),
+            ..plant_spec()
+        });
+        let mut grid = sim.terrain().unwrap().clone();
+        grid.set_resource(12, 12, terrain::Overlay::Ore, 5);
+        sim.set_terrain(grid);
+        sim.step(&[Command::PlaceProduced {
+            kind: 7,
+            x: 2,
+            y: 5,
+        }]);
+        let u = sim.units().last().expect("free unit");
+        assert_eq!(
+            (u.kind, u.owner, u.role),
+            (3, OWNER_PLAYER, Role::Harvester)
+        );
+        // Rolled out below the refinery footprint (rows 5-6), not on it.
+        assert!(u.y.to_int_floor() >= 7);
+        let id = u.id;
+        let start = sim.credits();
+        for _ in 0..600 {
+            sim.step(&[]);
+        }
+        assert!(
+            sim.credits() > start,
+            "harvester delivered ore to the refinery"
+        );
+        assert!(sim.units().iter().any(|u| u.id == id));
+    }
+
+    #[test]
+    fn placement_is_deterministic_and_hashed() {
+        let run = |place: bool| {
+            let mut sim = sim_with_ready(plant_spec());
+            let cmds = if place {
+                vec![Command::PlaceProduced {
+                    kind: 7,
+                    x: 4,
+                    y: 2,
+                }]
+            } else {
+                Vec::new()
+            };
+            sim.step(&cmds);
+            for _ in 0..5 {
+                sim.step(&[]);
+            }
+            sim.state_hash()
+        };
+        assert_eq!(run(true), run(true));
+        assert_ne!(run(true), run(false));
     }
 }

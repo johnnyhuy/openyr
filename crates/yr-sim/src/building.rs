@@ -23,6 +23,8 @@ pub struct Building {
     pub power: i64,
     pub owner: u8,
     pub role: crate::Role,
+    /// Later buildings may place against this one (`BaseNormal=`).
+    pub base_normal: bool,
 }
 
 impl Building {

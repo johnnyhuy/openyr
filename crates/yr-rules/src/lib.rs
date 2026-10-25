@@ -91,6 +91,24 @@ pub struct TechnoType {
     pub speed: Option<i64>,
     pub owner: Vec<String>,
     pub prerequisite: Vec<String>,
+    /// Countries that alone may build it (`RequiredHouses=`, e.g. the
+    /// British sniper) and countries that may not (`ForbiddenHouses=`).
+    pub required_houses: Vec<String>,
+    pub forbidden_houses: Vec<String>,
+    /// Building `Adjacent=`: how many cells from an existing base
+    /// building the footprint may be placed.
+    pub adjacent: Option<i64>,
+    /// Building `BaseNormal=`: whether it extends the buildable area
+    /// (defences and walls say `no`).
+    pub base_normal: Option<bool>,
+    /// Building `FreeUnit=`: spawned beside it once placed (refinery
+    /// harvesters).
+    pub free_unit: Option<String>,
+    pub refinery: Option<bool>,
+    pub construction_yard: Option<bool>,
+    pub wall: Option<bool>,
+    /// Building `WaterBound=`: must stand on water (shipyards).
+    pub water_bound: Option<bool>,
     pub primary: Option<String>,
     pub secondary: Option<String>,
     pub elite_primary: Option<String>,
@@ -258,6 +276,10 @@ pub struct Globals {
     pub bridge_strength: Option<i64>,
     pub atom_damage: Option<i64>,
     pub ion_cannon_damage: Option<i64>,
+    /// Generic `Prerequisite=` tokens and the buildings that satisfy them,
+    /// from `PrerequisitePower=` etc. (`POWER`, `FACTORY`, `BARRACKS`,
+    /// `RADAR`, `TECH`, `PROC`; `PROC` also takes `PrerequisiteProcAlternate`).
+    pub prerequisite_groups: Vec<(String, Vec<String>)>,
 }
 
 /// Skirmish defaults from `[MultiplayerDialogSettings]`.
@@ -395,6 +417,16 @@ impl Rules {
         }
     }
 
+    /// Buildings that satisfy a generic prerequisite token such as
+    /// `POWER`; `None` when `token` names a concrete type instead.
+    pub fn prerequisite_group(&self, token: &str) -> Option<&[String]> {
+        self.globals
+            .prerequisite_groups
+            .iter()
+            .find(|(t, _)| t.eq_ignore_ascii_case(token))
+            .map(|(_, ids)| ids.as_slice())
+    }
+
     /// Look a techno up in any of the four registries.
     pub fn techno(&self, id: &str) -> Option<&TechnoType> {
         TechnoKind::ALL
@@ -459,6 +491,12 @@ fn reference(sec: Option<&IniSection>, key: &str) -> Option<String> {
 
 fn string(sec: Option<&IniSection>, key: &str) -> Option<String> {
     sec?.get(key).map(str::to_string)
+}
+
+fn list(sec: Option<&IniSection>, key: &str) -> Vec<String> {
+    sec.and_then(|s| s.get(key))
+        .map(parse_list)
+        .unwrap_or_default()
 }
 
 fn load_techno(
@@ -536,14 +574,17 @@ fn load_techno(
         tech_level: int(sec, "TechLevel"),
         sight: int(sec, "Sight"),
         speed: int(sec, "Speed"),
-        owner: sec
-            .and_then(|s| s.get("Owner"))
-            .map(parse_list)
-            .unwrap_or_default(),
-        prerequisite: sec
-            .and_then(|s| s.get("Prerequisite"))
-            .map(parse_list)
-            .unwrap_or_default(),
+        owner: list(sec, "Owner"),
+        prerequisite: list(sec, "Prerequisite"),
+        required_houses: list(sec, "RequiredHouses"),
+        forbidden_houses: list(sec, "ForbiddenHouses"),
+        adjacent: int(sec, "Adjacent"),
+        base_normal: sec.and_then(|x| x.get_bool("BaseNormal")),
+        free_unit: reference(sec, "FreeUnit"),
+        refinery: sec.and_then(|x| x.get_bool("Refinery")),
+        construction_yard: sec.and_then(|x| x.get_bool("ConstructionYard")),
+        wall: sec.and_then(|x| x.get_bool("Wall")),
+        water_bound: sec.and_then(|x| x.get_bool("WaterBound")),
         primary: reference(sec, "Primary"),
         secondary: reference(sec, "Secondary"),
         elite_primary: reference(sec, "ElitePrimary"),
@@ -649,8 +690,25 @@ fn load_globals(rules: &IniFile) -> Globals {
         bridge_strength: int(c, "BridgeStrength"),
         atom_damage: int(c, "AtomDamage"),
         ion_cannon_damage: int(c, "IonCannonDamage"),
+        prerequisite_groups: PREREQUISITE_GROUPS
+            .iter()
+            .map(|(token, keys)| {
+                let ids = keys.iter().flat_map(|k| list(g, k)).collect();
+                (token.to_string(), ids)
+            })
+            .collect(),
     }
 }
+
+/// `[General]` keys behind each generic prerequisite token.
+const PREREQUISITE_GROUPS: [(&str, &[&str]); 6] = [
+    ("POWER", &["PrerequisitePower"]),
+    ("FACTORY", &["PrerequisiteFactory"]),
+    ("BARRACKS", &["PrerequisiteBarracks"]),
+    ("RADAR", &["PrerequisiteRadar"]),
+    ("TECH", &["PrerequisiteTech"]),
+    ("PROC", &["PrerequisiteProc", "PrerequisiteProcAlternate"]),
+];
 
 fn load_skirmish(rules: &IniFile) -> SkirmishDefaults {
     let s = rules.section("MultiplayerDialogSettings");

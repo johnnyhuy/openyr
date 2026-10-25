@@ -13,7 +13,7 @@ use yr_assets::{AssetFs, Theater};
 use yr_formats::MapFile;
 use yr_rules::{Armor, Rules, TechnoKind};
 use yr_sim::terrain::{Loco, TerrainGrid};
-use yr_sim::{Command, Factory, Fix, Role, Sim, UnitSpec};
+use yr_sim::{BuildingSpec, Command, Factory, Fix, Product, Role, Sim, UnitSpec};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Outcome {
@@ -40,12 +40,14 @@ pub struct Session {
     /// Rules ids by sim `kind` tag (units and buildings); the first
     /// entries are the sidebar slots, so a `Produce` kind indexes here too.
     pub kinds: Vec<String>,
+    /// Generic prerequisite tokens (`POWER`, ...) and their buildings.
+    prerequisite_groups: Vec<(String, Vec<String>)>,
 }
 
 /// Idle wave units re-target every this many ticks.
 const HUNT_TICKS: u64 = 30;
 
-/// One sidebar slot: a rules unit the player's factories can build.
+/// One sidebar slot: a rules unit or structure the player can build.
 #[derive(Debug, Clone)]
 pub struct Buildable {
     pub id: String,
@@ -56,12 +58,30 @@ pub struct Buildable {
     pub ticks: u32,
     /// Cameo as RGBA (w, h, pixels) when the art resolved.
     pub cameo: Option<(u32, u32, Vec<u8>)>,
-    spec: UnitSpec,
+    /// Rules `Prerequisite=` tokens (type ids or generic groups).
+    prerequisite: Vec<String>,
+    product: Product,
+}
+
+impl Buildable {
+    /// Footprint in cells for structures, `None` for units.
+    pub fn footprint(&self) -> Option<(u16, u16)> {
+        match self.product {
+            Product::Building(b) => Some((b.w, b.h)),
+            Product::Unit(_) => None,
+        }
+    }
 }
 
 /// Sandbox sidebar picks (allied tech, YR ids), kept when present in rules.
 const VEHICLE_SLOTS: &[&str] = &["MTNK", "FV", "SREF", "CMIN"];
 const INFANTRY_SLOTS: &[&str] = &["E1", "GGI", "SNIPE"];
+
+/// The player's country. `[Countries]` lists Americans first, the
+/// skirmish dialog's default; it decides `RequiredHouses=` and
+/// `ForbiddenHouses=` (no sniper, Airforce Command instead of the
+/// generic air pad).
+pub const PLAYER_COUNTRY: &str = "Americans";
 
 /// One scripted attack wave: at `tick`, `count` of each unit kind spawn
 /// beside the enemy base and attack-move to the player's start.
@@ -193,6 +213,43 @@ fn intern(kinds: &mut Vec<String>, id: &str) -> u16 {
     u16::try_from(i).unwrap_or(u16::MAX)
 }
 
+/// `Factory=` decides which production queue a building hosts;
+/// `Refinery=yes` takes harvester deliveries.
+fn building_role(t: &yr_rules::TechnoType) -> Role {
+    match t.factory.as_deref() {
+        Some(f) if f.eq_ignore_ascii_case("BuildingType") => Role::ConstructionYard,
+        Some(f) if f.eq_ignore_ascii_case("UnitType") => Role::WarFactory,
+        Some(f) if f.eq_ignore_ascii_case("InfantryType") => Role::Barracks,
+        _ if t.refinery == Some(true) => Role::Refinery,
+        _ => Role::Combat,
+    }
+}
+
+/// What the sim needs to spawn a unit of rules type `t`.
+fn unit_spec(rules: &Rules, t: &yr_rules::TechnoType) -> UnitSpec {
+    UnitSpec {
+        loco: techno_loco(t.kind),
+        speed: techno_speed(t),
+        hp: t.strength.unwrap_or(100),
+        armor: armor_idx(t),
+        weapon: t
+            .primary
+            .as_deref()
+            .and_then(|w| yr_sim::WeaponSpec::from_rules(rules, w)),
+        role: if t.harvester == Some(true) {
+            Role::Harvester
+        } else {
+            Role::Combat
+        },
+    }
+}
+
+/// Whether `t` is open to `country` under `RequiredHouses=`/`ForbiddenHouses=`.
+fn house_allows(t: &yr_rules::TechnoType, country: &str) -> bool {
+    let named = |list: &[String]| list.iter().any(|h| h.eq_ignore_ascii_case(country));
+    (t.required_houses.is_empty() || named(&t.required_houses)) && !named(&t.forbidden_houses)
+}
+
 fn first_of(rules: &Rules, ids: &[&str]) -> Option<String> {
     ids.iter()
         .find(|id| rules.techno(id).is_some())
@@ -268,11 +325,9 @@ fn place_base(
     placed.extend(spec.extra.iter().map(|e| (e.to_string(), Role::Combat)));
     for (id, role) in placed {
         let Some(t) = rules.techno(&id) else { continue };
-        // `Factory=` decides which production queue a building hosts.
-        let role = match t.factory.as_deref() {
-            Some(f) if f.eq_ignore_ascii_case("UnitType") => Role::WarFactory,
-            Some(f) if f.eq_ignore_ascii_case("InfantryType") => Role::Barracks,
-            _ => role,
+        let role = match building_role(t) {
+            Role::Combat => role,
+            derived => derived,
         };
         let (fw, fh) = t
             .art
@@ -368,8 +423,8 @@ pub fn setup(
     sim.set_terrain(grid.clone());
     sim.set_credits(rules.skirmish.money.unwrap_or(10_000));
 
-    let buildables = buildables(fs, rules);
-    let mut kinds: Vec<String> = buildables.iter().map(|b| b.id.clone()).collect();
+    let yard = first_of(rules, &["GACNST", "NACNST", "YACNST"]);
+    let (buildables, mut kinds) = buildables(fs, rules, yard.as_deref());
     let mut cmds: Vec<Command> = Vec::new();
     let mut next_id = sim.next_id_peek();
     let mut taken_cells: Vec<(u16, u16)> = Vec::new();
@@ -416,7 +471,6 @@ pub fn setup(
     // inside place_unit via next_id_peek. Starting forces:
     let waypoints = start_waypoints(map);
     let player_at = waypoints.first().copied().unwrap_or((10, 10));
-    let yard = first_of(rules, &["GACNST", "NACNST", "YACNST"]);
     let plant = first_of(rules, &["GAPOWR", "NAPOWR", "YAPOWR"]);
     let refinery = first_of(rules, &["GAREFN", "NAREFN", "YAREFN"]);
     let weap = first_of(rules, &["GAWEAP", "NAWEAP", "YAWEAP"]);
@@ -570,6 +624,7 @@ pub fn setup(
         buildables,
         kinds,
         wave_units: Vec::new(),
+        prerequisite_groups: rules.globals.prerequisite_groups.clone(),
     })
 }
 
@@ -580,23 +635,69 @@ pub fn build_ticks(cost: i64, build_speed_units: i64) -> u32 {
     t.clamp(1, i64::from(u32::MAX)) as u32
 }
 
-fn buildables(fs: &AssetFs, rules: &Rules) -> Vec<Buildable> {
+/// Sidebar slots and the session kind table they start. Units are the
+/// sandbox picks above; structures are every `[BuildingTypes]` entry the
+/// player's side can build: `Prerequisite=` names the side's construction
+/// yard (how YR gates side ownership), `TechLevel=` within the skirmish
+/// level, open to [`PLAYER_COUNTRY`], with a cost and a `Foundation=`.
+/// Walls, water-bound shipyards and the yard itself (deployed from an
+/// MCV) are left out. Slot `i` is kind tag `i`; free units (refinery
+/// harvesters) are interned after the slots.
+fn buildables(fs: &AssetFs, rules: &Rules, yard: Option<&str>) -> (Vec<Buildable>, Vec<String>) {
     let speed = rules.globals.build_speed.map_or(700_000, |d| d.units());
+    let tech_level = rules.skirmish.tech_level.unwrap_or(10);
     let palette = ["CAMEO.PAL", "CAMEOMD.PAL"]
         .iter()
         .find_map(|n| fs.read(n).and_then(yr_formats::Palette::parse));
     let mut out = Vec::new();
-    let slots = VEHICLE_SLOTS
+    let mut free_units: Vec<(usize, String)> = Vec::new();
+    let units = VEHICLE_SLOTS
         .iter()
-        .map(|id| (*id, Factory::Vehicle))
-        .chain(INFANTRY_SLOTS.iter().map(|id| (*id, Factory::Infantry)));
-    for (id, factory) in slots {
-        let Some(t) = rules.techno(id) else { continue };
+        .map(|id| (id.to_string(), Factory::Vehicle))
+        .chain(
+            INFANTRY_SLOTS
+                .iter()
+                .map(|id| (id.to_string(), Factory::Infantry)),
+        );
+    let structures = rules
+        .buildings
+        .iter()
+        .filter(|t| {
+            let gated =
+                yard.is_some_and(|y| t.prerequisite.iter().any(|p| p.eq_ignore_ascii_case(y)));
+            gated
+                && t.tech_level.is_some_and(|l| (1..=tech_level).contains(&l))
+                && t.wall != Some(true)
+                && t.water_bound != Some(true)
+                && t.construction_yard != Some(true)
+        })
+        .map(|t| (t.id.clone(), Factory::Building));
+    for (id, factory) in units.chain(structures) {
+        let Some(t) = rules.techno(&id) else { continue };
         let Some(cost) = t.cost else { continue };
-        let role = if t.harvester == Some(true) {
-            Role::Harvester
+        if !house_allows(t, PLAYER_COUNTRY) {
+            continue;
+        }
+        let product = if factory == Factory::Building {
+            let Some((w, h)) = t.art.as_ref().and_then(|a| a.foundation) else {
+                continue;
+            };
+            if let Some(free) = &t.free_unit {
+                free_units.push((out.len(), free.clone()));
+            }
+            Product::Building(BuildingSpec {
+                w: u16::from(w),
+                h: u16::from(h),
+                hp: t.strength.unwrap_or(500),
+                armor: armor_idx(t),
+                power: t.power.unwrap_or(0),
+                role: building_role(t),
+                adjacent: t.adjacent.unwrap_or(2).clamp(0, 255) as u8,
+                base_normal: t.base_normal.unwrap_or(true),
+                free_unit: None,
+            })
         } else {
-            Role::Combat
+            Product::Unit(unit_spec(rules, t))
         };
         let cameo = t
             .art
@@ -605,30 +706,29 @@ fn buildables(fs: &AssetFs, rules: &Rules) -> Vec<Buildable> {
             .zip(palette.as_ref())
             .and_then(|(c, pal)| decode_cameo(fs, c, pal));
         out.push(Buildable {
-            id: id.to_string(),
+            id: id.clone(),
             name: t
                 .ui_name
                 .clone()
                 .or(t.name.clone())
-                .unwrap_or_else(|| id.to_string()),
+                .unwrap_or_else(|| id.clone()),
             factory,
             cost,
             ticks: build_ticks(cost, speed),
             cameo,
-            spec: UnitSpec {
-                loco: techno_loco(t.kind),
-                speed: techno_speed(t),
-                hp: t.strength.unwrap_or(100),
-                armor: armor_idx(t),
-                weapon: t
-                    .primary
-                    .as_deref()
-                    .and_then(|w| yr_sim::WeaponSpec::from_rules(rules, w)),
-                role,
-            },
+            prerequisite: t.prerequisite.clone(),
+            product,
         });
     }
-    out
+    let mut kinds: Vec<String> = out.iter().map(|b| b.id.clone()).collect();
+    for (slot, id) in free_units {
+        let Some(t) = rules.techno(&id) else { continue };
+        let tag = intern(&mut kinds, &id);
+        if let Product::Building(spec) = &mut out[slot].product {
+            spec.free_unit = Some((tag, unit_spec(rules, t)));
+        }
+    }
+    (out, kinds)
 }
 
 /// First frame of a cameo SHP through the cameo palette (index 0 clear).
@@ -648,15 +748,97 @@ fn decode_cameo(
 }
 
 impl Session {
-    /// Queue sidebar slot `slot` (None when out of range).
+    /// Queue sidebar slot `slot`. `None` when out of range, when its
+    /// prerequisites are missing, or for a structure while another one is
+    /// building or waiting to be placed (one at a time, as in RA2).
     pub fn produce(&self, slot: usize) -> Option<Command> {
         let b = self.buildables.get(slot)?;
+        if !self.prerequisites_met(slot) {
+            return None;
+        }
+        let busy = self
+            .sim
+            .production()
+            .iter()
+            .any(|o| o.factory == Factory::Building);
+        if b.factory == Factory::Building && busy {
+            return None;
+        }
         Some(Command::Produce {
             factory: b.factory,
             kind: u16::try_from(slot).ok()?,
-            spec: b.spec,
+            product: b.product,
             cost: b.cost,
             ticks: b.ticks,
+        })
+    }
+
+    /// Whether the player owns what slot `slot`'s `Prerequisite=` asks
+    /// for: each token is a type id or a generic group (`POWER` is any
+    /// of `PrerequisitePower=`), matched against the player's buildings.
+    pub fn prerequisites_met(&self, slot: usize) -> bool {
+        let Some(b) = self.buildables.get(slot) else {
+            return false;
+        };
+        let owned: Vec<&str> = self
+            .sim
+            .buildings()
+            .iter()
+            .filter(|h| h.owner == PLAYER)
+            .filter_map(|h| self.kinds.get(usize::from(h.kind)).map(String::as_str))
+            .collect();
+        b.prerequisite.iter().all(|token| {
+            let group = self
+                .prerequisite_groups
+                .iter()
+                .find(|(t, _)| t.eq_ignore_ascii_case(token))
+                .map(|(_, ids)| ids.as_slice());
+            owned.iter().any(|id| match group {
+                Some(ids) => ids.iter().any(|g| g.eq_ignore_ascii_case(id)),
+                None => token.eq_ignore_ascii_case(id),
+            })
+        })
+    }
+
+    /// Slot of the finished structure waiting to be placed, if any.
+    pub fn ready_structure(&self) -> Option<usize> {
+        self.sim
+            .production()
+            .iter()
+            .find(|o| o.factory == Factory::Building)
+            .filter(|o| o.done())
+            .map(|o| usize::from(o.kind))
+    }
+
+    /// Top-left footprint cell for slot `slot` with the cursor over map
+    /// cell `cell`: the footprint centres on the cursor (the cursor cell
+    /// is the top-left one for 1- and 2-cell sides).
+    pub fn placement_origin(&self, slot: usize, cell: (i32, i32)) -> Option<(u16, u16)> {
+        let (w, h) = self.buildables.get(slot)?.footprint()?;
+        let x = cell.0 - (i32::from(w) - 1) / 2;
+        let y = cell.1 - (i32::from(h) - 1) / 2;
+        Some((u16::try_from(x).ok()?, u16::try_from(y).ok()?))
+    }
+
+    /// Whether slot `slot`'s structure may stand with its top-left cell at
+    /// `origin` (the sim's own placement rules, for the ghost preview).
+    pub fn can_place(&self, slot: usize, origin: (u16, u16)) -> bool {
+        match self.buildables.get(slot).map(|b| b.product) {
+            Some(Product::Building(spec)) => self.sim.can_place(PLAYER, &spec, origin.0, origin.1),
+            _ => false,
+        }
+    }
+
+    /// Place the finished structure of slot `slot` at `origin`; `None`
+    /// unless it is the ready one and the spot is valid.
+    pub fn place(&self, slot: usize, origin: (u16, u16)) -> Option<Command> {
+        if self.ready_structure() != Some(slot) || !self.can_place(slot, origin) {
+            return None;
+        }
+        Some(Command::PlaceProduced {
+            kind: u16::try_from(slot).ok()?,
+            x: origin.0,
+            y: origin.1,
         })
     }
 

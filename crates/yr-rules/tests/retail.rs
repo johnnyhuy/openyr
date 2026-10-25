@@ -111,3 +111,48 @@ fn globals_houses_and_skirmish_defaults() {
         Some("Civilian")
     );
 }
+
+#[test]
+fn building_placement_keys_and_prerequisite_groups() {
+    let Some(rules) = retail() else {
+        eprintln!("skip: retail corpus not present");
+        return;
+    };
+    let refinery = rules.techno("GAREFN").unwrap();
+    assert_eq!(refinery.adjacent, Some(2));
+    assert_eq!(refinery.free_unit.as_deref(), Some("CMIN"));
+    assert_eq!(refinery.refinery, Some(true));
+    assert_eq!(refinery.prerequisite, ["POWER", "GACNST"]);
+    let yard = rules.techno("GACNST").unwrap();
+    assert_eq!(
+        (
+            yard.construction_yard,
+            yard.factory.as_deref(),
+            yard.tech_level
+        ),
+        (Some(true), Some("BuildingType"), Some(-1))
+    );
+    // Defences and walls do not extend the base.
+    assert_eq!(rules.techno("GAPILL").unwrap().base_normal, Some(false));
+    assert_eq!(rules.techno("GAWALL").unwrap().wall, Some(true));
+    assert_eq!(rules.techno("GAYARD").unwrap().water_bound, Some(true));
+    assert_eq!(
+        rules.techno("AMRADR").unwrap().required_houses,
+        ["Americans"]
+    );
+    assert_eq!(
+        rules.techno("GAAIRC").unwrap().forbidden_houses,
+        ["Americans"]
+    );
+    let group = |t: &str| rules.prerequisite_group(t).map(<[String]>::to_vec);
+    assert_eq!(
+        group("POWER").unwrap(),
+        ["GAPOWR", "NAPOWR", "NANRCT", "YAPOWR"]
+    );
+    assert_eq!(
+        group("proc").unwrap(),
+        ["GAREFN", "NAREFN", "YAREFN", "SMIN"]
+    );
+    assert!(group("RADAR").unwrap().iter().any(|i| i == "AMRADR"));
+    assert_eq!(group("GACNST"), None);
+}
