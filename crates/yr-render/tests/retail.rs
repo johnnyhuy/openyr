@@ -151,3 +151,97 @@ fn sprite_bank_resolves_sandbox_art() {
         }
     }
 }
+
+/// Check live animation against independently selected retail body and
+/// shadow canvases. Optional dumps contain EA art and stay outside git.
+#[test]
+fn infantry_animation_matches_retail_sequence_canvases() {
+    use yr_render::sprites::{screen_octant, InfantryAnimation, SpriteBank, SHADOW_ALPHA};
+
+    let Some(dir) = install_dir() else {
+        eprintln!("skip: retail install not present");
+        return;
+    };
+    let mut fs = AssetFs::open(&dir).expect("install opens");
+    fs.set_theater(Theater::Temperate);
+    let palette = yr_formats::Palette::parse(fs.read("UNITTEM.PAL").unwrap()).unwrap();
+    let mut bank = SpriteBank::open(dir.to_str().unwrap(), "EB1.MMX").unwrap();
+    let remap = bank.house_color("Americans");
+    let out = std::env::var("OPENYR_ANIMATION_DUMP").ok();
+    if let Some(out) = &out {
+        std::fs::create_dir_all(out).unwrap();
+    }
+    // artmd.ini: GISequence and GuardianGISequence both walk at 8,
+    // idle at 56/71, but FireUp starts at 164 and 204 respectively.
+    for (id, image, fire_start) in [("E1", "GI.SHP", 164), ("GGI", "GGI.SHP", 204)] {
+        let shp = yr_formats::ShpFile::parse(fs.read(image).unwrap()).unwrap();
+        for facing in (0..=224u8).step_by(32) {
+            let direction = usize::from((8 - screen_octant(facing)) % 8);
+            for phase in 0..15u64 {
+                for (action, animation, expected) in [
+                    (
+                        "walk",
+                        InfantryAnimation {
+                            moving: true,
+                            elapsed: phase * 2,
+                            since_shot: None,
+                        },
+                        8 + direction * 6 + (phase % 6) as usize,
+                    ),
+                    (
+                        "fire",
+                        InfantryAnimation {
+                            moving: false,
+                            elapsed: 0,
+                            since_shot: Some(phase * 2),
+                        },
+                        if phase < 6 {
+                            fire_start + direction * 6 + phase as usize
+                        } else {
+                            direction
+                        },
+                    ),
+                    (
+                        "idle",
+                        InfantryAnimation {
+                            moving: false,
+                            elapsed: 180 + phase * 2,
+                            since_shot: None,
+                        },
+                        56 + phase as usize,
+                    ),
+                ] {
+                    let sprite = bank.get_animated(id, facing, remap, animation).unwrap();
+                    let body = shp.decode_frame_canvas(expected).unwrap();
+                    let shadow = shp
+                        .decode_frame_canvas(expected + shp.frames.len() / 2)
+                        .unwrap();
+                    for (p, &index) in body.iter().enumerate() {
+                        let pixel = &sprite.rgba[p * 4..p * 4 + 4];
+                        let alpha = if index != 0 {
+                            255
+                        } else if shadow[p] != 0 {
+                            SHADOW_ALPHA
+                        } else {
+                            0
+                        };
+                        assert_eq!(
+                            pixel[3], alpha,
+                            "{id} {action} facing {facing} phase {phase}, pixel {p}"
+                        );
+                        if index != 0 && !(16..=31).contains(&index) {
+                            assert_eq!(pixel, palette.rgba(index), "retail body pixel");
+                        }
+                    }
+                    if let Some(out) = &out {
+                        std::fs::write(
+                            format!("{out}/{id}-{action}-{facing:03}-{phase:02}.png"),
+                            yr_render::png::encode_rgba(sprite.w, sprite.h, &sprite.rgba),
+                        )
+                        .unwrap();
+                    }
+                }
+            }
+        }
+    }
+}

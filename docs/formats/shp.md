@@ -68,6 +68,52 @@ files (83,626 non-empty frames) with zero errors:
   Observed on `RA2.MIX/CONQUER.MIX/GI.SHP` (`mix-dump render` with
   `UNITTEM.PAL`); used by `yr-render::sprites`.
 
+## Infantry action sequences
+
+`artmd.ini` was extracted from `ra2md.mix/LOCALMD.MIX/ARTMD.INI`.
+The rules `E1` image resolves to `GI`, whose art section names
+`GISequence`. `GGI` names `GuardianGISequence`. The sequence values are
+`start,count,facing_stride[,fixed_facing]`:
+
+| Sequence | GI | Guardian GI |
+|---|---|---|
+| Ready | `0,1,1` | `0,1,1` |
+| Walk | `8,6,6` | `8,6,6` |
+| FireUp | `164,6,6` | `204,6,6` |
+| Idle1 | `56,15,0,S` | `56,15,0,S` |
+| Idle2 | `71,15,0,E` | `71,15,0,E` |
+
+The body frame is `start + facing * facing_stride + phase`, with facing
+counter-clockwise from screen up as above. A zero stride selects the
+same frames for every facing; the idle art already depicts the fixed
+direction. The shadow is at `body_frame + total_frames / 2`.
+`infantry_animation_matches_retail_sequence_canvases` in
+`crates/yr-render/tests/retail.rs` compares every body/shadow coverage
+pixel and every non-remap body colour against the independent SHP
+canvases for both types, all facings, and every walk/fire/idle phase.
+`OPENYR_ANIMATION_DUMP=<external-dir>` exports those sprites as PNGs.
+
+The live window and `--frames` share the following prototype policy:
+
+- Two simulation ticks per animation frame at 15 ticks/s. This cadence
+  is a presentation choice, not an oracle-verified timing rule.
+- Actual position changes select looping Walk. A blocked or stopped
+  unit returns to Ready even if it still has a movement target.
+- A newly observed shot starts FireUp. It plays once, returns to Ready,
+  and restarts on the next shot. Movement takes priority.
+- A stationary unit occasionally plays Idle1 or Idle2, alternating in
+  90-tick intervals, then returns to its current Ready facing.
+- Clocks live in `yr-app::animation`, outside the simulation hash.
+  Repeated redraws without another simulation tick do not advance them.
+- Checked arithmetic validates the complete sequence, across all eight
+  facings, against the actual SHP body-frame count. Invalid or absent
+  action data falls back to Ready, then a safe standing frame. The
+  decoded cache is keyed by the resulting frame, not an unbounded tick.
+
+Prone, deployed, death and paradrop sequences are not wired to sim
+states yet. Building animation overlays/bibs, adjacent-building sorting
+and Wine side-by-side validation remain under #6.
+
 ## Sources
 
 - XCC Utilities `shp_ts_file` (Olaf van der Spek) and ModEnc "SHP (TS)".
