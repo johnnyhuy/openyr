@@ -58,8 +58,15 @@ incremental, testable path where each milestone is independently useful.
 - [x] SHP + VXL drawing with palette + shadow pass for live sim objects
       (`yr-render::sprites`: building art on the footprint, infantry
       standing frames per octant, voxel tanks, house-colour remap,
-      half-alpha shadows; window + `--frames` dumps). Walk/fire
-      sequences, building active anims and HVA transforms still open (#6)
+      half-alpha shadows; window + `--frames` dumps). Building active
+      animations and HVA transforms still open (#6)
+- [x] Infantry walk, fire and idle sequences from retail `Sequence=`
+      data, with all eight facings and matching shadow frames (#6).
+      Presentation clocks observe movement and shots at sim ticks;
+      malformed sequences fall back to standing art. Playback cadence
+      is provisional pending the Wine comparison (`docs/formats/shp.md`).
+- [ ] Building active/production overlays, bibs and adjacent-structure
+      sorting; Wine side-by-side infantry and Construction Yard crops (#6)
 - [ ] Sidebar/cameo UI from `ra2md.csf` strings (cameo build sidebar
       done in M5, structure placement done (#46); CSF names and tabs
       still open (#47))
@@ -108,6 +115,8 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       (`docs/formats/rules.md`). Power is judged per owner (#52)
 - [ ] Save/load (deterministic state dump)
 - [ ] Basic AI skirmish opponent (stage 2)
+- [ ] Unambiguous workspace launch command for the documented headless
+      proof workflow (#54)
 
 ## M6: Fidelity pass
 

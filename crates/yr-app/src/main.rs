@@ -60,6 +60,7 @@ struct App {
     sprites: Option<std::cell::RefCell<yr_render::sprites::SpriteBank>>,
     session: Option<Session>,
     audio: Option<yr_app::audio::AudioScene>,
+    animations: yr_app::animation::UnitAnimations,
     view: View,
     selected: BTreeSet<u32>,
     pending: Vec<Command>,
@@ -273,10 +274,12 @@ impl App {
             return;
         };
         let cmds = std::mem::take(&mut self.pending);
+        self.animations.update(&session.sim);
         if let Some(audio) = &mut self.audio {
             audio.commands(session, &cmds);
         }
         session.step(&cmds);
+        self.animations.update(&session.sim);
         let events = session.sim.drain_events();
         if let Some(audio) = &mut self.audio {
             audio.update(session, &events);
@@ -358,6 +361,7 @@ impl App {
             hp: f32,
             /// Rules id + sim facing + owner, when art may exist.
             art: Option<(String, u8, u8)>,
+            animation: yr_render::sprites::InfantryAnimation,
         }
         let mut markers: Vec<Marker> = Vec::new();
         // Placement ghost: window centres of the footprint cells.
@@ -418,6 +422,7 @@ impl App {
                     art: (b.owner != yr_sim::OWNER_NEUTRAL)
                         .then(|| kind_id(b.kind).map(|k| (k, 0, b.owner)))
                         .flatten(),
+                    animation: Default::default(),
                 });
             }
             for u in sim.units() {
@@ -439,6 +444,7 @@ impl App {
                     art: (u.owner != yr_sim::OWNER_NEUTRAL)
                         .then(|| kind_id(u.kind).map(|k| (k, u.facing, u.owner)))
                         .flatten(),
+                    animation: self.animations.get(u.id),
                 });
             }
         }
@@ -464,7 +470,7 @@ impl App {
             let drawn = match (&m.art, bank.as_mut()) {
                 (Some((id, facing, owner)), Some(bank)) => {
                     let remap = owner_remap(bank, *owner);
-                    match bank.get(id, *facing, remap) {
+                    match bank.get_animated(id, *facing, remap, m.animation) {
                         Some(s) => {
                             blit_sprite(frame, fw, fh, s, m.ax, m.ay, k);
                             true
@@ -1092,6 +1098,7 @@ fn new_app(gamedir: String, map_name: String, scale: u32) -> App {
         sprites: None,
         session: None,
         audio: None,
+        animations: Default::default(),
         view: View {
             cam_x: 0.0,
             cam_y: 0.0,

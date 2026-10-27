@@ -1,5 +1,5 @@
 //! Live-object sprites for the window: retail art for sim units and
-//! buildings, decoded once per (type, facing, house colour) into RGBA
+//! buildings, decoded once per (type, frame, house colour) into RGBA
 //! with straight alpha. Shadows are kept as half-alpha black so the
 //! blitter halves whatever terrain lies underneath, matching the static
 //! map renderer's shadow pass.
@@ -12,6 +12,102 @@ use yr_rules::{Rules, TechnoKind};
 
 /// Alpha value marking a shadow pixel (darken the destination by half).
 pub const SHADOW_ALPHA: u8 = 128;
+
+/// Presentation state sampled after a simulation tick. These clocks do
+/// not change the simulation or advance when the window redraws.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct InfantryAnimation {
+    pub moving: bool,
+    /// Ticks since movement started or stopped.
+    pub elapsed: u64,
+    /// Ticks since the most recent shot, if one has been observed.
+    pub since_shot: Option<u64>,
+}
+
+/// Prototype playback cadence at 15 simulation ticks per second. Retail
+/// sequence triples describe frame layout, not a verified playback rate.
+const INFANTRY_FRAME_TICKS: u64 = 2;
+const IDLE_WAIT_TICKS: u64 = 90;
+
+#[derive(Debug, Clone, Copy)]
+struct Sequence {
+    start: usize,
+    count: usize,
+    stride: usize,
+}
+
+impl Sequence {
+    fn parse(value: &str) -> Option<Self> {
+        let mut fields = value.split(',').map(str::trim);
+        let start = fields.next()?.parse().ok()?;
+        let count = fields.next()?.parse().ok()?;
+        let stride = fields.next()?.parse().ok()?;
+        (count > 0).then_some(Self {
+            start,
+            count,
+            stride,
+        })
+    }
+
+    fn frame(self, facing: usize, elapsed: u64, body_frames: usize) -> Option<usize> {
+        // Check the whole sequence, including every facing, before using
+        // any of it. Malformed INI values must never select a shadow.
+        let end = self
+            .start
+            .checked_add(self.stride.checked_mul(7)?)?
+            .checked_add(self.count)?;
+        if end > body_frames {
+            return None;
+        }
+        let phase = (elapsed / INFANTRY_FRAME_TICKS) % self.count as u64;
+        self.start
+            .checked_add(self.stride.checked_mul(facing)?)?
+            .checked_add(phase as usize)
+    }
+
+    fn duration(self) -> u64 {
+        (self.count as u64).saturating_mul(INFANTRY_FRAME_TICKS)
+    }
+}
+
+struct InfantrySequences {
+    body_frames: usize,
+    ready: Option<Sequence>,
+    walk: Option<Sequence>,
+    fire: Option<Sequence>,
+    idle: [Option<Sequence>; 2],
+}
+
+impl InfantrySequences {
+    fn frame(&self, octant: u8, animation: InfantryAnimation) -> usize {
+        let facing = infantry_stand_frame(octant);
+        let ready = self
+            .ready
+            .and_then(|s| s.frame(facing, 0, self.body_frames))
+            .unwrap_or(if facing < self.body_frames { facing } else { 0 });
+        let (sequence, elapsed) = if animation.moving {
+            (self.walk, animation.elapsed)
+        } else if let Some(age) = animation
+            .since_shot
+            .filter(|age| self.fire.is_some_and(|s| *age < s.duration()))
+        {
+            (self.fire, age)
+        } else {
+            // Play the two non-directional idle gestures occasionally,
+            // returning to the current facing between gestures.
+            let cycle = animation.elapsed / IDLE_WAIT_TICKS;
+            let age = animation.elapsed % IDLE_WAIT_TICKS;
+            let idle = self.idle[(cycle % 2) as usize];
+            if cycle == 0 || !idle.is_some_and(|s| age < s.duration()) {
+                return ready;
+            }
+            (idle, age)
+        };
+        sequence
+            .and_then(|s| s.frame(facing, elapsed, self.body_frames))
+            .unwrap_or(ready)
+    }
+}
 
 /// One decoded object image in native (scale 1) pixels.
 pub struct Sprite {
@@ -32,7 +128,8 @@ pub struct SpriteBank {
     rules_ini: IniFile,
     theater: Theater,
     unit_pal: Palette,
-    cache: HashMap<(String, u8, [u8; 3]), Option<Sprite>>,
+    infantry: HashMap<String, InfantrySequences>,
+    cache: HashMap<(String, usize, [u8; 3]), Option<Sprite>>,
 }
 
 impl SpriteBank {
@@ -64,12 +161,39 @@ impl SpriteBank {
             vfs.read("ARTMD.INI").ok_or("artmd.ini not found")?,
         ));
         let rules = Rules::load(&rules_ini, &art_ini);
+        let mut infantry = HashMap::new();
+        for t in rules.infantry.iter() {
+            let Some(section) = t.art.as_ref().and_then(|a| art_ini.section(&a.section)) else {
+                continue;
+            };
+            let Some(sequence) = section.get("Sequence").and_then(|s| art_ini.section(s)) else {
+                continue;
+            };
+            let Some(shp) = vfs
+                .read(&format!("{}.SHP", t.image))
+                .and_then(|b| ShpFile::parse(b).ok())
+            else {
+                continue;
+            };
+            let read = |key| sequence.get(key).and_then(Sequence::parse);
+            infantry.insert(
+                t.id.to_ascii_uppercase(),
+                InfantrySequences {
+                    body_frames: shp.frames.len() / 2,
+                    ready: read("Ready"),
+                    walk: read("Walk"),
+                    fire: read("FireUp"),
+                    idle: [read("Idle1"), read("Idle2")],
+                },
+            );
+        }
         Ok(SpriteBank {
             vfs,
             rules,
             rules_ini,
             theater,
             unit_pal,
+            infantry,
             cache: HashMap::new(),
         })
     }
@@ -84,16 +208,47 @@ impl SpriteBank {
     /// Facing is quantised to the 8 screen octants. `None` when the art
     /// does not resolve (callers fall back to a marker).
     pub fn get(&mut self, id: &str, facing: u8, remap: [u8; 3]) -> Option<&Sprite> {
+        self.get_animated(id, facing, remap, InfantryAnimation::default())
+    }
+
+    /// Draw the retail infantry sequence for this tick's observed action.
+    /// Vehicles and buildings keep their existing static-art behaviour.
+    pub fn get_animated(
+        &mut self,
+        id: &str,
+        facing: u8,
+        remap: [u8; 3],
+        animation: InfantryAnimation,
+    ) -> Option<&Sprite> {
         let octant = screen_octant(facing);
-        let key = (id.to_string(), octant, remap);
+        let id = id.to_ascii_uppercase();
+        let frame = if self
+            .rules
+            .techno(&id)
+            .is_some_and(|t| t.art.as_ref().is_some_and(|a| a.voxel))
+        {
+            usize::from(octant)
+        } else if self
+            .rules
+            .techno(&id)
+            .is_some_and(|t| t.kind == TechnoKind::Building)
+        {
+            0
+        } else {
+            self.infantry.get(&id).map_or_else(
+                || infantry_stand_frame(octant),
+                |s| s.frame(octant, animation),
+            )
+        };
+        let key = (id.clone(), frame, remap);
         if !self.cache.contains_key(&key) {
-            let sprite = self.decode(id, octant, remap);
+            let sprite = self.decode(&id, frame, remap);
             self.cache.insert(key.clone(), sprite);
         }
         self.cache.get(&key).and_then(Option::as_ref)
     }
 
-    fn decode(&self, id: &str, octant: u8, remap: [u8; 3]) -> Option<Sprite> {
+    fn decode(&self, id: &str, frame: usize, remap: [u8; 3]) -> Option<Sprite> {
         let t = self.rules.techno(id)?;
         let art = t.art.as_ref();
         let image = t.image.to_ascii_uppercase();
@@ -112,7 +267,7 @@ impl SpriteBank {
                 body,
                 tur,
                 barl,
-                voxel_facing(octant),
+                voxel_facing(frame as u8),
                 &self.unit_pal,
                 Some(remap),
             );
@@ -136,10 +291,14 @@ impl SpriteBank {
         } else {
             let file = format!("{image}.SHP");
             self.vfs.read(&file)?;
-            (file, infantry_stand_frame(octant), (0, 0))
+            (file, frame, (0, 0))
         };
         let shp = ShpFile::parse(self.vfs.read(&file)?).ok()?;
-        let frame = if frame < shp.frames.len() { frame } else { 0 };
+        let frame = if frame < shp.frames.len() / 2 {
+            frame
+        } else {
+            0
+        };
         let canvas = shp.decode_frame_canvas(frame).ok()?;
         let (w, h) = (usize::from(shp.width), usize::from(shp.height));
         let mut rgba = vec![0u8; w * h * 4];
@@ -210,6 +369,141 @@ fn voxel_facing(octant: u8) -> u16 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn sequences() -> InfantrySequences {
+        InfantrySequences {
+            body_frames: 400,
+            ready: Sequence::parse("0,1,1"),
+            walk: Sequence::parse("8,6,6"),
+            fire: Sequence::parse("164,6,6"),
+            idle: [Sequence::parse("56,15,0,S"), Sequence::parse("71,15,0,E")],
+        }
+    }
+
+    #[test]
+    fn sequences_select_action_facing_and_phase() {
+        let s = sequences();
+        for octant in 0..8 {
+            let facing = infantry_stand_frame(octant);
+            assert_eq!(s.frame(octant, InfantryAnimation::default()), facing);
+            for phase in 0..6 {
+                let animation = InfantryAnimation {
+                    moving: true,
+                    elapsed: phase * 2,
+                    since_shot: Some(0),
+                };
+                assert_eq!(s.frame(octant, animation), 8 + facing * 6 + phase as usize);
+                let animation = InfantryAnimation {
+                    moving: false,
+                    elapsed: 0,
+                    since_shot: Some(phase * 2),
+                };
+                assert_eq!(
+                    s.frame(octant, animation),
+                    164 + facing * 6 + phase as usize
+                );
+            }
+            // A completed fire clip returns to ready even if the target
+            // is still in range; walking takes priority over firing.
+            assert_eq!(
+                s.frame(
+                    octant,
+                    InfantryAnimation {
+                        since_shot: Some(12),
+                        ..Default::default()
+                    }
+                ),
+                facing
+            );
+            assert_eq!(
+                s.frame(
+                    octant,
+                    InfantryAnimation {
+                        elapsed: 90,
+                        ..Default::default()
+                    }
+                ),
+                71
+            );
+            assert_eq!(
+                s.frame(
+                    octant,
+                    InfantryAnimation {
+                        elapsed: 180,
+                        ..Default::default()
+                    }
+                ),
+                56
+            );
+            assert_eq!(
+                s.frame(
+                    octant,
+                    InfantryAnimation {
+                        elapsed: 210,
+                        ..Default::default()
+                    }
+                ),
+                facing
+            );
+        }
+    }
+
+    #[test]
+    fn hostile_sequences_fall_back_without_addressing_shadows() {
+        for value in ["0,0,0", "-1,6,6", "8,no,6", "8,6", "8,6,-1"] {
+            assert!(Sequence::parse(value).is_none(), "{value}");
+        }
+        for value in [
+            format!("{},6,6", usize::MAX),
+            format!("8,{},6", usize::MAX),
+            format!("8,6,{}", usize::MAX),
+            "399,2,0".to_string(),
+            "360,6,6".to_string(),
+        ] {
+            let mut s = sequences();
+            s.walk = Sequence::parse(&value);
+            s.fire = s.walk;
+            for octant in 0..8 {
+                let ready = infantry_stand_frame(octant);
+                assert_eq!(
+                    s.frame(
+                        octant,
+                        InfantryAnimation {
+                            moving: true,
+                            elapsed: u64::MAX,
+                            since_shot: None
+                        }
+                    ),
+                    ready,
+                    "{value}"
+                );
+                assert_eq!(
+                    s.frame(
+                        octant,
+                        InfantryAnimation {
+                            since_shot: Some(0),
+                            ..Default::default()
+                        }
+                    ),
+                    ready,
+                    "{value}"
+                );
+            }
+        }
+        let s = sequences();
+        let frame = s.frame(
+            7,
+            InfantryAnimation {
+                moving: true,
+                elapsed: u64::MAX,
+                since_shot: None,
+            },
+        );
+        assert!(
+            (14..20).contains(&frame),
+            "large clocks wrap within the walk sequence"
+        );
+    }
 
     #[test]
     fn octants_follow_the_iso_projection() {
