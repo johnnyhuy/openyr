@@ -347,8 +347,7 @@ impl App {
         // entity markers (needs `map` borrowed while frame is mutably
         // borrowed, so gather screen positions first).
         struct Marker {
-            /// Painter-order key (cell x + y of the object's front).
-            depth: f32,
+            footprint: yr_render::depth::Footprint,
             /// Window position of the sprite anchor.
             ax: f32,
             ay: f32,
@@ -362,6 +361,7 @@ impl App {
             /// Rules id + sim facing + owner, when art may exist.
             art: Option<(String, u8, u8)>,
             animation: yr_render::sprites::InfantryAnimation,
+            building: Option<yr_render::sprites::BuildingAnimation>,
         }
         let mut markers: Vec<Marker> = Vec::new();
         // Placement ghost: window centres of the footprint cells.
@@ -410,7 +410,12 @@ impl App {
                     * zoom)
                     .max(8.0);
                 markers.push(Marker {
-                    depth: f32::from(b.cell.0 + b.size.0 + b.cell.1 + b.size.1) - 1.0,
+                    footprint: yr_render::depth::Footprint {
+                        x: f32::from(b.cell.0),
+                        y: f32::from(b.cell.1),
+                        w: f32::from(b.size.0),
+                        h: f32::from(b.size.1),
+                    },
                     ax,
                     ay,
                     wx,
@@ -423,6 +428,7 @@ impl App {
                         .then(|| kind_id(b.kind).map(|k| (k, 0, b.owner)))
                         .flatten(),
                     animation: Default::default(),
+                    building: Some(yr_app::animation::building_animation(sim, b)),
                 });
             }
             for u in sim.units() {
@@ -432,7 +438,12 @@ impl App {
                 let (fx, fy) = (u.x.raw() as f32 / 256.0, u.y.raw() as f32 / 256.0);
                 let (wx, wy) = to_win(fx, fy);
                 markers.push(Marker {
-                    depth: fx + fy,
+                    footprint: yr_render::depth::Footprint {
+                        x: fx,
+                        y: fy,
+                        w: 0.0,
+                        h: 0.0,
+                    },
                     ax: wx,
                     ay: wy,
                     wx,
@@ -445,10 +456,13 @@ impl App {
                         .then(|| kind_id(u.kind).map(|k| (k, u.facing, u.owner)))
                         .flatten(),
                     animation: self.animations.get(u.id),
+                    building: None,
                 });
             }
         }
-        markers.sort_by(|a, b| a.depth.total_cmp(&b.depth));
+        let order = yr_render::depth::painter_order(
+            &markers.iter().map(|m| m.footprint).collect::<Vec<_>>(),
+        );
         for sy in 0..fh as i32 {
             let my = self.view.cam_y + sy as f32 / self.view.zoom;
             for sx in 0..fw as i32 {
@@ -466,16 +480,74 @@ impl App {
         // filled owner-colour diamond.
         let k = self.view.zoom / map.scale.max(1) as f32;
         let mut bank = self.sprites.as_ref().map(|b| b.borrow_mut());
+        // Bibs belong to the ground, below every unit and building body.
         for m in &markers {
+            if let (Some((id, _, owner)), Some(animation), Some(bank)) =
+                (&m.art, m.building, bank.as_mut())
+            {
+                let remap = owner_remap(bank, *owner);
+                if let Some(bib) = bank.get_building(id, remap, animation).and_then(|b| b.bib) {
+                    blit_sprite(frame, fw, fh, bib, m.ax, m.ay, k, SpritePass::Body);
+                }
+            }
+        }
+        // Union the shadow masks on the ground before drawing bodies.
+        // Overlapping base/overlay shadows darken a pixel only once.
+        let mut shadowed = vec![false; (fw * fh) as usize];
+        for m in &markers {
+            if let (Some((id, facing, owner)), Some(bank)) = (&m.art, bank.as_mut()) {
+                let remap = owner_remap(bank, *owner);
+                if let Some(animation) = m.building {
+                    if let Some(building) = bank.get_building(id, remap, animation) {
+                        for layer in building.bib.into_iter().chain(building.layers) {
+                            blit_sprite(
+                                frame,
+                                fw,
+                                fh,
+                                layer,
+                                m.ax,
+                                m.ay,
+                                k,
+                                SpritePass::Shadow(&mut shadowed),
+                            );
+                        }
+                    }
+                } else if let Some(sprite) = bank.get_animated(id, *facing, remap, m.animation) {
+                    blit_sprite(
+                        frame,
+                        fw,
+                        fh,
+                        sprite,
+                        m.ax,
+                        m.ay,
+                        k,
+                        SpritePass::Shadow(&mut shadowed),
+                    );
+                }
+            }
+        }
+        for &index in &order {
+            let m = &markers[index];
             let drawn = match (&m.art, bank.as_mut()) {
                 (Some((id, facing, owner)), Some(bank)) => {
                     let remap = owner_remap(bank, *owner);
-                    match bank.get_animated(id, *facing, remap, m.animation) {
-                        Some(s) => {
-                            blit_sprite(frame, fw, fh, s, m.ax, m.ay, k);
+                    if let Some(animation) = m.building {
+                        if let Some(building) = bank.get_building(id, remap, animation) {
+                            for layer in building.layers {
+                                blit_sprite(frame, fw, fh, layer, m.ax, m.ay, k, SpritePass::Body);
+                            }
                             true
+                        } else {
+                            false
                         }
-                        None => false,
+                    } else {
+                        match bank.get_animated(id, *facing, remap, m.animation) {
+                            Some(s) => {
+                                blit_sprite(frame, fw, fh, s, m.ax, m.ay, k, SpritePass::Body);
+                                true
+                            }
+                            None => false,
+                        }
                     }
                 }
                 _ => false,
@@ -692,8 +764,14 @@ fn owner_remap(bank: &yr_render::sprites::SpriteBank, owner: u8) -> [u8; 3] {
     }
 }
 
-/// Nearest-neighbour blit of `s` with its anchor at window `(ax, ay)`,
-/// `k` window pixels per sprite pixel. Shadow pixels halve the frame.
+enum SpritePass<'a> {
+    Body,
+    Shadow(&'a mut [bool]),
+}
+
+/// Nearest-neighbour blit with `k` window pixels per sprite pixel.
+/// Shadows halve the ground once, using the shared coverage mask.
+#[allow(clippy::too_many_arguments)]
 fn blit_sprite(
     frame: &mut [u8],
     fw: u32,
@@ -702,6 +780,7 @@ fn blit_sprite(
     ax: f32,
     ay: f32,
     k: f32,
+    mut pass: SpritePass<'_>,
 ) {
     if k <= 0.0 {
         return;
@@ -713,27 +792,32 @@ fn blit_sprite(
         (s.h as f32 * k).ceil() as i32,
     );
     for dy in 0..dh {
-        let py = y0 + dy;
+        let py = i64::from(y0) + i64::from(dy);
         let sy = ((dy as f32 + 0.5) / k) as u32;
-        if py < 0 || py >= fh as i32 || sy >= s.h {
+        if py < 0 || py >= i64::from(fh) || sy >= s.h {
             continue;
         }
         for dx in 0..dw {
-            let px = x0 + dx;
+            let px = i64::from(x0) + i64::from(dx);
             let sx = ((dx as f32 + 0.5) / k) as u32;
-            if px < 0 || px >= fw as i32 || sx >= s.w {
+            if px < 0 || px >= i64::from(fw) || sx >= s.w {
                 continue;
             }
             let src = ((sy * s.w + sx) * 4) as usize;
             let dst = ((py as u32 * fw + px as u32) * 4) as usize;
-            match s.rgba[src + 3] {
-                0 => {}
-                yr_render::sprites::SHADOW_ALPHA => {
-                    for c in &mut frame[dst..dst + 3] {
-                        *c /= 2;
+            match (s.rgba[src + 3], &mut pass) {
+                (yr_render::sprites::SHADOW_ALPHA, SpritePass::Shadow(mask)) => {
+                    if !mask[dst / 4] {
+                        for c in &mut frame[dst..dst + 3] {
+                            *c /= 2;
+                        }
+                        mask[dst / 4] = true;
                     }
                 }
-                _ => frame[dst..dst + 4].copy_from_slice(&s.rgba[src..src + 4]),
+                (255, SpritePass::Body) => {
+                    frame[dst..dst + 4].copy_from_slice(&s.rgba[src..src + 4])
+                }
+                _ => {}
             }
         }
     }
@@ -1371,4 +1455,51 @@ fn main() {
     let event_loop = EventLoop::new().expect("event loop");
     let mut app = new_app(gamedir, map_name, scale);
     event_loop.run_app(&mut app).expect("run app");
+}
+
+#[cfg(test)]
+mod render_tests {
+    use super::*;
+
+    #[test]
+    fn shadow_union_darkens_ground_once_and_leaves_body_to_its_pass() {
+        let sprite = yr_render::sprites::Sprite {
+            w: 2,
+            h: 1,
+            ax: 0,
+            ay: 0,
+            rgba: vec![0, 0, 0, 128, 240, 180, 20, 255],
+        };
+        let mut frame = vec![100, 80, 60, 255, 100, 80, 60, 255];
+        let mut mask = vec![false; 2];
+        for _ in 0..3 {
+            blit_sprite(
+                &mut frame,
+                2,
+                1,
+                &sprite,
+                0.0,
+                0.0,
+                1.0,
+                SpritePass::Shadow(&mut mask),
+            );
+        }
+        assert_eq!(frame, [50, 40, 30, 255, 100, 80, 60, 255]);
+        blit_sprite(&mut frame, 2, 1, &sprite, 0.0, 0.0, 1.0, SpritePass::Body);
+        assert_eq!(frame, [50, 40, 30, 255, 240, 180, 20, 255]);
+    }
+
+    #[test]
+    fn extreme_attachment_offsets_clip_without_coordinate_overflow() {
+        let sprite = yr_render::sprites::Sprite {
+            w: 2,
+            h: 2,
+            ax: i32::MIN,
+            ay: i32::MIN,
+            rgba: vec![255; 16],
+        };
+        let mut frame = vec![0; 16];
+        blit_sprite(&mut frame, 2, 2, &sprite, 0.0, 0.0, 1.0, SpritePass::Body);
+        assert_eq!(frame, [0; 16]);
+    }
 }

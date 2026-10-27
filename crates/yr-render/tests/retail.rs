@@ -245,3 +245,204 @@ fn infantry_animation_matches_retail_sequence_canvases() {
         }
     }
 }
+
+/// Check each resolved layer against independent retail SHP canvases,
+/// including damaged ranges, shadow flags, anchors and production gating.
+#[test]
+fn building_layers_match_retail_canvases() {
+    use yr_formats::{Palette, ShpFile};
+    use yr_render::sprites::{BuildingAnimation, Sprite, SpriteBank, SHADOW_ALPHA};
+
+    let Some(dir) = install_dir() else { return };
+    let mut fs = AssetFs::open(&dir).unwrap();
+    fs.set_theater(Theater::Temperate);
+    let palette = Palette::parse(fs.read("UNITTEM.PAL").unwrap()).unwrap();
+    let mut bank = SpriteBank::open(dir.to_str().unwrap(), "EB1.MMX").unwrap();
+    let remap = bank.house_color("Americans");
+    let out = std::env::var("OPENYR_BUILDING_DUMP").ok();
+    if let Some(out) = &out {
+        std::fs::create_dir_all(out).unwrap();
+    }
+    let check = |sprite: &Sprite, file: &str, frame, shadow, foundation: (i32, i32)| {
+        let shp = ShpFile::parse(fs.read(file).unwrap()).unwrap();
+        assert_eq!(
+            (sprite.w, sprite.h),
+            (u32::from(shp.width), u32::from(shp.height)),
+            "{file}"
+        );
+        let (fx, fy) = foundation;
+        assert_eq!(sprite.ax, i32::from(shp.width) / 2 - (fx - fy) * 15);
+        assert_eq!(
+            sprite.ay,
+            i32::from(shp.height) / 2 - (fx + fy - 2) * 15 / 2
+        );
+        let body = shp.decode_frame_canvas(frame).unwrap();
+        let mask = shp
+            .decode_frame_canvas(frame + shp.frames.len() / 2)
+            .unwrap();
+        for (p, &index) in body.iter().enumerate() {
+            let pixel = &sprite.rgba[p * 4..p * 4 + 4];
+            if index != 0 {
+                assert_eq!(pixel[3], 255, "{file}, frame {frame}, pixel {p}");
+                if !(16..=31).contains(&index) {
+                    assert_eq!(pixel, palette.rgba(index));
+                }
+            } else {
+                assert_eq!(
+                    pixel[3],
+                    if shadow && mask[p] != 0 {
+                        SHADOW_ALPHA
+                    } else {
+                        0
+                    },
+                    "{file}, frame {frame}, pixel {p}"
+                );
+            }
+        }
+    };
+    for damaged in [false, true] {
+        let d = usize::from(damaged);
+        for tick in 0..24 {
+            let phase = tick * 200 / 225;
+            for (id, image, foundation, overlays, bib) in [
+                (
+                    "GACNST",
+                    "GGCNST",
+                    (4, 4),
+                    vec![("GGCNST_A.SHP", d * 3 + phase as usize % 3, false)],
+                    None,
+                ),
+                (
+                    "GAPOWR",
+                    "GGPOWR",
+                    (2, 2),
+                    vec![(
+                        "GGPOWR_A.SHP",
+                        d * 8 + (tick * 220 / 225) as usize % 8,
+                        false,
+                    )],
+                    None,
+                ),
+                (
+                    "GAPILE",
+                    "GGPILE",
+                    (3, 2),
+                    vec![(
+                        "GGPILE_A.SHP",
+                        d * 16 + (tick * 300 / 225) as usize % 15,
+                        true,
+                    )],
+                    None,
+                ),
+                (
+                    "GAWEAP",
+                    "GGWEAP",
+                    (5, 3),
+                    vec![
+                        (
+                            "GGWEAP_A.SHP",
+                            d * 16 + phase as usize % if damaged { 13 } else { 15 },
+                            false,
+                        ),
+                        ("GGWEAP_B.SHP", (tick * 400 / 225) as usize % 5, false),
+                    ],
+                    Some("GGWEAPBB.SHP"),
+                ),
+                (
+                    "GAREFN",
+                    "GGREFN",
+                    (4, 3),
+                    ["GGREFNL1.SHP", "GGREFNL2.SHP", "GGREFNL3.SHP"]
+                        .map(|file| (file, phase as usize % 3, false))
+                        .to_vec(),
+                    Some("GGREFNBB.SHP"),
+                ),
+            ] {
+                for production in [None, Some(tick)] {
+                    let state = BuildingAnimation {
+                        elapsed: tick,
+                        production,
+                        damaged,
+                        powered: true,
+                    };
+                    let sprites = bank.get_building(id, remap, state).unwrap();
+                    let mut expected = vec![(format!("{image}.SHP"), d, true)];
+                    expected.extend(
+                        overlays
+                            .iter()
+                            .map(|&(file, frame, shadow)| (file.to_string(), frame, shadow)),
+                    );
+                    if id == "GACNST" && production.is_some() {
+                        expected.push((
+                            "GGCNST_B.SHP".into(),
+                            d * 20 + phase as usize % 20,
+                            !damaged,
+                        ));
+                    }
+                    assert_eq!(sprites.layers.len(), expected.len(), "{id}");
+                    for (sprite, (file, frame, shadow)) in sprites.layers.iter().zip(expected) {
+                        check(sprite, &file, frame, shadow, foundation);
+                    }
+                    assert_eq!(sprites.bib.is_some(), bib.is_some());
+                    if let Some((sprite, file)) = sprites.bib.zip(bib) {
+                        check(sprite, file, d, true, foundation);
+                    }
+                    if let Some(out) = &out {
+                        if production.is_some() {
+                            // All probed layers share their parent's canvas and anchor.
+                            let base = sprites.layers[0];
+                            let mut rgba = vec![0u8; base.rgba.len()];
+                            let layers: Vec<_> = sprites
+                                .bib
+                                .into_iter()
+                                .chain(sprites.layers.iter().copied())
+                                .collect();
+                            for sprite in &layers {
+                                assert_eq!(
+                                    (sprite.w, sprite.h, sprite.ax, sprite.ay),
+                                    (base.w, base.h, base.ax, base.ay)
+                                );
+                                for (dst, src) in rgba
+                                    .as_chunks_mut::<4>()
+                                    .0
+                                    .iter_mut()
+                                    .zip(sprite.rgba.as_chunks::<4>().0)
+                                {
+                                    if src[3] == SHADOW_ALPHA {
+                                        dst.copy_from_slice(src);
+                                    }
+                                }
+                            }
+                            for sprite in layers {
+                                for (dst, src) in rgba
+                                    .as_chunks_mut::<4>()
+                                    .0
+                                    .iter_mut()
+                                    .zip(sprite.rgba.as_chunks::<4>().0)
+                                {
+                                    if src[3] == 255 {
+                                        dst.copy_from_slice(src);
+                                    }
+                                }
+                            }
+                            std::fs::write(
+                                format!(
+                                    "{out}/{id}-{}-{tick:02}.png",
+                                    if damaged { "damaged" } else { "normal" }
+                                ),
+                                yr_render::png::encode_rgba(base.w, base.h, &rgba),
+                            )
+                            .unwrap();
+                        }
+                    }
+                }
+            }
+        }
+    }
+    assert!(bank
+        .get_building("E1", remap, BuildingAnimation::default())
+        .is_none());
+    assert!(bank
+        .get_building("MISSING", remap, BuildingAnimation::default())
+        .is_none());
+}

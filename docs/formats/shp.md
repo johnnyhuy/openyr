@@ -111,8 +111,79 @@ The live window and `--frames` share the following prototype policy:
   decoded cache is keyed by the resulting frame, not an unbounded tick.
 
 Prone, deployed, death and paradrop sequences are not wired to sim
-states yet. Building animation overlays/bibs, adjacent-building sorting
-and Wine side-by-side validation remain under #6.
+states yet. Wine side-by-side validation remains under #6.
+
+## Building layers
+
+Retail `artmd.ini` names building attachments separately from the body.
+The body and all probed attachments have a body half followed by an
+equal-sized shadow half. The shadow half exists even for attachments
+whose art section does not request `Shadow=yes`.
+
+The following was checked against `ra2.mix/GENERIC.MIX` and
+`ra2md.mix/LOCALMD.MIX/ARTMD.INI`, using independent body/shadow pixel
+comparisons in `building_layers_match_retail_canvases`:
+
+| Building attachment | Normal body range | Damaged body range | Shadow requested |
+|---|---|---|---|
+| `GACNST_A` | 0..3 | 3..6 | no |
+| `GACNST_B` (production) | 0..20 | 20..40 | normal only |
+| `GAPOWR_A` | 0..8 | 8..16 | no |
+| `GAPILE_A` | 0..15 | 16..31 | yes |
+| `GAWEAP_A` | 0..15 | 16..29 | no |
+| `GAWEAP_B` | 0..5 | 0..5 | no |
+| `GAREFNL1`, `L2`, `L3` | 0..3 | normal fallback | no |
+
+Ranges use an exclusive end, matching the retail `LoopStart`/`LoopEnd`
+boundaries in the shared sheets. Some sheets leave an unused boundary
+frame. Damaged sections redirect `Image=` back to the normal sheet.
+`ActiveAnimFour=GAREFNL4` is present in the INI, but none of its theater,
+generic or plain SHPs resolve in this install; it is safely skipped.
+
+`BibShape=GAREFNBB` and `GAWEAPBB` resolve to generic sheets with four
+frames: normal/damaged bodies followed by their shadows. All the above
+attachments share their parent's canvas and anchor. Their art centre is
+offset from the top-left footprint cell by
+`((foundation_w-foundation_h)*15, (foundation_w+foundation_h-2)*15/2)`.
+Attachment `X`/`Y` offsets are added in native pixels. Filename lookup
+uses the theater variant, generic `G`, then the plain image name.
+
+The window and `--frames` now use the same building presentation policy:
+
+- Body and bib frame 0 at normal health, frame 1 at half health or below.
+  This threshold matches the retail `ConditionYellow=50%` value.
+- Up to four active attachments and one production attachment, with
+  damaged variants selected independently and normal art as fallback.
+- `LoopStart` (or `Start` when absent) through exclusive `LoopEnd`.
+  Missing ends use the actual body count. Invalid, empty, overflowing or
+  out-of-body ranges are skipped, preserving the rest of the building.
+- Prototype cadence is `floor(ticks*Rate/225)`, modulo the range length.
+  `Rate` defaults to 200. This interpretation is provisional; the Wine
+  timing comparison has not been done.
+- Production uses whole ticks of queue progress at the sim's first
+  player factory of that role. Credit stalls freeze the frame, and a
+  finished structure awaiting placement stops the production overlay.
+- Explicit `ActiveAnim*Powered=yes` gates an attachment's clock on its
+  owner's power balance. Missing flags leave the attachment running.
+- Bibs draw on the ground before all live bodies. Body and attachment
+  shadow masks are unioned on the ground, darkening each covered pixel
+  once before any live body is painted. Shadows never paint over a
+  neighbouring live building's body.
+- Foundation bounds establish painter dependencies along both map
+  axes. A large building stays behind objects beyond its east or south
+  edge even when its front-cell diagonal exceeds theirs. Unconstrained
+  objects, overlaps and cycles use stable diagonal order.
+- Decoded layers are cached separately by file, frame, remap, shadow
+  flag and anchor. Overlay combinations and elapsed ticks are not keys.
+
+`OPENYR_BUILDING_DUMP=<external-dir>` exports normal/damaged composites
+for five Allied base types at ticks 0 through 23 from the retail test.
+These contain retail artwork and must stay outside git.
+
+Factory door/deployment and refinery unloading animations, per-overlay
+`ZAdjust`/`YSort` depth, rubble, and the Wine side-by-side comparison
+remain fidelity work under #6. Static map objects are still baked into
+the terrain image; the new layers and ordering apply to live objects.
 
 ## Sources
 

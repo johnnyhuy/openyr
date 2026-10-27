@@ -1,9 +1,41 @@
-//! Presentation clocks for infantry. Observe movement and shots after
-//! each sim step; drawing a frame never advances these clocks.
+//! Presentation clocks sampled from simulation state. Drawing a frame
+//! never advances a clock or changes the simulation.
 
 use std::collections::BTreeMap;
 use yr_render::sprites::InfantryAnimation;
 use yr_sim::{Fix, Sim};
+
+/// The sim's first player factory of a role hosts its production queue.
+/// Reading progress directly also freezes the clip when credits stall
+/// and stops it when a finished structure waits for placement.
+pub fn building_animation(
+    sim: &Sim,
+    building: &yr_sim::Building,
+) -> yr_render::sprites::BuildingAnimation {
+    let production = (building.owner == yr_sim::OWNER_PLAYER)
+        .then(|| {
+            let host = sim
+                .buildings()
+                .iter()
+                .find(|b| b.owner == building.owner && b.role == building.role)?;
+            if host.id != building.id {
+                return None;
+            }
+            let order = sim
+                .production()
+                .iter()
+                .find(|o| o.factory.role() == building.role)?;
+            (!order.done()).then_some(order.progress.max(0) as u64 / 256)
+        })
+        .flatten();
+    let (produced, drained) = sim.power_of(building.owner);
+    yr_render::sprites::BuildingAnimation {
+        elapsed: sim.tick(),
+        production,
+        damaged: i128::from(building.hp) * 2 <= i128::from(building.max_hp),
+        powered: produced >= drained,
+    }
+}
 
 struct Observation {
     position: (Fix, Fix),
@@ -69,6 +101,89 @@ impl UnitAnimations {
 mod tests {
     use super::*;
     use yr_sim::{Command, WeaponSpec};
+
+    #[test]
+    fn building_production_uses_host_progress_stalls_and_stops_when_ready() {
+        use yr_sim::{BuildingSpec, Factory, Product, Role, OWNER_ENEMY, OWNER_PLAYER};
+        let mut sim = Sim::new(4);
+        let yard = |x, owner| Command::PlaceBuilding {
+            kind: 0,
+            x,
+            y: 0,
+            w: 2,
+            h: 2,
+            hp: 1000,
+            armor: 0,
+            power: 0,
+            owner,
+            role: Role::ConstructionYard,
+        };
+        let spec = BuildingSpec {
+            w: 2,
+            h: 2,
+            hp: 500,
+            armor: 0,
+            power: 200,
+            role: Role::Combat,
+            adjacent: 2,
+            base_normal: true,
+            free_unit: None,
+        };
+        sim.step(&[
+            yard(0, OWNER_PLAYER),
+            yard(4, OWNER_PLAYER),
+            yard(8, OWNER_ENEMY),
+            Command::Produce {
+                factory: Factory::Building,
+                kind: 1,
+                product: Product::Building(spec),
+                cost: 100,
+                ticks: 4,
+            },
+        ]);
+        assert_eq!(
+            building_animation(&sim, &sim.buildings()[0]).production,
+            Some(0)
+        );
+        assert_eq!(
+            building_animation(&sim, &sim.buildings()[1]).production,
+            None
+        );
+        assert_eq!(
+            building_animation(&sim, &sim.buildings()[2]).production,
+            None
+        );
+        sim.set_credits(50);
+        sim.step(&[]);
+        sim.step(&[]);
+        assert_eq!(
+            building_animation(&sim, &sim.buildings()[0]).production,
+            Some(2)
+        );
+        sim.step(&[]);
+        assert_eq!(
+            building_animation(&sim, &sim.buildings()[0]).production,
+            Some(2)
+        );
+        let hash = sim.state_hash();
+        for _ in 0..10 {
+            building_animation(&sim, &sim.buildings()[0]);
+        }
+        assert_eq!(sim.state_hash(), hash);
+        sim.set_credits(50);
+        sim.step(&[]);
+        sim.step(&[]);
+        assert!(sim.production()[0].done());
+        assert_eq!(
+            building_animation(&sim, &sim.buildings()[0]).production,
+            None
+        );
+        let mut damaged = sim.buildings()[0].clone();
+        damaged.hp = 500;
+        assert!(building_animation(&sim, &damaged).damaged);
+        damaged.hp = 501;
+        assert!(!building_animation(&sim, &damaged).damaged);
+    }
 
     fn spawn(x: i32, weapon: Option<WeaponSpec>) -> Command {
         Command::Spawn {

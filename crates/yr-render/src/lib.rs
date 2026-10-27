@@ -9,6 +9,8 @@
 //! drawn in the same painter order. GPU sprite batching comes later;
 //! this rasteriser is the correctness reference.
 
+mod buildings;
+pub mod depth;
 pub mod png;
 pub mod sprites;
 
