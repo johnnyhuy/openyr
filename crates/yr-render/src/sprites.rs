@@ -4,6 +4,8 @@
 //! blitter halves whatever terrain lies underneath, matching the static
 //! map renderer's shadow pass.
 
+pub use crate::buildings::BuildingAnimation;
+use crate::buildings::{BuildingArt, Layer};
 use std::collections::HashMap;
 use std::fs;
 use yr_assets::{AssetFs, Theater};
@@ -121,15 +123,34 @@ pub struct Sprite {
     pub ay: i32,
 }
 
+/// Ground art is drawn before every object's body. Body and active
+/// overlays remain together in the building's footprint order.
+pub struct BuildingSprites<'a> {
+    pub bib: Option<&'a Sprite>,
+    pub layers: Vec<&'a Sprite>,
+}
+
+#[derive(Clone, PartialEq, Eq, Hash)]
+struct LayerKey {
+    file: String,
+    frame: usize,
+    shadow: bool,
+    remap: [u8; 3],
+    offset: (i32, i32),
+}
+
 /// Lazily decoded sprites for one map's theater.
 pub struct SpriteBank {
     vfs: AssetFs,
     rules: Rules,
     rules_ini: IniFile,
+    art_ini: IniFile,
     theater: Theater,
     unit_pal: Palette,
     infantry: HashMap<String, InfantrySequences>,
     cache: HashMap<(String, usize, [u8; 3]), Option<Sprite>>,
+    buildings: HashMap<String, Option<BuildingArt>>,
+    layers: HashMap<LayerKey, Option<Sprite>>,
 }
 
 impl SpriteBank {
@@ -191,16 +212,92 @@ impl SpriteBank {
             vfs,
             rules,
             rules_ini,
+            art_ini,
             theater,
             unit_pal,
             infantry,
             cache: HashMap::new(),
+            buildings: HashMap::new(),
+            layers: HashMap::new(),
         })
     }
 
     /// RGB house colour of a rules house/country section (`Color=`).
     pub fn house_color(&self, house: &str) -> [u8; 3] {
         crate::house_color(&self.rules_ini, house)
+    }
+
+    /// Retail building body, bib and active/production overlays. Cache
+    /// individual frames so unrelated overlay periods cannot multiply
+    /// into an unbounded cache of composite images.
+    pub fn get_building(
+        &mut self,
+        id: &str,
+        remap: [u8; 3],
+        animation: BuildingAnimation,
+    ) -> Option<BuildingSprites<'_>> {
+        let id = id.to_ascii_uppercase();
+        if !self.buildings.contains_key(&id) {
+            let art = self
+                .rules
+                .techno(&id)
+                .filter(|t| t.kind == TechnoKind::Building)
+                .and_then(|t| {
+                    let art = t.art.as_ref()?;
+                    BuildingArt::load(
+                        &self.vfs,
+                        &self.art_ini,
+                        &t.image,
+                        &art.section,
+                        self.theater,
+                        art.foundation.unwrap_or((1, 1)),
+                    )
+                });
+            self.buildings.insert(id.clone(), art);
+        }
+        let art = self.buildings.get(&id)?.as_ref()?;
+        let key = |layer: &Layer, frame| LayerKey {
+            file: layer.file.clone(),
+            frame,
+            shadow: layer.shadow,
+            remap,
+            offset: layer.offset,
+        };
+        let state_frame = |layer: &Layer| usize::from(animation.damaged).min(layer.frames - 1);
+        let bib = art.bib.as_ref().map(|layer| key(layer, state_frame(layer)));
+        let mut keys = vec![key(&art.base, state_frame(&art.base))];
+        let phase = |layer: &Layer, ticks| {
+            layer.clip.frame(if layer.powered && !animation.powered {
+                0
+            } else {
+                ticks
+            })
+        };
+        for overlay in &art.active {
+            if let Some(layer) = overlay.layer(animation.damaged) {
+                keys.push(key(layer, phase(layer, animation.elapsed)));
+            }
+        }
+        if let Some(progress) = animation.production {
+            if let Some(layer) = art.production.layer(animation.damaged) {
+                keys.push(key(layer, phase(layer, progress)));
+            }
+        }
+        for key in bib.iter().chain(&keys) {
+            if !self.layers.contains_key(key) {
+                let sprite = self.decode_shp(&key.file, key.frame, key.shadow, remap, key.offset);
+                self.layers.insert(key.clone(), sprite);
+            }
+        }
+        // A missing base must still trigger the caller's fallback marker.
+        self.layers.get(&keys[0])?.as_ref()?;
+        Some(BuildingSprites {
+            bib: bib.as_ref().and_then(|key| self.layers.get(key)?.as_ref()),
+            layers: keys
+                .iter()
+                .filter_map(|key| self.layers.get(key)?.as_ref())
+                .collect(),
+        })
     }
 
     /// Sprite for rules type `id` facing `facing` (sim convention: 0 is
@@ -293,7 +390,18 @@ impl SpriteBank {
             self.vfs.read(&file)?;
             (file, frame, (0, 0))
         };
-        let shp = ShpFile::parse(self.vfs.read(&file)?).ok()?;
+        self.decode_shp(&file, frame, true, remap, offset)
+    }
+
+    fn decode_shp(
+        &self,
+        file: &str,
+        frame: usize,
+        shadow: bool,
+        remap: [u8; 3],
+        offset: (i32, i32),
+    ) -> Option<Sprite> {
+        let shp = ShpFile::parse(self.vfs.read(file)?).ok()?;
         let frame = if frame < shp.frames.len() / 2 {
             frame
         } else {
@@ -302,7 +410,7 @@ impl SpriteBank {
         let canvas = shp.decode_frame_canvas(frame).ok()?;
         let (w, h) = (usize::from(shp.width), usize::from(shp.height));
         let mut rgba = vec![0u8; w * h * 4];
-        if shp.frames.len() >= 2 {
+        if shadow && shp.frames.len() >= 2 {
             let shadow_frame = frame + shp.frames.len() / 2;
             if let Some(shadow) = (shadow_frame < shp.frames.len())
                 .then(|| shp.decode_frame_canvas(shadow_frame).ok())
@@ -328,8 +436,8 @@ impl SpriteBank {
             w: w as u32,
             h: h as u32,
             rgba,
-            ax: w as i32 / 2 - offset.0,
-            ay: h as i32 / 2 - offset.1,
+            ax: (w as i32 / 2).checked_sub(offset.0)?,
+            ay: (h as i32 / 2).checked_sub(offset.1)?,
         })
     }
 }
