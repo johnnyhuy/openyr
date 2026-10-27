@@ -51,6 +51,10 @@ cargo build --workspace
 cargo test --workspace
 ```
 
+The workspace defaults to `yr-app`, so `cargo run` launches `openyr`.
+Use `--workspace` to build or test every crate, and `-p mix-dump` or
+`-p sim-bench` to run an inspection tool or the simulation benchmark.
+
 Tests read the real game archives from `~/Games/RA2YR/prefix/drive_c/Westwood/RA2`
 when present (skipped otherwise), so they double as a parity check against retail data.
 
@@ -59,7 +63,7 @@ when present (skipped otherwise), so they double as a parity check against retai
 Launch a match with your own install:
 
 ```sh
-cargo run --release -p yr-app -- "/path/to/RA2" EB1.MMX
+cargo run --release -- "/path/to/RA2" EB1.MMX
 ```
 
 Left-click or drag to select, right-click to order, A then right-click to
@@ -71,7 +75,7 @@ missing samples or an unavailable output device leave the match running.
 To capture a scripted match without a window:
 
 ```sh
-cargo run --release -p yr-app -- "/path/to/RA2" EB1.MMX --frames /tmp/openyr-proof 300 900 1500 1800
+cargo run --release -- "/path/to/RA2" EB1.MMX --frames /tmp/openyr-proof 300 900 1500 1800
 ```
 
 This writes PNG frames, `audio.wav` and `audio-cues.tsv`. They contain retail

@@ -1,5 +1,6 @@
 [workspace]
 resolver = "2"
+default-members = ["crates/yr-app"]
 members = ["crates/yr-formats", "crates/yr-assets", "crates/yr-rules", "crates/yr-render", "crates/yr-app", "crates/yr-sim", "tools/mix-dump", "tools/sim-bench"]
 
 [workspace.package]
