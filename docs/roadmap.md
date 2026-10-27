@@ -115,8 +115,9 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       (`docs/formats/rules.md`). Power is judged per owner (#52)
 - [ ] Save/load (deterministic state dump)
 - [ ] Basic AI skirmish opponent (stage 2)
-- [ ] Unambiguous workspace launch command for the documented headless
-      proof workflow (#54)
+- [x] Unambiguous workspace launch command (#54): `cargo run --release -- ...`
+      defaults to `yr-app` for live sessions and headless proof captures;
+      inspection tools remain available through `-p mix-dump` / `-p sim-bench`
 
 ## M6: Fidelity pass
 
