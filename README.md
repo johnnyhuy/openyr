@@ -30,7 +30,7 @@ Pre-alpha playable sandbox on retail data. See [docs/roadmap.md](docs/roadmap.md
 | `yr-assets` VFS (engine lookup order) | done |
 | Typed rules: technos, weapons, warheads (M2) | in progress |
 | Renderer (M3) | map and live retail art, animation polish pending |
-| Simulation | movement, combat, economy, production, scripted skirmish |
+| Simulation | movement, combat, economy, production, basic AI skirmish |
 | macOS app | live window, selection/orders, unit production sidebar |
 | Audio playback | retail theme, voices, weapon reports and EVA via CoreAudio |
 
@@ -75,7 +75,9 @@ missing samples or an unavailable output device leave the match running.
 To capture a scripted match without a window:
 
 ```sh
-cargo run --release -- "/path/to/RA2" EB1.MMX --frames /tmp/openyr-proof 300 900 1500 1800
+cargo run --release -- "/path/to/RA2" EB1.MMX --frames /tmp/openyr-proof 450 1350 2250 3000
+# Observe the computer against a passive player:
+cargo run --release -- "/path/to/RA2" EB1.MMX --frames /tmp/openyr-passive 1351 2251 4500 --passive
 ```
 
 This writes PNG frames, `audio.wav` and `audio-cues.tsv`. They contain retail

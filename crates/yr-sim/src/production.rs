@@ -1,4 +1,4 @@
-//! Production queues: the player's factories turn credits into units.
+//! Production queues: each owner's factories turn credits into units.
 //!
 //! Observed RA2 behaviour this follows: the cost is drawn from the
 //! credit pool gradually as the build progresses (not up front), the
@@ -9,8 +9,7 @@
 //! Structures build at the construction yard and, once done, wait at the
 //! head of their queue until placed on the map (`Command::PlaceProduced`).
 //!
-//! Credits are one pool (the player's, see `Sim::credits`), so only the
-//! player produces; the scripted enemy gets its forces from waves.
+//! Each owner has a separate credit pool and independent factory queues.
 
 use crate::combat::WeaponSpec;
 use crate::{terrain::Loco, Fix, Role};
@@ -117,7 +116,7 @@ impl BuildOrder {
         }
         let step = i64::from(factor.raw()).max(1);
         let next = (self.progress + step).min(total);
-        let due = self.cost.max(0) * next / total;
+        let due = (i128::from(self.cost.max(0)) * i128::from(next) / i128::from(total)) as i64;
         let delta = due - self.paid;
         if delta > credits {
             return None;

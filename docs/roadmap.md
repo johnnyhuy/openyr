@@ -110,6 +110,9 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       M toggles mute. `--frames` exports the shared mix and a cue log alongside
       proof frames. Spatial audio, pitch variation and playlist controls remain
       fidelity work (`docs/formats/audio.md`).
+- [ ] Diagnose and recover from live audio device interruptions (#60).
+      A native session continued silently after a backend failure; the
+      callback currently discards the error and has no recovery path.
 - [x] Structure placement from the sidebar (#46): rules-sourced Allied
       structures gated by `Prerequisite=` (generic `POWER`/`PROC`/...
       groups) and country, built at the construction yard one at a time,
@@ -119,7 +122,13 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       harvester; finished structures cancel for a full refund
       (`docs/formats/rules.md`). Power is judged per owner (#52)
 - [ ] Save/load (deterministic state dump)
-- [ ] Basic AI skirmish opponent (stage 2)
+- [x] Basic AI skirmish opponent (#21): computer production in `yr-sim`,
+      separate owner credits/queues/power, retail costs and build times,
+      a refinery-gated income stipend, an infantry scout and periodic
+      attack groups. Rebuilds missing power/refinery/factory/barracks
+      through normal structure queues and placement. Retail EB1 proof
+      runs exercise both Won and Lost. Original AI logic remains in M6;
+      see `docs/skirmish-ai.md` for the prototype policy.
 - [x] Unambiguous workspace launch command (#54): `cargo run --release -- ...`
       defaults to `yr-app` for live sessions and headless proof captures;
       inspection tools remain available through `-p mix-dump` / `-p sim-bench`

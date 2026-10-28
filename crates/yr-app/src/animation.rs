@@ -5,29 +5,27 @@ use std::collections::BTreeMap;
 use yr_render::sprites::InfantryAnimation;
 use yr_sim::{Fix, Sim};
 
-/// The sim's first player factory of a role hosts its production queue.
+/// The sim's first owned factory of a role hosts its production queue.
 /// Reading progress directly also freezes the clip when credits stall
 /// and stops it when a finished structure waits for placement.
 pub fn building_animation(
     sim: &Sim,
     building: &yr_sim::Building,
 ) -> yr_render::sprites::BuildingAnimation {
-    let production = (building.owner == yr_sim::OWNER_PLAYER)
-        .then(|| {
-            let host = sim
-                .buildings()
-                .iter()
-                .find(|b| b.owner == building.owner && b.role == building.role)?;
-            if host.id != building.id {
-                return None;
-            }
-            let order = sim
-                .production()
-                .iter()
-                .find(|o| o.factory.role() == building.role)?;
-            (!order.done()).then_some(order.progress.max(0) as u64 / 256)
-        })
-        .flatten();
+    let production = (|| {
+        let host = sim
+            .buildings()
+            .iter()
+            .find(|b| b.owner == building.owner && b.role == building.role)?;
+        if host.id != building.id {
+            return None;
+        }
+        let order = sim
+            .production_of(building.owner)
+            .iter()
+            .find(|o| o.factory.role() == building.role)?;
+        (!order.done()).then_some(order.progress.max(0) as u64 / 256)
+    })();
     let (produced, drained) = sim.power_of(building.owner);
     yr_render::sprites::BuildingAnimation {
         elapsed: sim.tick(),

@@ -112,21 +112,19 @@ pub struct TerrainGrid {
     width: usize,
     height: usize,
     cells: Vec<Cell>,
-    hash: u64,
+    fingerprint: std::cell::Cell<Option<u64>>,
 }
 
 impl TerrainGrid {
     pub fn new(origin_x: i32, origin_y: i32, width: usize, height: usize) -> TerrainGrid {
-        let mut g = TerrainGrid {
+        TerrainGrid {
             origin_x,
             origin_y,
             width,
             height,
             cells: vec![Cell::default(); width * height],
-            hash: 0,
-        };
-        g.rehash();
-        g
+            fingerprint: std::cell::Cell::new(None),
+        }
     }
 
     /// Build from map tiles: `(x, y, level, raw_terrain_type, ramp)`.
@@ -145,7 +143,6 @@ impl TerrainGrid {
                 c.ramp = ramp;
             }
         }
-        g.rehash();
         g
     }
 
@@ -162,6 +159,7 @@ impl TerrainGrid {
     }
 
     pub fn cell_mut(&mut self, x: u16, y: u16) -> Option<&mut Cell> {
+        self.fingerprint.set(None);
         self.index(x, y).map(|i| &mut self.cells[i])
     }
 
@@ -169,7 +167,6 @@ impl TerrainGrid {
         if let Some(c) = self.cell_mut(x, y) {
             c.overlay = overlay;
         }
-        self.rehash();
     }
 
     /// Place (or clear) a resource cell with `bails` harvestable loads.
@@ -178,7 +175,6 @@ impl TerrainGrid {
             c.overlay = kind;
             c.resource = bails;
         }
-        self.rehash();
     }
 
     /// Take one bail from a resource cell; clears the overlay at zero.
@@ -193,7 +189,6 @@ impl TerrainGrid {
         if c.resource == 0 {
             c.overlay = Overlay::None;
         }
-        self.rehash();
         Some(kind)
     }
 
@@ -230,7 +225,6 @@ impl TerrainGrid {
                 }
             }
         }
-        self.rehash();
     }
 
     pub fn origin(&self) -> (i32, i32) {
@@ -258,22 +252,28 @@ impl TerrainGrid {
         self.height
     }
 
-    /// Scenario fingerprint, mixed into the sim state hash.
+    /// Hash the current cells, including edits through `cell_mut`.
     pub fn hash(&self) -> u64 {
-        self.hash
-    }
-
-    fn rehash(&mut self) {
+        if let Some(hash) = self.fingerprint.get() {
+            return hash;
+        }
         let mut h = crate::hash::Hasher::new();
+        h.write_i64(i64::from(self.origin_x));
+        h.write_i64(i64::from(self.origin_y));
+        h.write_u64(self.width as u64);
+        h.write_u64(self.height as u64);
         h.write_u64(self.cells.len() as u64);
         for c in &self.cells {
+            h.write_u64(u64::from(c.ramp));
             h.write_u64(u64::from(c.height));
             h.write_u64(c.ground as u64);
             h.write_u64(c.overlay as u64);
             h.write_u64(u64::from(c.building));
             h.write_u64(u64::from(c.resource));
         }
-        self.hash = h.finish();
+        let hash = h.finish();
+        self.fingerprint.set(Some(hash));
+        hash
     }
 
     /// Speed factor for `loco` entering this cell (`None` = cannot enter).
