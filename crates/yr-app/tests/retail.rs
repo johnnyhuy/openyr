@@ -95,11 +95,11 @@ fn eb1_skirmish_setup_and_scripted_win() {
     println!("EB1 session: {player_units} player units, {player_bases} player buildings, {enemy_bases} enemy buildings -> Won");
 }
 
-/// Headless playthrough: scripted waves launch on schedule and march on
+/// Headless playthrough: deterministic AI produces, scouts and attacks
 /// the player; the player attack-moves everything at the enemy base and
 /// the match resolves (Won or Lost) without a crash.
 #[test]
-fn eb1_waves_launch_and_headless_playthrough_resolves() {
+fn eb1_ai_builds_scouts_attacks_and_resolves() {
     let dir = PathBuf::from(std::env::var("HOME").unwrap_or_default())
         .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
     if !dir.is_dir() {
@@ -123,25 +123,35 @@ fn eb1_waves_launch_and_headless_playthrough_resolves() {
             .filter(|u| u.owner == yr_sim::OWNER_ENEMY)
             .count()
     };
-    let (_, total) = session.waves_progress();
-    assert_eq!(total, 5, "wave plan");
-    let first =
-        session.next_wave_in_secs().expect("first wave pending") * yr_app::session::TICKS_PER_SEC;
     let before = enemy_count(&session);
-    for _ in 0..first {
+    let mut twin = session.sim.clone();
+    for _ in 0..1500 {
         session.step(&[]);
+        twin.step(&[]);
+        assert_eq!(session.sim.state_hash(), twin.state_hash());
     }
-    session.step(&[]);
-    assert_eq!(session.waves_progress().0, 1, "first wave launched");
+    assert!(session.sim.ai().unwrap().scout_sent(), "scout deployed");
+    assert!(
+        session.sim.ai().unwrap().groups_sent() >= 1,
+        "attack group deployed"
+    );
     let after = enemy_count(&session);
-    assert!(after > before, "wave units spawned: {before} -> {after}");
-    let marching = session
-        .sim
-        .units()
-        .iter()
-        .filter(|u| u.owner == yr_sim::OWNER_ENEMY && u.target.is_some())
-        .count();
-    assert!(marching >= 2, "wave marches on the player: {marching}");
+    assert!(
+        after > before,
+        "retail production grew the army: {before} -> {after}"
+    );
+    assert!(
+        session.sim.credits_of(yr_sim::OWNER_ENEMY) < 10_000,
+        "AI paid for its army"
+    );
+    assert!(
+        session
+            .sim
+            .units()
+            .iter()
+            .any(|u| u.owner == yr_sim::OWNER_ENEMY && (u.target.is_some() || u.attack.is_some())),
+        "AI marches on the player"
+    );
 
     // Player counter-attack: every armed player unit attack-moves to the
     // enemy base (centre of its first building), re-issued every 10 s.
@@ -173,9 +183,9 @@ fn eb1_waves_launch_and_headless_playthrough_resolves() {
         ticks += 1;
     }
     println!(
-        "EB1 playthrough: {:?} after {ticks} ticks, waves {:?}",
+        "EB1 AI playthrough: {:?} after {ticks} ticks, groups {}",
         session.outcome,
-        session.waves_progress()
+        session.sim.ai().unwrap().groups_sent()
     );
     assert_ne!(
         session.outcome,
@@ -263,6 +273,14 @@ fn eb1_sidebar_slots_produce_units() {
         session.step(&[]);
         for e in session.sim.drain_events() {
             if let yr_sim::Event::Produced { id, kind } = e {
+                if !session
+                    .sim
+                    .units()
+                    .iter()
+                    .any(|u| u.id == id && u.owner == yr_sim::OWNER_PLAYER)
+                {
+                    continue;
+                }
                 produced.push((session.sim.tick(), id, kind));
             }
         }
@@ -385,6 +403,8 @@ fn eb1_structures_build_place_and_work() {
     let Some(mut session) = eb1_session(11) else {
         return;
     };
+    // Exercise the long placement sequence without an opposing army.
+    session.sim.set_ai(None);
     let plant = slot_of(&session, "GAPOWR");
     let lab = slot_of(&session, "GATECH");
     assert!(session.prerequisites_met(plant), "GACNST owned");
@@ -499,4 +519,45 @@ fn eb1_structures_build_place_and_work() {
         }
     }
     assert!(rolled, "placed war factory produces");
+}
+
+/// The retail war factory replacement uses the same queue, cost, footprint
+/// checks and production host lookup as a placed player structure.
+#[test]
+fn eb1_ai_rebuilds_its_destroyed_factory() {
+    let Some(mut session) = eb1_session(23) else {
+        return;
+    };
+    let factory = session
+        .sim
+        .buildings()
+        .iter()
+        .find(|b| b.owner == yr_sim::OWNER_ENEMY && b.role == yr_sim::Role::WarFactory)
+        .unwrap()
+        .id;
+    session.step(&[Command::Destroy { id: factory }]);
+    let mut rebuilt = None;
+    for _ in 0..2000 {
+        session.step(&[]);
+        rebuilt = session
+            .sim
+            .buildings()
+            .iter()
+            .find(|b| b.owner == yr_sim::OWNER_ENEMY && b.role == yr_sim::Role::WarFactory)
+            .map(|b| b.id);
+        if rebuilt.is_some() {
+            break;
+        }
+    }
+    assert!(rebuilt.is_some_and(|id| id != factory), "AI rebuilt GAWEAP");
+    assert_eq!(
+        session.sim.credits(),
+        10_000,
+        "replacement never spends player money"
+    );
+    assert!(
+        session.sim.credits_of(yr_sim::OWNER_ENEMY) < 9000,
+        "replacement paid for"
+    );
+    println!("EB1 AI rebuilt GAWEAP at tick {}", session.sim.tick());
 }

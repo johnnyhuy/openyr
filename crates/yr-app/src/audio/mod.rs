@@ -197,7 +197,15 @@ impl AudioScene {
                         }
                     }
                 }
-                Event::Produced { .. } => self.event(tick, "EVA_UnitReady", Bus::Eva, 15),
+                Event::Produced { id, .. }
+                    if session
+                        .sim
+                        .units()
+                        .iter()
+                        .any(|u| u.id == id && u.owner == yr_sim::OWNER_PLAYER) =>
+                {
+                    self.event(tick, "EVA_UnitReady", Bus::Eva, 15)
+                }
                 Event::Ready { .. } => {
                     self.event(tick, "EVA_ConstructionComplete", Bus::Eva, 15);
                 }

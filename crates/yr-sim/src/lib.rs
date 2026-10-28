@@ -9,6 +9,7 @@
 //! flat plane. Terrain, combat and economy arrive in later issues and
 //! plug into the same tick phases.
 
+pub mod ai;
 pub mod building;
 pub mod combat;
 mod fix;
@@ -263,11 +264,16 @@ pub struct Sim {
     terrain: Option<TerrainGrid>,
     projectiles: Vec<Projectile>,
     events: Vec<Event>,
-    credits: i64,
+    economies: std::collections::BTreeMap<u8, Economy>,
+    ai: Option<ai::SkirmishAi>,
     buildings: Vec<Building>,
     /// (min, max) low-power production speed factors from the rules.
     low_power_speeds: (Fix, Fix),
-    /// Player build orders, queue order; heads are per factory kind.
+}
+
+#[derive(Debug, Clone, Default)]
+struct Economy {
+    credits: i64,
     production: Vec<BuildOrder>,
 }
 
@@ -281,10 +287,10 @@ impl Sim {
             terrain: None,
             projectiles: Vec::new(),
             events: Vec::new(),
-            credits: 0,
+            economies: std::collections::BTreeMap::new(),
+            ai: None,
             buildings: Vec::new(),
             low_power_speeds: (Fix::from_raw(128), Fix::ONE),
-            production: Vec::new(),
         }
     }
 
@@ -381,36 +387,7 @@ impl Sim {
                     self.place_structure(kind, x, y, &spec, owner);
                 }
                 Command::PlaceProduced { kind, x, y } => {
-                    let Some(i) = self
-                        .production
-                        .iter()
-                        .position(|o| o.factory == Factory::Building)
-                    else {
-                        continue;
-                    };
-                    let order = self.production[i];
-                    let Product::Building(spec) = order.product else {
-                        continue;
-                    };
-                    let yard = self
-                        .buildings
-                        .iter()
-                        .any(|b| b.owner == OWNER_PLAYER && b.role == Factory::Building.role());
-                    if order.kind != kind
-                        || !order.done()
-                        || !yard
-                        || !self.can_place(OWNER_PLAYER, &spec, x, y)
-                    {
-                        continue;
-                    }
-                    self.production.remove(i);
-                    let id = self.place_structure(kind, x, y, &spec, OWNER_PLAYER);
-                    self.events.push(Event::Placed { id, kind });
-                    if let Some((unit_kind, unit)) = spec.free_unit {
-                        if let Some(cell) = self.exit_cell(unit.loco, (x, y), (spec.w, spec.h)) {
-                            self.spawn_owned(unit_kind, &unit, cell, OWNER_PLAYER);
-                        }
-                    }
+                    self.place_produced(OWNER_PLAYER, kind, x, y);
                 }
                 Command::AssignOwner { id, owner } => {
                     if let Some(u) = self.units.iter_mut().find(|u| u.id == id) {
@@ -477,26 +454,24 @@ impl Sim {
                     cost,
                     ticks,
                 } => {
-                    self.production.push(BuildOrder {
-                        factory,
-                        kind,
-                        product,
-                        cost: cost.max(0),
-                        ticks: ticks.max(1),
-                        progress: 0,
-                        paid: 0,
-                    });
+                    self.queue_produce(OWNER_PLAYER, factory, kind, product, cost, ticks);
                 }
                 Command::CancelProduce { factory, kind } => {
-                    if let Some(i) = self
+                    let economy = self.economies.entry(OWNER_PLAYER).or_default();
+                    if let Some(i) = economy
                         .production
                         .iter()
                         .rposition(|o| o.factory == factory && o.kind == kind)
                     {
-                        self.credits += self.production.remove(i).paid;
+                        economy.credits += economy.production.remove(i).paid;
                     }
                 }
             }
+        }
+        // Commands apply first, so losing a factory stops AI production this tick.
+        if let Some(mut ai) = self.ai.take() {
+            ai.step(self);
+            self.ai = Some(ai);
         }
         self.production_phase();
         self.harvest_phase();
@@ -662,7 +637,7 @@ impl Sim {
                         None => {
                             // No ore left: unload whatever we carry.
                             if self.units[i].bails > 0 {
-                                if let Some(rc) = self.refinery_cell() {
+                                if let Some(rc) = self.refinery_cell(self.units[i].owner) {
                                     self.units[i].harvest = Harvest::ToRefinery(rc.0, rc.1);
                                 } else {
                                     self.units[i].harvest = Harvest::Idle;
@@ -685,7 +660,7 @@ impl Sim {
                             _ => BAIL_ORE,
                         };
                         if self.units[i].bails >= HARVESTER_CAPACITY {
-                            if let Some(rc) = self.refinery_cell() {
+                            if let Some(rc) = self.refinery_cell(self.units[i].owner) {
                                 self.units[i].harvest = Harvest::ToRefinery(rc.0, rc.1);
                             } else {
                                 self.units[i].harvest = Harvest::Idle;
@@ -720,13 +695,14 @@ impl Sim {
                         self.units[i].harvest = Harvest::Unloading(left);
                     } else {
                         let value = self.units[i].cargo;
-                        self.credits += value;
+                        let economy = self.economies.entry(self.units[i].owner).or_default();
+                        economy.credits += value;
                         self.units[i].cargo = 0;
                         self.units[i].bails = 0;
                         self.events.push(Event::Unloaded {
                             id: self.units[i].id,
                             value,
-                            total: self.credits,
+                            total: economy.credits,
                         });
                         self.units[i].harvest = Harvest::ToOre(u16::MAX, u16::MAX);
                     }
@@ -740,8 +716,12 @@ impl Sim {
 
     /// Cell a harvester unloads at: a Refinery-role building's centre
     /// cell, else a Refinery-role unit's cell.
-    fn refinery_cell(&self) -> Option<(u16, u16)> {
-        if let Some(b) = self.buildings.iter().find(|b| b.role == Role::Refinery) {
+    fn refinery_cell(&self, owner: u8) -> Option<(u16, u16)> {
+        if let Some(b) = self
+            .buildings
+            .iter()
+            .find(|b| b.owner == owner && b.role == Role::Refinery)
+        {
             let (cx, cy) = b.centre();
             return Some((
                 cx.to_int_floor().max(0) as u16,
@@ -750,7 +730,7 @@ impl Sim {
         }
         self.units
             .iter()
-            .find(|u| u.role == Role::Refinery)
+            .find(|u| u.owner == owner && u.role == Role::Refinery)
             .map(|u| {
                 (
                     u.x.to_int_floor().max(0) as u16,
@@ -872,8 +852,7 @@ impl Sim {
         &self.buildings
     }
 
-    /// The player's (produced, drained) power totals. Only the player
-    /// produces, so low power and the production factor judge these.
+    /// The player's (produced, drained) power totals.
     pub fn power(&self) -> (i64, i64) {
         self.power_of(OWNER_PLAYER)
     }
@@ -906,7 +885,11 @@ impl Sim {
     /// Production speed multiplier: 1.0 on full power; on low power it
     /// interpolates min..max by produced/drain (production issue uses it).
     pub fn production_factor(&self) -> Fix {
-        let (produced, drained) = self.power();
+        self.production_factor_of(OWNER_PLAYER)
+    }
+
+    pub fn production_factor_of(&self, owner: u8) -> Fix {
+        let (produced, drained) = self.power_of(owner);
         if drained <= produced || drained == 0 {
             return Fix::ONE;
         }
@@ -964,53 +947,118 @@ impl Sim {
 
     /// Player build orders in queue order (heads first per factory).
     pub fn production(&self) -> &[BuildOrder] {
-        &self.production
+        self.production_of(OWNER_PLAYER)
     }
 
-    /// Advance the head order of each factory queue (fixed `Factory::ALL`
-    /// order). A finished unit rolls out next to the first live player
-    /// building of its role, on the nearest free standable cell; a
-    /// finished structure stays at the head until it is placed.
+    pub fn production_of(&self, owner: u8) -> &[BuildOrder] {
+        self.economies
+            .get(&owner)
+            .map_or(&[], |e| e.production.as_slice())
+    }
+
+    fn queue_produce(
+        &mut self,
+        owner: u8,
+        factory: Factory,
+        kind: u16,
+        product: Product,
+        cost: i64,
+        ticks: u32,
+    ) {
+        self.economies
+            .entry(owner)
+            .or_default()
+            .production
+            .push(BuildOrder {
+                factory,
+                kind,
+                product,
+                cost: cost.max(0),
+                ticks: ticks.max(1),
+                progress: 0,
+                paid: 0,
+            });
+    }
+
+    fn place_produced(&mut self, owner: u8, kind: u16, x: u16, y: u16) {
+        let Some(i) = self
+            .production_of(owner)
+            .iter()
+            .position(|o| o.factory == Factory::Building)
+        else {
+            return;
+        };
+        let order = self.production_of(owner)[i];
+        let Product::Building(spec) = order.product else {
+            return;
+        };
+        let yard = self
+            .buildings
+            .iter()
+            .any(|b| b.owner == owner && b.role == Role::ConstructionYard);
+        if order.kind != kind || !order.done() || !yard || !self.can_place(owner, &spec, x, y) {
+            return;
+        }
+        self.economies.get_mut(&owner).unwrap().production.remove(i);
+        let id = self.place_structure(kind, x, y, &spec, owner);
+        self.events.push(Event::Placed { id, kind });
+        if let Some((unit_kind, unit)) = spec.free_unit {
+            if let Some(cell) = self.exit_cell(unit.loco, (x, y), (spec.w, spec.h)) {
+                self.spawn_owned(unit_kind, &unit, cell, owner);
+            }
+        }
+    }
+
+    /// Advance queues in owner order, then fixed Factory::ALL order.
+    /// Missing factories stall their own queue; blocked exits hold a unit.
     fn production_phase(&mut self) {
-        let factor = self.production_factor();
-        for factory in Factory::ALL {
-            let Some(i) = self.production.iter().position(|o| o.factory == factory) else {
-                continue;
-            };
-            let Some(host) = self
-                .buildings
-                .iter()
-                .find(|b| b.owner == OWNER_PLAYER && b.role == factory.role())
-                .map(|b| (b.cell, b.size))
-            else {
-                continue;
-            };
-            let was_done = self.production[i].done();
-            if let Some(drawn) = self.production[i].advance(factor, self.credits) {
-                self.credits -= drawn;
-            }
-            if !self.production[i].done() {
-                continue;
-            }
-            let order = self.production[i];
-            let spec = match order.product {
-                Product::Unit(spec) => spec,
-                Product::Building(_) => {
-                    if !was_done {
-                        self.events.push(Event::Ready { kind: order.kind });
-                    }
+        let owners: Vec<u8> = self.economies.keys().copied().collect();
+        for owner in owners {
+            let factor = self.production_factor_of(owner);
+            for factory in Factory::ALL {
+                let Some(i) = self
+                    .production_of(owner)
+                    .iter()
+                    .position(|o| o.factory == factory)
+                else {
+                    continue;
+                };
+                let Some(host) = self
+                    .buildings
+                    .iter()
+                    .find(|b| b.owner == owner && b.role == factory.role())
+                    .map(|b| (b.cell, b.size))
+                else {
+                    continue;
+                };
+                let economy = self.economies.get_mut(&owner).unwrap();
+                let was_done = economy.production[i].done();
+                if let Some(drawn) = economy.production[i].advance(factor, economy.credits) {
+                    economy.credits -= drawn;
+                }
+                let order = economy.production[i];
+                if !order.done() {
                     continue;
                 }
-            };
-            let Some(cell) = self.exit_cell(spec.loco, host.0, host.1) else {
-                continue; // blocked exit: hold the finished unit
-            };
-            self.production.remove(i);
-            let id = self.spawn_owned(order.kind, &spec, cell, OWNER_PLAYER);
-            self.events.push(Event::Produced {
-                id,
-                kind: order.kind,
-            });
+                let spec = match order.product {
+                    Product::Unit(spec) => spec,
+                    Product::Building(_) => {
+                        if !was_done && owner == OWNER_PLAYER {
+                            self.events.push(Event::Ready { kind: order.kind });
+                        }
+                        continue;
+                    }
+                };
+                let Some(cell) = self.exit_cell(spec.loco, host.0, host.1) else {
+                    continue;
+                };
+                self.economies.get_mut(&owner).unwrap().production.remove(i);
+                let id = self.spawn_owned(order.kind, &spec, cell, owner);
+                self.events.push(Event::Produced {
+                    id,
+                    kind: order.kind,
+                });
+            }
         }
     }
 
@@ -1177,11 +1225,28 @@ impl Sim {
     }
 
     pub fn credits(&self) -> i64 {
-        self.credits
+        self.credits_of(OWNER_PLAYER)
     }
 
     pub fn set_credits(&mut self, credits: i64) {
-        self.credits = credits;
+        self.set_credits_of(OWNER_PLAYER, credits);
+    }
+
+    pub fn credits_of(&self, owner: u8) -> i64 {
+        self.economies.get(&owner).map_or(0, |e| e.credits)
+    }
+
+    pub fn set_credits_of(&mut self, owner: u8, credits: i64) {
+        self.economies.entry(owner).or_default().credits = credits;
+    }
+
+    /// Install a deterministic computer controller for this scenario.
+    pub fn set_ai(&mut self, ai: Option<ai::SkirmishAi>) {
+        self.ai = ai;
+    }
+
+    pub fn ai(&self) -> Option<&ai::SkirmishAi> {
+        self.ai.as_ref()
     }
 
     /// Events since the last drain (renderer/audio consume these).
@@ -1295,73 +1360,7 @@ impl Sim {
 
     /// Hash of everything that defines the game state.
     pub fn state_hash(&self) -> u64 {
-        let mut h = hash::Hasher::new();
-        h.write_u64(self.tick);
-        h.write_u64(self.rng.state());
-        h.write_u64(u64::from(self.next_id));
-        h.write_u64(self.terrain.as_ref().map_or(0, TerrainGrid::hash));
-        h.write_u64(self.units.len() as u64);
-        for u in &self.units {
-            h.write_u64(u64::from(u.id));
-            h.write_i64(i64::from(u.x.raw()));
-            h.write_i64(i64::from(u.y.raw()));
-            h.write_i64(i64::from(u.speed.raw()));
-            h.write_u64(u.loco as u64);
-            h.write_u64(u64::from(u.facing));
-            h.write_u64(u64::from(u.kind));
-            h.write_u64(u.path.len() as u64);
-            h.write_i64(u.hp);
-            h.write_u64(u64::from(u.cooldown));
-            h.write_u64(u.attack.map_or(0, u64::from));
-            match u.guard {
-                Some((gx, gy)) => {
-                    h.write_u64(1);
-                    h.write_i64(i64::from(gx.raw()));
-                    h.write_i64(i64::from(gy.raw()));
-                }
-                None => h.write_u64(0),
-            }
-            h.write_i64(u.cargo);
-            h.write_u64(u64::from(u.bails));
-            h.write_u64(u64::from(u.blocked));
-            if let Some(&(wx, wy)) = u.path.front() {
-                h.write_u64(u64::from(wx));
-                h.write_u64(u64::from(wy));
-            }
-            match u.target {
-                Some((tx, ty)) => {
-                    h.write_u64(1);
-                    h.write_i64(i64::from(tx.raw()));
-                    h.write_i64(i64::from(ty.raw()));
-                }
-                None => h.write_u64(0),
-            }
-        }
-        h.write_i64(self.credits);
-        h.write_u64(self.buildings.len() as u64);
-        for b in &self.buildings {
-            h.write_u64(u64::from(b.id));
-            h.write_u64(u64::from(b.kind));
-            h.write_u64(u64::from(b.cell.0));
-            h.write_u64(u64::from(b.cell.1));
-            h.write_u64(u64::from(b.size.0));
-            h.write_u64(u64::from(b.size.1));
-            h.write_i64(b.hp);
-            h.write_i64(b.power);
-        }
-        h.write_u64(self.production.len() as u64);
-        for o in &self.production {
-            h.write_u64(o.factory as u64);
-            h.write_u64(u64::from(o.kind));
-            h.write_i64(o.progress);
-            h.write_i64(o.paid);
-        }
-        h.write_u64(self.projectiles.len() as u64);
-        for p in &self.projectiles {
-            h.write_i64(i64::from(p.x.raw()));
-            h.write_i64(i64::from(p.y.raw()));
-        }
-        h.finish()
+        hash::state(self)
     }
 }
 
@@ -1838,6 +1837,14 @@ mod tests {
                 id: 2,
                 role: Role::Harvester,
             },
+            Command::AssignOwner {
+                id: 1,
+                owner: OWNER_PLAYER,
+            },
+            Command::AssignOwner {
+                id: 2,
+                owner: OWNER_PLAYER,
+            },
             Command::Harvest { id: 2 },
         ]);
         // Move the refinery marker onto the spawn area cell (0,0) is fine;
@@ -1870,6 +1877,48 @@ mod tests {
             g.cell(6, 0).map(|c| c.overlay),
             Some(terrain::Overlay::None)
         );
+    }
+
+    #[test]
+    fn enemy_harvester_uses_own_refinery_and_account() {
+        let mut sim = Sim::new(1);
+        let mut grid = TerrainGrid::new(0, 0, 12, 4);
+        grid.set_resource(9, 1, terrain::Overlay::Ore, 20);
+        sim.set_terrain(grid);
+        let refinery = |x, owner| Command::PlaceBuilding {
+            kind: 0,
+            x,
+            y: 0,
+            w: 2,
+            h: 2,
+            hp: 1000,
+            armor: 0,
+            power: 0,
+            owner,
+            role: Role::Refinery,
+        };
+        sim.step(&[refinery(0, OWNER_PLAYER), refinery(5, OWNER_ENEMY)]);
+        assert_eq!(sim.refinery_cell(OWNER_ENEMY), Some((6, 1)));
+        assert_eq!(sim.refinery_cell(OWNER_NEUTRAL), None);
+        sim.spawn_owned(
+            1,
+            &UnitSpec {
+                loco: terrain::Loco::Track,
+                speed: Fix::from_raw(128),
+                hp: 100,
+                armor: 0,
+                weapon: None,
+                role: Role::Harvester,
+            },
+            (8, 1),
+            OWNER_ENEMY,
+        );
+        for _ in 0..1000 {
+            sim.step(&[]);
+        }
+        assert_eq!(sim.credits(), 0, "enemy deliveries never fund the player");
+        assert_eq!(sim.credits_of(OWNER_ENEMY), 500);
+        assert_eq!(sim.terrain().unwrap().cell(9, 1).unwrap().resource, 0);
     }
 
     #[test]

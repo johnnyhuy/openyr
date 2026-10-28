@@ -293,13 +293,10 @@ impl App {
         if self.placing.is_some() && session.ready_structure() != self.placing {
             self.placing = None;
         }
-        let (launched, total) = session.waves_progress();
-        let waves = match session.next_wave_in_secs() {
-            Some(s) => format!("wave {}/{total} in {s}s", launched + 1),
-            None => format!("waves {launched}/{total}"),
-        };
+        let groups = session.sim.ai().map_or(0, |ai| ai.groups_sent());
+        let enemy = format!("AI groups {groups}");
         let title = format!(
-            "OpenYR: {} | ${} | tick {} | {waves} | {} selected{} | {:?}",
+            "OpenYR: {} | ${} | tick {} | {enemy} | {} selected{} | {:?}",
             self.map_name,
             session.sim.credits(),
             session.sim.tick(),
@@ -1251,7 +1248,7 @@ fn demo_spot(session: &Session, slot: usize, near: (u16, u16)) -> Option<(u16, u
 /// another: each finished one is shown as a red ghost over the yard, then
 /// a green ghost on the nearest valid spot, then placed, with the camera
 /// on it.
-fn headless_frames(mut app: App, dir: &str, ticks: &[u64]) -> Result<(), String> {
+fn headless_frames(mut app: App, dir: &str, ticks: &[u64], passive: bool) -> Result<(), String> {
     app.map = Some(yr_render::render_map(
         &app.gamedir,
         &app.map_name,
@@ -1270,13 +1267,13 @@ fn headless_frames(mut app: App, dir: &str, ticks: &[u64]) -> Result<(), String>
     let last = ticks.iter().copied().max().unwrap_or(0);
     let mut frame = vec![0u8; (fw * fh * 4) as usize];
     let mut next_structure = 0usize;
-    let mut queue_at = Some(1u64);
+    let mut queue_at = (!passive).then_some(1u64);
     let mut demo: Option<DemoGhost> = None;
     // Map cell the camera holds on until a tick (placement close-ups).
     let mut focus: Option<((u16, u16), u64)> = None;
     for t in 1..=last {
         let session = app.session.as_ref().ok_or("no session")?;
-        if t == 1 {
+        if t == 1 && !passive {
             for slot in [0, 0, 0, 4, 4, 4, 1, 5] {
                 if let Some(cmd) = session.produce(slot) {
                     app.pending.push(cmd);
@@ -1352,7 +1349,7 @@ fn headless_frames(mut app: App, dir: &str, ticks: &[u64]) -> Result<(), String>
             .filter(|u| u.owner == yr_sim::OWNER_PLAYER && u.weapon.is_some())
             .map(|u| u.id)
             .collect();
-        if t % 450 == 0 {
+        if t % 450 == 0 && !passive {
             let enemy: Vec<_> = session
                 .sim
                 .buildings()
@@ -1404,6 +1401,14 @@ fn headless_frames(mut app: App, dir: &str, ticks: &[u64]) -> Result<(), String>
             std::fs::write(&out, yr_render::png::encode_rgba(fw, fh, &frame))
                 .map_err(|e| e.to_string())?;
             let count = |o: u8| sim.units().iter().filter(|u| u.owner == o).count();
+            println!(
+                "AI: ${}, queue {}, groups {}, scout {}, hash {:016x}",
+                sim.credits_of(yr_sim::OWNER_ENEMY),
+                sim.production_of(yr_sim::OWNER_ENEMY).len(),
+                sim.ai().map_or(0, |ai| ai.groups_sent()),
+                sim.ai().is_some_and(|ai| ai.scout_sent()),
+                sim.state_hash()
+            );
             let ghost = match app.placement_target() {
                 Some((_, origin, true)) => format!(", green ghost at {origin:?}"),
                 Some((_, origin, false)) => format!(", red ghost at {origin:?}"),
@@ -1435,7 +1440,8 @@ fn main() {
         if flag == "--frames" {
             let ticks: Vec<u64> = rest.iter().filter_map(|t| t.parse().ok()).collect();
             let app = new_app(g.clone(), m.clone(), 2);
-            if let Err(e) = headless_frames(app, dir, &ticks) {
+            if let Err(e) = headless_frames(app, dir, &ticks, rest.iter().any(|s| s == "--passive"))
+            {
                 eprintln!("openyr: {e}");
                 std::process::exit(1);
             }
@@ -1447,7 +1453,7 @@ fn main() {
         [g, m, s] => (g.clone(), m.clone(), s.parse().unwrap_or(2)),
         _ => {
             eprintln!(
-                "usage: openyr <gamedir> <map> [scale] | <gamedir> <map> --frames <dir> <tick>..."
+                "usage: openyr <gamedir> <map> [scale] | <gamedir> <map> --frames <dir> <tick>... [--passive]"
             );
             std::process::exit(2);
         }
