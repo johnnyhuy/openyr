@@ -20,3 +20,4 @@ yr-sim = { path = "../yr-sim" }
 winit = "0.30"
 pixels = "0.15"
 cpal = "0.18.2"
+font8x8 = "0.3.1"

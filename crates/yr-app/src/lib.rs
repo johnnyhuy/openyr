@@ -3,5 +3,7 @@
 
 pub mod animation;
 pub mod audio;
+mod localization;
 pub mod session;
+pub mod sidebar;
 pub mod snapshot;
