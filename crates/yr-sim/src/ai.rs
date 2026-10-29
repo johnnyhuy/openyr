@@ -4,7 +4,8 @@
 use crate::{hash::Hasher, Factory, Product, Role, Sim};
 
 /// One rules-resolved choice. Every prerequisite group needs one owned kind.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
 pub struct AiBuild {
     pub factory: Factory,
     pub kind: u16,
@@ -14,7 +15,8 @@ pub struct AiBuild {
     pub prerequisites: Vec<Vec<u16>>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
 pub struct SkirmishAi {
     owner: u8,
     opponent: u8,
@@ -26,6 +28,26 @@ pub struct SkirmishAi {
 }
 
 impl SkirmishAi {
+    pub(crate) fn validate_save(&self) -> Result<(), crate::save::SaveError> {
+        use crate::save::{order, require};
+        require(
+            self.owner != self.opponent && self.groups_sent < u64::MAX / 2,
+            "invalid AI owners or group count",
+        )?;
+        for b in &self.builds {
+            order(&crate::BuildOrder {
+                factory: b.factory,
+                kind: b.kind,
+                product: b.product,
+                cost: b.cost,
+                ticks: b.ticks,
+                progress: 0,
+                paid: 0,
+            })?;
+        }
+        Ok(())
+    }
+
     pub fn new(owner: u8, opponent: u8, builds: Vec<AiBuild>) -> Self {
         Self {
             owner,

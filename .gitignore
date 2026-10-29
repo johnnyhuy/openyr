@@ -5,3 +5,4 @@ Cargo.lock.bak
 /tmp
 *.log
 /.tmp
+*.oyrsave

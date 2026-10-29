@@ -561,3 +561,90 @@ fn eb1_ai_rebuilds_its_destroyed_factory() {
     );
     println!("EB1 AI rebuilt GAWEAP at tick {}", session.sim.tick());
 }
+
+/// Issue #45: interrupted matches keep the same command stream, state hashes
+/// and outcome, including AI, harvesting, combat and paid production queues.
+#[test]
+fn eb1_saved_match_resumes_to_the_same_win() {
+    let Some(mut original) = eb1_session(42) else {
+        return;
+    };
+    let mut resumed = eb1_session(42).unwrap();
+    let plant = slot_of(&original, "GAPOWR");
+    let mut checkpoints = 0;
+    for t in 2..=3000 {
+        let mut commands = Vec::new();
+        if t == 2 {
+            commands.extend(
+                [0, 0, 0, 4, 4, 4, 1, 5, plant]
+                    .iter()
+                    .filter_map(|&s| original.produce(s)),
+            );
+        }
+        if let Some(slot) = original.ready_structure() {
+            let (_, spot) = spot_near_yard(&original, slot);
+            commands.push(original.place(slot, spot).unwrap());
+        }
+        if t % 450 == 0 {
+            if let Some(b) = original
+                .sim
+                .buildings()
+                .iter()
+                .find(|b| b.owner == yr_sim::OWNER_ENEMY)
+            {
+                let (x, y) = b.centre();
+                commands.extend(
+                    original
+                        .sim
+                        .units()
+                        .iter()
+                        .filter(|u| u.owner == yr_sim::OWNER_PLAYER && u.weapon.is_some())
+                        .map(|u| Command::AttackMove { id: u.id, x, y }),
+                );
+            }
+        }
+        original.step(&commands);
+        resumed.step(&commands);
+        if [100, 500, 900, 1350, 3000].contains(&t) {
+            let hash = original.sim.state_hash();
+            let bytes = yr_app::snapshot::encode(&original).unwrap();
+            assert_eq!(hash, original.sim.state_hash(), "saving is read-only");
+            resumed.sim = yr_sim::Sim::new(999);
+            yr_app::snapshot::restore(&mut resumed, &bytes).unwrap();
+            assert_eq!(bytes, yr_app::snapshot::encode(&resumed).unwrap());
+            checkpoints += 1;
+        }
+        assert_eq!(
+            original.sim.state_hash(),
+            resumed.sim.state_hash(),
+            "tick {t}"
+        );
+        assert_eq!(original.outcome, resumed.outcome, "tick {t}");
+    }
+    assert_eq!(checkpoints, 5);
+    assert_eq!(resumed.outcome, Outcome::Won);
+    println!("EB1 save/resume: five checkpoints, identical hashes through tick 3000, Won");
+
+    let bytes = yr_app::snapshot::encode(&original).unwrap();
+    let unchanged = resumed.sim.state_hash();
+    let mut bad = bytes.clone();
+    bad[8..12].copy_from_slice(&99u32.to_le_bytes());
+    assert!(yr_app::snapshot::restore(&mut resumed, &bad)
+        .unwrap_err()
+        .contains("version 99"));
+    bad = bytes.clone();
+    bad[20] ^= 1;
+    assert!(yr_app::snapshot::restore(&mut resumed, &bad)
+        .unwrap_err()
+        .contains("map or rules"));
+    bad = bytes.clone();
+    bad[28] ^= 1;
+    assert!(yr_app::snapshot::restore(&mut resumed, &bad)
+        .unwrap_err()
+        .contains("hash mismatch"));
+    assert_eq!(
+        unchanged,
+        resumed.sim.state_hash(),
+        "failed loads retain the match"
+    );
+}

@@ -1,7 +1,8 @@
 //! Deterministic RNG (SplitMix64). The state is part of the sim state
 //! and of the state hash; there is no other source of randomness.
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
 pub struct Rng {
     state: u64,
 }

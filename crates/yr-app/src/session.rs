@@ -33,10 +33,12 @@ pub struct Session {
     pub kinds: Vec<String>,
     /// Generic prerequisite tokens (`POWER`, ...) and their buildings.
     prerequisite_groups: Vec<(String, Vec<String>)>,
+    pub(crate) seed: u64,
+    pub(crate) setup_hash: u64,
 }
 
 /// One sidebar slot: a rules unit or structure the player can build.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize)]
 pub struct Buildable {
     pub id: String,
     pub name: String,
@@ -45,6 +47,7 @@ pub struct Buildable {
     /// Build time at full power in ticks (rules `BuildSpeed`).
     pub ticks: u32,
     /// Cameo as RGBA (w, h, pixels) when the art resolved.
+    #[serde(skip)]
     pub cameo: Option<(u32, u32, Vec<u8>)>,
     /// Rules `Prerequisite=` tokens (type ids or generic groups).
     prerequisite: Vec<String>,
@@ -577,6 +580,16 @@ pub fn setup(
         sim.set_credits_of(ENEMY, rules.skirmish.money.unwrap_or(10_000));
         sim.set_ai(Some(yr_sim::ai::SkirmishAi::new(ENEMY, PLAYER, choices)));
     }
+    let description =
+        serde_json::to_vec(&(&buildables, &kinds, &rules.globals.prerequisite_groups))
+            .map_err(|e| e.to_string())?;
+    let setup_hash = crate::snapshot::fingerprint(
+        sim.save_bytes()
+            .map_err(|e| e.to_string())?
+            .iter()
+            .chain(description.iter())
+            .copied(),
+    );
     Ok(Session {
         sim,
         outcome: Outcome::Ongoing,
@@ -584,6 +597,8 @@ pub fn setup(
         buildables,
         kinds,
         prerequisite_groups: rules.globals.prerequisite_groups.clone(),
+        seed,
+        setup_hash,
     })
 }
 

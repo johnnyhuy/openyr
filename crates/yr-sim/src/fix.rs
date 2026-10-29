@@ -4,7 +4,9 @@
 
 use std::ops::{Add, AddAssign, Mul, Neg, Sub};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(
+    serde::Serialize, serde::Deserialize, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash,
+)]
 pub struct Fix(i32);
 
 impl Fix {

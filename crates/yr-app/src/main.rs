@@ -4,7 +4,7 @@
 //! Left-click / box-drag select own units, right-click move or attack
 //! (enemy under cursor), `A` then right-click = attack-move, `S` stop,
 //! `H` harvest, right-drag / arrows pan, wheel or +/- zoom,
-//! M toggles audio, Esc quits. Right-hand sidebar: left-click a cameo queues it at the
+//! M toggles audio, F5 saves, F9 loads, Esc quits. Right-hand sidebar: left-click a cameo queues it at the
 //! war factory/barracks/construction yard, right-click cancels (refund). A finished
 //! structure (green outline) is placed by clicking its cameo, then a map cell under a
 //! green ghost; right-click or Esc backs out of placement (issue #46). Orders go through
@@ -12,6 +12,7 @@
 
 use pixels::{Pixels, SurfaceTexture};
 use std::collections::BTreeSet;
+use std::path::PathBuf;
 use std::time::{Duration, Instant};
 use winit::application::ApplicationHandler;
 use winit::dpi::LogicalSize;
@@ -79,9 +80,55 @@ struct App {
     announced: bool,
     /// Sidebar slot of the finished structure being placed.
     placing: Option<usize>,
+    load_path: Option<PathBuf>,
+    save_path: PathBuf,
+    save_requested: bool,
 }
 
 impl App {
+    fn load_session(&self) -> Result<Session, String> {
+        match &self.load_path {
+            Some(path) => yr_app::snapshot::load(&self.gamedir, &self.map_name, path),
+            None => yr_app::session::load(&self.gamedir, &self.map_name, 42),
+        }
+    }
+
+    fn quicksave(&self) {
+        if let Some(session) = &self.session {
+            if let Err(e) = yr_app::snapshot::save(session, &self.save_path) {
+                eprintln!("OpenYR: save failed ({e})");
+            }
+        }
+    }
+
+    fn quickload(&mut self) {
+        match yr_app::snapshot::load(&self.gamedir, &self.map_name, &self.save_path) {
+            Ok(session) => {
+                // Rebuild all presentation and discard orders from the replaced match.
+                self.audio = None;
+                match yr_app::audio::AudioScene::live(&self.gamedir, &self.map_name, &session) {
+                    Ok(audio) => self.audio = Some(audio),
+                    Err(e) => eprintln!("OpenYR: audio unavailable ({e}); continuing silently"),
+                }
+                self.animations = Default::default();
+                self.animations.update(&session.sim);
+                self.session = Some(session);
+                self.selected.clear();
+                self.pending.clear();
+                self.left_down = None;
+                self.right_down = None;
+                self.right_panning = false;
+                self.placing = None;
+                self.attack_move = false;
+                self.announced = false;
+                self.accum = Duration::ZERO;
+                self.last_tick = Instant::now();
+                self.view.dirty = true;
+            }
+            Err(e) => eprintln!("OpenYR: load failed ({e}); current match retained"),
+        }
+    }
+
     fn report_audio(&self) {
         if let Some(audio) = &self.audio {
             println!(
@@ -943,7 +990,12 @@ impl ApplicationHandler for App {
                 return;
             }
         }
-        match yr_app::session::load(&self.gamedir, &self.map_name, 42) {
+        let initial = self
+            .session
+            .take()
+            .map(Ok)
+            .unwrap_or_else(|| self.load_session());
+        match initial {
             Ok(s) => {
                 println!(
                     "OpenYR: session live, {} units, {} buildings, ${}",
@@ -957,9 +1009,13 @@ impl ApplicationHandler for App {
                 }
                 self.session = Some(s);
             }
-            Err(e) => eprintln!("OpenYR: session unavailable ({e}); view-only"),
+            Err(e) => {
+                eprintln!("OpenYR: session unavailable ({e})");
+                el.exit();
+                return;
+            }
         }
-        println!("OpenYR: left-click/box select, right-click order, A=attack-move, S=stop, H=harvest, M=mute, right-drag/arrows pan, wheel zoom; sidebar: left-click build or place a ready structure, right-click cancel");
+        println!("OpenYR: left-click/box select, right-click order, A=attack-move, S=stop, H=harvest, M=mute, F5=save, F9=load, right-drag/arrows pan, wheel zoom; sidebar: left-click build or place a ready structure, right-click cancel");
         window.request_redraw();
         self.window = Some(window);
         self.pixels = Some(pixels);
@@ -1089,6 +1145,8 @@ impl ApplicationHandler for App {
                                         audio.toggle_mute();
                                     }
                                 }
+                                KeyCode::F5 if !event.repeat => self.quicksave(),
+                                KeyCode::F9 if !event.repeat => self.quickload(),
                                 KeyCode::KeyS => {
                                     for &id in &self.selected {
                                         self.pending.push(Command::Stop { id });
@@ -1197,6 +1255,9 @@ fn new_app(gamedir: String, map_name: String, scale: u32) -> App {
         title: String::new(),
         announced: false,
         placing: None,
+        load_path: None,
+        save_path: yr_app::snapshot::quicksave_path(),
+        save_requested: false,
     }
 }
 
@@ -1207,17 +1268,6 @@ const DEMO_STRUCTURES: [&str; 2] = ["GAPOWR", "GAREFN"];
 const DEMO_GHOST_TICKS: u64 = 40;
 const DEMO_FOCUS_TICKS: u64 = 200;
 
-/// A finished structure the headless demo is showing as a ghost.
-#[derive(Clone, Copy)]
-struct DemoGhost {
-    slot: usize,
-    ready: u64,
-    /// Over the construction yard (red), then the valid spot (green).
-    blocked: (u16, u16),
-    valid: (u16, u16),
-}
-
-/// First valid footprint origin for `slot` in rings around `near`.
 fn demo_spot(session: &Session, slot: usize, near: (u16, u16)) -> Option<(u16, u16)> {
     for r in 0..16i32 {
         for dy in -r..=r {
@@ -1236,106 +1286,97 @@ fn demo_spot(session: &Session, slot: usize, near: (u16, u16)) -> Option<(u16, u
     None
 }
 
-/// `--frames <dir> <tick>...`: play a scripted demo headlessly and dump
-/// the exact window frame at each tick. Script: queue Grizzlies and GIs
-/// at tick 1, then every 450 ticks send the whole player army (armed
-/// units) to attack-move on the enemy base; the camera follows the army.
-/// Alongside, the construction yard builds `DEMO_STRUCTURES` one after
-/// another: each finished one is shown as a red ghost over the yard, then
-/// a green ghost on the nearest valid spot, then placed, with the camera
-/// on it.
-fn headless_frames(mut app: App, dir: &str, ticks: &[u64], passive: bool) -> Result<(), String> {
-    app.map = Some(yr_render::render_map(
-        &app.gamedir,
-        &app.map_name,
-        app.scale,
-    )?);
-    app.sprites = load_sprites(&app.gamedir, &app.map_name);
-    app.session = Some(yr_app::session::load(&app.gamedir, &app.map_name, 42)?);
-    std::fs::create_dir_all(dir).map_err(|e| e.to_string())?;
-    app.audio = Some(yr_app::audio::AudioScene::capture(
-        &app.gamedir,
-        &app.map_name,
-        app.session.as_ref().ok_or("no session")?,
-        dir,
-    )?);
+/// Script decisions use absolute sim ticks and current state so a saved
+/// demo resumes with the same future commands as an uninterrupted demo.
+fn headless_frames(
+    mut app: App,
+    dir: Option<&str>,
+    ticks: &[u64],
+    end: u64,
+    passive: bool,
+) -> Result<(), String> {
+    if let Some(dir) = dir {
+        app.map = Some(yr_render::render_map(
+            &app.gamedir,
+            &app.map_name,
+            app.scale,
+        )?);
+        app.sprites = load_sprites(&app.gamedir, &app.map_name);
+        std::fs::create_dir_all(dir).map_err(|e| e.to_string())?;
+    }
+    app.session = Some(app.load_session()?);
+    if let Some(dir) = dir {
+        app.audio = Some(yr_app::audio::AudioScene::capture(
+            &app.gamedir,
+            &app.map_name,
+            app.session.as_ref().ok_or("no session")?,
+            dir,
+        )?);
+    }
     let (fw, fh) = (WIN_W, WIN_H);
-    let last = ticks.iter().copied().max().unwrap_or(0);
+    let start = app.session.as_ref().ok_or("no session")?.sim.tick();
+    if end < start || ticks.iter().any(|t| *t < start || *t > end) {
+        return Err(format!("requested tick precedes loaded tick {start}"));
+    }
     let mut frame = vec![0u8; (fw * fh * 4) as usize];
-    let mut next_structure = 0usize;
-    let mut queue_at = (!passive).then_some(1u64);
-    let mut demo: Option<DemoGhost> = None;
     // Map cell the camera holds on until a tick (placement close-ups).
     let mut focus: Option<((u16, u16), u64)> = None;
-    for t in 1..=last {
+    for t in start..=end {
         let session = app.session.as_ref().ok_or("no session")?;
-        if t == 1 && !passive {
+        let advancing = t > start;
+        if advancing && t == 2 && !passive {
             for slot in [0, 0, 0, 4, 4, 4, 1, 5] {
                 if let Some(cmd) = session.produce(slot) {
                     app.pending.push(cmd);
                 }
             }
         }
-        if queue_at == Some(t) {
-            queue_at = None;
-            let slot = DEMO_STRUCTURES
-                .get(next_structure)
-                .and_then(|id| session.buildables.iter().position(|b| b.id == *id));
-            if let Some(cmd) = slot.and_then(|s| session.produce(s)) {
-                println!("tick {t}: queued {}", DEMO_STRUCTURES[next_structure]);
+        if advancing && !passive {
+            let structure = match t {
+                2 => Some(DEMO_STRUCTURES[0]),
+                1200 => Some(DEMO_STRUCTURES[1]),
+                _ => None,
+            };
+            if let Some((id, cmd)) = structure.and_then(|id| {
+                let slot = session.buildables.iter().position(|b| b.id == id)?;
+                Some((id, session.produce(slot)?))
+            }) {
+                println!("tick {t}: queued {id}");
                 app.pending.push(cmd);
             }
         }
-        let yard = session
-            .sim
-            .buildings()
-            .iter()
-            .find(|b| b.owner == yr_sim::OWNER_PLAYER && b.role == yr_sim::Role::ConstructionYard)
-            .map(|b| b.cell);
-        if let (None, Some(slot), Some(yard)) = (demo, session.ready_structure(), yard) {
-            if let Some(good) = demo_spot(session, slot, yard) {
-                println!(
-                    "tick {t}: {} ready; blocked ghost at {yard:?}, valid spot {good:?}",
-                    session.buildables[slot].id
-                );
-                demo = Some(DemoGhost {
-                    slot,
-                    ready: t,
-                    blocked: yard,
-                    valid: good,
-                });
-                app.placing = Some(slot);
-            }
-        }
-        if let Some(DemoGhost {
-            slot,
-            ready,
-            blocked: bad,
-            valid: good,
-        }) = demo
-        {
-            let (w, h) = session.buildables[slot].footprint().unwrap_or((1, 1));
-            let target = if t - ready < DEMO_GHOST_TICKS {
-                bad
-            } else {
-                good
-            };
-            // Cursor cell that puts the footprint's top-left on `target`.
-            let cursor = (target.0 + (w - 1) / 2, target.1 + (h - 1) / 2);
-            focus = Some((cursor, t + DEMO_FOCUS_TICKS));
-            if t - ready == 2 * DEMO_GHOST_TICKS {
-                debug_assert!(!session.can_place(slot, bad) && session.can_place(slot, good));
-                if let Some(cmd) = session.place(slot, good) {
-                    println!(
-                        "tick {t}: placed {} at {good:?}",
-                        session.buildables[slot].id
-                    );
-                    app.pending.push(cmd);
+        app.placing = None;
+        if !passive {
+            if let Some(slot) = session.ready_structure() {
+                let yard = session
+                    .sim
+                    .buildings()
+                    .iter()
+                    .find(|b| {
+                        b.owner == yr_sim::OWNER_PLAYER && b.role == yr_sim::Role::ConstructionYard
+                    })
+                    .map(|b| b.cell);
+                if let Some((bad, good)) =
+                    yard.and_then(|y| Some((y, demo_spot(session, slot, y)?)))
+                {
+                    // Absolute phases need no saved presentation clock.
+                    let phase = t % (3 * DEMO_GHOST_TICKS);
+                    let target = if phase < DEMO_GHOST_TICKS { bad } else { good };
+                    let (w, h) = session.buildables[slot].footprint().unwrap_or((1, 1));
+                    let cursor = (target.0 + (w - 1) / 2, target.1 + (h - 1) / 2);
+                    focus = Some((cursor, t + DEMO_FOCUS_TICKS));
+                    app.placing = Some(slot);
+                    if advancing && phase == 2 * DEMO_GHOST_TICKS {
+                        if let Some(cmd) = session.place(slot, good) {
+                            println!(
+                                "tick {t}: placed {} at {good:?}",
+                                session.buildables[slot].id
+                            );
+                            app.pending.push(cmd);
+                        }
+                        app.placing = None;
+                    }
                 }
-                app.placing = None;
-                demo = None;
-                next_structure += 1;
-                queue_at = Some(t + 1);
             }
         }
         let army: Vec<u32> = session
@@ -1345,7 +1386,7 @@ fn headless_frames(mut app: App, dir: &str, ticks: &[u64], passive: bool) -> Res
             .filter(|u| u.owner == yr_sim::OWNER_PLAYER && u.weapon.is_some())
             .map(|u| u.id)
             .collect();
-        if t % 450 == 0 && !passive {
+        if advancing && t % 450 == 0 && !passive {
             let enemy: Vec<_> = session
                 .sim
                 .buildings()
@@ -1360,11 +1401,14 @@ fn headless_frames(mut app: App, dir: &str, ticks: &[u64], passive: bool) -> Res
             }
         }
         app.selected = army.iter().copied().collect();
-        if t == 1 {
+        if t == start {
             app.selection_audio();
         }
-        app.tick_session();
+        if advancing {
+            app.tick_session();
+        }
         if ticks.contains(&t) {
+            let dir = dir.ok_or("frame ticks require --frames")?;
             let session = app.session.as_ref().ok_or("no session")?;
             let map = app.map.as_ref().ok_or("no map")?;
             let sim = &session.sim;
@@ -1426,42 +1470,148 @@ fn headless_frames(mut app: App, dir: &str, ticks: &[u64], passive: bool) -> Res
     if let Some(audio) = app.audio.take() {
         audio.finish()?;
     }
-    println!("{dir}/audio.wav: stereo 44100 Hz, {last} ticks; cues in {dir}/audio-cues.tsv");
+    if let Some(dir) = dir {
+        println!(
+            "{dir}/audio.wav: stereo 44100 Hz, {} ticks; cues in {dir}/audio-cues.tsv",
+            end - start
+        );
+    }
+    let session = app.session.as_ref().ok_or("no session")?;
+    println!(
+        "OpenYR: headless tick {}, hash {:016x}, {:?}",
+        session.sim.tick(),
+        session.sim.state_hash(),
+        session.outcome
+    );
+    if app.save_requested {
+        yr_app::snapshot::save(session, &app.save_path)?;
+    }
     Ok(())
 }
 
-fn main() {
-    let args: Vec<String> = std::env::args().skip(1).collect();
-    if let [g, m, flag, dir, rest @ ..] = args.as_slice() {
-        if flag == "--frames" {
-            let ticks: Vec<u64> = rest.iter().filter_map(|t| t.parse().ok()).collect();
-            let app = new_app(g.clone(), m.clone(), 2);
-            if let Err(e) = headless_frames(app, dir, &ticks, rest.iter().any(|s| s == "--passive"))
-            {
-                eprintln!("openyr: {e}");
-                std::process::exit(1);
+#[derive(Default)]
+struct Options {
+    gamedir: String,
+    map: String,
+    scale: u32,
+    frames: Option<String>,
+    ticks: Vec<u64>,
+    end: Option<u64>,
+    passive: bool,
+    save: Option<PathBuf>,
+    load: Option<PathBuf>,
+}
+
+fn parse_args(args: &[String]) -> Result<Options, String> {
+    let [g, m, rest @ ..] = args else {
+        return Err("a game directory and map are required".into());
+    };
+    let mut out = Options {
+        gamedir: g.clone(),
+        map: m.clone(),
+        scale: 2,
+        ..Default::default()
+    };
+    let mut i = 0;
+    while i < rest.len() {
+        let flag = &rest[i];
+        i += 1;
+        if flag == "--passive" {
+            out.passive = true;
+            continue;
+        }
+        if !flag.starts_with('-') {
+            let n = flag.parse().map_err(|_| format!("invalid number {flag}"))?;
+            if out.frames.is_some() {
+                out.ticks.push(n);
+            } else {
+                out.scale = u32::try_from(n).map_err(|_| "scale out of range")?;
             }
-            return;
+            continue;
+        }
+        let value = rest
+            .get(i)
+            .filter(|v| !v.starts_with("--"))
+            .ok_or_else(|| format!("{flag} needs a value"))?;
+        i += 1;
+        match flag.as_str() {
+            "--frames" => out.frames = Some(value.clone()),
+            "--ticks" => out.end = Some(value.parse().map_err(|_| "invalid --ticks value")?),
+            "--save" => out.save = Some(value.into()),
+            "--load" => out.load = Some(value.into()),
+            _ => return Err(format!("unknown option {flag}")),
         }
     }
-    let (gamedir, map_name, scale) = match args.as_slice() {
-        [g, m] => (g.clone(), m.clone(), 2),
-        [g, m, s] => (g.clone(), m.clone(), s.parse().unwrap_or(2)),
-        _ => {
-            eprintln!(
-                "usage: openyr <gamedir> <map> [scale] | <gamedir> <map> --frames <dir> <tick>... [--passive]"
-            );
-            std::process::exit(2);
-        }
-    };
-    let event_loop = EventLoop::new().expect("event loop");
-    let mut app = new_app(gamedir, map_name, scale);
-    event_loop.run_app(&mut app).expect("run app");
+    if out.frames.is_some() && out.ticks.is_empty() {
+        return Err("--frames needs at least one absolute tick".into());
+    }
+    if out.scale == 0 || out.scale > 8 {
+        return Err("scale must be between 1 and 8".into());
+    }
+    if out
+        .end
+        .is_some_and(|end| out.ticks.iter().any(|t| *t > end))
+    {
+        return Err("--ticks must include every requested frame tick".into());
+    }
+    Ok(out)
+}
+
+fn run() -> Result<(), String> {
+    let opts = parse_args(&std::env::args().skip(1).collect::<Vec<_>>())?;
+    let mut app = new_app(opts.gamedir, opts.map, opts.scale);
+    app.load_path = opts.load;
+    app.save_requested = opts.save.is_some();
+    app.save_path = opts
+        .save
+        .or_else(|| app.load_path.clone())
+        .unwrap_or_else(yr_app::snapshot::quicksave_path);
+    let end = opts.end.or_else(|| opts.ticks.iter().copied().max());
+    // --save alone writes the starting state headlessly. --load alone opens a window.
+    if end.is_some() || app.save_requested || opts.frames.is_some() {
+        let end = match end {
+            Some(t) => t,
+            None => app.load_session()?.sim.tick(),
+        };
+        return headless_frames(app, opts.frames.as_deref(), &opts.ticks, end, opts.passive);
+    }
+    if app.load_path.is_some() {
+        app.session = Some(app.load_session()?);
+    }
+    let event_loop = EventLoop::new().map_err(|e| e.to_string())?;
+    event_loop.run_app(&mut app).map_err(|e| e.to_string())
+}
+
+fn main() {
+    if let Err(e) = run() {
+        eprintln!("openyr: {e}\nusage: openyr <gamedir> <map> [scale] [--load <file>] [--save <file>] [--ticks <end-tick>] [--frames <dir> <tick>...] [--passive]");
+        std::process::exit(1);
+    }
 }
 
 #[cfg(test)]
 mod render_tests {
     use super::*;
+
+    #[test]
+    fn save_load_options_mix_with_absolute_frame_ticks() {
+        let parse = |args: &str| {
+            parse_args(
+                &args
+                    .split_whitespace()
+                    .map(str::to_owned)
+                    .collect::<Vec<_>>(),
+            )
+        };
+        let opts = parse("game EB1.MMX --load match.oyrsave --frames proof 900 1500 --save later.oyrsave --ticks 3000 --passive").unwrap();
+        assert_eq!(opts.ticks, [900, 1500]);
+        assert_eq!(opts.end, Some(3000));
+        assert!(opts.passive);
+        assert_eq!(opts.load, Some(PathBuf::from("match.oyrsave")));
+        assert!(parse("game EB1.MMX --save").is_err());
+        assert!(parse("game EB1.MMX --frames proof 900 bad").is_err());
+        assert!(parse("game EB1.MMX --frames proof 900 --ticks 500").is_err());
+    }
 
     #[test]
     fn shadow_union_darkens_ground_once_and_leaves_body_to_its_pass() {

@@ -6,7 +6,20 @@ use std::fmt;
 /// Exact decimal: `units / 10^6`. INI values such as `Range=1.4`,
 /// `Verses=75%` or `PercentAtMax=0.5` parse into this without float rounding;
 /// conversion to engine units (leptons, fixed-point fractions) is explicit.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+#[derive(
+    serde::Serialize,
+    serde::Deserialize,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Default,
+)]
+#[serde(transparent)]
 pub struct Decimal(i64);
 
 const SCALE: i64 = 1_000_000;

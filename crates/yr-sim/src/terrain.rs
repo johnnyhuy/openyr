@@ -12,7 +12,7 @@
 use crate::Fix;
 
 /// Ground class of a cell's base tile.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Ground {
     Clear,
     Water,
@@ -38,7 +38,7 @@ impl Ground {
 }
 
 /// How a unit moves; decides passability and speed factor.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Loco {
     Foot,
     Track,
@@ -47,7 +47,7 @@ pub enum Loco {
 }
 
 /// What sits on the cell from the overlay packs.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Overlay {
     None,
     Ore,
@@ -56,7 +56,8 @@ pub enum Overlay {
     Other,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
 pub struct Cell {
     pub ground: Ground,
     pub height: u8,
@@ -105,17 +106,32 @@ fn speed_pct(ground: Ground, loco: Loco) -> Option<i32> {
 
 /// Cell grid over a map rectangle. Coordinates are map cells; the grid
 /// remembers the rectangle origin from the map's `Size=`.
-#[derive(Debug, Clone)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct TerrainGrid {
     origin_x: i32,
     origin_y: i32,
     width: usize,
     height: usize,
     cells: Vec<Cell>,
+    #[serde(skip)]
     fingerprint: std::cell::Cell<Option<u64>>,
 }
 
 impl TerrainGrid {
+    pub(crate) fn validate_save(&self) -> Result<(), crate::save::SaveError> {
+        use crate::save::require;
+        let valid_axis = |origin: i32, size: usize| {
+            origin >= 0 && size > 0 && size <= 65536 && i64::from(origin) + size as i64 <= 65536
+        };
+        require(
+            valid_axis(self.origin_x, self.width)
+                && valid_axis(self.origin_y, self.height)
+                && self.width.checked_mul(self.height) == Some(self.cells.len()),
+            "terrain dimensions do not match its cells or coordinate range",
+        )
+    }
+
     pub fn new(origin_x: i32, origin_y: i32, width: usize, height: usize) -> TerrainGrid {
         TerrainGrid {
             origin_x,
