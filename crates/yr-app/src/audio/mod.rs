@@ -279,10 +279,6 @@ impl AudioScene {
         }
     }
 
-    pub fn device_failed(&self) -> bool {
-        matches!(&self.output, Output::Live(output) if output.failed())
-    }
-
     pub fn frames_played(&self) -> u64 {
         match &self.output {
             Output::Live(output) => output.frames_played(),

@@ -110,9 +110,13 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       M toggles mute. `--frames` exports the shared mix and a cue log alongside
       proof frames. Spatial audio, pitch variation and playlist controls remain
       fidelity work (`docs/formats/audio.md`).
-- [ ] Diagnose and recover from live audio device interruptions (#60).
-      A native session continued silently after a backend failure; the
-      callback currently discards the error and has no recovery path.
+- [x] Diagnose and recover from live audio device interruptions (#60).
+      Backend kind/message diagnostics distinguish active-stream notices
+      from device loss. A separate audio worker retries transient failures
+      with 0.5-8 second backoff, restarts music and preserves mute; expired
+      effects/speech are discarded. Permission/configuration errors disable
+      playback with a diagnostic. Device work never waits on sim ticks
+      (`docs/formats/audio.md`).
 - [x] Structure placement from the sidebar (#46): rules-sourced Allied
       structures gated by `Prerequisite=` (generic `POWER`/`PROC`/...
       groups) and country, built at the construction yard one at a time,

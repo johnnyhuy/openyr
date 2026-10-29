@@ -88,8 +88,9 @@ bit-exactly only with its own:
 
 `yr-app::audio` keeps audio outside the deterministic simulation. The window
 opens the default output through [CPAL](https://docs.rs/cpal/0.18.2/cpal/),
-which uses CoreAudio on macOS. Missing files or an unavailable device leave
-the match running silently. M toggles mute without pausing playback.
+which uses CoreAudio on macOS. Missing files leave the match running silently.
+An unavailable device is retried by an audio worker. M toggles mute without
+pausing playback.
 
 Observed in the retail INIs and archives:
 
@@ -130,3 +131,53 @@ playback can start later because speech is serialized. The WAV uses the
 same mixer as the device callback and lasts one fifteenth of a second per
 tick. It is an offline mix, not a microphone or device-loopback recording.
 These outputs contain retail audio/art and must remain outside git.
+
+## Device interruptions and recovery (#60)
+
+The first output implementation discarded every CPAL callback error and
+dropped the whole audio scene on the next simulation tick. A regression
+test reproduced permanent silence from `ErrorKind::Xrun`. In CPAL 0.18.2,
+the CoreAudio processor-overload listener reports that kind for an underrun;
+the stream remains active. `DeviceChanged` also leaves a default-device
+stream active after CoreAudio reroutes it. These backend behaviours are
+documented in CPAL's `src/error.rs` and `src/host/coreaudio/macos/mod.rs`.
+The earlier live-session logs did not retain the error kind, so their
+precise trigger cannot be established retrospectively.
+
+The callback now submits the original error through bounded channels.
+Active-stream notices (`Xrun`, `DeviceChanged`, `RealtimeDenied`) keep the
+stream and log at most once every five seconds. A separate fault slot
+ensures repeated underruns cannot hide device loss. Device/host absence,
+busy devices, invalidated streams, resource exhaustion and unclassified
+backend errors close the old stream and retry the current default device.
+The delay doubles from 500 ms to a maximum of eight seconds, and resets
+after a successful open. Permission, unsupported configuration/operation,
+invalid-input and unknown error kinds disable playback with their diagnostic;
+they require correction and a session restart.
+
+All device discovery, open, close, retry and diagnostic output happen on a
+separate audio worker. The app only sends decoded playback commands with
+`try_send`, or changes an atomic mute flag. The callback never logs or waits
+to deliver its error. Dropping the audio handle disconnects the worker
+without joining it on the app thread. Initial device absence follows the
+same retry path, retaining the sound bank and scene for later playback.
+
+Each replacement stream starts a fresh mixer at its newly queried sample
+rate. The current theme restarts from the beginning, mute and cumulative
+callback counters survive, and effects/speech from the outage expire.
+The app-to-worker and worker-to-callback queues each hold at most 64
+commands. Regression tests inject notices, disconnects and busy devices,
+check retry deadlines and permanent failures, and hold device discovery
+blocked while the app submits commands and changes mute.
+
+An opt-in test opens real CoreAudio output, plays the retail theme, injects
+a disconnect through the worker's fault mailbox, opens a replacement,
+checks muted callbacks, then checks signal after unmuting:
+
+```
+cargo test -p yr-app --lib native_output_recovers_and_preserves_mute -- --ignored --nocapture
+```
+
+This test plays audio and requires the retail install and an output device.
+The injected disconnect verifies native reopen and callback delivery; it
+does not establish physical unplug or Bluetooth behaviour.
