@@ -254,6 +254,19 @@ fn eb1_sidebar_slots_produce_units() {
         assert_eq!((*w, *h), (60, 48), "{} cameo size", b.id);
         assert!(px.chunks(4).any(|p| p[3] != 0), "{} cameo has pixels", b.id);
     }
+    let csf = yr_formats::CsfFile::parse(fs.read("RA2MD.CSF").unwrap()).unwrap();
+    for b in &session.buildables {
+        let label = rules.techno(&b.id).unwrap().ui_name.as_deref().unwrap();
+        assert_eq!(Some(b.name.as_str()), csf.get(label), "{} name", b.id);
+        assert!(!b.name.starts_with("Name:"), "{} unresolved label", b.id);
+        println!(
+            "{}: {} (${}, {})",
+            b.id,
+            b.name,
+            b.cost,
+            yr_app::sidebar::duration(b.ticks)
+        );
+    }
     // Retail BuildSpeed: Grizzly 700 credits -> 441 ticks.
     assert_eq!(session.buildables[0].ticks, 441);
     let roles: Vec<yr_sim::Role> = session
@@ -355,6 +368,117 @@ fn slot_of(session: &yr_app::session::Session, id: &str) -> usize {
         .iter()
         .position(|b| b.id == id)
         .unwrap_or_else(|| panic!("{id} slot"))
+}
+
+#[test]
+fn eb1_sidebar_dims_unaffordable_and_missing_factories_but_keeps_ready_structures() {
+    use yr_app::sidebar;
+    let Some(mut session) = eb1_session(11) else {
+        return;
+    };
+    session.sim.set_ai(None);
+    let tank = slot_of(&session, "MTNK");
+    let lab = slot_of(&session, "GATECH");
+    let plant = slot_of(&session, "GAPOWR");
+    assert!(session.slot_available(tank));
+    assert!(!session.slot_available(lab), "missing radar prerequisite");
+    assert!(!session.slot_available(usize::MAX));
+
+    let panel = |session: &yr_app::session::Session, name: &str| {
+        let before = session.sim.state_hash();
+        let mut frame = vec![0; sidebar::WIDTH as usize * 800 * 4];
+        sidebar::draw(&mut frame, sidebar::WIDTH, 800, session, None);
+        assert_eq!(
+            session.sim.state_hash(),
+            before,
+            "drawing is presentation only"
+        );
+        if let Some(dir) = std::env::var_os("OPENYR_SIDEBAR_DUMP") {
+            std::fs::create_dir_all(&dir).unwrap();
+            let path = PathBuf::from(dir).join(format!("{name}.png"));
+            std::fs::write(
+                &path,
+                yr_render::png::encode_rgba(sidebar::WIDTH, 800, &frame),
+            )
+            .unwrap();
+            println!(
+                "{}: tick {} ${}",
+                path.display(),
+                session.sim.tick(),
+                session.sim.credits()
+            );
+        }
+        frame
+    };
+    let bright = panel(&session, "funded");
+    // Cameo and label portions of every card both hit the same slot.
+    for i in 0..session.buildables.len() {
+        let x = 8.0 + (i % 2) as f64 * 172.0;
+        let y = 40.0 + (i / 2) as f64 * 56.0;
+        for (dx, dy) in [(1.0, 1.0), (100.0, 42.0)] {
+            assert_eq!(
+                sidebar::slot_at(sidebar::WIDTH, session.buildables.len(), (x + dx, y + dy)),
+                Some(i)
+            );
+        }
+        assert!(y + 48.0 < 800.0, "last row stays visible");
+    }
+    assert_eq!(sidebar::slot_at(sidebar::WIDTH, 22, (7.0, 40.0)), None);
+    assert_eq!(sidebar::slot_at(sidebar::WIDTH, 22, (10.0, 89.0)), None);
+
+    session.sim.set_credits(699);
+    assert!(!session.slot_available(tank), "full cost is 700");
+    assert!(
+        session.produce(tank).is_some(),
+        "gradual-payment queuing still works"
+    );
+    let poor = panel(&session, "unaffordable");
+    // Verify the displayed cameo dims, independently of the changed credit header.
+    let mut lit = 0;
+    for y in 40..88 {
+        for x in 8..68 {
+            let at = (y * sidebar::WIDTH as usize + x) * 4;
+            for c in 0..3 {
+                assert_eq!(poor[at + c], bright[at + c] / 3);
+                lit += usize::from(bright[at + c] > 0);
+            }
+        }
+    }
+    assert!(lit > 100);
+    session.sim.set_credits(700);
+    assert!(session.slot_available(tank), "exact price is affordable");
+
+    session.sim.set_credits(10_000);
+    let factories: Vec<_> = session
+        .sim
+        .buildings()
+        .iter()
+        .filter(|b| b.owner == yr_sim::OWNER_PLAYER && b.role == yr_sim::Role::WarFactory)
+        .map(|b| Command::Destroy { id: b.id })
+        .collect();
+    session.step(&factories);
+    assert!(
+        !session.slot_available(tank),
+        "enemy factory cannot host player builds"
+    );
+    panel(&session, "factory-lost");
+
+    build_ready(&mut session, plant);
+    session.sim.set_credits(0);
+    let yards: Vec<_> = session
+        .sim
+        .buildings()
+        .iter()
+        .filter(|b| b.owner == yr_sim::OWNER_PLAYER && b.role == yr_sim::Role::ConstructionYard)
+        .map(|b| Command::Destroy { id: b.id })
+        .collect();
+    session.step(&yards);
+    assert_eq!(session.ready_structure(), Some(plant));
+    assert!(
+        session.slot_available(plant),
+        "already paid; still placeable"
+    );
+    panel(&session, "ready-without-yard");
 }
 
 /// Queue structure `slot`, step until it is ready, return the ticks taken.

@@ -72,9 +72,14 @@ incremental, testable path where each milestone is independently useful.
       placement (`docs/formats/shp.md`).
 - [ ] Wine side-by-side infantry and Construction Yard crops; verify
       cadence, overlay depth adjustments and factory doors (#6)
-- [ ] Sidebar/cameo UI from `ra2md.csf` strings (cameo build sidebar
-      done in M5, structure placement done (#46); CSF names and tabs
-      still open (#47))
+- [x] Sidebar labels from `ra2md.csf` (#47): all 22 Allied entries show
+      CSF names, retail costs and full-power build times. Missing/invalid
+      strings warn and fall back to rules names or type ids. Cards dim
+      for missing prerequisites/factories or insufficient credits; paid
+      structures stay bright until placed. Names and hit boxes share the
+      window/headless panel (`docs/formats/csf.md`).
+- [ ] Sidebar category tabs (#65; cameos, CSF names and structure placement
+      are done; the current prototype shows all 22 entries together)
 
 ## M4: Simulation v1
 

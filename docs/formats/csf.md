@@ -48,3 +48,41 @@ value `Intro` (each UTF-16 unit stored inverted, `ff b6` = `!0x0049`).
 `yr-formats::csf` exposes `CsfFile::parse(&[u8]) -> Vec<CsfEntry>` plus
 lookup by label name (case-insensitive). The renderer/localisation layer
 resolves labels at load time; the sim never reads CSF.
+
+## Production sidebar
+
+`yr-app::localization` reads `RA2MD.CSF` through the normal asset lookup
+order once per session setup and resolves each buildable's `UIName=` by
+case-insensitive label lookup. Missing tables, parse failures, missing/null
+values and empty strings log a warning and fall back to the rules `Name=`,
+then the type id. Names stay in presentation data, excluded from the sim
+state and the save's setup fingerprint.
+
+The retail EB1 check in `crates/yr-app/tests/retail.rs` compares every one
+of the 22 Allied slots with an independent CSF lookup. Labels checked
+in this install on 2026-10-30 include `Name:MTNK`, `Name:GAREFN`, and
+the `UIName=` references for `AMRADR` and `GAROBO`. The app's unit tests cover
+case differences, Unicode values and all fallback cases without retail data.
+
+`yr-app::sidebar` draws both the native window and headless frames. Each
+60x48 cameo has a name beside it, wrapped to three lines, followed by its
+`Cost=` and duration. The duration is the session's integer `BuildSpeed=`
+tick count at 15 ticks/s, rounded up to tenths. For example, the Grizzly
+is $700 and 441 ticks (29.4s); the refinery is $2000 and 1260 ticks (84s).
+These are full-power estimates; low power or credit starvation can delay
+completion. This does not change production formulas or gradual payment.
+
+The panel is 352 pixels wide with two columns, and all current slots fit
+in the 800-pixel-high frame. Clicking a name or price uses the same slot
+as its cameo. Unaffordable cards and cards without an owned factory or
+prerequisites dim; a paid structure remains bright while awaiting placement,
+even if the yard is lost. Progress wipes, counts and placement outlines
+remain visible. Set `OPENYR_SIDEBAR_DUMP=<dir>` while running
+`cargo test -p yr-app --test retail sidebar -- --nocapture` to export
+controlled funded, unaffordable, factory-loss and ready-structure panels.
+
+Text uses the public-domain bitmap glyphs from
+[`font8x8`](https://docs.rs/font8x8/0.3.1/font8x8/). Latin, extended Latin,
+Greek and Hiragana are supported; other glyphs display `?`. Very long
+names are clipped after three lines with `..`. Full Unicode font shaping,
+category tabs and alternate sidebar layouts remain presentation work.

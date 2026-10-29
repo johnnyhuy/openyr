@@ -632,6 +632,7 @@ pub fn build_ticks(cost: i64, build_speed_units: i64) -> u32 {
 /// MCV) are left out. Slot `i` is kind tag `i`; free units (refinery
 /// harvesters) are interned after the slots.
 fn buildables(fs: &AssetFs, rules: &Rules, yard: Option<&str>) -> (Vec<Buildable>, Vec<String>) {
+    let names = crate::localization::SidebarNames::load(fs);
     let speed = rules.globals.build_speed.map_or(700_000, |d| d.units());
     let tech_level = rules.skirmish.tech_level.unwrap_or(10);
     let palette = ["CAMEO.PAL", "CAMEOMD.PAL"]
@@ -695,11 +696,7 @@ fn buildables(fs: &AssetFs, rules: &Rules, yard: Option<&str>) -> (Vec<Buildable
             .and_then(|(c, pal)| decode_cameo(fs, c, pal));
         out.push(Buildable {
             id: id.clone(),
-            name: t
-                .ui_name
-                .clone()
-                .or(t.name.clone())
-                .unwrap_or_else(|| id.clone()),
+            name: names.name(t),
             factory,
             cost,
             ticks: build_ticks(cost, speed),
@@ -736,6 +733,23 @@ fn decode_cameo(
 }
 
 impl Session {
+    /// Sidebar emphasis only. Payment remains gradual, so a dim slot
+    /// can still be queued with insufficient credits. Paid structures
+    /// waiting for placement remain bright even if their factory is lost.
+    pub fn slot_available(&self, slot: usize) -> bool {
+        let Some(b) = self.buildables.get(slot) else {
+            return false;
+        };
+        self.ready_structure() == Some(slot)
+            || (self.sim.credits() >= b.cost
+                && self.prerequisites_met(slot)
+                && self
+                    .sim
+                    .buildings()
+                    .iter()
+                    .any(|h| h.owner == PLAYER && h.role == b.factory.role()))
+    }
+
     /// Queue sidebar slot `slot`. `None` when out of range, when its
     /// prerequisites are missing, or for a structure while another one is
     /// building or waiting to be placed (one at a time, as in RA2).

@@ -21,6 +21,7 @@ use winit::event_loop::{ActiveEventLoop, EventLoop};
 use winit::keyboard::{KeyCode, PhysicalKey};
 use winit::window::{Window, WindowId};
 use yr_app::session::{Outcome, Session};
+use yr_app::sidebar::{self, WIDTH as SIDEBAR_W};
 use yr_sim::{Command, Fix};
 
 const WIN_W: u32 = 1280;
@@ -31,17 +32,9 @@ const PLAYER_COL: [u8; 4] = [64, 255, 128, 255];
 const ENEMY_COL: [u8; 4] = [255, 64, 64, 255];
 const NEUTRAL_COL: [u8; 4] = [180, 180, 180, 255];
 const SELECT_COL: [u8; 4] = [255, 255, 255, 255];
-const READY_COL: [u8; 4] = [96, 255, 96, 255];
 /// Placement ghost tints (RGB + blend weight out of 255).
 const GHOST_OK: [u8; 4] = [64, 255, 96, 110];
 const GHOST_BAD: [u8; 4] = [255, 48, 48, 130];
-
-/// Production sidebar: two columns of 60x48 cameos on the right edge.
-const SIDEBAR_W: u32 = 136;
-const CAMEO_W: i32 = 60;
-const CAMEO_H: i32 = 48;
-const CAMEO_GAP: i32 = 4;
-const SIDEBAR_TOP: i32 = 34;
 
 struct View {
     cam_x: f32,
@@ -301,13 +294,7 @@ impl App {
     fn sidebar_slot_at(&self, pos: (f64, f64)) -> Option<usize> {
         let session = self.session.as_ref()?;
         let fw = self.pixels.as_ref()?.texture().width();
-        (0..session.buildables.len()).find(|&i| {
-            let (x, y) = slot_origin(fw, i);
-            pos.0 >= f64::from(x)
-                && pos.0 < f64::from(x + CAMEO_W)
-                && pos.1 >= f64::from(y)
-                && pos.1 < f64::from(y + CAMEO_H)
-        })
+        sidebar::slot_at(fw, session.buildables.len(), pos)
     }
 
     fn in_sidebar(&self, pos: (f64, f64)) -> bool {
@@ -628,159 +615,12 @@ impl App {
             );
         }
         if let Some(session) = &self.session {
-            draw_sidebar(frame, fw, fh, session, self.placing);
+            sidebar::draw(frame, fw, fh, session, self.placing);
         }
         // Box-select rubber band.
         if let (Some(a), false) = (self.left_down, self.right_panning) {
             if (self.cursor.0 - a.0).abs() > 6.0 || (self.cursor.1 - a.1).abs() > 6.0 {
                 draw_rect_outline(frame, fw, fh, a, self.cursor, SELECT_COL);
-            }
-        }
-    }
-}
-
-fn slot_origin(fw: u32, slot: usize) -> (i32, i32) {
-    let col = (slot % 2) as i32;
-    let row = (slot / 2) as i32;
-    (
-        fw as i32 - SIDEBAR_W as i32 + 6 + col * (CAMEO_W + CAMEO_GAP),
-        SIDEBAR_TOP + row * (CAMEO_H + CAMEO_GAP),
-    )
-}
-
-/// Dark panel, credits readout, then one cameo per buildable with its
-/// queue count and a build-progress wipe; slots whose factory is gone or
-/// whose prerequisites are missing are dimmed. A finished structure gets
-/// a green outline, the one being placed a white one.
-fn draw_sidebar(frame: &mut [u8], fw: u32, fh: u32, session: &Session, placing: Option<usize>) {
-    let x0 = (fw - SIDEBAR_W) as i32;
-    for y in 0..fh as i32 {
-        for x in x0..fw as i32 {
-            set_px(frame, fw, fh, x, y, [24, 26, 32, 255]);
-        }
-    }
-    draw_number(
-        frame,
-        fw,
-        fh,
-        x0 + 8,
-        10,
-        session.sim.credits(),
-        [255, 220, 96, 255],
-    );
-    let sim = &session.sim;
-    for (i, b) in session.buildables.iter().enumerate() {
-        let (sx, sy) = slot_origin(fw, i);
-        let host = sim
-            .buildings()
-            .iter()
-            .any(|h| h.owner == yr_sim::OWNER_PLAYER && h.role == b.factory.role())
-            && session.prerequisites_met(i);
-        if let Some((w, h, px)) = &b.cameo {
-            for y in 0..(*h as i32).min(CAMEO_H) {
-                for x in 0..(*w as i32).min(CAMEO_W) {
-                    let at = ((y as u32 * w + x as u32) * 4) as usize;
-                    let mut c = [px[at], px[at + 1], px[at + 2], 255];
-                    if px[at + 3] == 0 {
-                        c = [0, 0, 0, 255];
-                    }
-                    set_px(frame, fw, fh, sx + x, sy + y, c);
-                }
-            }
-        } else {
-            for y in 0..CAMEO_H {
-                for x in 0..CAMEO_W {
-                    set_px(frame, fw, fh, sx + x, sy + y, [70, 70, 80, 255]);
-                }
-            }
-        }
-        let (count, head) = session.slot_status(i);
-        // Unbuilt share of the head order darkens from the top.
-        let shade_rows = match head {
-            Some((done, total)) if total > 0 => {
-                (i64::from(CAMEO_H) * (total - done) / total) as i32
-            }
-            _ if !host => CAMEO_H,
-            _ => 0,
-        };
-        for y in 0..shade_rows {
-            for x in 0..CAMEO_W {
-                darken(frame, fw, fh, sx + x, sy + y);
-            }
-        }
-        if count > 0 {
-            draw_number(
-                frame,
-                fw,
-                fh,
-                sx + 3,
-                sy + 3,
-                count as i64,
-                [255, 255, 255, 255],
-            );
-        }
-        let outline = if placing == Some(i) {
-            Some(SELECT_COL)
-        } else if session.ready_structure() == Some(i) {
-            Some(READY_COL)
-        } else {
-            None
-        };
-        if let Some(col) = outline {
-            for inset in 0..2 {
-                let a = (f64::from(sx + inset), f64::from(sy + inset));
-                let b = (
-                    f64::from(sx + CAMEO_W - 1 - inset),
-                    f64::from(sy + CAMEO_H - 1 - inset),
-                );
-                draw_rect_outline(frame, fw, fh, a, b, col);
-            }
-        }
-    }
-}
-
-fn darken(frame: &mut [u8], fw: u32, fh: u32, x: i32, y: i32) {
-    if x >= 0 && y >= 0 && (x as u32) < fw && (y as u32) < fh {
-        let at = ((y as u32 * fw + x as u32) * 4) as usize;
-        for c in &mut frame[at..at + 3] {
-            *c /= 3;
-        }
-    }
-}
-
-/// 3x5 digit glyphs, one row per u8 (bit 2 = left column).
-const DIGITS: [[u8; 5]; 10] = [
-    [7, 5, 5, 5, 7],
-    [2, 6, 2, 2, 7],
-    [7, 1, 7, 4, 7],
-    [7, 1, 7, 1, 7],
-    [5, 5, 7, 1, 1],
-    [7, 4, 7, 1, 7],
-    [7, 4, 7, 5, 7],
-    [7, 1, 1, 1, 1],
-    [7, 5, 7, 5, 7],
-    [7, 5, 7, 1, 7],
-];
-
-/// Draw a non-negative number at 2x scale with a dark backing.
-fn draw_number(frame: &mut [u8], fw: u32, fh: u32, x: i32, y: i32, n: i64, col: [u8; 4]) {
-    let text = n.max(0).to_string();
-    let w = text.len() as i32 * 8;
-    for dy in -1..11 {
-        for dx in -1..w {
-            set_px(frame, fw, fh, x + dx, y + dy, [0, 0, 0, 255]);
-        }
-    }
-    for (k, ch) in text.bytes().enumerate() {
-        let glyph = DIGITS[usize::from(ch - b'0')];
-        for (row, bits) in glyph.iter().enumerate() {
-            for colx in 0..3 {
-                if bits & (4 >> colx) != 0 {
-                    for (ox, oy) in [(0, 0), (1, 0), (0, 1), (1, 1)] {
-                        let px = x + k as i32 * 8 + colx * 2 + ox;
-                        set_px(frame, fw, fh, px, y + row as i32 * 2 + oy, col);
-                    }
-                }
             }
         }
     }
