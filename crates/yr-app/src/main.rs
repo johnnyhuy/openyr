@@ -283,10 +283,6 @@ impl App {
         let events = session.sim.drain_events();
         if let Some(audio) = &mut self.audio {
             audio.update(session, &events);
-            if audio.device_failed() {
-                eprintln!("OpenYR: audio device stopped; continuing silently");
-                self.audio = None;
-            }
         }
         self.selected
             .retain(|id| session.sim.units().iter().any(|u| u.id == *id));
