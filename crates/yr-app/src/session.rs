@@ -33,18 +33,22 @@ pub struct Session {
     pub kinds: Vec<String>,
     /// Generic prerequisite tokens (`POWER`, ...) and their buildings.
     prerequisite_groups: Vec<(String, Vec<String>)>,
+    pub(crate) seed: u64,
+    pub(crate) setup_hash: u64,
 }
 
 /// One sidebar slot: a rules unit or structure the player can build.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize)]
 pub struct Buildable {
     pub id: String,
+    #[serde(skip)]
     pub name: String,
     pub factory: Factory,
     pub cost: i64,
     /// Build time at full power in ticks (rules `BuildSpeed`).
     pub ticks: u32,
     /// Cameo as RGBA (w, h, pixels) when the art resolved.
+    #[serde(skip)]
     pub cameo: Option<(u32, u32, Vec<u8>)>,
     /// Rules `Prerequisite=` tokens (type ids or generic groups).
     prerequisite: Vec<String>,
@@ -577,6 +581,12 @@ pub fn setup(
         sim.set_credits_of(ENEMY, rules.skirmish.money.unwrap_or(10_000));
         sim.set_ai(Some(yr_sim::ai::SkirmishAi::new(ENEMY, PLAYER, choices)));
     }
+    let setup_hash = setup_fingerprint(
+        &sim,
+        &buildables,
+        &kinds,
+        &rules.globals.prerequisite_groups,
+    )?;
     Ok(Session {
         sim,
         outcome: Outcome::Ongoing,
@@ -584,7 +594,26 @@ pub fn setup(
         buildables,
         kinds,
         prerequisite_groups: rules.globals.prerequisite_groups.clone(),
+        seed,
+        setup_hash,
     })
+}
+
+fn setup_fingerprint(
+    sim: &Sim,
+    buildables: &[Buildable],
+    kinds: &[String],
+    groups: &[(String, Vec<String>)],
+) -> Result<u64, String> {
+    let description =
+        serde_json::to_vec(&(buildables, kinds, groups)).map_err(|e| e.to_string())?;
+    Ok(crate::snapshot::fingerprint(
+        sim.save_bytes()
+            .map_err(|e| e.to_string())?
+            .iter()
+            .chain(description.iter())
+            .copied(),
+    ))
 }
 
 /// Build time in ticks: `Cost * BuildSpeed` minutes per 1000 credits at
@@ -840,5 +869,58 @@ impl Session {
         } else if self.had_enemy && !enemy_alive {
             self.outcome = Outcome::Won;
         }
+    }
+}
+
+#[cfg(test)]
+mod save_tests {
+    use super::*;
+
+    fn fresh(name: &str, cost: i64, cameo: Option<(u32, u32, Vec<u8>)>) -> Session {
+        let sim = Sim::new(42);
+        let buildables = vec![Buildable {
+            id: "E1".into(),
+            name: name.into(),
+            factory: Factory::Infantry,
+            cost,
+            ticks: 10,
+            cameo,
+            prerequisite: Vec::new(),
+            product: Product::Unit(UnitSpec {
+                loco: Loco::Foot,
+                speed: Fix::ONE,
+                hp: 100,
+                armor: 0,
+                weapon: None,
+                role: Role::Combat,
+            }),
+        }];
+        let kinds = vec!["E1".into()];
+        let setup_hash = setup_fingerprint(&sim, &buildables, &kinds, &[]).unwrap();
+        Session {
+            sim,
+            outcome: Outcome::Ongoing,
+            had_enemy: false,
+            buildables,
+            kinds,
+            prerequisite_groups: Vec::new(),
+            seed: 42,
+            setup_hash,
+        }
+    }
+
+    #[test]
+    fn localized_labels_and_new_cameos_load_but_changed_gameplay_rejects() {
+        let original = fresh("GI", 200, None);
+        let bytes = crate::snapshot::encode(&original).unwrap();
+        let mut localized = fresh("Localized infantry", 200, Some((1, 1, vec![255; 4])));
+        crate::snapshot::restore(&mut localized, &bytes)
+            .expect("presentation changes are compatible");
+        assert_eq!(original.sim.state_hash(), localized.sim.state_hash());
+        assert_eq!(localized.buildables[0].name, "Localized infantry");
+        let mut rebalanced = fresh("GI", 250, None);
+        assert!(crate::snapshot::restore(&mut rebalanced, &bytes)
+            .unwrap_err()
+            .contains("map or rules"));
     }
 }

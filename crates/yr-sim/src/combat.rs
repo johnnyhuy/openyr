@@ -12,7 +12,8 @@ use yr_rules::{Armor, Decimal, Rules};
 pub const ARMOR_COUNT: usize = 11;
 
 /// A resolved weapon the sim can fire.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
 pub struct WeaponSpec {
     pub damage: i64,
     /// Frames (ticks) between shots.

@@ -15,7 +15,9 @@ use crate::combat::WeaponSpec;
 use crate::{terrain::Loco, Fix, Role};
 
 /// Which factory a build order comes out of.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(
+    serde::Serialize, serde::Deserialize, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord,
+)]
 pub enum Factory {
     /// War factory: vehicles.
     Vehicle,
@@ -39,7 +41,8 @@ impl Factory {
 }
 
 /// Everything the sim needs to spawn a produced unit.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
 pub struct UnitSpec {
     pub loco: Loco,
     pub speed: Fix,
@@ -51,7 +54,8 @@ pub struct UnitSpec {
 }
 
 /// Everything the sim needs to put a structure on the map.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
 pub struct BuildingSpec {
     /// Footprint in cells.
     pub w: u16,
@@ -73,7 +77,7 @@ pub struct BuildingSpec {
 }
 
 /// What a build order turns into when done.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Product {
     /// Rolls out of the factory by itself.
     Unit(UnitSpec),
@@ -83,7 +87,8 @@ pub enum Product {
 
 /// One queued build. `kind` is a caller-chosen type index (the UI's
 /// buildable slot) echoed back in events.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
 pub struct BuildOrder {
     pub factory: Factory,
     pub kind: u16,

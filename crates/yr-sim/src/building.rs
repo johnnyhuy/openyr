@@ -7,7 +7,8 @@
 
 use crate::Fix;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
 pub struct Building {
     pub id: u32,
     /// Caller type tag from `PlaceBuilding` (renderer art lookup).

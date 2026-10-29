@@ -6,6 +6,7 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
+serde = { version = "1", features = ["derive"] }
 yr-formats = { path = "../yr-formats" }
 
 [dev-dependencies]

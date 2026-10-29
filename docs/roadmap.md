@@ -125,7 +125,12 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       `BaseNormal` building); refineries bring their `FreeUnit=`
       harvester; finished structures cancel for a full refund
       (`docs/formats/rules.md`). Power is judged per owner (#52)
-- [ ] Save/load (deterministic state dump)
+- [x] Save/load (#45): versioned integer-only sim snapshots, seed and
+      map/rules compatibility checks, atomic disk replacement, F5/F9
+      quicksave/load, live `--load` and headless `--save`/`--load` with
+      absolute `--ticks`/`--frames`. Retail EB1 round-trips at five
+      checkpoints and matches uninterrupted hashes through tick 3000
+      to Won (`docs/formats/save.md`). Presentation is rebuilt on load.
 - [x] Basic AI skirmish opponent (#21): computer production in `yr-sim`,
       separate owner credits/queues/power, retail costs and build times,
       a refinery-gated income stipend, an infantry scout and periodic

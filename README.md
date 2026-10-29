@@ -72,6 +72,26 @@ queues units with left-click and cancels with right-click. Arrow keys or
 right-drag pan; the wheel zooms; Esc quits. Audio starts automatically and
 missing samples or an unavailable output device leave the match running.
 
+F5 quicksaves the last completed sim tick and F9 restores it. The default
+file is `~/Library/Application Support/OpenYR/quicksave.oyrsave`. To open a
+saved match, use `--load <file>`; F5/F9 then use that file. Art, camera,
+selection, animation clocks and audio are rebuilt on load.
+
+Save and resume a headless match with absolute sim ticks:
+
+```sh
+cargo run --release -- "/path/to/RA2" EB1.MMX --ticks 900 --save /tmp/match.oyrsave
+cargo run --release -- "/path/to/RA2" EB1.MMX --load /tmp/match.oyrsave --ticks 3000
+cargo run --release -- "/path/to/RA2" EB1.MMX --load /tmp/match.oyrsave
+```
+
+`--save <file>` without ticks writes the starting state headlessly. Combine
+`--frames` with `--save` or `--load` for proof captures. The saved seed,
+map/rules compatibility fingerprint and full sim state travel together;
+incompatible versions or game data fail with a clear error. Save files
+contain data derived from the retail install, so keep them outside git.
+See [the save format](docs/formats/save.md).
+
 To capture a scripted match without a window:
 
 ```sh

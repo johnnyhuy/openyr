@@ -17,6 +17,7 @@ mod hash;
 pub mod path;
 pub mod production;
 mod rng;
+pub mod save;
 pub mod terrain;
 
 pub use building::Building;
@@ -129,7 +130,7 @@ pub enum Command {
 
 /// Things that happened during a tick, for the renderer/audio to react
 /// to. Deterministic, drained by the caller after each step.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Event {
     Fired {
         shooter: u32,
@@ -165,7 +166,7 @@ pub enum Event {
 }
 
 /// What a unit is for; drives the economy state machine.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Role {
     Combat,
     Harvester,
@@ -199,7 +200,7 @@ pub const BLOCKED_REPLAN_TICKS: u16 = 10;
 /// How far (cells) a blocked goal is substituted by a standable one.
 pub const GOAL_SEARCH_CELLS: i32 = 6;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 enum Harvest {
     Idle,
     ToOre(u16, u16),
@@ -208,7 +209,8 @@ enum Harvest {
     Unloading(u32),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
 pub struct Unit {
     pub id: u32,
     /// Caller type tag from `Spawn`/`Produce` (renderer art lookup).
@@ -244,7 +246,8 @@ pub struct Unit {
 }
 
 /// A homing projectile in flight (internal; observed via events).
-#[derive(Debug, Clone, Copy)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Copy)]
+#[serde(deny_unknown_fields)]
 struct Projectile {
     x: Fix,
     y: Fix,
@@ -254,7 +257,8 @@ struct Projectile {
     speed: Fix,
 }
 
-#[derive(Debug, Clone)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct Sim {
     tick: u64,
     rng: Rng,
@@ -271,7 +275,8 @@ pub struct Sim {
     low_power_speeds: (Fix, Fix),
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Default)]
+#[serde(deny_unknown_fields)]
 struct Economy {
     credits: i64,
     production: Vec<BuildOrder>,
