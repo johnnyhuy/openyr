@@ -39,6 +39,8 @@ map/rules. A mismatch is rejected before replacing the current match.
 This checks effective gameplay configuration, not the install's absolute
 path or every art/audio byte. The state hash catches payload corruption;
 these fingerprints are consistency checks, not cryptographic signatures.
+Display names and cameo pixels are excluded so localized labels or new
+sidebar art do not invalidate an otherwise compatible match (#64).
 
 ## Loading and writing
 
