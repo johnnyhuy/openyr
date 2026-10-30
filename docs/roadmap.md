@@ -163,6 +163,11 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
 - [x] Unambiguous workspace launch command (#54): `cargo run --release -- ...`
       defaults to `yr-app` for live sessions and headless proof captures;
       inspection tools remain available through `-p mix-dump` / `-p sim-bench`
+- [x] Finder launch without terminal arguments (#75, #76): `scripts/package-macos.sh`
+      builds a local native `OpenYR.app`. Default EB1 skirmish uses discovered
+      retail data or a remembered folder chosen through macOS. Startup errors
+      appear in a native alert; Finder logs live in `~/Library/Logs/OpenYR`.
+      Explicit CLI and headless commands still work (`docs/macos-app.md`).
 
 ## M6: Fidelity pass
 

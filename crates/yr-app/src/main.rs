@@ -11,6 +11,8 @@
 //! green ghost; right-click or Esc backs out of placement (issue #46). Orders go through
 //! `yr_sim::Command` only, the UI never mutates sim state directly (issue #15).
 
+mod launcher;
+
 use pixels::{Pixels, SurfaceTexture};
 use std::collections::BTreeSet;
 use std::path::PathBuf;
@@ -78,6 +80,7 @@ struct App {
     load_path: Option<PathBuf>,
     save_path: PathBuf,
     save_requested: bool,
+    startup_error: Option<String>,
 }
 
 impl App {
@@ -814,10 +817,24 @@ impl ApplicationHandler for App {
         let attrs = Window::default_attributes()
             .with_title(format!("OpenYR: {}", self.map_name))
             .with_inner_size(LogicalSize::new(WIN_W, WIN_H));
-        let window = std::sync::Arc::new(el.create_window(attrs).expect("create window"));
+        let window = match el.create_window(attrs) {
+            Ok(window) => std::sync::Arc::new(window),
+            Err(e) => {
+                self.startup_error = Some(format!("cannot create window: {e}"));
+                el.exit();
+                return;
+            }
+        };
         let size = window.inner_size();
         let surface = SurfaceTexture::new(size.width.max(1), size.height.max(1), window.clone());
-        let pixels = Pixels::new(WIN_W, WIN_H, surface).expect("pixels surface");
+        let pixels = match Pixels::new(WIN_W, WIN_H, surface) {
+            Ok(pixels) => pixels,
+            Err(e) => {
+                self.startup_error = Some(format!("cannot create display surface: {e}"));
+                el.exit();
+                return;
+            }
+        };
         match yr_render::render_map(&self.gamedir, &self.map_name, self.scale) {
             Ok(map) => {
                 println!("OpenYR: rendered {}", map.summary);
@@ -827,7 +844,7 @@ impl ApplicationHandler for App {
                 self.sprites = load_sprites(&self.gamedir, &self.map_name);
             }
             Err(e) => {
-                eprintln!("OpenYR: cannot render {}: {e}", self.map_name);
+                self.startup_error = Some(format!("cannot render {}: {e}", self.map_name));
                 el.exit();
                 return;
             }
@@ -852,7 +869,7 @@ impl ApplicationHandler for App {
                 self.session = Some(s);
             }
             Err(e) => {
-                eprintln!("OpenYR: session unavailable ({e})");
+                self.startup_error = Some(format!("session unavailable ({e})"));
                 el.exit();
                 return;
             }
@@ -1109,6 +1126,7 @@ fn new_app(gamedir: String, map_name: String, scale: u32) -> App {
         load_path: None,
         save_path: yr_app::snapshot::quicksave_path(),
         save_requested: false,
+        startup_error: None,
     }
 }
 
@@ -1419,8 +1437,15 @@ fn parse_args(args: &[String]) -> Result<Options, String> {
     Ok(out)
 }
 
-fn run() -> Result<(), String> {
-    let opts = parse_args(&std::env::args().skip(1).collect::<Vec<_>>())?;
+fn run(args: &[String]) -> Result<(), String> {
+    if args.iter().any(|a| a == "--help" || a == "-h") {
+        println!("{}\n\nWithout arguments, OpenYR finds your retail install and starts EB1.MMX.\nSet OPENYR_GAMEDIR to override the remembered or standard install.", launcher::USAGE);
+        return Ok(());
+    }
+    let Some(args) = launcher::arguments(args)? else {
+        return Ok(());
+    };
+    let opts = parse_args(&args)?;
     let mut app = new_app(opts.gamedir, opts.map, opts.scale);
     app.load_path = opts.load;
     app.save_requested = opts.save.is_some();
@@ -1441,12 +1466,20 @@ fn run() -> Result<(), String> {
         app.session = Some(app.load_session()?);
     }
     let event_loop = EventLoop::new().map_err(|e| e.to_string())?;
-    event_loop.run_app(&mut app).map_err(|e| e.to_string())
+    event_loop.run_app(&mut app).map_err(|e| e.to_string())?;
+    match app.startup_error {
+        Some(e) => Err(e),
+        None => Ok(()),
+    }
 }
 
 fn main() {
-    if let Err(e) = run() {
-        eprintln!("openyr: {e}\nusage: openyr <gamedir> <map> [scale] [--load <file>] [--save <file>] [--ticks <end-tick>] [--frames <dir> <tick>...] [--passive]");
+    let args = std::env::args().skip(1).collect::<Vec<_>>();
+    if let Err(e) = run(&args) {
+        eprintln!("openyr: {e}\nusage: {}", launcher::USAGE);
+        if args.is_empty() {
+            launcher::show_error(&e);
+        }
         std::process::exit(1);
     }
 }

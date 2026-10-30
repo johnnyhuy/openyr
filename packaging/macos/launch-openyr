@@ -1,0 +1,10 @@
+#!/bin/sh
+# Finder has no terminal. Keep the current and previous launch logs.
+log_dir="$HOME/Library/Logs/OpenYR"
+if mkdir -p "$log_dir"; then
+    if [ -f "$log_dir/openyr.log" ]; then
+        mv -f "$log_dir/openyr.log" "$log_dir/previous.log"
+    fi
+    exec "$(dirname "$0")/openyr" "$@" >"$log_dir/openyr.log" 2>&1
+fi
+exec "$(dirname "$0")/openyr" "$@"
