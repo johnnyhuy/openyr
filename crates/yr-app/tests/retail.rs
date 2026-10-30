@@ -256,6 +256,23 @@ fn eb1_sidebar_slots_produce_units() {
     }
     let csf = yr_formats::CsfFile::parse(fs.read("RA2MD.CSF").unwrap()).unwrap();
     for b in &session.buildables {
+        use yr_app::sidebar::Category;
+        let expected_category = match rules.techno(&b.id).unwrap().kind {
+            yr_rules::TechnoKind::Infantry => Category::Infantry,
+            yr_rules::TechnoKind::Building => {
+                if rules_ini.section(&b.id).and_then(|s| s.get("BuildCat")) == Some("Combat") {
+                    Category::Defences
+                } else {
+                    Category::Structures
+                }
+            }
+            _ => Category::Vehicles,
+        };
+        assert_eq!(
+            b.category, expected_category,
+            "{} raw retail category",
+            b.id
+        );
         let label = rules.techno(&b.id).unwrap().ui_name.as_deref().unwrap();
         assert_eq!(Some(b.name.as_str()), csf.get(label), "{} name", b.id);
         assert!(!b.name.starts_with("Name:"), "{} unresolved label", b.id);
@@ -387,7 +404,14 @@ fn eb1_sidebar_dims_unaffordable_and_missing_factories_but_keeps_ready_structure
     let panel = |session: &yr_app::session::Session, name: &str| {
         let before = session.sim.state_hash();
         let mut frame = vec![0; sidebar::WIDTH as usize * 800 * 4];
-        sidebar::draw(&mut frame, sidebar::WIDTH, 800, session, None);
+        sidebar::draw(
+            &mut frame,
+            sidebar::WIDTH,
+            800,
+            session,
+            sidebar::Category::Vehicles,
+            None,
+        );
         assert_eq!(
             session.sim.state_hash(),
             before,
@@ -412,19 +436,29 @@ fn eb1_sidebar_dims_unaffordable_and_missing_factories_but_keeps_ready_structure
     };
     let bright = panel(&session, "funded");
     // Cameo and label portions of every card both hit the same slot.
-    for i in 0..session.buildables.len() {
-        let x = 8.0 + (i % 2) as f64 * 172.0;
-        let y = 40.0 + (i / 2) as f64 * 56.0;
-        for (dx, dy) in [(1.0, 1.0), (100.0, 42.0)] {
+    let mut reached = Vec::new();
+    for category in sidebar::Category::ALL {
+        for (i, slot) in sidebar::slots(&session, category).enumerate() {
+            reached.push(slot);
+            let x = 8.0 + (i % 2) as f64 * 172.0;
+            let y = 104.0 + (i / 2) as f64 * 56.0;
+            for (dx, dy) in [(1.0, 1.0), (100.0, 42.0)] {
+                assert_eq!(
+                    sidebar::slot_at(sidebar::WIDTH, &session, category, (x + dx, y + dy)),
+                    Some(slot)
+                );
+            }
+            assert!(y + 48.0 < 800.0, "last row stays visible");
+        }
+        for pos in [(7.0, 104.0), (10.0, 153.0), (10.0, 40.0)] {
             assert_eq!(
-                sidebar::slot_at(sidebar::WIDTH, session.buildables.len(), (x + dx, y + dy)),
-                Some(i)
+                sidebar::slot_at(sidebar::WIDTH, &session, category, pos),
+                None
             );
         }
-        assert!(y + 48.0 < 800.0, "last row stays visible");
     }
-    assert_eq!(sidebar::slot_at(sidebar::WIDTH, 22, (7.0, 40.0)), None);
-    assert_eq!(sidebar::slot_at(sidebar::WIDTH, 22, (10.0, 89.0)), None);
+    reached.sort_unstable();
+    assert_eq!(reached, (0..session.buildables.len()).collect::<Vec<_>>());
 
     session.sim.set_credits(699);
     assert!(!session.slot_available(tank), "full cost is 700");
@@ -435,7 +469,7 @@ fn eb1_sidebar_dims_unaffordable_and_missing_factories_but_keeps_ready_structure
     let poor = panel(&session, "unaffordable");
     // Verify the displayed cameo dims, independently of the changed credit header.
     let mut lit = 0;
-    for y in 40..88 {
+    for y in 104..152 {
         for x in 8..68 {
             let at = (y * sidebar::WIDTH as usize + x) * 4;
             for c in 0..3 {
@@ -479,6 +513,128 @@ fn eb1_sidebar_dims_unaffordable_and_missing_factories_but_keeps_ready_structure
         "already paid; still placeable"
     );
     panel(&session, "ready-without-yard");
+}
+
+/// Filtering changes presentation, never the queued kind or paid structure.
+#[test]
+fn eb1_sidebar_tabs_preserve_orders_and_ready_placement() {
+    use yr_app::sidebar::{self, Category};
+    let Some(mut session) = eb1_session(11) else {
+        return;
+    };
+    session.sim.set_ai(None);
+    let paint = |session: &yr_app::session::Session, stage: &str| {
+        let before = yr_app::snapshot::encode(session).unwrap();
+        for category in Category::ALL {
+            let mut frame = vec![0; sidebar::WIDTH as usize * 800 * 4];
+            sidebar::draw(&mut frame, sidebar::WIDTH, 800, session, category, None);
+            if let Some(dir) = std::env::var_os("OPENYR_SIDEBAR_DUMP") {
+                std::fs::create_dir_all(&dir).unwrap();
+                let path =
+                    PathBuf::from(dir).join(format!("tabs-{stage}-{}.png", category.file_name()));
+                std::fs::write(
+                    &path,
+                    yr_render::png::encode_rgba(sidebar::WIDTH, 800, &frame),
+                )
+                .unwrap();
+                println!("{}: tick {}", path.display(), session.sim.tick());
+            }
+            // A paid structure's tab has green READY text even when hidden.
+            if let Some(ready) = sidebar::ready_category(session) {
+                let start_x = if ready == Category::Structures {
+                    8
+                } else {
+                    180
+                };
+                let green = frame
+                    .chunks(4)
+                    .enumerate()
+                    .filter(|(i, p)| {
+                        let (x, y) = (i % sidebar::WIDTH as usize, i / sidebar::WIDTH as usize);
+                        (start_x..start_x + 164).contains(&x)
+                            && (40..64).contains(&y)
+                            && *p == [96, 255, 96, 255]
+                    })
+                    .count();
+                assert!(green > 20, "READY survives on every selected tab");
+            }
+        }
+        assert_eq!(
+            before,
+            yr_app::snapshot::encode(session).unwrap(),
+            "tab changes preserve all saved state"
+        );
+    };
+    let click = |session: &yr_app::session::Session, category| {
+        sidebar::slot_at(sidebar::WIDTH, session, category, (9.0, 105.0)).unwrap()
+    };
+    let tank = click(&session, Category::Vehicles);
+    let infantry = click(&session, Category::Infantry);
+    let plant = click(&session, Category::Structures);
+    let defence = click(&session, Category::Defences);
+    assert_eq!(session.buildables[tank].id, "MTNK");
+    assert_eq!(session.buildables[infantry].id, "E1");
+    assert_eq!(session.buildables[plant].id, "GAPOWR");
+    assert_eq!(session.buildables[defence].id, "NASAM");
+    for category in Category::ALL {
+        let ids: Vec<_> = sidebar::slots(&session, category)
+            .map(|s| session.buildables[s].id.as_str())
+            .collect();
+        assert!(!ids.is_empty());
+        println!("{}: {}", category.label(), ids.join(", "));
+    }
+    paint(&session, "funded");
+    let commands: Vec<_> = [tank, infantry, plant]
+        .into_iter()
+        .map(|slot| {
+            let command = session.produce(slot).unwrap();
+            assert!(matches!(command, Command::Produce { kind, .. } if usize::from(kind) == slot));
+            command
+        })
+        .collect();
+    session.step(&commands);
+    for _ in 0..10 {
+        session.step(&[]);
+    }
+    paint(&session, "progress");
+    let tank_status = session.slot_status(tank);
+    let plant_status = session.slot_status(plant);
+    assert!(tank_status.1.is_some_and(|(done, _)| done > 0));
+    // Right-clicking the same card position on Infantry cancels only GI.
+    let cancel = session.cancel(click(&session, Category::Infantry)).unwrap();
+    assert!(matches!(cancel, Command::CancelProduce { kind, .. } if usize::from(kind) == infantry));
+    session.step(&[cancel]);
+    assert_eq!(session.slot_status(infantry).0, 0);
+    assert_eq!(session.slot_status(tank).0, tank_status.0);
+    assert_eq!(session.slot_status(plant).0, plant_status.0);
+    while session.ready_structure() != Some(plant) {
+        session.step(&[]);
+        assert!(session.sim.tick() < 5000);
+    }
+    assert_eq!(
+        sidebar::ready_category(&session),
+        Some(Category::Structures)
+    );
+    paint(&session, "ready");
+    let (_, spot) = spot_near_yard(&session, plant);
+    let place = session
+        .place(click(&session, Category::Structures), spot)
+        .unwrap();
+    session.step(&[place]);
+    assert_eq!(session.sim.buildings().last().unwrap().kind as usize, plant);
+    assert_eq!(sidebar::ready_category(&session), None);
+
+    // Both building tabs share the structure queue and retain their own ids.
+    build_ready(&mut session, defence);
+    assert_eq!(sidebar::ready_category(&session), Some(Category::Defences));
+    paint(&session, "defence-ready");
+    let before = session.sim.credits();
+    session.step(&[session.cancel(click(&session, Category::Defences)).unwrap()]);
+    assert_eq!(
+        session.sim.credits(),
+        before + session.buildables[defence].cost
+    );
+    assert_eq!(session.ready_structure(), None);
 }
 
 /// Queue structure `slot`, step until it is ready, return the ticks taken.

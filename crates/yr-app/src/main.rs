@@ -4,7 +4,8 @@
 //! Left-click / box-drag select own units, right-click move or attack
 //! (enemy under cursor), `A` then right-click = attack-move, `S` stop,
 //! `H` harvest, right-drag / arrows pan, wheel or +/- zoom,
-//! M toggles audio, F5 saves, F9 loads, Esc quits. Right-hand sidebar: left-click a cameo queues it at the
+//! M toggles audio, F5 saves, F9 loads, Esc quits. Sidebar tabs select a category.
+//! Left-click a cameo to queue it at the
 //! war factory/barracks/construction yard, right-click cancels (refund). A finished
 //! structure (green outline) is placed by clicking its cameo, then a map cell under a
 //! green ghost; right-click or Esc backs out of placement (issue #46). Orders go through
@@ -21,7 +22,7 @@ use winit::event_loop::{ActiveEventLoop, EventLoop};
 use winit::keyboard::{KeyCode, PhysicalKey};
 use winit::window::{Window, WindowId};
 use yr_app::session::{Outcome, Session};
-use yr_app::sidebar::{self, WIDTH as SIDEBAR_W};
+use yr_app::sidebar::{self, Category, WIDTH as SIDEBAR_W};
 use yr_sim::{Command, Fix};
 
 const WIN_W: u32 = 1280;
@@ -73,6 +74,7 @@ struct App {
     announced: bool,
     /// Sidebar slot of the finished structure being placed.
     placing: Option<usize>,
+    sidebar_category: Category,
     load_path: Option<PathBuf>,
     save_path: PathBuf,
     save_requested: bool,
@@ -294,7 +296,7 @@ impl App {
     fn sidebar_slot_at(&self, pos: (f64, f64)) -> Option<usize> {
         let session = self.session.as_ref()?;
         let fw = self.pixels.as_ref()?.texture().width();
-        sidebar::slot_at(fw, session.buildables.len(), pos)
+        sidebar::slot_at(fw, session, self.sidebar_category, pos)
     }
 
     fn in_sidebar(&self, pos: (f64, f64)) -> bool {
@@ -615,7 +617,7 @@ impl App {
             );
         }
         if let Some(session) = &self.session {
-            sidebar::draw(frame, fw, fh, session, self.placing);
+            sidebar::draw(frame, fw, fh, session, self.sidebar_category, self.placing);
         }
         // Box-select rubber band.
         if let (Some(a), false) = (self.left_down, self.right_panning) {
@@ -880,7 +882,15 @@ impl ApplicationHandler for App {
             }
             WindowEvent::MouseInput { state, button, .. } => match (button, state) {
                 (MouseButton::Left, ElementState::Pressed) if self.in_sidebar(self.cursor) => {
-                    if let Some(slot) = self.sidebar_slot_at(self.cursor) {
+                    let tab = self
+                        .pixels
+                        .as_ref()
+                        .and_then(|p| sidebar::tab_at(p.texture().width(), self.cursor));
+                    if let Some(category) = tab {
+                        self.sidebar_category = category;
+                        self.placing = None;
+                        self.view.dirty = true;
+                    } else if let Some(slot) = self.sidebar_slot_at(self.cursor) {
                         self.sidebar_click(slot);
                     }
                 }
@@ -1095,6 +1105,7 @@ fn new_app(gamedir: String, map_name: String, scale: u32) -> App {
         title: String::new(),
         announced: false,
         placing: None,
+        sidebar_category: Category::default(),
         load_path: None,
         save_path: yr_app::snapshot::quicksave_path(),
         save_requested: false,
@@ -1276,10 +1287,21 @@ fn headless_frames(
                 // The ghost follows the cursor: park it mid-view.
                 app.cursor = (f64::from(vw), f64::from(vh));
             }
-            app.compose(&mut frame, fw, fh);
+            // Exercise every shared tab at the same sim tick. The default
+            // Structures view keeps the existing proof filename.
             let out = format!("{dir}/frame-{t:05}.png");
-            std::fs::write(&out, yr_render::png::encode_rgba(fw, fh, &frame))
-                .map_err(|e| e.to_string())?;
+            for category in Category::ALL {
+                app.sidebar_category = category;
+                app.compose(&mut frame, fw, fh);
+                let path = if category == Category::default() {
+                    out.clone()
+                } else {
+                    format!("{dir}/frame-{t:05}-{}.png", category.file_name())
+                };
+                std::fs::write(&path, yr_render::png::encode_rgba(fw, fh, &frame))
+                    .map_err(|e| e.to_string())?;
+                println!("{path}: {} tab", category.label());
+            }
             let count = |o: u8| sim.units().iter().filter(|u| u.owner == o).count();
             println!(
                 "AI: ${}, queue {}, groups {}, scout {}, hash {:016x}",

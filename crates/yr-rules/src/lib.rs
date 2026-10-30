@@ -75,6 +75,8 @@ pub struct TechnoType {
     pub name: Option<String>,
     /// CSF label for the display name, e.g. `Name:HTNK`.
     pub ui_name: Option<String>,
+    /// Building sidebar group, e.g. `BuildCat=Combat` for defences.
+    pub build_category: Option<String>,
     pub strength: Option<i64>,
     /// Building `Power=` (positive produces, negative drains).
     pub power: Option<i64>,
@@ -564,6 +566,7 @@ fn load_techno(
         defined: sec.is_some(),
         name: string(sec, "Name"),
         ui_name: string(sec, "UIName"),
+        build_category: string(sec, "BuildCat"),
         strength: int(sec, "Strength"),
         power: int(sec, "Power"),
         armor: armor.flatten(),

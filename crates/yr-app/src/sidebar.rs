@@ -1,11 +1,14 @@
 //! Shared window/headless production panel and its matching hit boxes.
 
+pub use crate::session::BuildCategory as Category;
 use crate::session::{Session, TICKS_PER_SEC};
 use font8x8::{UnicodeFonts, BASIC_FONTS, GREEK_FONTS, HIRAGANA_FONTS, LATIN_FONTS};
 
 pub const WIDTH: u32 = 352;
 const PAD: i32 = 8;
-const TOP: i32 = 40;
+const TAB_TOP: i32 = 40;
+const TAB_H: i32 = 24;
+const TOP: i32 = 104;
 const SLOT_W: i32 = 164;
 const SLOT_H: i32 = 48;
 const GAP: i32 = 8;
@@ -17,22 +20,82 @@ const TEXT: [u8; 4] = [232, 236, 240, 255];
 const DIM: [u8; 4] = [120, 124, 136, 255];
 const GOLD: [u8; 4] = [255, 220, 96, 255];
 
-fn origin(width: u32, slot: usize) -> (i32, i32) {
+impl Category {
+    pub const ALL: [Self; 4] = [
+        Self::Structures,
+        Self::Defences,
+        Self::Infantry,
+        Self::Vehicles,
+    ];
+
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Structures => "Structures",
+            Self::Defences => "Defences",
+            Self::Infantry => "Infantry",
+            Self::Vehicles => "Vehicles",
+        }
+    }
+
+    pub fn file_name(self) -> &'static str {
+        match self {
+            Self::Structures => "structures",
+            Self::Defences => "defences",
+            Self::Infantry => "infantry",
+            Self::Vehicles => "vehicles",
+        }
+    }
+}
+
+/// Original session slots, in display order. Never reindex production ids.
+pub fn slots(session: &Session, category: Category) -> impl Iterator<Item = usize> + '_ {
+    session
+        .buildables
+        .iter()
+        .enumerate()
+        .filter_map(move |(slot, b)| (b.category == category).then_some(slot))
+}
+
+fn origin(width: u32, index: usize, top: i32, row_height: i32) -> (i32, i32) {
     (
-        width.saturating_sub(WIDTH) as i32 + PAD + (slot % 2) as i32 * (SLOT_W + GAP),
-        TOP + (slot / 2) as i32 * (SLOT_H + GAP),
+        width.saturating_sub(WIDTH) as i32 + PAD + (index % 2) as i32 * (SLOT_W + GAP),
+        top + (index / 2) as i32 * (row_height + GAP),
     )
 }
 
+fn contains((x, y): (i32, i32), height: i32, pos: (f64, f64)) -> bool {
+    pos.0 >= f64::from(x)
+        && pos.0 < f64::from(x + SLOT_W)
+        && pos.1 >= f64::from(y)
+        && pos.1 < f64::from(y + height)
+}
+
+pub fn tab_at(width: u32, pos: (f64, f64)) -> Option<Category> {
+    Category::ALL
+        .into_iter()
+        .enumerate()
+        .find_map(|(i, category)| {
+            contains(origin(width, i, TAB_TOP, TAB_H), TAB_H, pos).then_some(category)
+        })
+}
+
 /// The whole card is clickable, including its name, cost and time.
-pub fn slot_at(width: u32, slots: usize, pos: (f64, f64)) -> Option<usize> {
-    (0..slots).find(|&i| {
-        let (x, y) = origin(width, i);
-        pos.0 >= f64::from(x)
-            && pos.0 < f64::from(x + SLOT_W)
-            && pos.1 >= f64::from(y)
-            && pos.1 < f64::from(y + SLOT_H)
-    })
+pub fn slot_at(
+    width: u32,
+    session: &Session,
+    category: Category,
+    pos: (f64, f64),
+) -> Option<usize> {
+    slots(session, category)
+        .enumerate()
+        .find_map(|(i, slot)| contains(origin(width, i, TOP, SLOT_H), SLOT_H, pos).then_some(slot))
+}
+
+pub fn ready_category(session: &Session) -> Option<Category> {
+    session
+        .buildables
+        .get(session.ready_structure()?)
+        .map(|b| b.category)
 }
 
 /// Full-power duration, rounded up to the next tenth of a second.
@@ -72,7 +135,14 @@ fn name_lines(name: &str) -> Vec<String> {
     lines
 }
 
-pub fn draw(frame: &mut [u8], width: u32, height: u32, session: &Session, placing: Option<usize>) {
+pub fn draw(
+    frame: &mut [u8],
+    width: u32,
+    height: u32,
+    session: &Session,
+    category: Category,
+    placing: Option<usize>,
+) {
     let mut canvas = Canvas {
         frame,
         width,
@@ -89,8 +159,41 @@ pub fn draw(frame: &mut [u8], width: u32, height: u32, session: &Session, placin
     canvas.text((x0 + PAD, 23), "Build times at full power", DIM, 40);
 
     let ready = session.ready_structure();
-    for (slot, buildable) in session.buildables.iter().enumerate() {
-        let (sx, sy) = origin(width, slot);
+    let ready_tab = ready_category(session);
+    for (i, tab) in Category::ALL.into_iter().enumerate() {
+        let (x, y) = origin(width, i, TAB_TOP, TAB_H);
+        canvas.rect(
+            (x, y),
+            (SLOT_W, TAB_H),
+            if tab == category {
+                [66, 72, 90, 255]
+            } else {
+                [32, 35, 42, 255]
+            },
+        );
+        let count: usize = slots(session, tab).map(|s| session.slot_status(s).0).sum();
+        let label = if ready_tab == Some(tab) {
+            format!("{} READY", tab.label())
+        } else if count > 0 {
+            format!("{} x{count}", tab.label())
+        } else {
+            tab.label().into()
+        };
+        let color = if ready_tab == Some(tab) {
+            [96, 255, 96, 255]
+        } else if tab == category {
+            GOLD
+        } else {
+            TEXT
+        };
+        canvas.text((x + 6, y + 8), &label, color, 19);
+        if tab == category {
+            canvas.rect((x, y + TAB_H - 2), (SLOT_W, 2), GOLD);
+        }
+    }
+    for (i, slot) in slots(session, category).enumerate() {
+        let buildable = &session.buildables[slot];
+        let (sx, sy) = origin(width, i, TOP, SLOT_H);
         canvas.rect((sx, sy), (SLOT_W, SLOT_H), [32, 35, 42, 255]);
         canvas.rect((sx, sy), (CAMEO_W, SLOT_H), [70, 70, 80, 255]);
         if let Some((w, h, pixels)) = &buildable.cameo {
@@ -218,6 +321,30 @@ impl Canvas<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn tab_hit_boxes_match_both_rows_and_exclude_gaps() {
+        for width in [WIDTH, 1280] {
+            let x = f64::from(width - WIDTH);
+            for (pos, category) in [
+                ((8.0, 40.0), Category::Structures),
+                ((343.0, 63.0), Category::Defences),
+                ((8.0, 72.0), Category::Infantry),
+                ((343.0, 95.0), Category::Vehicles),
+            ] {
+                assert_eq!(tab_at(width, (x + pos.0, pos.1)), Some(category));
+            }
+            for pos in [
+                (7.0, 40.0),
+                (172.0, 40.0),
+                (8.0, 64.0),
+                (8.0, 96.0),
+                (8.0, 104.0),
+            ] {
+                assert_eq!(tab_at(width, (x + pos.0, pos.1)), None);
+            }
+        }
+    }
 
     #[test]
     fn long_localized_names_stay_inside_cards() {

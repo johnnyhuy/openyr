@@ -43,6 +43,9 @@ pub struct Buildable {
     pub id: String,
     #[serde(skip)]
     pub name: String,
+    /// Presentation only; filtering never changes the production kind tag.
+    #[serde(skip)]
+    pub category: BuildCategory,
     pub factory: Factory,
     pub cost: i64,
     /// Build time at full power in ticks (rules `BuildSpeed`).
@@ -53,6 +56,32 @@ pub struct Buildable {
     /// Rules `Prerequisite=` tokens (type ids or generic groups).
     prerequisite: Vec<String>,
     product: Product,
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum BuildCategory {
+    #[default]
+    Structures,
+    Defences,
+    Infantry,
+    Vehicles,
+}
+
+impl BuildCategory {
+    fn from_techno(t: &yr_rules::TechnoType) -> Self {
+        match t.kind {
+            TechnoKind::Building
+                if t.build_category
+                    .as_deref()
+                    .is_some_and(|c| c.eq_ignore_ascii_case("Combat")) =>
+            {
+                Self::Defences
+            }
+            TechnoKind::Building => Self::Structures,
+            TechnoKind::Infantry => Self::Infantry,
+            _ => Self::Vehicles,
+        }
+    }
 }
 
 impl Buildable {
@@ -697,6 +726,7 @@ fn buildables(fs: &AssetFs, rules: &Rules, yard: Option<&str>) -> (Vec<Buildable
         out.push(Buildable {
             id: id.clone(),
             name: names.name(t),
+            category: BuildCategory::from_techno(t),
             factory,
             cost,
             ticks: build_ticks(cost, speed),
@@ -895,6 +925,7 @@ mod save_tests {
         let buildables = vec![Buildable {
             id: "E1".into(),
             name: name.into(),
+            category: BuildCategory::Infantry,
             factory: Factory::Infantry,
             cost,
             ticks: 10,
@@ -928,6 +959,10 @@ mod save_tests {
         let original = fresh("GI", 200, None);
         let bytes = crate::snapshot::encode(&original).unwrap();
         let mut localized = fresh("Localized infantry", 200, Some((1, 1, vec![255; 4])));
+        localized.buildables[0].category = BuildCategory::Vehicles;
+        localized.setup_hash =
+            setup_fingerprint(&localized.sim, &localized.buildables, &localized.kinds, &[])
+                .unwrap();
         crate::snapshot::restore(&mut localized, &bytes)
             .expect("presentation changes are compatible");
         assert_eq!(original.sim.state_hash(), localized.sim.state_hash());
@@ -936,5 +971,23 @@ mod save_tests {
         assert!(crate::snapshot::restore(&mut rebalanced, &bytes)
             .unwrap_err()
             .contains("map or rules"));
+    }
+
+    #[test]
+    fn building_tab_uses_buildcat_instead_of_weapon_or_power() {
+        let ini = yr_formats::IniFile::parse("[BuildingTypes]\n0=TOWER\n1=POWER\n2=UNKNOWN\n[TOWER]\nBuildCat=cOmBaT\n[POWER]\nBuildCat=Power\n[UNKNOWN]\nPrimary=Gun\n");
+        let rules = Rules::load(&ini, &yr_formats::IniFile::default());
+        assert_eq!(
+            BuildCategory::from_techno(rules.techno("TOWER").unwrap()),
+            BuildCategory::Defences
+        );
+        assert_eq!(
+            BuildCategory::from_techno(rules.techno("POWER").unwrap()),
+            BuildCategory::Structures
+        );
+        assert_eq!(
+            BuildCategory::from_techno(rules.techno("UNKNOWN").unwrap()),
+            BuildCategory::Structures
+        );
     }
 }

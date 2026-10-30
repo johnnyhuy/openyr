@@ -72,9 +72,10 @@ is $700 and 441 ticks (29.4s); the refinery is $2000 and 1260 ticks (84s).
 These are full-power estimates; low power or credit starvation can delay
 completion. This does not change production formulas or gradual payment.
 
-The panel is 352 pixels wide with two columns, and all current slots fit
-in the 800-pixel-high frame. Clicking a name or price uses the same slot
-as its cameo. Unaffordable cards and cards without an owned factory or
+The panel is 352 pixels wide with two columns. Four category tabs sit above
+the cards, and all entries in each category fit in the 800-pixel-high frame.
+Clicking a name or price uses the same slot as its cameo. Unaffordable
+cards and cards without an owned factory or
 prerequisites dim; a paid structure remains bright while awaiting placement,
 even if the yard is lost. Progress wipes, counts and placement outlines
 remain visible. Set `OPENYR_SIDEBAR_DUMP=<dir>` while running
@@ -84,5 +85,36 @@ controlled funded, unaffordable, factory-loss and ready-structure panels.
 Text uses the public-domain bitmap glyphs from
 [`font8x8`](https://docs.rs/font8x8/0.3.1/font8x8/). Latin, extended Latin,
 Greek and Hiragana are supported; other glyphs display `?`. Very long
-names are clipped after three lines with `..`. Full Unicode font shaping,
-category tabs and alternate sidebar layouts remain presentation work.
+names are clipped after three lines with `..`. Full Unicode font shaping
+and alternate sidebar layouts remain presentation work.
+
+## Sidebar categories
+
+The tabs are Structures, Defences, Infantry and Vehicles. Retail
+`RULESMD.INI` uses `BuildCat=Combat` for the defence page, including
+non-firing structures such as the Gap Generator and SpySat Uplink.
+`BuildCat=Power`, `Resource` and `Tech` use the structure
+page. The app compares Combat without case sensitivity and puts absent
+or unknown building categories on Structures; this fallback is a prototype
+presentation policy, not a measured engine default. Infantry and vehicle
+pages follow the registered techno kind.
+
+The retail EB1 sidebar test on 2026-10-30 checks all 22 slots against raw
+INI values. It finds nine Structures, seven Defences, two Infantry and
+four Vehicles. The defence order is NASAM, GACSPH, GAWEAT, ATESLA,
+GASPYSAT, GAGAP, GAPILL. This groups superweapon buildings without
+implementing their effects.
+
+Filtering keeps the original session slot as the production kind tag.
+Drawing, clicks, queue counts, progress, cancellation and placement all
+use that tag. Tabs show queued counts across hidden pages; a finished
+structure replaces its page's count with green READY text. Changing tabs
+backs out of the placement ghost but keeps the paid structure. Click its
+card again to place it. Category metadata and the selected tab are
+presentation only and do not affect saves or deterministic state hashes.
+
+`--frames` writes each requested tick with all four tabs through the same
+composition code as the live window. Structures retains `frame-<tick>.png`;
+the other files append `-defences`, `-infantry` or `-vehicles`. The retail
+sidebar tests also export each tab at funded, in-progress, ready and
+defence-ready states through `OPENYR_SIDEBAR_DUMP`.
