@@ -105,6 +105,25 @@ Audio: `EVA_ConstructionComplete` when it finishes, and the sound named by
 `[AudioVisual] BuildingSlam=` (`PlaceBuilding`, sample `uplace`) when it goes
 down.
 
+## Harvester docking
+
+The retail `GAREFN` art foundation is 4x3. Testing adjacency to the
+footprint centre leaves every accepted cell inside the blocked building,
+so a full harvester never delivers (#68). The prototype now accepts the
+exterior one-cell ring around the first owned refinery's whole footprint.
+The movement system approaches its centre and substitutes a standable
+cell outside it. Legacy refinery unit markers use a 1x1 footprint.
+This is a prototype docking policy; exact docking cells, queue reservations
+and Chrono Miner teleportation still need Wine validation.
+
+The harvester must remain beside a live owned refinery throughout its
+30-tick unloading timer. Destroying the host or moving away preserves the
+cargo and restarts the approach; a replacement refinery allows delivery
+to resume (#69). No credits arrive at a destroyed or enemy refinery.
+These checks and the saved integer timer are part of the simulation.
+`Sim::refinery_unloading` reads elapsed ticks for presentation without
+advancing state or changing its hash. The snapshot layout is unchanged.
+
 ## Not yet modelled
 
 - Ares-style `Inherit=`/`+=` (not vanilla).

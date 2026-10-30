@@ -362,6 +362,7 @@ fn building_layers_match_retail_canvases() {
                     let state = BuildingAnimation {
                         elapsed: tick,
                         production,
+                        unloading: None,
                         damaged,
                         powered: true,
                     };
@@ -436,6 +437,29 @@ fn building_layers_match_retail_canvases() {
                         }
                     }
                 }
+            }
+        }
+    }
+    // SpecialAnim is a one-shot tied to unloading, with normal art as
+    // the damaged fallback. Inspect every selected body pixel directly.
+    for damaged in [false, true] {
+        for elapsed in 0..=30 {
+            let phase = (elapsed * 200 / 225) as usize;
+            let sprites = bank
+                .get_building(
+                    "GAREFN",
+                    remap,
+                    BuildingAnimation {
+                        unloading: Some(elapsed),
+                        damaged,
+                        powered: true,
+                        ..Default::default()
+                    },
+                )
+                .unwrap();
+            assert_eq!(sprites.layers.len(), 4 + usize::from(phase < 19));
+            if phase < 19 {
+                check(sprites.layers[4], "GGREFNOR.SHP", phase, false, (4, 3));
             }
         }
     }

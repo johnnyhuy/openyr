@@ -70,6 +70,10 @@ incremental, testable path where each milestone is independently useful.
       shadows and foundation-based adjacent-structure ordering (#6).
       Production frames follow queue progress and stop while ready for
       placement (`docs/formats/shp.md`).
+- [x] Refinery unloading art follows the actual harvester timer (#68, #6).
+      Retail `SpecialAnim=GAREFNOR` plays once, stops at completion,
+      and resumes its phase after save/load. Body pixels and damaged
+      fallback are checked against all 19 retail frames.
 - [ ] Wine side-by-side infantry and Construction Yard crops; verify
       cadence, overlay depth adjustments and factory doors (#6)
 - [x] Sidebar labels from `ra2md.csf` (#47): all 22 Allied entries show
@@ -90,6 +94,10 @@ incremental, testable path where each milestone is independently useful.
       terrain grid with passability/speed per locomotor (retail-verified)
 - [x] Unit movement on the grid (A*, occupancy)
 - [x] Building placement, harvesting loop (production queues in M5 sidebar)
+- [x] Full-footprint refinery docking (#68, #69): harvesters deliver beside
+      the retail 4x3 foundation and retain cargo if their refinery is lost.
+      Two retail EB1 deliveries earn 1000 credits; a mid-unload snapshot
+      follows the uninterrupted sim hash through the next delivery.
 - [x] Weapons/warheads/damage with the original formulas
 - [x] `sim-bench` headless benchmark; state hashing
 

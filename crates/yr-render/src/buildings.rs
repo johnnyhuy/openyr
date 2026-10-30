@@ -11,6 +11,8 @@ pub struct BuildingAnimation {
     /// Build progress in whole ticks. Absent when this factory is idle.
     /// Stalled production keeps the same progress and therefore frame.
     pub production: Option<u64>,
+    /// Elapsed ticks of the current harvester unloading operation.
+    pub unloading: Option<u64>,
     pub damaged: bool,
     pub powered: bool,
 }
@@ -56,6 +58,11 @@ impl Clip {
             (u128::from(ticks) * u128::from(self.rate) / 225) % (self.end - self.start) as u128;
         self.start + phase as usize
     }
+
+    pub fn frame_once(self, ticks: u64) -> Option<usize> {
+        let phase = u128::from(ticks) * u128::from(self.rate) / 225;
+        (phase < (self.end - self.start) as u128).then(|| self.start + phase as usize)
+    }
 }
 
 pub(crate) struct Overlay {
@@ -78,6 +85,7 @@ pub(crate) struct BuildingArt {
     pub bib: Option<Layer>,
     pub active: Vec<Overlay>,
     pub production: Overlay,
+    pub special: Overlay,
 }
 
 impl BuildingArt {
@@ -132,6 +140,7 @@ impl BuildingArt {
             .map(|key| overlay(key))
             .collect(),
             production: overlay("ProductionAnim"),
+            special: overlay("SpecialAnim"),
         })
     }
 }
@@ -211,5 +220,16 @@ mod tests {
                 "{value}"
             );
         }
+    }
+
+    #[test]
+    fn one_shot_stops_at_the_exclusive_end() {
+        let ini = IniFile::parse("[A]\nLoopStart=3\nLoopEnd=6\nRate=225\n");
+        let clip = Clip::parse(ini.section("A").unwrap(), 6).unwrap();
+        assert_eq!(
+            (0..5).map(|t| clip.frame_once(t)).collect::<Vec<_>>(),
+            [Some(3), Some(4), Some(5), None, None]
+        );
+        assert_eq!(clip.frame_once(u64::MAX), None);
     }
 }

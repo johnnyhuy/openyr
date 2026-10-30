@@ -30,6 +30,7 @@ pub fn building_animation(
     yr_render::sprites::BuildingAnimation {
         elapsed: sim.tick(),
         production,
+        unloading: sim.refinery_unloading(building.id).map(u64::from),
         damaged: i128::from(building.hp) * 2 <= i128::from(building.max_hp),
         powered: produced >= drained,
     }

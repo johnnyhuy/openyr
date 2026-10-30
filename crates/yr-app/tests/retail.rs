@@ -10,6 +10,87 @@ use yr_rules::Rules;
 use yr_sim::Command;
 
 #[test]
+fn eb1_harvester_delivers_to_retail_refinery_with_working_animation() {
+    let dir = PathBuf::from(std::env::var("HOME").unwrap_or_default())
+        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    if !dir.is_dir() {
+        eprintln!("skip: retail install not present");
+        return;
+    }
+    let mut session = yr_app::session::load(dir.to_str().unwrap(), "EB1.MMX", 42).unwrap();
+    let refinery = session
+        .sim
+        .buildings()
+        .iter()
+        .find(|b| b.owner == yr_sim::OWNER_PLAYER && b.role == yr_sim::Role::Refinery)
+        .unwrap()
+        .clone();
+    assert_eq!(session.kinds[refinery.kind as usize], "GAREFN");
+    assert_eq!(refinery.size, (4, 3));
+    assert_eq!(
+        yr_app::animation::building_animation(&session.sim, &refinery).unloading,
+        None
+    );
+    let start_credits = session.sim.credits();
+    let harvester = session
+        .sim
+        .units()
+        .iter()
+        .find(|u| u.owner == yr_sim::OWNER_PLAYER && u.role == yr_sim::Role::Harvester)
+        .unwrap()
+        .id;
+    session.step(&[Command::Harvest { id: harvester }]);
+    let mut began = None;
+    let mut delivered = 0;
+    let mut bank = yr_render::sprites::SpriteBank::open(dir.to_str().unwrap(), "EB1.MMX").unwrap();
+    let remap = bank.house_color("Americans");
+    for _ in 0..2000 {
+        session.step(&[]);
+        let state = yr_app::animation::building_animation(&session.sim, &refinery);
+        if let Some(elapsed) = state.unloading {
+            if began.is_none() {
+                began = Some(session.sim.tick());
+                assert_eq!(elapsed, 0, "new unloading clock starts at zero");
+                if let Ok(path) = std::env::var("OPENYR_REFINERY_SAVE") {
+                    yr_app::snapshot::save(&session, std::path::Path::new(&path)).unwrap();
+                }
+            }
+            let layers = bank.get_building("GAREFN", remap, state).unwrap();
+            assert_eq!(
+                layers.layers.len(),
+                4 + usize::from(elapsed * 200 / 225 < 19)
+            );
+        }
+        for event in session.sim.drain_events() {
+            if let yr_sim::Event::Unloaded { id, value, total } = event {
+                if session
+                    .sim
+                    .units()
+                    .iter()
+                    .any(|u| u.id == id && u.owner == yr_sim::OWNER_PLAYER)
+                {
+                    delivered += value;
+                    assert_eq!(total, start_credits + delivered);
+                    assert_eq!(state.unloading, None, "delivery stops the special overlay");
+                    println!(
+                        "EB1 refinery: tick {}, harvester {id}, delivered {value}, credits {total}",
+                        session.sim.tick()
+                    );
+                }
+            }
+        }
+        if delivered >= 1000 {
+            break;
+        }
+    }
+    assert_eq!(
+        delivered, 1000,
+        "two full loads must reach the retail refinery"
+    );
+    println!("EB1 refinery: first unloading at tick {}", began.unwrap());
+}
+
+#[test]
 fn eb1_skirmish_setup_and_scripted_win() {
     let dir = PathBuf::from(std::env::var("HOME").unwrap_or_default())
         .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
