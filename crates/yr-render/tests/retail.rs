@@ -368,6 +368,14 @@ fn building_layers_match_retail_canvases() {
                     };
                     let sprites = bank.get_building(id, remap, state).unwrap();
                     let mut expected = vec![(format!("{image}.SHP"), d, true)];
+                    if id == "GAWEAP" {
+                        expected.extend([
+                            ("GGWEAP_1.SHP".into(), d, false),
+                            ("GGWEAP_4.SHP".into(), d, false),
+                            ("GGWEAP_3.SHP".into(), d, false),
+                            ("GGWEAP_2.SHP".into(), d, false),
+                        ]);
+                    }
                     expected.extend(
                         overlays
                             .iter()
@@ -392,50 +400,84 @@ fn building_layers_match_retail_canvases() {
                         if production.is_some() {
                             // All probed layers share their parent's canvas and anchor.
                             let base = sprites.layers[0];
-                            let mut rgba = vec![0u8; base.rgba.len()];
-                            let layers: Vec<_> = sprites
-                                .bib
-                                .into_iter()
-                                .chain(sprites.layers.iter().copied())
-                                .collect();
-                            for sprite in &layers {
-                                assert_eq!(
-                                    (sprite.w, sprite.h, sprite.ax, sprite.ay),
-                                    (base.w, base.h, base.ax, base.ay)
-                                );
-                                for (dst, src) in rgba
-                                    .as_chunks_mut::<4>()
-                                    .0
-                                    .iter_mut()
-                                    .zip(sprite.rgba.as_chunks::<4>().0)
-                                {
-                                    if src[3] == SHADOW_ALPHA {
-                                        dst.copy_from_slice(src);
+                            for before in [false, true] {
+                                if before && id != "GAWEAP" {
+                                    continue;
+                                }
+                                let layers: Vec<_> = sprites
+                                    .bib
+                                    .into_iter()
+                                    .chain(sprites.layers.iter().copied().enumerate().filter_map(
+                                        |(i, sprite)| {
+                                            // Omit only the newly added shells to reproduce
+                                            // the previous renderer at the same health/tick.
+                                            (!before || !(1..=4).contains(&i)).then_some(sprite)
+                                        },
+                                    ))
+                                    .collect();
+                                let mut rgba = vec![0u8; base.rgba.len()];
+                                for alpha in [SHADOW_ALPHA, 255] {
+                                    for sprite in &layers {
+                                        assert_eq!(
+                                            (sprite.w, sprite.h, sprite.ax, sprite.ay),
+                                            (base.w, base.h, base.ax, base.ay)
+                                        );
+                                        for (dst, src) in rgba
+                                            .as_chunks_mut::<4>()
+                                            .0
+                                            .iter_mut()
+                                            .zip(sprite.rgba.as_chunks::<4>().0)
+                                        {
+                                            if src[3] == alpha {
+                                                dst.copy_from_slice(src);
+                                            }
+                                        }
                                     }
                                 }
+                                std::fs::write(
+                                    format!(
+                                        "{out}/{id}-{}-{tick:02}{}.png",
+                                        if damaged { "damaged" } else { "normal" },
+                                        if before { "-before" } else { "" }
+                                    ),
+                                    yr_render::png::encode_rgba(base.w, base.h, &rgba),
+                                )
+                                .unwrap();
                             }
-                            for sprite in layers {
-                                for (dst, src) in rgba
-                                    .as_chunks_mut::<4>()
-                                    .0
-                                    .iter_mut()
-                                    .zip(sprite.rgba.as_chunks::<4>().0)
-                                {
-                                    if src[3] == 255 {
-                                        dst.copy_from_slice(src);
-                                    }
-                                }
-                            }
-                            std::fs::write(
-                                format!(
-                                    "{out}/{id}-{}-{tick:02}.png",
-                                    if damaged { "damaged" } else { "normal" }
-                                ),
-                                yr_render::png::encode_rgba(base.w, base.h, &rgba),
-                            )
-                            .unwrap();
                         }
                     }
+                }
+            }
+        }
+    }
+    // Static shell selection is independent of elapsed time, power and
+    // queue progress. Soviet damaged sections redirect Image explicitly;
+    // Allied and Yuri shells select the damaged half without a redirect.
+    for (id, prefix, order) in [
+        ("GAWEAP", "GGWEAP", [1, 4, 3, 2]),
+        ("NAWEAP", "NGWEAP", [1, 3, 4, 2]),
+        ("YAWEAP", "YGWEAP", [1, 4, 3, 2]),
+    ] {
+        for damaged in [false, true] {
+            for elapsed in [0, 17, u64::MAX] {
+                let sprites = bank
+                    .get_building(
+                        id,
+                        remap,
+                        BuildingAnimation {
+                            elapsed,
+                            production: Some(elapsed),
+                            damaged,
+                            powered: false,
+                            ..Default::default()
+                        },
+                    )
+                    .unwrap();
+                for (&part, sprite) in order.iter().zip(&sprites.layers[1..5]) {
+                    let file = format!("{prefix}_{part}.SHP");
+                    let shp = ShpFile::parse(fs.read(&file).unwrap()).unwrap();
+                    assert_eq!(shp.frames.len(), 4, "{file} has two health states");
+                    check(sprite, &file, usize::from(damaged), false, (5, 3));
                 }
             }
         }

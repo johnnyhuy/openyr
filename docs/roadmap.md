@@ -74,6 +74,10 @@ incremental, testable path where each milestone is independently useful.
       Retail `SpecialAnim=GAREFNOR` plays once, stops at completion,
       and resumes its phase after save/load. Body pixels and damaged
       fallback are checked against all 19 retail frames.
+- [x] Complete static war-factory shells (#71): lower shell, roof interior,
+      raised side and closed roof panels from retail art. All three factions'
+      normal/damaged body pixels and anchors match independent SHP canvases.
+      Panels remain closed during rollout pending the Wine comparison (#6).
 - [ ] Wine side-by-side infantry and Construction Yard crops; verify
       cadence, overlay depth adjustments and factory doors (#6)
 - [x] Sidebar labels from `ra2md.csf` (#47): all 22 Allied entries show

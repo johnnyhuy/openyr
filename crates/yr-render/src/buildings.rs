@@ -86,6 +86,13 @@ pub(crate) struct BuildingArt {
     pub active: Vec<Overlay>,
     pub production: Overlay,
     pub special: Overlay,
+    pub shell: Vec<Overlay>,
+}
+
+#[derive(Clone, Copy)]
+enum Playback {
+    State,
+    Animated,
 }
 
 impl BuildingArt {
@@ -100,11 +107,11 @@ impl BuildingArt {
         let section = ini.section(section)?;
         let (fx, fy) = (i32::from(foundation.0), i32::from(foundation.1));
         let offset = ((fx - fy) * 15, (fx + fy - 2) * 15 / 2);
-        let base = load_layer(vfs, ini, image, theater, offset, true)?;
+        let base = load_layer(vfs, ini, image, theater, offset, true, Playback::State)?;
         let bib = section
             .get("BibShape")
-            .and_then(|name| load_layer(vfs, ini, name, theater, offset, true));
-        let overlay = |key: &str| {
+            .and_then(|name| load_layer(vfs, ini, name, theater, offset, true, Playback::State));
+        let overlay = |key: &str, playback| {
             let load = |name: &str| {
                 let coord = |axis| match section.get(&format!("{key}{axis}")) {
                     Some(v) => v.parse::<i32>().ok(),
@@ -118,7 +125,7 @@ impl BuildingArt {
                     .section(name)
                     .and_then(|s| s.get_bool("Shadow"))
                     .unwrap_or(false);
-                let mut layer = load_layer(vfs, ini, name, theater, offset, shadow)?;
+                let mut layer = load_layer(vfs, ini, name, theater, offset, shadow, playback)?;
                 layer.powered = section.get_bool(&format!("{key}Powered")).unwrap_or(false);
                 Some(layer)
             };
@@ -137,10 +144,21 @@ impl BuildingArt {
                 "ActiveAnimFour",
             ]
             .iter()
-            .map(|key| overlay(key))
+            .map(|key| overlay(key, Playback::Animated))
             .collect(),
-            production: overlay("ProductionAnim"),
-            special: overlay("SpecialAnim"),
+            production: overlay("ProductionAnim", Playback::Animated),
+            special: overlay("SpecialAnim", Playback::Animated),
+            // Back-to-front closed factory: interior, raised side, roof.
+            // Movement of these panels during rollout remains separate.
+            shell: [
+                "UnderDoorAnim",
+                "UnderRoofDoorAnim",
+                "RoofDeployingAnim",
+                "DeployingAnim",
+            ]
+            .iter()
+            .map(|key| overlay(key, Playback::State))
+            .collect(),
         })
     }
 }
@@ -152,6 +170,7 @@ fn load_layer(
     theater: Theater,
     offset: (i32, i32),
     shadow: bool,
+    playback: Playback,
 ) -> Option<Layer> {
     let section = ini.section(name);
     let image = section.and_then(|s| s.get("Image")).unwrap_or(name);
@@ -165,7 +184,9 @@ fn load_layer(
     if frames == 0 {
         return None;
     }
-    let clip = match section {
+    // Static body/shell sheets select health states from the actual SHP.
+    // Their unused loop metadata can claim frames absent from retail art.
+    let clip = match section.filter(|_| matches!(playback, Playback::Animated)) {
         Some(section) => Clip::parse(section, frames)?,
         None => Clip {
             start: 0,

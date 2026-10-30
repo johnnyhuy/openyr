@@ -195,6 +195,45 @@ The window and `--frames` now use the same building presentation policy:
 for five Allied base types at ticks 0 through 23 from the retail test.
 These contain retail artwork and must stay outside git.
 
+## Static factory shells
+
+`UnderDoorAnim`, `UnderRoofDoorAnim`, `RoofDeployingAnim` and
+`DeployingAnim` also supply pieces of the idle factory. Omitting these
+sheets loses panel and damaged-state pixels. The base sheet already
+contains most of the closed factory. Individual retail sheet renders show
+a lower shell, roof interior, raised side and closed roof. The prototype draws them in that order after the base body
+and before the active attachments. These panels remain closed during
+vehicle rollout; their movement and depth still need the Wine comparison.
+
+All twelve shell sheets below have four frames: normal body, damaged
+body, then two shadow masks. Canvas sizes are 266x224 for Allied,
+282x224 for Soviet and 272x242 for Yuri. The attachment sections
+do not request shadows. This was checked by parsing the actual SHP headers
+and comparing every selected body pixel and anchor in
+`building_layers_match_retail_canvases`, at ticks 0, 17 and `u64::MAX`,
+including low power and an active production queue.
+
+| Factory | Lower shell | Roof interior | Raised side | Closed roof |
+|---|---|---|---|---|
+| Allied | `GGWEAP_1` | `GGWEAP_4` | `GGWEAP_3` | `GGWEAP_2` |
+| Soviet | `NGWEAP_1` | `NGWEAP_3` | `NGWEAP_4` | `NGWEAP_2` |
+| Yuri | `YGWEAP_1` | `YGWEAP_4` | `YGWEAP_3` | `YGWEAP_2` |
+
+Allied and Soviet files resolve from `RA2.MIX/GENERIC.MIX`; Yuri files
+resolve from `RA2MD.MIX/GENERMD.MIX`. These static states cannot use the
+animation ranges blindly. In retail `artmd.ini`, `GAWEAP_3` and
+`GAWEAP_4` claim `LoopEnd=9`, and their damaged sections claim
+`LoopStart=10`, `LoopEnd=19`, despite having only two body frames.
+Static body, bib and shell layers therefore use the actual body count
+and health state. Animated attachments still require a valid bounded
+loop range. `Image=` redirects and per-attachment offsets still apply.
+
+Allied and Yuri omit explicit damaged attachment keys; their shell
+sheets still contain the damaged body at frame 1. Soviet keys redirect
+to the shared sheets explicitly. `OPENYR_BUILDING_DUMP` also writes
+`GAWEAP-<health>-<tick>-before.png` by omitting just the four new layers
+at the same tick, health and remap for comparison with the fixed output.
+
 Factory door/deployment animations, per-overlay
 `ZAdjust`/`YSort` depth, rubble, and the Wine side-by-side comparison
 remain fidelity work under #6. Static map objects are still baked into
