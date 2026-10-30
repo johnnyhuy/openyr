@@ -283,6 +283,13 @@ impl SpriteBank {
                 keys.push(key(layer, phase(layer, progress)));
             }
         }
+        if let Some(elapsed) = animation.unloading {
+            if let Some(layer) = art.special.layer(animation.damaged) {
+                if let Some(frame) = layer.clip.frame_once(elapsed) {
+                    keys.push(key(layer, frame));
+                }
+            }
+        }
         for key in bib.iter().chain(&keys) {
             if !self.layers.contains_key(key) {
                 let sprite = self.decode_shp(&key.file, key.frame, key.shadow, remap, key.offset);

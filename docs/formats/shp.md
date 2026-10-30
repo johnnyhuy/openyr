@@ -133,12 +133,20 @@ comparisons in `building_layers_match_retail_canvases`:
 | `GAWEAP_A` | 0..15 | 16..29 | no |
 | `GAWEAP_B` | 0..5 | 0..5 | no |
 | `GAREFNL1`, `L2`, `L3` | 0..3 | normal fallback | no |
+| `GAREFNOR` (unloading) | 0..19 | normal fallback | no |
 
 Ranges use an exclusive end, matching the retail `LoopStart`/`LoopEnd`
 boundaries in the shared sheets. Some sheets leave an unused boundary
 frame. Damaged sections redirect `Image=` back to the normal sheet.
 `ActiveAnimFour=GAREFNL4` is present in the INI, but none of its theater,
 generic or plain SHPs resolve in this install; it is safely skipped.
+
+`GAREFN` names `SpecialAnim=GAREFNOR`. The generic `GGREFNOR.SHP`
+resolves from `RA2.MIX/GENERIC.MIX`; its header is a 210x196 canvas
+with 40 frames (20 body, 20 shadow). The retail art section specifies
+`LoopStart=0`, `LoopEnd=19`, `LoopCount=1`, `Rate=200`, and no shadow.
+The same independent canvas test checks all 19 selected unloading frames,
+including normal-art fallback when the refinery is damaged.
 
 `BibShape=GAREFNBB` and `GAWEAPBB` resolve to generic sheets with four
 frames: normal/damaged bodies followed by their shadows. All the above
@@ -163,6 +171,13 @@ The window and `--frames` now use the same building presentation policy:
 - Production uses whole ticks of queue progress at the sim's first
   player factory of that role. Credit stalls freeze the frame, and a
   finished structure awaiting placement stops the production overlay.
+- Refinery `SpecialAnim` starts at elapsed tick zero of an actual
+  harvester unloading operation. It plays once through the exclusive end,
+  then disappears; it never loops while the unloading timer finishes.
+  Cargo delivery, refinery loss or movement away stops the overlay.
+  The first active harvester in id order supplies the presentation clock.
+  This clock is derived from saved sim state, so loading mid-unload
+  resumes the correct phase without a separate presentation snapshot.
 - Explicit `ActiveAnim*Powered=yes` gates an attachment's clock on its
   owner's power balance. Missing flags leave the attachment running.
 - Bibs draw on the ground before all live bodies. Body and attachment
@@ -180,10 +195,18 @@ The window and `--frames` now use the same building presentation policy:
 for five Allied base types at ticks 0 through 23 from the retail test.
 These contain retail artwork and must stay outside git.
 
-Factory door/deployment and refinery unloading animations, per-overlay
+Factory door/deployment animations, per-overlay
 `ZAdjust`/`YSort` depth, rubble, and the Wine side-by-side comparison
 remain fidelity work under #6. Static map objects are still baked into
 the terrain image; the new layers and ordering apply to live objects.
+
+The retail EB1 economy test starts the existing harvester with the same
+`Harvest` command as the H key. Unloading starts at tick 623, pays 500
+credits at tick 654, and pays another 500 at tick 1399. Setting
+`OPENYR_REFINERY_SAVE=<external-file>` when running
+`eb1_harvester_delivers_to_retail_refinery_with_working_animation` saves
+the tick-623 state for `openyr --load <file> --frames <external-dir>
+623 630 640 654 --passive`. All captures stay outside git.
 
 ## Sources
 

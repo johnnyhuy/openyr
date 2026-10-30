@@ -678,12 +678,16 @@ impl Sim {
                     }
                 }
                 Harvest::ToRefinery(rx, ry) => {
-                    let rcell = (rx, ry);
-                    // Unload from an adjacent cell: the refinery's own
-                    // cell is occupied by the refinery itself.
-                    let adjacent = (i32::from(cell.0) - i32::from(rcell.0)).abs() <= 1
-                        && (i32::from(cell.1) - i32::from(rcell.1)).abs() <= 1;
-                    if adjacent {
+                    let Some(rcell) = self.refinery_cell(self.units[i].owner) else {
+                        self.units[i].target = None;
+                        self.units[i].path.clear();
+                        continue;
+                    };
+                    if rcell != (rx, ry) {
+                        self.units[i].harvest = Harvest::ToRefinery(rcell.0, rcell.1);
+                        self.units[i].path.clear();
+                    }
+                    if self.beside_refinery(self.units[i].owner, cell) {
                         self.units[i].harvest = Harvest::Unloading(UNLOAD_TICKS);
                         self.units[i].target = None;
                         self.units[i].path.clear();
@@ -695,6 +699,12 @@ impl Sim {
                     }
                 }
                 Harvest::Unloading(mut left) => {
+                    // Losing the refinery or moving away retains the cargo.
+                    // Resume the approach and restart unloading at a live host.
+                    if !self.beside_refinery(self.units[i].owner, cell) {
+                        self.units[i].harvest = Harvest::ToRefinery(u16::MAX, u16::MAX);
+                        continue;
+                    }
                     if left > 0 {
                         left -= 1;
                         self.units[i].harvest = Harvest::Unloading(left);
@@ -742,6 +752,53 @@ impl Sim {
                     u.y.to_int_floor().max(0) as u16,
                 )
             })
+    }
+
+    /// Exterior one-cell ring around the first owned refinery. A retail
+    /// 4x3 footprint has no reachable cell within one of its centre.
+    fn beside_refinery(&self, owner: u8, cell: (u16, u16)) -> bool {
+        let bounds = self
+            .buildings
+            .iter()
+            .find(|b| b.owner == owner && b.role == Role::Refinery)
+            .map(|b| (b.cell, b.size))
+            .or_else(|| self.refinery_cell(owner).map(|c| (c, (1, 1))));
+        let Some(((x, y), (w, h))) = bounds else {
+            return false;
+        };
+        let (x, y, cx, cy) = (
+            i32::from(x),
+            i32::from(y),
+            i32::from(cell.0),
+            i32::from(cell.1),
+        );
+        let (right, bottom) = (x + i32::from(w), y + i32::from(h));
+        let inside = cx >= x && cx < right && cy >= y && cy < bottom;
+        !inside && cx >= x - 1 && cx <= right && cy >= y - 1 && cy <= bottom
+    }
+
+    /// Elapsed unloading ticks at this refinery, for presentation only.
+    /// The first active harvester wins in stable id order.
+    pub fn refinery_unloading(&self, id: u32) -> Option<u32> {
+        let host = self
+            .buildings
+            .iter()
+            .find(|b| b.role == Role::Refinery && b.id == id)?;
+        let first = self
+            .buildings
+            .iter()
+            .find(|b| b.owner == host.owner && b.role == Role::Refinery)?;
+        if first.id != id {
+            return None;
+        }
+        self.units.iter().find_map(|u| {
+            let Harvest::Unloading(left) = u.harvest else {
+                return None;
+            };
+            let cell = (u.x.to_int_floor() as u16, u.y.to_int_floor() as u16);
+            (u.owner == host.owner && self.beside_refinery(u.owner, cell))
+                .then_some(UNLOAD_TICKS.saturating_sub(left))
+        })
     }
 
     fn fire_phase(&mut self) {
@@ -1882,6 +1939,139 @@ mod tests {
             g.cell(6, 0).map(|c| c.overlay),
             Some(terrain::Overlay::None)
         );
+    }
+
+    #[test]
+    fn harvester_unloads_beside_retail_sized_refinery() {
+        let mut sim = Sim::new(1);
+        let mut grid = TerrainGrid::new(0, 0, 16, 12);
+        grid.set_resource(12, 8, terrain::Overlay::Ore, 40);
+        sim.set_terrain(grid);
+        sim.step(&[Command::PlaceBuilding {
+            kind: 0,
+            x: 3,
+            y: 3,
+            w: 4,
+            h: 3,
+            hp: 1000,
+            armor: 0,
+            power: 0,
+            owner: OWNER_PLAYER,
+            role: Role::Refinery,
+        }]);
+        let id = sim.spawn_owned(
+            1,
+            &UnitSpec {
+                loco: terrain::Loco::Track,
+                speed: Fix::from_raw(128),
+                hp: 100,
+                armor: 0,
+                weapon: None,
+                role: Role::Harvester,
+            },
+            (8, 6),
+            OWNER_PLAYER,
+        );
+        let mut unloads = 0;
+        let mut resumed = None;
+        let mut observed = false;
+        for _ in 0..2000 {
+            sim.step(&[]);
+            if let Some(copy) = &mut resumed {
+                Sim::step(copy, &[]);
+                assert_eq!(sim.state_hash(), copy.state_hash());
+            }
+            if let Some(elapsed) = sim.refinery_unloading(1) {
+                observed = true;
+                let u = sim.units().iter().find(|u| u.id == id).unwrap();
+                let cell = (u.x.to_int_floor() as u16, u.y.to_int_floor() as u16);
+                assert!(
+                    !sim.terrain()
+                        .unwrap()
+                        .cell(cell.0, cell.1)
+                        .unwrap()
+                        .building
+                );
+                assert!(sim.beside_refinery(OWNER_PLAYER, cell));
+                assert_eq!(sim.refinery_unloading(id), None);
+                if elapsed == 10 && resumed.is_none() {
+                    let hash = sim.state_hash();
+                    resumed = Some(Sim::from_save_bytes(&sim.save_bytes().unwrap()).unwrap());
+                    assert_eq!(sim.state_hash(), hash, "observing and saving are read-only");
+                }
+            }
+            for event in sim.drain_events() {
+                if let Event::Unloaded {
+                    id: unit, value, ..
+                } = event
+                {
+                    assert_eq!(unit, id);
+                    assert_eq!(value, 500);
+                    unloads += 1;
+                }
+            }
+            if unloads == 2 {
+                break;
+            }
+        }
+        assert_eq!(unloads, 2, "full-size refinery must accept both loads");
+        assert!(observed && resumed.is_some());
+        assert_eq!(sim.refinery_unloading(1), None);
+        assert_eq!(sim.credits(), 1000);
+        assert_eq!(sim.terrain().unwrap().cell(12, 8).unwrap().resource, 0);
+    }
+
+    #[test]
+    fn unloading_requires_a_live_owned_refinery_at_the_perimeter() {
+        let mut sim = Sim::new(1);
+        sim.set_terrain(TerrainGrid::new(0, 0, 16, 12));
+        let refinery = |x, owner| Command::PlaceBuilding {
+            kind: 0,
+            x,
+            y: 3,
+            w: 4,
+            h: 3,
+            hp: 1000,
+            armor: 0,
+            power: 0,
+            owner,
+            role: Role::Refinery,
+        };
+        sim.step(&[refinery(3, OWNER_PLAYER), refinery(10, OWNER_ENEMY)]);
+        assert!(sim.beside_refinery(OWNER_PLAYER, (2, 3)));
+        assert!(sim.beside_refinery(OWNER_PLAYER, (7, 6)));
+        assert!(
+            !sim.beside_refinery(OWNER_PLAYER, (5, 4)),
+            "inside footprint"
+        );
+        assert!(!sim.beside_refinery(OWNER_PLAYER, (9, 3)), "enemy refinery");
+        let id = sim.spawn_owned(1, &tank_spec(), (7, 4), OWNER_PLAYER);
+        let u = sim.units.last_mut().unwrap();
+        u.role = Role::Harvester;
+        u.harvest = Harvest::Unloading(0);
+        u.cargo = 500;
+        u.bails = HARVESTER_CAPACITY;
+        assert_eq!(sim.refinery_unloading(1), Some(UNLOAD_TICKS));
+        assert_eq!(sim.refinery_unloading(2), None);
+        sim.step(&[Command::Destroy { id: 1 }]);
+        assert_eq!(
+            sim.credits(),
+            0,
+            "destroyed refineries cannot receive credits"
+        );
+        assert_eq!(sim.units.last().unwrap().cargo, 500);
+        assert_eq!(sim.refinery_unloading(1), None);
+        for _ in 0..40 {
+            sim.step(&[]);
+        }
+        assert_eq!(sim.units.last().unwrap().cargo, 500);
+        assert_eq!(sim.credits(), 0);
+        sim.step(&[refinery(3, OWNER_PLAYER)]);
+        for _ in 0..40 {
+            sim.step(&[]);
+        }
+        assert_eq!(sim.credits(), 500, "delivery resumes after rebuilding");
+        assert_eq!(sim.units.iter().find(|u| u.id == id).unwrap().cargo, 0);
     }
 
     #[test]
