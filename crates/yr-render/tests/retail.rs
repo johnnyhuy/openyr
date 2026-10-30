@@ -146,7 +146,18 @@ fn sprite_bank_resolves_sandbox_art() {
         std::fs::create_dir_all(&out).unwrap();
         for o in 0..8u8 {
             let s = bank.get("MTNK", o * 32, remap).unwrap();
-            let png = yr_render::png::encode_rgba(s.w, s.h, &s.rgba);
+            let mut rgba = vec![0; 128 * 128 * 4];
+            for y in 0..s.h as i32 {
+                for x in 0..s.w as i32 {
+                    let (dx, dy) = (64 - s.ax + x, 64 - s.ay + y);
+                    if (0..128).contains(&dx) && (0..128).contains(&dy) {
+                        let src = (y as usize * s.w as usize + x as usize) * 4;
+                        let dst = (dy as usize * 128 + dx as usize) * 4;
+                        rgba[dst..dst + 4].copy_from_slice(&s.rgba[src..src + 4]);
+                    }
+                }
+            }
+            let png = yr_render::png::encode_rgba(128, 128, &rgba);
             std::fs::write(format!("{out}/mtnk-sim{:03}.png", o * 32), png).unwrap();
         }
     }

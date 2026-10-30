@@ -364,31 +364,8 @@ impl SpriteBank {
         let art = t.art.as_ref();
         let image = t.image.to_ascii_uppercase();
         if art.is_some_and(|a| a.voxel) {
-            let body = self.vfs.read(&format!("{image}.VXL"))?;
-            let tur = self.vfs.read(&format!("{image}TUR.VXL"));
-            let barl = self.vfs.read(&format!("{image}BARL.VXL"));
-            let (w, h) = (128usize, 128usize);
-            let mut rgba = vec![0u8; w * h * 4];
-            crate::draw_voxel(
-                &mut rgba,
-                w,
-                h,
-                64,
-                64,
-                body,
-                tur,
-                barl,
-                voxel_facing(frame as u8),
-                &self.unit_pal,
-                Some(remap),
-            );
-            return (rgba.as_chunks::<4>().0.iter().any(|p| p[3] != 0)).then_some(Sprite {
-                w: w as u32,
-                h: h as u32,
-                rgba,
-                ax: 64,
-                ay: 64,
-            });
+            let model = crate::voxels::VoxelModel::load(&self.vfs, &image)?;
+            return crate::voxels::sprite(&model, voxel_facing(frame as u8), &self.unit_pal, remap);
         }
         let (file, frame, offset) = if t.kind == TechnoKind::Building {
             let file = crate::building_shp_candidates(&image, self.theater)
