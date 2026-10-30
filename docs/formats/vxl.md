@@ -71,6 +71,53 @@ that identity is what `mix-dump scan` uses to recognise HVAs.
 - HVA name fields leak Westwood's asset tree: `HTNK.HVA` holds
   `N:\RA2\ASSETS\C` (truncated at 16 bytes).
 
+## Shared projection and pose measurements (#73)
+
+`yr-render::voxels` now loads each VXL with its matching HVA, including
+`TUR` and `BARL` attachments. Frame zero supplies the pose, matched by
+case-insensitive limb name. Missing, malformed, unmatched or non-finite
+HVA transforms fall back to the limb's VXL base transform. Invalid bounds,
+zero dimensions and non-finite projected points are skipped.
+
+Retail measurements from the installed MIX cascade on 2026-10-30:
+
+| Part | Grid | Minimum bounds | Maximum bounds |
+|---|---|---|---|
+| MTNK body | 59x32x14 | -27.893934, -15.767818, 0.336604 | 30.337467, 15.979401, 13.892900 |
+| MTNKTUR | 25x25x17 | -13.159321, -12.136850, 11.607287 | 11.506207, 12.298412, 28.395008 |
+| MTNKBARL | 27x12x3 | 7.646459, -5.543928, 14.028087 | 33.883360, 5.728433, 16.870064 |
+
+All three HVA poses are identity. Their boxes already place the turret
+above the hull and the barrel forward of the turret. Recentering each grid
+and adding guessed body-height offsets destroys those authored placements.
+
+ROBO provides evidence for translation units. Its VXL base translation is
+`(-0.064227805, 0.15023422, 0.24052116)`. Its first HVA translation is
+`(-0.7707336, 1.8028107, 2.8862538)`, with a VXL scale of `0.083333336`.
+Multiplying the HVA translation by that scale reproduces the base to less
+than 0.00001 per axis. The renderer therefore treats HVA as a replacement
+pose with scaled translation, rather than composing two copies of the
+base pose. This is an inference from retail data, not a Wine parity claim.
+SHAD's first rotor has HVA translation `(-421.56384, -0.7522948, 342.47903)`;
+after scaling, its offset is `(-35.13032, -0.06269123, 28.53992)`.
+Independent centering previously overlaid the rotor limbs on the fuselage.
+
+The current sampling policy is
+`local = min + (voxel_index + 0.5) * (max - min) / grid_size`, followed by
+`rotation * local + translation`. The fixed orthographic camera uses a
+45-degree azimuth and 30-degree elevation, one pixel per model unit, and
+sorts all parts together by camera depth. It keeps the authored origin as
+the ground anchor instead of normalizing every facing to 60 pixels wide.
+Live canvases grow around that origin, capped at 512x512 before allocation;
+two-pixel samples fill projection gaps. All six sampled retail models
+(MTNK, HTNK, CMIN, ROBO, SHAD, ZEP) fit without clipped body pixels at eight
+facings and match the map renderer at the same ground anchor.
+
+Voxel-centre sampling, camera calibration and sample coverage remain
+presentation approximations pending Wine crops. Normal tables/VPL lighting,
+independent turret facing, HVA frame playback and voxel shadows remain
+follow-ups. No parser layout changed in this slice.
+
 ## Sources
 
 - XCC Utilities `vxl_file`/`hva_file`, ModEnc "VXL" and "HVA".

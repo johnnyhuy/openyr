@@ -13,11 +13,12 @@ mod buildings;
 pub mod depth;
 pub mod png;
 pub mod sprites;
+mod voxels;
 
 use std::collections::HashMap;
 use std::fs;
 use yr_assets::{AssetFs, Theater};
-use yr_formats::{HvaFile, IniFile, MapFile, Palette, ShpFile, TileSetIndex, TmpFile, VxlFile};
+use yr_formats::{IniFile, MapFile, Palette, ShpFile, TileSetIndex, TmpFile};
 use yr_rules::Rules;
 
 /// A rendered map: `width` x `height` RGBA8 pixels plus a summary line.
@@ -205,8 +206,7 @@ pub fn render_map(gamedir: &str, map_name: &str, scale: u32) -> Result<RenderedM
     let levels: HashMap<(u16, u16), u8> = map.tiles.iter().map(|t| ((t.x, t.y), t.level)).collect();
     // SHP bytes are owned here because ShpFile borrows its source data.
     let mut shps: HashMap<String, Option<Vec<u8>>> = HashMap::new();
-    type VoxelParts = (Vec<u8>, Option<Vec<u8>>, Option<Vec<u8>>);
-    let mut vxl_cache: HashMap<String, Option<VoxelParts>> = HashMap::new();
+    let mut vxl_cache: HashMap<String, Option<voxels::VoxelModel>> = HashMap::new();
     let load_shp = |vfs: &AssetFs, name: &str, shps: &mut HashMap<String, Option<Vec<u8>>>| {
         shps.entry(name.to_string())
             .or_insert_with(|| vfs.read(name).map(<[u8]>::to_vec))
@@ -300,19 +300,9 @@ pub fn render_map(gamedir: &str, map_name: &str, scale: u32) -> Result<RenderedM
             let image = techno
                 .map(|t| t.image.clone())
                 .unwrap_or_else(|| obj.kind.clone());
-            let file = format!("{}.VXL", image.to_ascii_uppercase());
             let ok = vxl_cache
-                .entry(file.clone())
-                .or_insert_with(|| {
-                    let v = vfs.read(&file).map(<[u8]>::to_vec);
-                    let t = vfs
-                        .read(&format!("{}TUR.VXL", image.to_ascii_uppercase()))
-                        .map(<[u8]>::to_vec);
-                    let b = vfs
-                        .read(&format!("{}BARL.VXL", image.to_ascii_uppercase()))
-                        .map(<[u8]>::to_vec);
-                    v.map(|body| (body, t, b))
-                })
+                .entry(image.to_ascii_uppercase())
+                .or_insert_with(|| voxels::VoxelModel::load(vfs, &image))
                 .is_some();
             if ok {
                 cell_job(jobs, obj.x, obj.y, None, 0, true, None);
@@ -417,19 +407,9 @@ pub fn render_map(gamedir: &str, map_name: &str, scale: u32) -> Result<RenderedM
             continue;
         }
         if let Some((image, facing)) = &job.voxel {
-            if let Some(Some((body, tur, barl))) = vxl_cache.get(&format!("{image}.VXL")) {
-                draw_voxel(
-                    &mut rgba,
-                    w,
-                    h,
-                    cx,
-                    cy,
-                    body,
-                    tur.as_deref(),
-                    barl.as_deref(),
-                    *facing,
-                    &unit_pal,
-                    job.remap,
+            if let Some(Some(model)) = vxl_cache.get(image) {
+                voxels::draw_voxel(
+                    &mut rgba, w, h, cx, cy, model, *facing, &unit_pal, job.remap,
                 );
             }
             continue;
@@ -528,93 +508,6 @@ pub fn render_map(gamedir: &str, map_name: &str, scale: u32) -> Result<RenderedM
             tmps.len()
         ),
     })
-}
-
-/// Draw one voxel vehicle (body + optional turret/barrel VXLs) centred
-/// at (cx, cy). Orthographic iso projection, voxels sorted back-to-front;
-/// facing rotates the model around Z. Approximate: turret raised to the
-/// body top, flat shading (palette colours carry most of the form).
-#[allow(clippy::too_many_arguments)]
-pub(crate) fn draw_voxel(
-    rgba: &mut [u8],
-    w: usize,
-    h: usize,
-    cx: i32,
-    cy: i32,
-    body: &[u8],
-    tur: Option<&[u8]>,
-    barl: Option<&[u8]>,
-    facing: u16,
-    pal: &Palette,
-    remap: Option<[u8; 3]>,
-) {
-    let Ok(body_vxl) = VxlFile::parse(body) else {
-        return;
-    };
-    let _ = HvaFile::parse(body); // transforms not applied yet (see issue notes)
-    let mut parts: Vec<(&VxlFile, f32)> = vec![(&body_vxl, 0.0)];
-    let tur_vxl = tur.and_then(|d| VxlFile::parse(d).ok());
-    let barl_vxl = barl.and_then(|d| VxlFile::parse(d).ok());
-    let body_h = body_vxl
-        .limbs
-        .first()
-        .map(|l| f32::from(l.size[2]))
-        .unwrap_or(8.0);
-    if let Some(t) = &tur_vxl {
-        parts.push((t, body_h * 0.75));
-    }
-    if let Some(b) = &barl_vxl {
-        parts.push((b, body_h * 0.75));
-    }
-    let ang = f32::from(facing + 32) * (std::f32::consts::TAU / 256.0);
-    let (sin, cos) = ang.sin_cos();
-    let mut pts: Vec<(f32, f32, f32, u8)> = Vec::new();
-    for (vxl, zoff) in parts {
-        for limb in &vxl.limbs {
-            let (mx, my) = (f32::from(limb.size[0]) / 2.0, f32::from(limb.size[1]) / 2.0);
-            for v in &limb.voxels {
-                let (lx, ly, lz) = (
-                    f32::from(v.x) - mx,
-                    f32::from(v.y) - my,
-                    f32::from(v.z) + zoff,
-                );
-                let (rx, ry) = (lx * cos - ly * sin, lx * sin + ly * cos);
-                pts.push((
-                    (rx - ry),
-                    (rx + ry) * 0.5 - lz,
-                    rx + ry + lz * 0.01,
-                    v.color,
-                ));
-            }
-        }
-    }
-    if pts.is_empty() {
-        return;
-    }
-    let (mut x0, mut x1, mut y0, mut y1) = (f32::MAX, f32::MIN, f32::MAX, f32::MIN);
-    for (x, y, _, _) in &pts {
-        x0 = x0.min(*x);
-        x1 = x1.max(*x);
-        y0 = y0.min(*y);
-        y1 = y1.max(*y);
-    }
-    let scale = 60.0 / (x1 - x0).max(1.0);
-    let size = ((scale * 2.0).ceil() as i32).max(1);
-    pts.sort_by(|a, b| a.2.partial_cmp(&b.2).unwrap_or(std::cmp::Ordering::Equal));
-    for (x, y, _, color) in &pts {
-        let px = cx + ((x - (x0 + x1) / 2.0) * scale) as i32;
-        let py = cy + ((y - (y0 + y1) / 2.0) * scale) as i32;
-        let rgba_c = remap_rgba(pal, *color, remap);
-        for dy in 0..size {
-            for dx in 0..size {
-                let (x, y) = (px + dx, py + dy);
-                if x >= 0 && y >= 0 && (x as usize) < w && (y as usize) < h {
-                    let at = (y as usize * w + x as usize) * 4;
-                    rgba[at..at + 4].copy_from_slice(&rgba_c);
-                }
-            }
-        }
-    }
 }
 
 /// SHP names to try for building image `image`: NewTheater art swaps the

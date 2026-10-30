@@ -132,8 +132,9 @@ cell centre:
   resolved through the `[Colors]` HSV table in `rulesmd.ini`.
 - Voxel vehicles are drawn from their VXL body + `TUR`/`BARL` parts:
   orthographic iso projection rotated by facing, owner-colour remap,
-  flat shading. Approximate (no HVA frame transforms or normal-based
-  lighting yet); aircraft that are voxel-based use the same path.
+  flat shading. Authored bounds and the first HVA pose now place each
+  limb with fixed scale and a ground anchor (#73). Animated HVA poses and
+  normal-table lighting remain open; voxel aircraft use the same path.
 
 Building art resolution (found 2026-10-17 by matching SHP canvas
 sizes and filename hashes across the retail archives): for
