@@ -78,8 +78,11 @@ incremental, testable path where each milestone is independently useful.
       for missing prerequisites/factories or insufficient credits; paid
       structures stay bright until placed. Names and hit boxes share the
       window/headless panel (`docs/formats/csf.md`).
-- [ ] Sidebar category tabs (#65; cameos, CSF names and structure placement
-      are done; the current prototype shows all 22 entries together)
+- [x] Sidebar category tabs (#65): structures, defences, infantry and vehicles
+      filter all 22 entries without changing production ids. Tabs show queue
+      counts and a green READY marker for paid structures on hidden pages.
+      Window and headless frames share card/tab hit boxes and drawing;
+      switching tabs backs out of the ghost while keeping the paid structure.
 
 ## M4: Simulation v1
 
