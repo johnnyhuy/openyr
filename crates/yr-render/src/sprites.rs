@@ -266,6 +266,13 @@ impl SpriteBank {
         let state_frame = |layer: &Layer| usize::from(animation.damaged).min(layer.frames - 1);
         let bib = art.bib.as_ref().map(|layer| key(layer, state_frame(layer)));
         let mut keys = vec![key(&art.base, state_frame(&art.base))];
+        // Factory shells are health states, not looping clips. Retail
+        // Allied roof art has two body frames despite a LoopEnd of 9.
+        for overlay in &art.shell {
+            if let Some(layer) = overlay.layer(animation.damaged) {
+                keys.push(key(layer, state_frame(layer)));
+            }
+        }
         let phase = |layer: &Layer, ticks| {
             layer.clip.frame(if layer.powered && !animation.powered {
                 0
