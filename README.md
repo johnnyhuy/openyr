@@ -60,6 +60,20 @@ when present (skipped otherwise), so they double as a parity check against retai
 
 ## Using your own game data
 
+On macOS, build a Finder-launchable app:
+
+```sh
+./scripts/package-macos.sh
+open target/OpenYR.app
+```
+
+Double-click `OpenYR.app` for later launches. It starts EB1.MMX using the
+retail install at `~/Games/RA2YR/prefix/drive_c/Westwood/RA2`. If that folder
+is absent, choose your own game folder in the macOS picker; OpenYR remembers
+it. The app contains no game assets. `cargo run --release` also works without
+arguments. See [macOS packaging](docs/macos-app.md) for preferences, logs and
+custom locations.
+
 Launch a match with your own install:
 
 ```sh
