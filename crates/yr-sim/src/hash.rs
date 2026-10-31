@@ -29,6 +29,7 @@ impl Hasher {
 
 impl crate::WeaponSpec {
     pub(crate) fn hash(&self, h: &mut Hasher) {
+        // Optional source IDs only select presentation art, never future play.
         h.write_i64(self.damage);
         h.write_u64(u64::from(self.rof_ticks));
         h.write_i64(i64::from(self.range.raw()));
@@ -183,6 +184,7 @@ pub(crate) fn state(sim: &crate::Sim) -> u64 {
     }
     h.write_u64(sim.projectiles.len() as u64);
     for p in &sim.projectiles {
+        // Shot provenance is saved for impact art but does not affect motion.
         point(&mut h, Some((p.x, p.y)));
         h.write_u64(u64::from(p.owner));
         h.write_u64(u64::from(p.target));
@@ -241,6 +243,7 @@ mod tests {
         different(|s| *s.units[0].path.back_mut().unwrap() = (3, 0));
         different(|s| {
             s.units[0].weapon = Some(WeaponSpec {
+                source: None,
                 damage: 20,
                 rof_ticks: 2,
                 range: Fix::ONE,
@@ -261,6 +264,7 @@ mod tests {
     fn projectile_payload_and_queued_specs_change_hashes() {
         let mut sim = Sim::new(1);
         sim.projectiles.push(Projectile {
+            origin: None,
             x: Fix::ZERO,
             y: Fix::ZERO,
             owner: 1,

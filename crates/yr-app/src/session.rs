@@ -59,7 +59,15 @@ pub struct Buildable {
     pub cameo: Option<(u32, u32, Vec<u8>)>,
     /// Rules `Prerequisite=` tokens (type ids or generic groups).
     prerequisite: Vec<String>,
+    #[serde(serialize_with = "serialize_setup_product")]
     product: Product,
+}
+
+fn serialize_setup_product<S: serde::Serializer>(
+    product: &Product,
+    serializer: S,
+) -> Result<S::Ok, S::Error> {
+    serde::Serialize::serialize(&product.without_weapon_source(), serializer)
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
@@ -647,7 +655,7 @@ fn setup_fingerprint(
     let description =
         serde_json::to_vec(&(buildables, kinds, groups)).map_err(|e| e.to_string())?;
     Ok(crate::snapshot::fingerprint(
-        sim.save_bytes()
+        sim.setup_fingerprint_bytes()
             .map_err(|e| e.to_string())?
             .iter()
             .chain(description.iter())

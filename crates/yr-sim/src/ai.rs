@@ -28,6 +28,12 @@ pub struct SkirmishAi {
 }
 
 impl SkirmishAi {
+    pub(crate) fn clear_weapon_sources(&mut self) {
+        for build in &mut self.builds {
+            build.product = build.product.without_weapon_source();
+        }
+    }
+
     pub(crate) fn validate_save(&self) -> Result<(), crate::save::SaveError> {
         use crate::save::{order, require};
         require(
@@ -303,6 +309,7 @@ mod tests {
             hp: 100,
             armor: 0,
             weapon: Some(WeaponSpec {
+                source: None,
                 damage: 10,
                 rof_ticks: 10,
                 range: Fix::from_int(3),

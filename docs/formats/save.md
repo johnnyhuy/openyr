@@ -1,7 +1,7 @@
 # OpenYR match saves
 
 This is OpenYR's own format, not a reader for the original game's saves.
-Version 1 captures every field of `yr-sim::Sim` without advancing the sim,
+The format captures every field of `yr-sim::Sim` without advancing the sim,
 consuming RNG or draining events. `yr-sim` only converts bytes; the app
 owns filesystem I/O and reconstructs the session and presentation.
 
@@ -20,7 +20,7 @@ All header integers are little-endian. A match file has this layout:
 | 37 | remainder | Simulation snapshot |
 
 The simulation snapshot starts with `OYRSIM\0\0` (8 bytes), then a
-little-endian u32 version (currently 1), then UTF-8 JSON of `Sim`.
+little-endian u32 version (currently 2), then UTF-8 JSON of `Sim`.
 Fixed-point values are raw i32 integers with 256 units per cell; rule
 decimals are raw i64 millionths. No floating point enters the payload.
 JSON's integer text preserves all bits of the u64 RNG and tick fields.
@@ -42,6 +42,21 @@ these fingerprints are consistency checks, not cryptographic signatures.
 Display names and cameo pixels are excluded so localized labels or new
 sidebar art do not invalidate an otherwise compatible match (#64).
 
+Simulation version 2 adds optional weapon/shot provenance and `Impact` output
+events. The match wrapper remains version 1. Version-1 sim payloads are accepted
+with unknown source metadata; their in-flight shots do not guess impact art.
+New shots and flights retain provenance in version-2 snapshots. Setup keys use
+the original version-1 projection without those visual fields, including unit,
+queued-product, AI-build-profile and FreeUnit weapon metadata. This preserves
+existing setup fingerprints while normal snapshots retain all new provenance. Visual metadata
+does not enter the gameplay state hash.
+
+Restored version-1 games use current corrected combat behavior: an already-fired
+shell now survives shooter death (#119). A continuation involving that bug can
+therefore differ from the older engine. The version-2 save marks the updated
+schema; loading old payloads is supported, loading new saves in an old binary is
+not.
+
 ## Loading and writing
 
 Readers reject unsupported versions before parsing the payload. The app
@@ -52,7 +67,8 @@ u16 coordinate domain. Entity ids must be ordered and unique with a valid
 next id; footprints, health, weapon multipliers, coordinates, production
 progress and payments are checked before the sim is exposed. Unknown
 struct fields and malformed enum tags fail. Bump the format version when
-the state schema or tick semantics change; version 1 has no migration.
+the state schema or tick semantics change. The version-1 to version-2 path
+above defaults only optional provenance; unsupported versions are rejected.
 
 The app writes and syncs a sibling temporary file, then renames it over
 the destination. An encoding/write failure leaves the old save intact.

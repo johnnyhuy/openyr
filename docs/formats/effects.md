@@ -28,6 +28,8 @@ Local rules and art resolve the following authored effects:
 | Tank firing | MTNK/HTNK Primary to weapon Anim | GUNFIRE.SHP | 28x26 | 4 |
 | GI firing | E1 Primary=M60 to Anim | MGUN-N through MGUN-NW.SHP | 18x17 | 6 each |
 | Vehicle destruction | First entry of type Explosion | TWLT070.SHP | 186x196 | 26 |
+| AP shell impact | Fired 105mm/120mm to AP AnimList | S_CLSN16/S_CLSN22.SHP | 148x158 | 13 each |
+| Small-arms impact | Fired M60 to SA AnimList | PIFFPIFF.SHP | 28x28 | 12 |
 
 `105mm` and `120mm` both declare `Anim=GUNFIRE`. M60 declares eight
 machine-gun names in screen compass order. Existing facing projection
@@ -65,14 +67,48 @@ original game; source-art comparisons do not establish exact engine parity.
 The cache holds at most 64 decoded effect frames and 128 clip definitions.
 At most 256 effects remain active; the oldest is dropped when full. Expired
 clips disappear on simulation updates even without redraws. Cache keys use
-resolved source frames rather than elapsed ticks. Effects do not change sim
-hashes, event schemas, snapshots or RNG. Loading resets transient effects,
+resolved source frames rather than elapsed ticks. Rendering effects does not
+mutate sim hashes, snapshots or RNG. Loading resets transient effects,
 so prior flashes/explosions are not replayed from a snapshot.
 
-Warhead impact animations require accurate shot provenance and remain in
-#102, along with projectile art/trails, smoke/fire, debris, environmental
-animations, infantry death sequences and weapon-specific effects. Exact
-destruction-list selection and original compositing remain there too.
+## Warhead impacts
+
+Every new shot retains its original weapon identity and delivered damage,
+before target armour. Instant hits and projectile arrival emit an `Impact`
+with the target's actual position. Impact is distinct from positive health
+damage: armour can reduce a hit to zero without erasing its visual arrival.
+A shell remains in flight after its shooter dies (#119). Its origin is saved
+with the projectile, so loading does not require a remembered shooter or
+guess a weapon from the victim's type. Target loss still discards the homing
+projectile under the current combat model.
+
+Weapon identities use case-insensitive FNV-1a over the rules ID. Both creation
+and lookup reject ambiguous IDs rather than assigning another weapon's art.
+The identity is independent of registry insertion order. Unknown sources and
+legacy in-flight shots without provenance retain gameplay but omit impact art.
+Neither provenance nor output events affect state hashes or consume RNG.
+
+The retail `AnimList` comment establishes increasing damage order. The
+modding field documentation for [AnimList](https://modenc.renegadeprojects.com/AnimList)
+specifies 25-point bands of delivered damage, clamped to the final entry;
+target-dependent reductions do not select the band. OpenYR follows that
+documented rule for ordinary target impacts. Thus 105mm's 65 damage selects
+AP's last entry, S_CLSN22, while M60's 15 damage selects SA's PIFFPIFF.
+Boundary tests cover 24/25 and 49/50, zero/negative damage and large values.
+This is a data/documentation comparison, not a controlled original-game
+timing observation. No implementation source was used.
+
+The existing bounded effect decoder supplies ANIM.PAL pixels, transparency,
+one-shot playback and terrain-height anchoring. The impact starts at age zero
+on its arrival tick and pauses with the simulation. Loading clears past
+transients but preserves new in-flight shot origins. The exact anchor, depth,
+normal lighting and cadence remain provisional, as above. Random EMEffect
+selection is omitted; water-cell detonation/splash, special warhead overrides,
+impact sounds, craters and scorch are not implemented in this slice.
+
+Projectile art/trails, smoke/fire, debris, environmental animations, infantry
+death sequences and special weapon effects remain in #102. Exact destruction
+selection and original compositing remain there too.
 
 ## Verification
 
@@ -80,15 +116,21 @@ Synthetic tests reject oversized canvases/counts, invalid ranges/rates,
 overflowing starts, invalid transparency and path-like image names. They
 check one-shot expiry at extreme ticks, supported CLI scales and alpha
 blending without treating translucent colored pixels as ground shadows.
-Retail tests compare all 78 source frames to independently decoded indices
+Retail tests compare all 116 source frames to independently decoded indices
 and `ANIM.PAL` bytes, exercise cache eviction, all GI directions, same-tick
 fire/death retention, active-effect bounds and unchanged sim/save bytes.
+Impact regressions use the same MTNK shooter/victim type with two different
+fired weapons. After killing the shooter and restoring a saved flight, each
+arrival selects its own weapon's art exactly once. A moving-target sim check
+also verifies original delivered damage versus reduced health loss.
 
 The app proof test renders old/default and native views plus an old view
 zoomed to match native world magnification. The latter exposes lost terrain
 detail without changing unit size. A controlled EB1 target then receives an
 actual attack order and a destruction command, exercising shared event
 routing and compositing rather than fabricated effect instances.
+The AP proof actor is an HTNK cannon. Selecting only by the shared GUNFIRE
+muzzle sheet had picked HARV instead; its real impact is PIFFPIFF (#123).
 
 ```sh
 cargo test -p yr-render -p yr-app effects -- --nocapture

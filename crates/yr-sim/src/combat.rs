@@ -15,6 +15,10 @@ pub const ARMOR_COUNT: usize = 11;
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct WeaponSpec {
+    /// Stable rules weapon identity for presentation provenance.
+    /// Absent for old saves or caller-created weapons. Never affects damage.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source: Option<u64>,
     pub damage: i64,
     /// Frames (ticks) between shots.
     pub rof_ticks: u32,
@@ -51,6 +55,13 @@ impl WeaponSpec {
             0
         };
         Some(WeaponSpec {
+            source: (rules
+                .weapons
+                .iter()
+                .filter(|entry| entry.source_id() == w.source_id())
+                .count()
+                == 1)
+                .then(|| w.source_id()),
             damage: w.damage?,
             rof_ticks: w.rof.unwrap_or(0).max(0) as u32,
             range: cells_to_leptons(w.range?),
@@ -81,8 +92,24 @@ mod tests {
     use super::*;
 
     #[test]
+    fn weapon_source_identity_survives_registry_reordering_and_case() {
+        let load = |types| {
+            Rules::load(&yr_formats::IniFile::parse(&format!(
+            "[VehicleTypes]\n{types}\n[A]\nPrimary=One\n[B]\nPrimary=Two\n[One]\nDamage=65\nRange=5\nWarhead=AP\n[Two]\nDamage=15\nRange=5\nWarhead=SA\n[AP]\n[SA]\n"
+        )), &yr_formats::IniFile::parse(""))
+        };
+        let first = load("0=A\n1=B");
+        let second = load("0=B\n1=A");
+        let source =
+            |rules: &Rules, name| WeaponSpec::from_rules(rules, name).unwrap().source.unwrap();
+        assert_eq!(source(&first, "One"), source(&second, "oNe"));
+        assert_ne!(source(&first, "One"), source(&first, "Two"));
+    }
+
+    #[test]
     fn damage_math_is_exact() {
         let mut spec = WeaponSpec {
+            source: None,
             damage: 65,
             rof_ticks: 10,
             range: Fix::from_int(1280),

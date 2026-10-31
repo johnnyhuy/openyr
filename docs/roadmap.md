@@ -126,6 +126,11 @@ Johnny on 2026-10-31.
 - [ ] Wine side-by-side infantry and Construction Yard crops; verify
       cadence (including HVA playback), overlay depth adjustments and
       factory doors (#6)
+- [x] Warhead target impacts from retained shot provenance (#102, #123), including
+      instant shots, projectile arrival and in-flight save/load. Ordinary
+      AnimList selection uses delivered damage; AP and SA source pixels and
+      shared composition are checked (`docs/formats/effects.md`). Exact
+      original cadence, depth, lighting and special overrides remain open.
 - [x] Sidebar labels from `ra2md.csf` (#47): all 22 Allied entries show
       CSF names, retail costs and full-power build times. Missing/invalid
       strings warn and fall back to rules names or type ids. Cards dim
@@ -207,6 +212,12 @@ Johnny on 2026-10-31.
       Two retail EB1 deliveries earn 1000 credits; a mid-unload snapshot
       follows the uninterrupted sim hash through the next delivery.
 - [x] Weapons/warheads/damage with the original formulas
+- [x] Keep fired shells after shooter death (#119), with original damage and
+      weapon provenance through arrival and save/load. Target loss still
+      discards homing shots; a moving-target regression covers continuation.
+- [x] Preserve legacy setup fingerprints when adding shot metadata (#121),
+      including AI build profiles and FreeUnit weapons. Version-1 match saves
+      remain loadable; version 2 retains full new shot provenance.
 - [x] `sim-bench` headless benchmark; state hashing
 
 ## M5: Playable sandbox (the playable baseline)

@@ -1962,6 +1962,19 @@ mod render_tests {
                     yr_render::png::encode_rgba(400, 280, &crop),
                 )
                 .unwrap();
+                let metadata = serde_json::json!({
+                    "tick": app.session.as_ref().unwrap().sim.tick(),
+                    "state_hash": format!("{hash:016x}"),
+                    "effects": app.effects.active.iter().map(|effect| serde_json::json!({
+                        "name": effect.name, "born": effect.born,
+                        "x_raw": effect.x.raw(), "y_raw": effect.y.raw(),
+                    })).collect::<Vec<_>>(),
+                });
+                std::fs::write(
+                    out.join(format!("{name}.json")),
+                    serde_json::to_vec_pretty(&metadata).unwrap(),
+                )
+                .unwrap();
             }
             assert_eq!(app.session.as_ref().unwrap().sim.state_hash(), hash);
             assert!(yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap() == save);
@@ -1978,6 +1991,8 @@ mod render_tests {
             .iter()
             .find(|u| {
                 u.owner == yr_sim::OWNER_PLAYER
+                    && app.session.as_ref().unwrap().kinds[usize::from(u.kind)] == "HTNK"
+                    && u.weapon.is_some()
                     && app
                         .sprites
                         .as_ref()
@@ -2095,11 +2110,54 @@ mod render_tests {
             app.effects.active.iter().any(|e| e.name == "GUNFIRE"),
             "actual shot emits the muzzle art"
         );
-        for phase in 0..9 {
+        assert!(
+            app.effects.active.iter().any(|e| e.name == "S_CLSN22"
+                && e.x == x + yr_sim::Fix::from_int(2)
+                && e.y == y
+                && e.born == app.session.as_ref().unwrap().sim.tick()),
+            "actual shell arrival emits AP impact art"
+        );
+        println!("impact proof: tick {}, shooter {shooter}, target {target}, weapon source {:?}, delivered damage {}, S_CLSN22", app.session.as_ref().unwrap().sim.tick(), tank.weapon.unwrap().source, tank.weapon.unwrap().damage);
+        if let Some(out) = std::env::var_os("OPENYR_VISUAL_DUMP") {
+            let weapon = tank.weapon.unwrap();
+            let metadata = serde_json::json!({
+                "actor_kind": "HTNK", "shooter_id": shooter, "target_id": target,
+                "weapon": weapon,
+                "weapon_source_hex": weapon.source.map(|source| format!("{source:016x}")),
+                "impact": "S_CLSN22", "arrival_tick": app.session.as_ref().unwrap().sim.tick(),
+            });
+            std::fs::write(
+                PathBuf::from(out).join("impact-scene.json"),
+                serde_json::to_vec_pretty(&metadata).unwrap(),
+            )
+            .unwrap();
+        }
+        for phase in 0..36 {
             let tick = app.session.as_ref().unwrap().sim.tick();
             capture(&app, &format!("fire-{phase:02}-t{tick:05}"), phase == 1);
+            if phase == 4 {
+                let active = std::mem::take(&mut app.effects.active);
+                app.effects.active = active
+                    .iter()
+                    .filter(|e| e.name != "S_CLSN22")
+                    .map(|e| yr_app::effects::Effect {
+                        name: e.name.clone(),
+                        x: e.x,
+                        y: e.y,
+                        born: e.born,
+                    })
+                    .collect();
+                let without = capture(&app, "impact-without-same-tick", true);
+                app.effects.active = active;
+                let with = capture(&app, "impact-with-same-tick", true);
+                assert_ne!(
+                    with, without,
+                    "impact changes composed pixels without changing simulation state"
+                );
+            }
             app.tick_session();
         }
+        assert!(app.effects.active.iter().all(|e| e.name != "S_CLSN22"));
         app.pending.push(Command::Destroy { id: target });
         app.tick_session();
         assert!(app.effects.active.iter().any(|e| e.name == "TWLT070"));
