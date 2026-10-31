@@ -80,7 +80,8 @@ Launch a match with your own install:
 cargo run --release -- "/path/to/RA2" EB1.MMX
 ```
 
-Left-click or drag to select, right-click to order, A then right-click to
+Left-click or drag to select. With units selected, left-click to order.
+Right-click cancels; right-drag pans. Hold Ctrl+Shift or press A, then left-click to
 attack-move, S to stop, H to harvest, and M to mute/unmute. The sidebar
 queues units with left-click and cancels with right-click. Arrow keys or
 right-drag pan; the wheel zooms; Esc quits. Audio starts automatically and

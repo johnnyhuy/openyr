@@ -1,8 +1,8 @@
 //! OpenYR window: a live skirmish session over a rendered retail map.
 //!
 //! Usage: `openyr <gamedir> <map> [scale]`
-//! Left-click / box-drag select own units, right-click move or attack
-//! (enemy under cursor), `A` then right-click = attack-move, `S` stop,
+//! Left-click / box-drag selects own units. With units selected, left-click
+//! moves or attacks; right-click cancels. `A` then left-click = attack-move, `S` stop,
 //! `H` harvest, right-drag / arrows pan, wheel or +/- zoom,
 //! K toggles repair, L toggles sell, M toggles audio, F5 saves, F9 loads, Esc quits. Sidebar tabs select a category.
 //! Left-click a cameo to queue it at the
@@ -78,7 +78,9 @@ struct App {
     pending: Vec<Command>,
     attack_move: bool,
     shift: bool,
+    control: bool,
     cursor: (f64, f64),
+    pointer: yr_app::cursor::Presence,
     left_down: Option<(f64, f64)>,
     right_down: Option<(f64, f64)>,
     right_panning: bool,
@@ -166,33 +168,16 @@ impl App {
     fn window_to_cell(&self, pos: (f64, f64)) -> Option<(f32, f32)> {
         let map = self.map.as_ref()?;
         let (mx, my) = self.window_to_map(pos);
-        Some(map.px_to_cell(mx, my))
+        Some(yr_app::interaction::cell_at(
+            map,
+            self.session.as_ref().and_then(|s| s.sim.terrain()),
+            (mx, my),
+        ))
     }
 
     fn cell_leptons(cell: (f32, f32)) -> (Fix, Fix) {
         let c = |v: f32| Fix::from_int(v.floor() as i32) + Fix::from_raw(128);
         (c(cell.0), c(cell.1))
-    }
-
-    /// Enemy (or neutral) entity under a cell: buildings by footprint first.
-    fn target_at(&self, cell: (f32, f32)) -> Option<u32> {
-        let sim = &self.session.as_ref()?.sim;
-        let (cx, cy) = (cell.0.floor() as i32, cell.1.floor() as i32);
-        for b in sim.buildings() {
-            if b.owner != yr_sim::OWNER_PLAYER
-                && cx >= i32::from(b.cell.0)
-                && cx < i32::from(b.cell.0) + i32::from(b.size.0)
-                && cy >= i32::from(b.cell.1)
-                && cy < i32::from(b.cell.1) + i32::from(b.size.1)
-            {
-                return Some(b.id);
-            }
-        }
-        sim.units()
-            .iter()
-            .filter(|u| u.owner != yr_sim::OWNER_PLAYER)
-            .find(|u| u.x.to_int_floor() == cx && u.y.to_int_floor() == cy)
-            .map(|u| u.id)
     }
 
     fn select_at(&mut self, pos: (f64, f64), additive: bool) {
@@ -209,7 +194,11 @@ impl App {
                     && u.x.to_int_floor() == cx
                     && u.y.to_int_floor() == cy
             }) {
-                self.selected.insert(u.id);
+                if additive && self.selected.contains(&u.id) {
+                    self.selected.remove(&u.id);
+                } else {
+                    self.selected.insert(u.id);
+                }
             }
         }
         self.selection_audio();
@@ -229,10 +218,16 @@ impl App {
             if u.owner != yr_sim::OWNER_PLAYER {
                 continue;
             }
-            let (mx, my) = map.cell_to_px(
+            let (mx, mut my) = map.cell_to_px(
                 u.x.to_int_floor() as f32 + 0.5,
                 u.y.to_int_floor() as f32 + 0.5,
             );
+            let level = session
+                .sim
+                .terrain()
+                .and_then(|g| g.cell(u.x.to_int_floor() as u16, u.y.to_int_floor() as u16))
+                .map_or(0, |c| c.height);
+            my -= f32::from(level) * 15.0 / map.scale.max(1) as f32;
             let (wx, wy) = (
                 (mx - self.view.cam_x) * self.view.zoom,
                 (my - self.view.cam_y) * self.view.zoom,
@@ -255,25 +250,121 @@ impl App {
         }
     }
 
-    fn issue_order(&mut self, pos: (f64, f64)) {
-        let Some(cell) = self.window_to_cell(pos) else {
+    fn world_action(&self, pos: (f64, f64)) -> Option<yr_app::interaction::Action> {
+        let session = self.session.as_ref()?;
+        let cell = self.window_to_cell(pos)?;
+        if !cell.0.is_finite() || !cell.1.is_finite() {
+            return None;
+        }
+        Some(yr_app::interaction::at(
+            session,
+            &self.selected,
+            (cell.0.floor() as i32, cell.1.floor() as i32),
+            self.attack_move || (self.control && self.shift),
+            self.service_mode,
+        ))
+    }
+
+    fn left_click(&mut self, pos: (f64, f64)) {
+        let Some(action) = self.world_action(pos) else {
             return;
         };
-        if cell.0 < 0.0 || cell.1 < 0.0 || self.selected.is_empty() {
+        if action.select.is_some() || (self.shift && !self.control) {
+            self.select_at(pos, self.shift);
+        } else if !self.selected.is_empty() {
+            self.pending.extend(action.commands);
             self.attack_move = false;
-            return;
+        } else {
+            self.select_at(pos, false);
         }
-        let target = self.target_at(cell);
-        let (lx, ly) = Self::cell_leptons(cell);
-        for &id in &self.selected {
-            let cmd = match (self.attack_move, target) {
-                (_, Some(t)) => Command::Attack { id, target: t },
-                (true, None) => Command::AttackMove { id, x: lx, y: ly },
-                (false, None) => Command::Move { id, x: lx, y: ly },
-            };
-            self.pending.push(cmd);
+        self.view.dirty = true;
+    }
+
+    fn left_release(&mut self) {
+        self.radar_drag = false;
+        if let Some(a) = self.left_down.take() {
+            if (self.cursor.0 - a.0).abs() > 6.0 || (self.cursor.1 - a.1).abs() > 6.0 {
+                self.select_box(a, self.cursor, self.shift);
+            } else if !self.in_sidebar(self.cursor) {
+                self.left_click(self.cursor);
+            }
         }
+    }
+
+    fn right_release(&mut self) {
+        if self.right_down.take().is_some() && !self.right_panning {
+            self.cancel_mode_or_selection();
+        }
+        self.right_panning = false;
+    }
+
+    fn cancel_pointer_action(&mut self) {
+        self.left_down = None;
+        self.right_down = None;
+        self.right_panning = false;
+        self.radar_drag = false;
+    }
+
+    fn cancel_mode_or_selection(&mut self) {
+        if self.placing.take().is_none()
+            && self.service_mode == ServiceMode::None
+            && !self.attack_move
+        {
+            self.selected.clear();
+        }
+        self.service_mode = ServiceMode::None;
         self.attack_move = false;
+        self.view.dirty = true;
+    }
+
+    fn focus_changed(&mut self, focused: bool) {
+        self.pointer.focused = focused;
+        if !focused {
+            self.keys.clear();
+            self.shift = false;
+            self.control = false;
+            self.cancel_pointer_action();
+            self.placing = None;
+            self.service_mode = ServiceMode::None;
+            self.attack_move = false;
+        }
+        self.view.dirty = true;
+    }
+
+    fn cursor_kind(&self, width: u32) -> yr_app::cursor::Kind {
+        use yr_app::cursor::Kind;
+        if self.cursor.0 >= f64::from(width.saturating_sub(SIDEBAR_W)) {
+            return Kind::Pointer;
+        }
+        if self.placing.is_some() {
+            return if self.placement_target().is_some_and(|(_, _, valid)| valid) {
+                Kind::Pointer
+            } else {
+                Kind::Blocked
+            };
+        }
+        if self.left_down.is_some() || self.right_panning {
+            return Kind::Pointer;
+        }
+        self.world_action(self.cursor)
+            .map_or(Kind::Pointer, |a| a.cursor)
+    }
+
+    fn update_pointer_visibility(&self) {
+        if let Some(window) = &self.window {
+            let custom =
+                self.pixels
+                    .as_ref()
+                    .zip(self.session.as_ref())
+                    .is_some_and(|(pixels, session)| {
+                        self.pointer.custom(
+                            &session.cursor_art,
+                            (pixels.texture().width(), pixels.texture().height()),
+                            self.cursor,
+                        )
+                    });
+            window.set_cursor_visible(!custom);
+        }
     }
 
     fn radar_target(&self, pos: (f64, f64)) -> Option<(f32, f32)> {
@@ -390,9 +481,8 @@ impl App {
     }
 
     fn in_sidebar(&self, pos: (f64, f64)) -> bool {
-        self.pixels
-            .as_ref()
-            .is_some_and(|p| pos.0 >= f64::from(p.texture().width() - SIDEBAR_W))
+        let width = self.pixels.as_ref().map_or(WIN_W, |p| p.texture().width());
+        pos.0 >= f64::from(width.saturating_sub(SIDEBAR_W))
     }
 
     fn tick_session(&mut self) {
@@ -760,6 +850,16 @@ impl App {
                 draw_rect_outline(frame, fw, fh, a, self.cursor, SELECT_COL);
             }
         }
+        if let Some(session) = &self.session {
+            if self
+                .pointer
+                .custom(&session.cursor_art, (fw, fh), self.cursor)
+            {
+                session
+                    .cursor_art
+                    .draw(frame, (fw, fh), self.cursor, self.cursor_kind(fw), tick);
+            }
+        }
     }
 }
 
@@ -1014,10 +1114,11 @@ impl ApplicationHandler for App {
                 return;
             }
         }
-        println!("OpenYR: left-click/box select, right-click order, A=attack-move, S=stop, H=harvest, K=repair, L=sell, M=mute, F5=save, F9=load, right-drag/arrows pan, wheel zoom; sidebar: left-click build or place a ready structure, right-click cancel");
+        println!("OpenYR: left-click select/order, box select, right-click cancel, A=attack-move, S=stop, H=harvest, K=repair, L=sell, M=mute, F5=save, F9=load, right-drag/arrows pan, wheel zoom; sidebar: left-click build or place a ready structure, right-click cancel");
         window.request_redraw();
         self.window = Some(window);
         self.pixels = Some(pixels);
+        self.update_pointer_visibility();
         self.view.dirty = true;
         self.last_tick = Instant::now();
     }
@@ -1025,6 +1126,9 @@ impl ApplicationHandler for App {
     fn window_event(&mut self, el: &ActiveEventLoop, _id: WindowId, event: WindowEvent) {
         match event {
             WindowEvent::CloseRequested => {
+                if let Some(window) = &self.window {
+                    window.set_cursor_visible(true);
+                }
                 self.report_audio();
                 el.exit();
             }
@@ -1034,8 +1138,19 @@ impl ApplicationHandler for App {
                     self.view.dirty = true;
                 }
             }
+            WindowEvent::Focused(focused) => self.focus_changed(focused),
+            WindowEvent::CursorEntered { .. } => {
+                self.pointer.inside = true;
+                self.view.dirty = true;
+            }
+            WindowEvent::CursorLeft { .. } => {
+                self.pointer.inside = false;
+                self.cancel_pointer_action();
+                self.view.dirty = true;
+            }
             WindowEvent::ModifiersChanged(m) => {
                 self.shift = m.state().shift_key();
+                self.control = m.state().control_key();
             }
             WindowEvent::MouseInput { state, button, .. } => match (button, state) {
                 (MouseButton::Left, ElementState::Pressed) if self.in_sidebar(self.cursor) => {
@@ -1101,26 +1216,12 @@ impl ApplicationHandler for App {
                     self.placing = None;
                 }
                 (MouseButton::Left, ElementState::Pressed) => self.left_down = Some(self.cursor),
-                (MouseButton::Left, ElementState::Released) => {
-                    self.radar_drag = false;
-                    if let Some(a) = self.left_down.take() {
-                        if (self.cursor.0 - a.0).abs() > 6.0 || (self.cursor.1 - a.1).abs() > 6.0 {
-                            self.select_box(a, self.cursor, self.shift);
-                        } else {
-                            self.select_at(self.cursor, self.shift);
-                        }
-                    }
-                }
+                (MouseButton::Left, ElementState::Released) => self.left_release(),
                 (MouseButton::Right, ElementState::Pressed) => {
                     self.right_down = Some(self.cursor);
                     self.right_panning = false;
                 }
-                (MouseButton::Right, ElementState::Released) => {
-                    if self.right_down.take().is_some() && !self.right_panning {
-                        self.issue_order(self.cursor);
-                    }
-                    self.right_panning = false;
-                }
+                (MouseButton::Right, ElementState::Released) => self.right_release(),
                 _ => {}
             },
             WindowEvent::CursorMoved { position, .. } => {
@@ -1264,6 +1365,7 @@ impl ApplicationHandler for App {
             }
             _ => {}
         }
+        self.update_pointer_visibility();
     }
 }
 
@@ -1303,7 +1405,12 @@ fn new_app(gamedir: String, map_name: String, scale: u32) -> App {
         pending: Vec::new(),
         attack_move: false,
         shift: false,
+        control: false,
         cursor: (0.0, 0.0),
+        pointer: yr_app::cursor::Presence {
+            inside: false,
+            focused: true,
+        },
         left_down: None,
         right_down: None,
         right_panning: false,
@@ -1368,6 +1475,8 @@ fn headless_frames(
         std::fs::create_dir_all(dir).map_err(|e| e.to_string())?;
     }
     app.session = Some(app.load_session()?);
+    app.pointer.inside = true;
+    app.pointer.focused = true;
     if let Some(dir) = dir {
         app.audio = Some(yr_app::audio::AudioScene::capture(
             &app.gamedir,
@@ -1661,7 +1770,7 @@ fn run(args: &[String]) -> Result<(), String> {
     }
     let event_loop = EventLoop::new().map_err(|e| e.to_string())?;
     event_loop.run_app(&mut app).map_err(|e| e.to_string())?;
-    match app.startup_error {
+    match app.startup_error.take() {
         Some(e) => Err(e),
         None => Ok(()),
     }
@@ -2050,3 +2159,14 @@ mod service_input_tests {
         assert_eq!(app.service_mode, ServiceMode::None);
     }
 }
+
+impl Drop for App {
+    fn drop(&mut self) {
+        if let Some(window) = &self.window {
+            window.set_cursor_visible(true);
+        }
+    }
+}
+
+#[cfg(test)]
+mod input_tests;

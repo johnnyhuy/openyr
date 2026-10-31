@@ -30,6 +30,7 @@ pub struct Session {
     pub buildables: Vec<Buildable>,
     pub sidebar_art: crate::sidebar::SidebarArt,
     pub radar: crate::sidebar::radar::Radar,
+    pub cursor_art: crate::cursor::Art,
     pub(crate) services: crate::service::Services,
     /// Rules ids by sim `kind` tag (units and buildings); the first
     /// entries are the sidebar slots, so a `Produce` kind indexes here too.
@@ -629,6 +630,7 @@ pub fn setup(
         had_enemy,
         buildables,
         sidebar_art: crate::sidebar::SidebarArt::load(fs),
+        cursor_art: crate::cursor::Art::load(fs),
         kinds,
         prerequisite_groups: rules.globals.prerequisite_groups.clone(),
         seed,
@@ -958,6 +960,7 @@ mod save_tests {
             buildables,
             sidebar_art: Default::default(),
             radar: Default::default(),
+            cursor_art: Default::default(),
             services: Default::default(),
             kinds,
             prerequisite_groups: Vec::new(),

@@ -3,7 +3,9 @@
 
 pub mod animation;
 pub mod audio;
+pub mod cursor;
 pub mod effects;
+pub mod interaction;
 mod localization;
 mod service;
 pub mod session;
