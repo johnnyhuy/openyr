@@ -6,7 +6,7 @@
 
 pub use crate::buildings::BuildingAnimation;
 use crate::buildings::{BuildingArt, Layer};
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::fs;
 use yr_assets::{AssetFs, Theater};
 use yr_formats::{IniFile, MapFile, Palette, ShpFile};
@@ -139,6 +139,18 @@ struct LayerKey {
     offset: (i32, i32),
 }
 
+#[derive(Clone, PartialEq, Eq, Hash)]
+enum SpriteFrame {
+    Shp(usize),
+    Voxel { octant: u8, poses: Vec<usize> },
+}
+
+type SpriteKey = (String, SpriteFrame, [u8; 3]);
+
+/// Limit decoded unit canvases even when modded parts have coprime
+/// animation lengths. Keys contain resolved poses, never elapsed ticks.
+const MAX_UNIT_SPRITES: usize = 512;
+
 /// Lazily decoded sprites for one map's theater.
 pub struct SpriteBank {
     vfs: AssetFs,
@@ -148,7 +160,9 @@ pub struct SpriteBank {
     theater: Theater,
     unit_pal: Palette,
     infantry: HashMap<String, InfantrySequences>,
-    cache: HashMap<(String, usize, [u8; 3]), Option<Sprite>>,
+    cache: HashMap<SpriteKey, Option<Sprite>>,
+    cache_order: VecDeque<SpriteKey>,
+    voxels: HashMap<String, Option<crate::voxels::VoxelModel>>,
     buildings: HashMap<String, Option<BuildingArt>>,
     layers: HashMap<LayerKey, Option<Sprite>>,
 }
@@ -217,6 +231,8 @@ impl SpriteBank {
             unit_pal,
             infantry,
             cache: HashMap::new(),
+            cache_order: VecDeque::new(),
+            voxels: HashMap::new(),
             buildings: HashMap::new(),
             layers: HashMap::new(),
         })
@@ -323,13 +339,27 @@ impl SpriteBank {
     }
 
     /// Draw the retail infantry sequence for this tick's observed action.
-    /// Vehicles and buildings keep their existing static-art behaviour.
+    /// Voxel models use frame zero when no absolute tick is supplied.
     pub fn get_animated(
         &mut self,
         id: &str,
         facing: u8,
         remap: [u8; 3],
         animation: InfantryAnimation,
+    ) -> Option<&Sprite> {
+        self.get_animated_at(id, facing, remap, animation, 0)
+    }
+
+    /// Draw infantry actions and authored voxel poses at a completed sim
+    /// tick. Repeated redraws select the same pose; movement does not
+    /// restart rotor clocks. The clock does not change simulation state.
+    pub fn get_animated_at(
+        &mut self,
+        id: &str,
+        facing: u8,
+        remap: [u8; 3],
+        animation: InfantryAnimation,
+        tick: u64,
     ) -> Option<&Sprite> {
         let octant = screen_octant(facing);
         let id = id.to_ascii_uppercase();
@@ -338,35 +368,59 @@ impl SpriteBank {
             .techno(&id)
             .is_some_and(|t| t.art.as_ref().is_some_and(|a| a.voxel))
         {
-            usize::from(octant)
+            if !self.voxels.contains_key(&id) {
+                let image = &self.rules.techno(&id)?.image;
+                let model = crate::voxels::VoxelModel::load(&self.vfs, &image.to_ascii_uppercase());
+                self.voxels.insert(id.clone(), model);
+            }
+            let model = self.voxels.get(&id)?.as_ref()?;
+            SpriteFrame::Voxel {
+                octant,
+                poses: model.frames_at(tick),
+            }
         } else if self
             .rules
             .techno(&id)
             .is_some_and(|t| t.kind == TechnoKind::Building)
         {
-            0
+            SpriteFrame::Shp(0)
         } else {
-            self.infantry.get(&id).map_or_else(
+            SpriteFrame::Shp(self.infantry.get(&id).map_or_else(
                 || infantry_stand_frame(octant),
                 |s| s.frame(octant, animation),
-            )
+            ))
         };
-        let key = (id.clone(), frame, remap);
+        let key = (id.clone(), frame.clone(), remap);
         if !self.cache.contains_key(&key) {
-            let sprite = self.decode(&id, frame, remap);
+            let sprite = self.decode(&id, &frame, remap);
+            if self.cache.len() == MAX_UNIT_SPRITES {
+                if let Some(oldest) = self.cache_order.pop_front() {
+                    self.cache.remove(&oldest);
+                }
+            }
+            self.cache_order.push_back(key.clone());
             self.cache.insert(key.clone(), sprite);
         }
         self.cache.get(&key).and_then(Option::as_ref)
     }
 
-    fn decode(&self, id: &str, frame: usize, remap: [u8; 3]) -> Option<Sprite> {
+    fn decode(&self, id: &str, frame: &SpriteFrame, remap: [u8; 3]) -> Option<Sprite> {
         let t = self.rules.techno(id)?;
         let art = t.art.as_ref();
         let image = t.image.to_ascii_uppercase();
-        if art.is_some_and(|a| a.voxel) {
-            let model = crate::voxels::VoxelModel::load(&self.vfs, &image)?;
-            return crate::voxels::sprite(&model, voxel_facing(frame as u8), &self.unit_pal, remap);
-        }
+        let frame = match frame {
+            SpriteFrame::Voxel { octant, poses } => {
+                let model = self.voxels.get(id)?.as_ref()?;
+                return crate::voxels::animated_sprite(
+                    model,
+                    voxel_facing(*octant),
+                    poses,
+                    &self.unit_pal,
+                    remap,
+                );
+            }
+            SpriteFrame::Shp(frame) => *frame,
+        };
         let (file, frame, offset) = if t.kind == TechnoKind::Building {
             let file = crate::building_shp_candidates(&image, self.theater)
                 .into_iter()
@@ -468,6 +522,83 @@ fn voxel_facing(octant: u8) -> u16 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn retail_voxel_cache_uses_resolved_poses_and_stays_bounded() {
+        let Some(home) = std::env::var_os("HOME") else {
+            return;
+        };
+        let dir = std::path::PathBuf::from(home).join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+        if !dir.is_dir() {
+            return;
+        }
+        let mut bank = SpriteBank::open(dir.to_str().unwrap(), "EB1.MMX").unwrap();
+        let remap = [220, 30, 30];
+        let idle = InfantryAnimation::default();
+        let signature = |s: &Sprite| (s.w, s.h, s.ax, s.ay, s.rgba.clone());
+        let first = signature(bank.get_animated_at("SHAD", 0, remap, idle, 0).unwrap());
+        assert_eq!(
+            signature(bank.get_animated_at("SHAD", 0, remap, idle, 1).unwrap()),
+            first
+        );
+        let second = signature(bank.get_animated_at("SHAD", 0, remap, idle, 2).unwrap());
+        assert_ne!(first, second);
+        let moving = InfantryAnimation {
+            moving: true,
+            elapsed: 123,
+            since_shot: Some(0),
+        };
+        assert_eq!(
+            signature(bank.get_animated_at("SHAD", 0, remap, moving, 2).unwrap()),
+            second
+        );
+        for tick in [4, 100, 100_000] {
+            assert_eq!(
+                signature(bank.get_animated_at("SHAD", 0, remap, idle, tick).unwrap()),
+                first
+            );
+        }
+        assert_eq!(
+            signature(
+                bank.get_animated_at("SHAD", 0, remap, idle, u64::MAX)
+                    .unwrap()
+            ),
+            second
+        );
+        assert_eq!(
+            bank.cache.len(),
+            2,
+            "ticks and actions do not grow pose cache"
+        );
+        assert_eq!(bank.voxels.len(), 1, "model is parsed once per type");
+        let mut rebuilt = SpriteBank::open(dir.to_str().unwrap(), "EB1.MMX").unwrap();
+        assert_eq!(
+            signature(rebuilt.get_animated_at("SHAD", 0, remap, idle, 2).unwrap()),
+            second,
+            "rebuilding presentation at a saved tick keeps the phase"
+        );
+        let tank = signature(bank.get_animated_at("MTNK", 0, remap, idle, 0).unwrap());
+        assert_eq!(
+            signature(
+                bank.get_animated_at("MTNK", 0, remap, idle, u64::MAX)
+                    .unwrap()
+            ),
+            tank
+        );
+        assert_eq!(bank.cache.len(), 3, "static tank has one pose");
+        for color in 0..MAX_UNIT_SPRITES + 1 {
+            let remap = [color as u8, (color / 256) as u8, 0];
+            assert!(bank.get("E1", 0, remap).is_some());
+        }
+        assert_eq!(bank.cache.len(), MAX_UNIT_SPRITES);
+        assert_eq!(bank.cache_order.len(), MAX_UNIT_SPRITES);
+        assert_eq!(
+            signature(bank.get_animated_at("SHAD", 0, remap, idle, 0).unwrap()),
+            first,
+            "evicted pose rebuilds identically"
+        );
+        assert_eq!(bank.cache.len(), MAX_UNIT_SPRITES);
+    }
 
     fn sequences() -> InfantrySequences {
         InfantrySequences {

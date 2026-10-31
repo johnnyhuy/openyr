@@ -29,7 +29,7 @@ pub type Transform = [[f32; 4]; 3];
 pub struct HvaFile {
     /// Free-form name field from the header (often the source path).
     pub name: String,
-    /// Limb names; they match the VXL limb names by position.
+    /// Limb names, used to match transforms to VXL limbs.
     pub limbs: Vec<String>,
     /// `frames[f][l]` = transform of limb `l` in frame `f`.
     pub frames: Vec<Vec<Transform>>,

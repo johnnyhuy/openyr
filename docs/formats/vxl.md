@@ -115,8 +115,46 @@ facings and match the map renderer at the same ground anchor.
 
 Voxel-centre sampling, camera calibration and sample coverage remain
 presentation approximations pending Wine crops. Normal tables/VPL lighting,
-independent turret facing, HVA frame playback and voxel shadows remain
+independent turret facing and voxel shadows remain
 follow-ups. No parser layout changed in this slice.
+
+## HVA playback (#78)
+
+Live voxel sprites now select every authored HVA frame. Each body, turret
+and barrel resolves its frame independently as
+`floor(absolute_sim_tick / 2) % actual_frame_count`. Missing HVA data uses
+the VXL base pose. Unmatched limbs, absent transforms and non-finite
+transforms fall back per limb, preserving the other parts. Static map
+objects keep frame zero. Movement and firing do not restart the voxel
+clock; a loaded match resumes its phase from the saved absolute tick.
+
+The two-tick cadence at 15 ticks/s is a presentation choice, not verified
+retail timing. Wine comparison remains in #6. No interpolation, turret
+aiming, airborne height or deployment-state selection is added here.
+
+The installed `RA2.MIX/LOCAL.MIX/SHAD.HVA` is 360 bytes: two frames and
+three limbs named `CYLINDER18`, `CYLINDER09` and `DUMMY01`. In frame one,
+both rotor matrices have first-row rotation values approximately
+`(0.809017, 0.587785, 0)` and second-row values
+`(-0.587785, 0.809017, 0)`, a 36-degree rotation from frame zero. Their
+translations stay within 0.00004 source units of frame zero. The fuselage
+matrix is identical in both frames. This provides an observable motion
+fixture without inventing new geometry or attachment offsets.
+
+`retail_black_hawk_rotors_animate_around_a_fixed_fuselage` checks both
+poses at eight facings against separately loaded one-frame models holding
+the corresponding retail transforms. Ground-aligned canvases expose
+anchor drift. `OPENYR_HVA_DUMP=<external-dir>` exports these pose canvases.
+MTNK, CMIN and ROBO retain one-frame art at all tested ticks. Synthetic
+tests cover unequal part lengths, large clocks and malformed later poses.
+
+`SpriteBank::get_animated_at` takes the absolute tick shared by live and
+headless drawing. Its keys hold resolved per-part frames rather than
+ticks. Parsed voxel models are retained per type, and a FIFO caps decoded
+unit sprites at 512 entries, including failed decodes. Coprime part
+lengths cannot create an unbounded sprite cache or require a common loop
+period. Repeated ticks, movement changes, wrapping and eviction are
+checked by `retail_voxel_cache_uses_resolved_poses_and_stays_bounded`.
 
 ## Sources
 

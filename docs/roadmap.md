@@ -17,6 +17,7 @@ incremental, testable path where each milestone is independently useful.
 - [x] CSF reader (labels, UTF-16 inverted strings)
 - [x] INI reader (sections, keys, comments, order-preserving)
 - [x] `mix-dump` CLI (list/extract/info/names)
+- [ ] Exit cleanly when an inspection output pipe closes early (#79)
 - [x] PAL / colour tables (6-bit RGB palettes)
 - [x] SHP reader (cameos, buildings, infantry sprites): every retail frame decodes
 - [x] VXL + HVA readers (vehicles)
@@ -53,7 +54,7 @@ incremental, testable path where each milestone is independently useful.
 - [x] Voxel vehicles on the map (VXL body/turret/barrel projection).
       Authored limb bounds, first HVA poses, fixed camera scale and a
       shared ground anchor replace guessed attachment placement (#73).
-      Normal-table lighting and animated HVA poses remain open
+      Normal-table lighting remains open
 - [x] Native window (`openyr`, winit+pixels/wgpu): rendered map with
       drag/WASD pan and wheel zoom; initial redraw after session loading (#50);
       screenshot-vs-PNG check still open
@@ -61,7 +62,13 @@ incremental, testable path where each milestone is independently useful.
       (`yr-render::sprites`: building art on the footprint, infantry
       standing frames per octant, voxel tanks, house-colour remap,
       half-alpha shadows; window + `--frames` dumps). Static HVA poses
-      apply to map and live voxels (#73); animated HVA poses remain open
+      apply to map and live voxels (#73)
+- [x] Authored HVA frame playback for live voxel units (#78). Each body,
+      turret and barrel advances within its own actual frame count on an
+      absolute presentation clock. Black Hawk rotor poses match retail HVA
+      transforms at all eight facings; one-frame vehicles remain static.
+      Models are decoded once and unit sprite caching is capped at 512
+      entries. The two-tick cadence remains provisional pending Wine.
 - [x] Infantry walk, fire and idle sequences from retail `Sequence=`
       data, with all eight facings and matching shadow frames (#6).
       Presentation clocks observe movement and shots at sim ticks;
@@ -81,7 +88,8 @@ incremental, testable path where each milestone is independently useful.
       normal/damaged body pixels and anchors match independent SHP canvases.
       Panels remain closed during rollout pending the Wine comparison (#6).
 - [ ] Wine side-by-side infantry and Construction Yard crops; verify
-      cadence, overlay depth adjustments and factory doors (#6)
+      cadence (including HVA playback), overlay depth adjustments and
+      factory doors (#6)
 - [x] Sidebar labels from `ra2md.csf` (#47): all 22 Allied entries show
       CSF names, retail costs and full-power build times. Missing/invalid
       strings warn and fall back to rules names or type ids. Cards dim
