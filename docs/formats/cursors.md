@@ -89,3 +89,22 @@ state mapping comparisons, action-specific harvesting feedback, minimap
 miniatures, edge-scroll arrows, range distinctions and future menu/modality
 integration. Pointer ownership and coordinate behavior still need physical
 Retina/resizing/focus exercises. No original implementation code was used.
+
+## Public recording comparison
+
+[Sven van der Plank's original Boot Camp playthrough](https://www.youtube.com/watch?v=odLVEZYu3Vk)
+(June 2021) provides another observation path while local native inspection
+is unavailable. A requested 13:22-21:10 section was downloaded at 1280x720,
+60 recorded frames/second. Masked template matching found selection-family
+frame 20 at canvas origin (726,502) in one sample and wrench-family frame
+177 at (471,352) in another. Source and recording crops are in the PR proof.
+These common frames are also present in YR's identical 450-frame prefix.
+
+This supports the icon-family assignments, not exact framebuffer colors,
+hotspots or timing. Video compression changes pixels. Short selection
+samples held a matched phase for about six recorded frames, while the wrench
+samples advanced with substantial apparent skipping/aliasing. The recording's
+speed setting, frame handling and editing are not established. Applying a
+single measured period from it would give conflicting rates, so playback
+cadence remains provisional pending a controlled original capture. No source
+or executable implementation was used in this comparison.

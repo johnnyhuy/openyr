@@ -110,7 +110,7 @@ mod retail_pointer_tests {
             eprintln!("skip: retail install not present");
             return;
         }
-        let mut app = new_app(dir.to_string_lossy().into(), "EB1.MMX".into(), 2);
+        let mut app = new_app(dir.to_string_lossy().into(), "EB1.MMX".into(), 1);
         app.session = Some(app.load_session().unwrap());
         app.session.as_mut().unwrap().sim.set_ai(None);
         app.map = Some(yr_render::render_map(&app.gamedir, &app.map_name, app.scale).unwrap());
@@ -160,8 +160,8 @@ mod retail_pointer_tests {
         app.shift = false;
         app.left_down = Some(app.cursor);
         app.left_release();
-        let target = (-4..=4)
-            .flat_map(|dy| (-4..=4).map(move |dx| (cell.0 + dx, cell.1 + dy)))
+        let target = (-1..=1)
+            .flat_map(|dy| (-1..=1).map(move |dx| (cell.0 + dx, cell.1 + dy)))
             .find(|&cell| {
                 yr_app::interaction::at(
                     app.session.as_ref().unwrap(),
