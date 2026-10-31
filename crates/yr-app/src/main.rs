@@ -2057,6 +2057,14 @@ mod render_tests {
                 let metadata = serde_json::json!({
                     "tick": app.session.as_ref().unwrap().sim.tick(),
                     "state_hash": format!("{hash:016x}"),
+                    "country": yr_app::session::PLAYER_COUNTRY,
+                    "player_units": app.session.as_ref().unwrap().sim.units().iter()
+                        .filter(|u| u.owner == yr_sim::OWNER_PLAYER)
+                        .map(|u| serde_json::json!({
+                            "id": u.id, "kind": app.session.as_ref().unwrap().kinds[usize::from(u.kind)],
+                            "role": u.role, "hp": u.max_hp,
+                            "x_raw": u.x.raw(), "y_raw": u.y.raw(),
+                        })).collect::<Vec<_>>(),
                     "effects": app.effects.active.iter().map(|effect| serde_json::json!({
                         "name": effect.name, "born": effect.born,
                         "x_raw": effect.x.raw(), "y_raw": effect.y.raw(),
@@ -2083,7 +2091,7 @@ mod render_tests {
             .iter()
             .find(|u| {
                 u.owner == yr_sim::OWNER_PLAYER
-                    && app.session.as_ref().unwrap().kinds[usize::from(u.kind)] == "HTNK"
+                    && app.session.as_ref().unwrap().kinds[usize::from(u.kind)] == "MTNK"
                     && u.weapon.is_some()
                     && app
                         .sprites
@@ -2213,7 +2221,9 @@ mod render_tests {
         if let Some(out) = std::env::var_os("OPENYR_VISUAL_DUMP") {
             let weapon = tank.weapon.unwrap();
             let metadata = serde_json::json!({
-                "actor_kind": "HTNK", "shooter_id": shooter, "target_id": target,
+                "actor_kind": app.session.as_ref().unwrap().kinds[usize::from(tank.kind)],
+                "country": yr_app::session::PLAYER_COUNTRY,
+                "shooter_id": shooter, "target_id": target,
                 "weapon": weapon,
                 "weapon_source_hex": weapon.source.map(|source| format!("{source:016x}")),
                 "impact": "S_CLSN22", "arrival_tick": app.session.as_ref().unwrap().sim.tick(),

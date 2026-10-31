@@ -5,7 +5,7 @@
 //! structures/units as sim entities, a player starting force at the
 //! first start waypoint, a computer base at the second, and the
 //! rules' starting credits. Starting composition is the sandbox's
-//! documented pick (an MCV stand-in unit, one harvester, four tanks,
+//! documented Allied pick (an AMCV, one CMIN, four MTNKs,
 //! four infantry = the retail `UnitCount=10`); win/lose is judged on
 //! owned entities with no buildings and no units left.
 
@@ -238,10 +238,94 @@ fn house_allows(t: &yr_rules::TechnoType, country: &str) -> bool {
     (t.required_houses.is_empty() || named(&t.required_houses)) && !named(&t.forbidden_houses)
 }
 
-fn first_of(rules: &Rules, ids: &[&str]) -> Option<String> {
-    ids.iter()
-        .find(|id| rules.techno(id).is_some())
-        .map(|s| s.to_string())
+/// The supported setup has one country, including the computer's guards.
+/// Map-authored objects do not pass through this generated-force filter.
+fn allied_type<'a>(
+    rules: &'a Rules,
+    id: &str,
+    kind: TechnoKind,
+) -> Result<&'a yr_rules::TechnoType, String> {
+    let t = rules
+        .techno(id)
+        .filter(|t| t.defined && t.kind == kind)
+        .ok_or_else(|| format!("Allied setup requires the defined {kind:?} type {id}"))?;
+    if !t
+        .owner
+        .iter()
+        .any(|h| h.eq_ignore_ascii_case(PLAYER_COUNTRY))
+        || !house_allows(t, PLAYER_COUNTRY)
+    {
+        return Err(format!(
+            "Allied setup requires {id} to allow {PLAYER_COUNTRY}"
+        ));
+    }
+    Ok(t)
+}
+
+fn validate_allied_setup(fs: &AssetFs, rules: &Rules, theater: Theater) -> Result<(), String> {
+    for id in ["GACNST", "GAPOWR", "GAREFN", "GAWEAP", "GAPILE"] {
+        let t = allied_type(rules, id, TechnoKind::Building)?;
+        let name = yr_render::building_shp_candidates(&t.image.to_ascii_uppercase(), theater)
+            .into_iter()
+            .find(|name| fs.read(name).is_some())
+            .ok_or_else(|| format!("Allied setup requires {id} building art"))?;
+        if !fs
+            .read(&name)
+            .and_then(|data| yr_formats::ShpFile::parse(data).ok())
+            .is_some_and(|s| !s.frames.is_empty())
+        {
+            return Err(format!("Allied setup cannot decode {id} art {name}"));
+        }
+    }
+    for id in ["AMCV", "CMIN", "MTNK", "E1"] {
+        let t = allied_type(
+            rules,
+            id,
+            if id == "E1" {
+                TechnoKind::Infantry
+            } else {
+                TechnoKind::Vehicle
+            },
+        )?;
+        let image = t.image.to_ascii_uppercase();
+        let voxel = t.art.as_ref().is_some_and(|a| a.voxel);
+        let name = format!("{image}.{}", if voxel { "VXL" } else { "SHP" });
+        let data = fs
+            .read(&name)
+            .ok_or_else(|| format!("Allied setup requires {id} art {name}"))?;
+        let valid = if voxel {
+            yr_formats::VxlFile::parse(data).is_ok()
+        } else {
+            yr_formats::ShpFile::parse(data).is_ok_and(|s| !s.frames.is_empty())
+        };
+        if !valid {
+            return Err(format!("Allied setup cannot decode {id} art {name}"));
+        }
+        if id == "CMIN" && t.harvester != Some(true) {
+            return Err("Allied setup requires CMIN Harvester=yes".into());
+        }
+    }
+    Ok(())
+}
+
+/// Retain one MCV and miner, then repeat four tanks and four infantry
+/// when a map requests more than the retail ten-unit force.
+fn starting_kind(index: usize) -> &'static str {
+    match index {
+        0 => "AMCV",
+        1 => "CMIN",
+        i if (i - 2) % 8 < 4 => "MTNK",
+        _ => "E1",
+    }
+}
+
+fn starting_count(rules: &Rules, grid: &TerrainGrid) -> Result<usize, String> {
+    let count = rules.skirmish.unit_count.unwrap_or(10);
+    let cells = grid.width() * grid.height();
+    usize::try_from(count)
+        .ok()
+        .filter(|&n| n <= cells)
+        .ok_or_else(|| format!("Allied setup UnitCount={count} is outside this map's capacity"))
 }
 
 /// First passable cell at or after `start`, scanning expanding offsets.
@@ -399,7 +483,9 @@ pub fn setup(
 ) -> Result<Session, String> {
     let theater = Theater::from_map_name(&map.theater).ok_or("unknown theater")?;
     fs.set_theater(theater);
+    validate_allied_setup(fs, rules, theater)?;
     let grid = yr_render::build_terrain(fs, map, overlay_types, theater)?;
+    let target_count = starting_count(rules, &grid)?;
     let mut sim = Sim::new(seed);
     if let (Some(min), Some(max)) = (
         rules.globals.min_low_power_production_speed,
@@ -411,8 +497,8 @@ pub fn setup(
     sim.set_terrain(grid.clone());
     sim.set_credits(rules.skirmish.money.unwrap_or(10_000));
 
-    let yard = first_of(rules, &["GACNST", "NACNST", "YACNST"]);
-    let (buildables, mut kinds) = buildables(fs, rules, yard.as_deref());
+    let yard = "GACNST";
+    let (buildables, mut kinds) = buildables(fs, rules, Some(yard));
     let mut cmds: Vec<Command> = Vec::new();
     let mut next_id = sim.next_id_peek();
     let mut taken_cells: Vec<(u16, u16)> = Vec::new();
@@ -459,12 +545,7 @@ pub fn setup(
     // inside place_unit via next_id_peek. Starting forces:
     let waypoints = start_waypoints(map);
     let player_at = waypoints.first().copied().unwrap_or((10, 10));
-    let plant = first_of(rules, &["GAPOWR", "NAPOWR", "YAPOWR"]);
-    let refinery = first_of(rules, &["GAREFN", "NAREFN", "YAREFN"]);
-    let weap = first_of(rules, &["GAWEAP", "NAWEAP", "YAWEAP"]);
-    let barracks = first_of(rules, &["GAPILE", "NAHAND", "YABRCK"]);
-    if let (Some(y), Some(p), Some(r)) = (&yard, &plant, &refinery) {
-        let factories: Vec<&str> = weap.iter().chain(&barracks).map(String::as_str).collect();
+    {
         let mut ctx = PlaceCtx {
             next_id: &mut next_id,
             taken_cells: &mut taken_cells,
@@ -477,42 +558,24 @@ pub fn setup(
             player_at,
             PLAYER,
             &BaseSpec {
-                yard: y,
-                power_plant: p,
-                refinery: r,
-                extra: &factories,
+                yard,
+                power_plant: "GAPOWR",
+                refinery: "GAREFN",
+                extra: &["GAWEAP", "GAPILE"],
             },
             &mut cmds,
         );
     }
-    let mcv = first_of(rules, &["MCV", "SMCV", "PCV"]);
-    let harv = first_of(rules, &["HARV", "CMON", "AMCV"]);
-    let tank = first_of(rules, &["GTNK", "HTNK", "MTNK", "LTNK"]);
-    let inf = first_of(rules, &["E1", "E2", "CONS", "SHK"]);
-    let mut force: Vec<String> = Vec::new();
-    if let Some(m) = &mcv {
-        force.push(m.clone());
-    }
-    if let Some(h) = &harv {
-        force.push(h.clone());
-    }
-    if let Some(t) = &tank {
-        force.extend(std::iter::repeat_n(t.clone(), 4));
-    }
-    if let Some(i) = &inf {
-        force.extend(std::iter::repeat_n(i.clone(), 4));
-    }
-    let target_count = rules.skirmish.unit_count.unwrap_or(10).max(0) as usize;
-    if force.len() > target_count {
-        force.truncate(target_count);
-    }
-    for id in &force {
+    for index in 0..target_count {
+        let id = starting_kind(index);
         let loco = rules
             .techno(id)
             .map(|t| techno_loco(t.kind))
             .unwrap_or(Loco::Track);
         let Some(cell) = free_cell(&grid, loco, player_at, &sim, &taken_cells) else {
-            continue;
+            return Err(format!(
+                "Allied setup cannot place all {target_count} starting units near waypoint 0"
+            ));
         };
         taken_cells.push(cell);
         let mut extra = Vec::new();
@@ -526,21 +589,18 @@ pub fn setup(
             &mut extra,
         );
         cmds.extend(extra);
-        if let (Some(uid), Some(h)) = (uid, &harv) {
-            if id == h {
-                cmds.push(Command::AssignRole {
-                    id: uid,
-                    role: Role::Harvester,
-                });
-            }
+        if let Some(uid) = uid.filter(|_| id == "CMIN") {
+            cmds.push(Command::AssignRole {
+                id: uid,
+                role: Role::Harvester,
+            });
         }
     }
     // Computer base and guards at the second waypoint.
     let had_enemy = waypoints.len() > 1;
     if had_enemy {
         let enemy_at = waypoints[1];
-        if let (Some(y), Some(p), Some(r)) = (&yard, &plant, &refinery) {
-            let extra: Vec<&str> = weap.iter().chain(&barracks).map(String::as_str).collect();
+        {
             let mut ctx = PlaceCtx {
                 next_id: &mut next_id,
                 taken_cells: &mut taken_cells,
@@ -553,22 +613,30 @@ pub fn setup(
                 enemy_at,
                 ENEMY,
                 &BaseSpec {
-                    yard: y,
-                    power_plant: p,
-                    refinery: r,
-                    extra: &extra,
+                    yard,
+                    power_plant: "GAPOWR",
+                    refinery: "GAREFN",
+                    extra: &["GAWEAP", "GAPILE"],
                 },
                 &mut cmds,
             );
         }
-        if let Some(t) = &tank {
+        {
             for _ in 0..3 {
                 let Some(cell) = free_cell(&grid, Loco::Track, enemy_at, &sim, &taken_cells) else {
                     break;
                 };
                 taken_cells.push(cell);
                 let mut extra = Vec::new();
-                place_unit(&mut kinds, &mut next_id, rules, t, cell, ENEMY, &mut extra);
+                place_unit(
+                    &mut kinds,
+                    &mut next_id,
+                    rules,
+                    "MTNK",
+                    cell,
+                    ENEMY,
+                    &mut extra,
+                );
                 cmds.extend(extra);
             }
         }
@@ -935,6 +1003,73 @@ impl Session {
             self.outcome = Outcome::Lost;
         } else if self.had_enemy && !enemy_alive {
             self.outcome = Outcome::Won;
+        }
+    }
+}
+
+#[cfg(test)]
+mod starting_force_tests {
+    use super::*;
+    use yr_formats::IniFile;
+
+    #[test]
+    fn generated_country_checks_owner_required_forbidden_and_kind() {
+        let make = |fields: &str| {
+            Rules::load(
+                &IniFile::parse(&format!("[VehicleTypes]\n0=AMCV\n[AMCV]\n{fields}")),
+                &IniFile::parse(""),
+            )
+        };
+        for fields in [
+            "Owner=Russians",
+            "Owner=Americans\nRequiredHouses=British",
+            "Owner=Americans\nForbiddenHouses=Americans",
+            "",
+        ] {
+            assert!(
+                allied_type(&make(fields), "AMCV", TechnoKind::Vehicle).is_err(),
+                "{fields}"
+            );
+        }
+        let allowed = make("Owner=americans\nRequiredHouses=AMERICANS\nForbiddenHouses=British");
+        assert!(allied_type(&allowed, "AMCV", TechnoKind::Vehicle).is_ok());
+        assert!(allied_type(&allowed, "AMCV", TechnoKind::Infantry).is_err());
+        assert!(allied_type(&allowed, "SMCV", TechnoKind::Vehicle).is_err());
+        let undefined = Rules::load(
+            &IniFile::parse("[VehicleTypes]\n0=AMCV"),
+            &IniFile::parse(""),
+        );
+        assert!(allied_type(&undefined, "AMCV", TechnoKind::Vehicle).is_err());
+    }
+
+    #[test]
+    fn configured_force_counts_include_zero_and_more_than_ten() {
+        let grid = TerrainGrid::new(0, 0, 10, 10);
+        for count in [0, 1, 2, 6, 10, 11, 18, 100] {
+            let mut rules = Rules::load(&IniFile::parse(""), &IniFile::parse(""));
+            rules.skirmish.unit_count = Some(count);
+            let count = starting_count(&rules, &grid).unwrap();
+            let force: Vec<_> = (0..count).map(starting_kind).collect();
+            assert_eq!(force.len(), count);
+            assert_eq!(
+                force.iter().filter(|&&id| id == "AMCV").count(),
+                usize::from(count > 0)
+            );
+            assert_eq!(
+                force.iter().filter(|&&id| id == "CMIN").count(),
+                usize::from(count > 1)
+            );
+            if count == 10 {
+                assert_eq!(
+                    force,
+                    ["AMCV", "CMIN", "MTNK", "MTNK", "MTNK", "MTNK", "E1", "E1", "E1", "E1"]
+                );
+            }
+        }
+        for count in [-1, 101, i64::MAX] {
+            let mut rules = Rules::load(&IniFile::parse(""), &IniFile::parse(""));
+            rules.skirmish.unit_count = Some(count);
+            assert!(starting_count(&rules, &grid).is_err());
         }
     }
 }

@@ -107,6 +107,39 @@ fn eb1_skirmish_setup_and_scripted_win() {
     let rules = Rules::load(&rules_ini, &art_ini);
     let overlay_types = yr_render::type_list(&rules_ini, "OverlayTypes");
 
+    assert!(
+        rules.techno("SMCV").is_some(),
+        "Soviet fallback exists but must not substitute for AMCV"
+    );
+    for fault in ["missing", "owner", "art", "harvester"] {
+        let mut unsupported_ini = rules_ini.clone();
+        if fault == "missing" {
+            unsupported_ini
+                .sections
+                .iter_mut()
+                .find(|s| s.name.eq_ignore_ascii_case("VehicleTypes"))
+                .unwrap()
+                .entries
+                .retain(|(_, id)| id != "AMCV");
+        } else {
+            let fields = match fault {
+                "owner" => "[AMCV]\nOwner=Russians",
+                "art" => "[AMCV]\nImage=OPENYR_MISSING_START_ART",
+                "harvester" => "[CMIN]\nHarvester=no",
+                _ => unreachable!(),
+            };
+            unsupported_ini.merge_from(&IniFile::parse(fields));
+        }
+        let unsupported = Rules::load(&unsupported_ini, &art_ini);
+        let error = setup(&mut fs, &map, &unsupported, &overlay_types, 42)
+            .err()
+            .expect("unsupported setup returns an error");
+        assert!(
+            error.contains(if fault == "harvester" { "CMIN" } else { "AMCV" }),
+            "{fault}: {error}"
+        );
+        println!("Recoverable {fault} setup error: {error}");
+    }
     let mut session = setup(&mut fs, &map, &rules, &overlay_types, 42).expect("session sets up");
     assert_eq!(session.sim.credits(), 10_000, "rules starting money");
     let player_units = session
@@ -127,7 +160,48 @@ fn eb1_skirmish_setup_and_scripted_win() {
         .iter()
         .filter(|b| b.owner == yr_sim::OWNER_ENEMY)
         .count();
-    assert!(player_units >= 8, "starting force spawned: {player_units}");
+    assert_eq!(player_units, 10, "retail UnitCount=10 must spawn exactly");
+    let mut composition = std::collections::BTreeMap::new();
+    for unit in session
+        .sim
+        .units()
+        .iter()
+        .filter(|u| u.owner == yr_sim::OWNER_PLAYER)
+    {
+        let id = &session.kinds[usize::from(unit.kind)];
+        *composition.entry(id.as_str()).or_insert(0) += 1;
+        let t = rules.techno(id).unwrap();
+        assert!(
+            t.owner
+                .iter()
+                .any(|h| h.eq_ignore_ascii_case(yr_app::session::PLAYER_COUNTRY)),
+            "{id} must belong to Americans"
+        );
+        assert_eq!(unit.max_hp, t.strength.unwrap());
+        assert_eq!(
+            unit.weapon,
+            t.primary
+                .as_deref()
+                .and_then(|w| yr_sim::WeaponSpec::from_rules(&rules, w))
+        );
+        assert_eq!(unit.role == yr_sim::Role::Harvester, id == "CMIN");
+    }
+    assert_eq!(
+        composition,
+        std::collections::BTreeMap::from([("AMCV", 1), ("CMIN", 1), ("MTNK", 4), ("E1", 4)])
+    );
+    println!("Americans starting force: {composition:?}");
+    // Authored objects keep their original type and are counted separately.
+    for obj in map.units.iter().chain(&map.infantry).chain(&map.aircraft) {
+        assert!(session
+            .sim
+            .units()
+            .iter()
+            .any(|u| u.owner == yr_sim::OWNER_NEUTRAL
+                && session.kinds[usize::from(u.kind)] == obj.kind
+                && u.x.to_int_floor() == i32::from(obj.x)
+                && u.y.to_int_floor() == i32::from(obj.y)));
+    }
     let neutral_units = session
         .sim
         .units()
@@ -166,8 +240,40 @@ fn eb1_skirmish_setup_and_scripted_win() {
         )
         .collect();
     // Determinism: a second setup with the same seed hashes identically.
-    let session2 = setup(&mut fs, &map, &rules, &overlay_types, 42).expect("second setup");
+    let mut session2 = setup(&mut fs, &map, &rules, &overlay_types, 42).expect("second setup");
     assert_eq!(session.sim.state_hash(), session2.sim.state_hash());
+    let saved = yr_app::snapshot::encode(&session).unwrap();
+    session2.step(&[]);
+    yr_app::snapshot::restore(&mut session2, &saved).unwrap();
+    assert_eq!(session.sim.state_hash(), session2.sim.state_hash());
+
+    for count in [0, 6, 12] {
+        let mut configured = rules.clone();
+        configured.skirmish.unit_count = Some(count);
+        let custom = setup(&mut fs, &map, &configured, &overlay_types, 42).unwrap();
+        assert_eq!(
+            custom
+                .sim
+                .units()
+                .iter()
+                .filter(|u| u.owner == yr_sim::OWNER_PLAYER)
+                .count(),
+            count as usize
+        );
+        println!("Configured UnitCount={count}: exact generated force retained");
+        let before = session2.sim.state_hash();
+        assert!(yr_app::snapshot::restore(
+            &mut session2,
+            &yr_app::snapshot::encode(&custom).unwrap()
+        )
+        .unwrap_err()
+        .contains("map, rules or engine setup"));
+        assert_eq!(
+            session2.sim.state_hash(),
+            before,
+            "incompatible setup leaves current match intact"
+        );
+    }
 
     assert!(!kills.is_empty());
     session.step(&kills);

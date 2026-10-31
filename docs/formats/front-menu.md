@@ -55,6 +55,24 @@ starting credits. Broader maps/factions/modes/difficulty remain unavailable.
 Its form layout is provisional. The authored thumbnail is preferred; a map
 without one falls back to the shared terrain renderer.
 
+The supported country is `Americans`. Generated bases use GACNST, GAPOWR,
+GAREFN, GAWEAP and GAPILE. The retail `UnitCount=10` force is one AMCV,
+one CMIN, four MTNKs and four E1s (#124). The computer guards use MTNK too.
+Setup checks `Owner=`, `RequiredHouses=` and `ForbiddenHouses=` for these
+types, and decodes their required body art before entering the match.
+Missing types, unavailable art or an ineligible country return through the
+existing loading error page. Map-authored objects retain their types and
+remain separate from this generated force.
+
+Smaller unit counts take a prefix of that force; larger counts retain one
+MCV and miner, then repeat groups of four tanks and four infantry. Negative
+counts, counts larger than the map rectangle, or insufficient nearby space
+return a setup error instead of silently reducing the force. This is the
+native sandbox composition, pending original starting-force observations.
+MCV deployment, Chrono Miner teleportation, GI deployment and country
+special abilities remain unimplemented. CMIN uses the shared harvesting
+and unloading loop; its presence does not imply those abilities work.
+
 One loader handles preview and replacement-match jobs. It keeps the current
 page's return route, shows loading, retains the old match until successful
 replacement, and ignores cancelled results. Starting a match drops the movie,

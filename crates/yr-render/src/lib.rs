@@ -514,7 +514,7 @@ pub fn render_map(gamedir: &str, map_name: &str, scale: u32) -> Result<RenderedM
 /// SHP names to try for building image `image`: NewTheater art swaps the
 /// second letter for the theater letter, with the generic `G` variant
 /// as fallback (docs/formats/map.md), then the plain image name.
-pub(crate) fn building_shp_candidates(image: &str, theater: Theater) -> Vec<String> {
+pub fn building_shp_candidates(image: &str, theater: Theater) -> Vec<String> {
     let mut candidates = Vec::new();
     if image.len() > 1 && image.is_char_boundary(1) && image.is_char_boundary(2) {
         candidates.push(format!(

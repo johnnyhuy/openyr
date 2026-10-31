@@ -97,7 +97,12 @@ pub fn draw(frame: &mut [u8], width: u32, height: u32, art: &Art, scene: Scene<'
             YELLOW,
         );
         c.text((32, 82), "EB1.MMX", WHITE, 48);
-        c.text((32, 114), "Allied player and computer opponent", WHITE, 64);
+        c.text(
+            (32, 114),
+            "Americans (Allied) and computer opponent",
+            WHITE,
+            64,
+        );
         c.text((32, 146), "Starting credits: 10000", WHITE, 48);
         c.text(
             (32, 178),
