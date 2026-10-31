@@ -118,15 +118,23 @@ incremental, testable path where each milestone is independently useful.
       progress and freezes with credit stalls. Active paid work keeps its
       brightness when credits fall below full price (#85). All 54 unfinished masks
       and source panel/button pixels are checked against retail canvases
-      (`docs/formats/sidebar.md`). Minimap, power meter, repair/sell,
+      (`docs/formats/sidebar.md`). Power meter, repair/sell,
       bottom command bar and original-game clock compositing remain open.
 - [x] Retail Unicode text (#88): validated `GAME.FNT` parser and native
       sidebar glyphs for credits, queue counts, READY and hover tooltips.
       Text measures variable widths and wraps wide characters; all 29,655
       glyphs match raw retail records. Exact original spacing and colors
       remain in #86 (`docs/formats/font.md`).
+- [x] Powered radar and live minimap (#90): actual owned `Radar=yes`
+      providers and player power control the 33-frame Allied transition.
+      TMP radar colors, live footprints/units/resources, a viewport outline
+      and radar navigation/orders share the window/headless panel. Retail
+      frame pixels, power loss/recovery, source-cell clicks and save/load
+      reconstruction are checked (`docs/formats/radar.md`). Exact cadence,
+      color/scale calibration and shroud remain in #86.
 - [ ] Complete original sidebar behavior and command bar (#86), including
-      live radar, power meter, repair/sell, text calibration, button transitions,
+      radar calibration/shroud, power meter, repair/sell, text calibration,
+      button transitions,
       queue hold/scrolling and original-game compositing comparisons.
 
 ## M4: Simulation v1

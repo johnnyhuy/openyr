@@ -586,7 +586,7 @@ fn art_file(image: &str, theater_art: bool, theater: Theater) -> String {
 
 /// Owner house colour as RGB: the owner's `Color=` name resolved through
 /// the `[Colors]` HSV table in rules. Neutral grey when unknown.
-pub(crate) fn house_color(rules: &IniFile, owner: &str) -> [u8; 3] {
+pub fn house_color(rules: &IniFile, owner: &str) -> [u8; 3] {
     let name = rules
         .section(owner)
         .and_then(|s| s.get("Color"))

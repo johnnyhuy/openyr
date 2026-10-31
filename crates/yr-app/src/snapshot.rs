@@ -73,6 +73,7 @@ pub fn restore(session: &mut Session, bytes: &[u8]) -> Result<(), String> {
         return Err("save state hash mismatch; file is damaged".into());
     }
     session.sim = sim;
+    session.radar.reset(&session.sim, &session.kinds);
     session.outcome = h.outcome;
     Ok(())
 }

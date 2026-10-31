@@ -29,6 +29,7 @@ pub struct Session {
     /// What the player's sidebar can queue, in slot order.
     pub buildables: Vec<Buildable>,
     pub sidebar_art: crate::sidebar::SidebarArt,
+    pub radar: crate::sidebar::radar::Radar,
     /// Rules ids by sim `kind` tag (units and buildings); the first
     /// entries are the sidebar slots, so a `Produce` kind indexes here too.
     pub kinds: Vec<String>,
@@ -617,7 +618,10 @@ pub fn setup(
         &kinds,
         &rules.globals.prerequisite_groups,
     )?;
+    let mut radar = crate::sidebar::radar::Radar::load(fs, map, rules);
+    radar.reset(&sim, &kinds);
     Ok(Session {
+        radar,
         sim,
         outcome: Outcome::Ongoing,
         had_enemy,
@@ -903,6 +907,7 @@ impl Session {
     /// Advance the match and re-judge win/lose on owned entities.
     pub fn step(&mut self, commands: &[Command]) {
         self.sim.step(commands);
+        self.radar.update(&self.sim, &self.kinds);
         if self.outcome != Outcome::Ongoing {
             return;
         }
@@ -950,6 +955,7 @@ mod save_tests {
             had_enemy: false,
             buildables,
             sidebar_art: Default::default(),
+            radar: Default::default(),
             kinds,
             prerequisite_groups: Vec::new(),
             seed: 42,
