@@ -42,6 +42,13 @@ these fingerprints are consistency checks, not cryptographic signatures.
 Display names and cameo pixels are excluded so localized labels or new
 sidebar art do not invalidate an otherwise compatible match (#64).
 
+The corrected American starting force (#124) changes effective gameplay
+configuration from SMCV/HARV/HTNK to AMCV/CMIN/MTNK. Its kinds, health and
+weapons produce a different setup key. Old mixed-force match saves are
+rejected without changing the current match; continue them with a matching
+older engine. Newly created Allied matches round-trip normally. The match
+wrapper and simulation schema versions are unchanged by this setup change.
+
 Simulation version 2 adds optional weapon/shot provenance and `Impact` output
 events. The match wrapper remains version 1. Version-1 sim payloads are accepted
 with unknown source metadata; their in-flight shots do not guess impact art.

@@ -231,6 +231,13 @@ Johnny on 2026-10-31.
 Decided 2026-10-17: baseline first (sandbox, scripted spawns, no AI),
 then basic-AI skirmish, then data-driven addons, then roguelite mode.
 
+- [x] Match the declared American setup with Allied generated bases and
+      AMCV/CMIN/MTNK/E1 forces (#124). Validate required types, country
+      eligibility and body art, honor the configured force count, and
+      return setup errors instead of substituting Soviet types. Authored
+      map objects keep their types. Deployment, Chrono Miner teleportation
+      and original starting-force calibration remain future work.
+
 - [x] Sandbox loop on one map, no AI (scripted spawns), full input
       (session setup + in-window selection/orders + scripted waves:
       5 escalating attack-move waves from the enemy base, stopping once
