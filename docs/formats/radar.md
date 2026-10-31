@@ -70,8 +70,17 @@ stale art. The current sandbox has no shroud, so the minimap shows its full
 playable terrain and visible sim objects. Shroud, fog, radar jamming and
 SpySat reveal behavior remain future work.
 
+A camera target now centers its drawn ground point (#129). The app reads
+the target cell's terrain height and applies the same `height * 15 / scale`
+lift used by live units, buildings, projectiles, effects and box selection.
+The old flat centering left a height-4 target 240 framebuffer pixels above
+center at 4x zoom. Camera navigation excludes the 168-pixel sidebar from
+the viewport, then accounts for zoom. Missing terrain or absent/out-of-grid
+cells retain flat centering. The pure flat helper and initial whole-map
+centering remain available for their existing callers.
+
 A white rectangle shows the current world viewport. It uses the same
-world/cell projection as camera navigation and clips to the active map
+flat world/cell projection for its camera-plane corners and clips to the active map
 image. Input samples the same source cell as the painted destination pixel,
 so letterboxing, border pixels, empty cells and transitions accept no
 orders or navigation. Selected units receive normal `Command::Move` or
@@ -86,12 +95,19 @@ checks all 33 source canvases pixel by pixel, and verifies ownership, enemy
 power isolation, player power loss/recovery and provider destruction.
 It checks every active minimap click against the actual sampled cell,
 viewport clipping, live unit removal and identical active pixels after a
-save/load round trip. Separate app tests check camera centering at three
-zooms and that radar orders enter the command queue while preserving unit
-selection. Drawing leaves sim hashes and encoded saves unchanged.
+save/load round trip. App tests check elevated centering across map scales
+1/2/4, zooms 0.25/1/1.25/4 and three viewport sizes. A height-4 retail EB1
+target is selected at the centered point through both click and box paths.
+The shared compositor exports flat-control and terrain-aware captures; the
+full matrix retains the same sim hash and save bytes. Separate tests check
+that radar orders enter the command queue while preserving unit selection.
+The cannon proof and CLI headless framing use the same terrain-aware path.
+Physical desktop/Retina navigation remains under #97, and original radar
+geometry, contour projection and clipping still need #86 calibration.
 
 ```sh
 OPENYR_RADAR_DUMP=/tmp/openyr-radar-proof cargo test -p yr-app radar -- --nocapture
+OPENYR_CAMERA_PROOF=/tmp/openyr-camera-proof cargo test -p yr-app --bin openyr retail_elevated_camera -- --nocapture
 cargo run --release -- --load /tmp/openyr-radar-proof/active.oyrsave --frames /tmp/openyr-radar-active 697 730 --passive
 ```
 

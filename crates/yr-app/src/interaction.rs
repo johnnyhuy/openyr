@@ -3,6 +3,22 @@
 use crate::{cursor::Kind, session::Session, sidebar::ServiceMode};
 use yr_sim::{Command, Fix, OWNER_PLAYER};
 
+/// Project a world ground point with the terrain lift used by live art.
+/// Missing cells and callers without terrain retain the flat projection.
+pub fn ground_point(
+    map: &yr_render::RenderedMap,
+    grid: Option<&yr_sim::TerrainGrid>,
+    cell: (f32, f32),
+) -> (f32, f32) {
+    let (x, y) = map.cell_to_px(cell.0, cell.1);
+    let height = u16::try_from(cell.0.floor() as i32)
+        .ok()
+        .zip(u16::try_from(cell.1.floor() as i32).ok())
+        .and_then(|(x, y)| grid.and_then(|g| g.cell(x, y)))
+        .map_or(0, |c| c.height);
+    (x, y - f32::from(height) * 15.0 / map.scale.max(1) as f32)
+}
+
 /// Invert the same height lift used for live objects. Overlapping ground
 /// diamonds pick the frontmost matching cell, as in the draw order.
 pub fn cell_at(
@@ -307,6 +323,7 @@ mod projection_tests {
             );
             let (x, mut y) = map.cell_to_px(8.5, 9.5);
             y -= 4.0 * 15.0 / scale as f32;
+            assert_eq!(ground_point(&map, Some(&grid), (8.5, 9.5)), (x, y));
             assert_eq!(
                 map.px_to_cell(x, y),
                 (6.5, 7.5),

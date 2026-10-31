@@ -66,6 +66,19 @@ impl View {
         self.cam_y = y - viewport.1 as f32 / (2.0 * self.zoom);
         self.dirty = true;
     }
+
+    fn center_on_ground(
+        &mut self,
+        map: &yr_render::RenderedMap,
+        terrain: Option<&yr_sim::TerrainGrid>,
+        cell: (f32, f32),
+        viewport: (u32, u32),
+    ) {
+        self.center_on_cell(map, cell, viewport);
+        let (_, flat_y) = map.cell_to_px(cell.0, cell.1);
+        let (_, ground_y) = yr_app::interaction::ground_point(map, terrain, cell);
+        self.cam_y += ground_y - flat_y;
+    }
 }
 
 struct App {
@@ -198,16 +211,14 @@ impl App {
             if u.owner != yr_sim::OWNER_PLAYER {
                 continue;
             }
-            let (mx, mut my) = map.cell_to_px(
-                u.x.to_int_floor() as f32 + 0.5,
-                u.y.to_int_floor() as f32 + 0.5,
+            let (mx, my) = yr_app::interaction::ground_point(
+                map,
+                session.sim.terrain(),
+                (
+                    u.x.to_int_floor() as f32 + 0.5,
+                    u.y.to_int_floor() as f32 + 0.5,
+                ),
             );
-            let level = session
-                .sim
-                .terrain()
-                .and_then(|g| g.cell(u.x.to_int_floor() as u16, u.y.to_int_floor() as u16))
-                .map_or(0, |c| c.height);
-            my -= f32::from(level) * 15.0 / map.scale.max(1) as f32;
             let (wx, wy) = (
                 (mx - self.view.cam_x) * self.view.zoom,
                 (my - self.view.cam_y) * self.view.zoom,
@@ -356,16 +367,25 @@ impl App {
     }
 
     fn radar_pan(&mut self, cell: (f32, f32)) {
-        let (Some(map), Some(pixels)) = (&self.map, &self.pixels) else {
+        let Some(pixels) = &self.pixels else {
             return;
         };
-        self.view.center_on_cell(
+        let viewport = (
+            pixels.texture().width().saturating_sub(SIDEBAR_W),
+            pixels.texture().height(),
+        );
+        self.center_world_at(cell, viewport);
+    }
+
+    fn center_world_at(&mut self, cell: (f32, f32), viewport: (u32, u32)) {
+        let Some(map) = &self.map else {
+            return;
+        };
+        self.view.center_on_ground(
             map,
+            self.session.as_ref().and_then(|s| s.sim.terrain()),
             cell,
-            (
-                pixels.texture().width() - SIDEBAR_W,
-                pixels.texture().height(),
-            ),
+            viewport,
         );
     }
 
@@ -618,20 +638,9 @@ impl App {
         if let Some(session) = &self.session {
             let sim = &session.sim;
             let zoom = self.view.zoom;
-            let lift = |x: i32, y: i32| {
-                let level = sim
-                    .terrain()
-                    .and_then(|g| g.cell(x.max(0) as u16, y.max(0) as u16))
-                    .map_or(0, |c| c.height);
-                f32::from(level) * 15.0 / map.scale.max(1) as f32 * zoom
-            };
             let to_win = |cx: f32, cy: f32| {
-                let (mx, my) = map.cell_to_px(cx, cy);
-                let lifted = lift(cx.floor() as i32, cy.floor() as i32);
-                (
-                    (mx - self.view.cam_x) * zoom,
-                    (my - self.view.cam_y) * zoom - lifted,
-                )
+                let (mx, my) = yr_app::interaction::ground_point(map, sim.terrain(), (cx, cy));
+                ((mx - self.view.cam_x) * zoom, (my - self.view.cam_y) * zoom)
             };
             let kind_id = |k: u16| session.kinds.get(usize::from(k)).cloned();
             if let Some((slot, (ox, oy), ok)) = self.placement_target() {
@@ -817,19 +826,15 @@ impl App {
                     };
                     let x = projectile.x.raw() as f32 / 256.0;
                     let y = projectile.y.raw() as f32 / 256.0;
-                    let (mx, my) = map.cell_to_px(x, y);
-                    let level = session
-                        .sim
-                        .terrain()
-                        .and_then(|g| g.cell(x.max(0.0) as u16, y.max(0.0) as u16))
-                        .map_or(0, |c| c.height);
+                    let (mx, my) =
+                        yr_app::interaction::ground_point(map, session.sim.terrain(), (x, y));
                     blit_sprite(
                         frame,
                         fw,
                         fh,
                         sprite,
                         (mx - self.view.cam_x) * self.view.zoom,
-                        (my - self.view.cam_y) * self.view.zoom - f32::from(level) * 15.0 * k,
+                        (my - self.view.cam_y) * self.view.zoom,
                         k,
                         SpritePass::Effect,
                     );
@@ -838,13 +843,11 @@ impl App {
             for effect in &self.effects.active {
                 let x = effect.x.raw() as f32 / 256.0;
                 let y = effect.y.raw() as f32 / 256.0;
-                let (mx, my) = map.cell_to_px(x, y);
-                let level = self
-                    .session
-                    .as_ref()
-                    .and_then(|s| s.sim.terrain())
-                    .and_then(|g| g.cell(x.max(0.0) as u16, y.max(0.0) as u16))
-                    .map_or(0, |c| c.height);
+                let (mx, my) = yr_app::interaction::ground_point(
+                    map,
+                    self.session.as_ref().and_then(|s| s.sim.terrain()),
+                    (x, y),
+                );
                 if let Some(sprite) =
                     bank.get_effect(&effect.name, tick.saturating_sub(effect.born))
                 {
@@ -854,7 +857,7 @@ impl App {
                         fh,
                         sprite,
                         (mx - self.view.cam_x) * self.view.zoom,
-                        (my - self.view.cam_y) * self.view.zoom - f32::from(level) * 15.0 * k,
+                        (my - self.view.cam_y) * self.view.zoom,
                         k,
                         SpritePass::Effect,
                     );
@@ -1725,10 +1728,13 @@ fn headless_frames(
                 None => None,
             };
             if let Some((cx, cy)) = centre {
-                let (mx, my) = map.cell_to_px(cx + 0.5, cy + 0.5);
                 let (vw, vh) = ((fw - SIDEBAR_W) as f32 / 2.0, fh as f32 / 2.0);
-                app.view.cam_x = mx - vw / app.view.zoom;
-                app.view.cam_y = my - vh / app.view.zoom;
+                app.view.center_on_ground(
+                    map,
+                    sim.terrain(),
+                    (cx + 0.5, cy + 0.5),
+                    (fw - SIDEBAR_W, fh),
+                );
                 // The ghost follows the cursor: park it mid-view.
                 app.cursor = (f64::from(vw), f64::from(vh));
             }
@@ -2213,23 +2219,10 @@ mod render_tests {
             owner: yr_sim::OWNER_PLAYER,
         });
         app.view.zoom = 4.0;
-        app.view.center_on_cell(
-            app.map.as_ref().unwrap(),
+        app.center_world_at(
             (f32::from(cx) + 1.5, f32::from(cy) + 0.5),
             (WIN_W - SIDEBAR_W, WIN_H),
         );
-        // Frame the drawn high-ground patch rather than its flat projection.
-        let level = app
-            .session
-            .as_ref()
-            .unwrap()
-            .sim
-            .terrain()
-            .unwrap()
-            .cell(cx, cy)
-            .unwrap()
-            .height;
-        app.view.cam_y -= f32::from(level) * 15.0 / app.map.as_ref().unwrap().scale as f32;
         app.pending.push(Command::Spawn {
             kind: tank.kind,
             x: x + yr_sim::Fix::from_int(2),
@@ -2389,6 +2382,221 @@ mod render_tests {
             app.tick_session();
         }
         assert!(app.effects.active.iter().all(|e| e.name != "TWLT070"));
+    }
+
+    #[test]
+    fn elevated_camera_targets_land_at_the_drawn_world_viewport_center() {
+        let mut grid = yr_sim::TerrainGrid::new(0, 0, 64, 64);
+        grid.cell_mut(21, 31).unwrap().height = 4;
+        for scale in [1, 2, 4] {
+            let map = yr_render::RenderedMap {
+                width: 4000 / scale,
+                height: 4000 / scale,
+                rgba: Vec::new(),
+                summary: String::new(),
+                origin_x: -90,
+                origin_y: -200,
+                scale,
+            };
+            for zoom in [0.25, 1.0, 1.25, 4.0] {
+                for viewport in [(1112, 800), (632, 600), (1592, 1000)] {
+                    let mut view = View {
+                        cam_x: 0.0,
+                        cam_y: 0.0,
+                        zoom,
+                        dirty: false,
+                    };
+                    view.center_on_ground(&map, Some(&grid), (21.5, 31.5), viewport);
+                    let (px, py) = map.cell_to_px(21.5, 31.5);
+                    let drawn = (
+                        (px - view.cam_x) * zoom,
+                        (py - 60.0 / scale as f32 - view.cam_y) * zoom,
+                    );
+                    assert!((drawn.0 - viewport.0 as f32 / 2.0).abs() < 0.01);
+                    assert!(
+                        (drawn.1 - viewport.1 as f32 / 2.0).abs() < 0.01,
+                        "scale {scale}, zoom {zoom}, viewport {viewport:?}: drawn {drawn:?}"
+                    );
+                    assert!(view.dirty);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn retail_elevated_camera_uses_the_drawn_anchor_for_centering_and_selection() {
+        let dir = PathBuf::from(std::env::var("HOME").unwrap_or_default())
+            .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+        if !dir.is_dir() {
+            return;
+        }
+        let dir = dir.to_str().unwrap();
+        let mut app = new_app(dir.into(), "EB1.MMX".into(), 1);
+        app.session = Some(app.load_session().unwrap());
+        app.sprites = load_sprites(dir, "EB1.MMX");
+        assert!(app.sprites.is_some());
+        let session = app.session.as_mut().unwrap();
+        session.sim.set_ai(None);
+        let template = session
+            .sim
+            .units()
+            .iter()
+            .find(|u| {
+                u.owner == yr_sim::OWNER_PLAYER && session.kinds[usize::from(u.kind)] == "MTNK"
+            })
+            .unwrap()
+            .clone();
+        let cell = (62.5, 27.5);
+        assert_eq!(
+            session.sim.terrain().unwrap().cell(62, 27).unwrap().height,
+            4
+        );
+        let id = session.sim.next_id_peek();
+        session.step(&[
+            Command::Spawn {
+                kind: template.kind,
+                x: Fix::from_raw(16000),
+                y: Fix::from_raw(7040),
+                loco: template.loco,
+                speed: Fix::ZERO,
+                hp: template.max_hp,
+                armor: template.armor,
+                weapon: template.weapon,
+            },
+            Command::AssignOwner {
+                id,
+                owner: yr_sim::OWNER_PLAYER,
+            },
+        ]);
+        let hash = session.sim.state_hash();
+        let save = yr_app::snapshot::encode(session).unwrap();
+        let capture = |app: &App, size: (u32, u32), name: &str, point: (f32, f32)| {
+            let mut frame = vec![0; (size.0 * size.1 * 4) as usize];
+            app.compose(&mut frame, size.0, size.1);
+            assert_eq!(app.session.as_ref().unwrap().sim.state_hash(), hash);
+            assert_eq!(
+                yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap(),
+                save
+            );
+            if let Some(out) = std::env::var_os("OPENYR_CAMERA_PROOF") {
+                let out = PathBuf::from(out);
+                std::fs::create_dir_all(&out).unwrap();
+                std::fs::write(
+                    out.join(format!("{name}.png")),
+                    yr_render::png::encode_rgba(size.0, size.1, &frame),
+                )
+                .unwrap();
+                std::fs::write(out.join(format!("{name}.json")),serde_json::to_vec_pretty(&serde_json::json!({
+                    "tick": app.session.as_ref().unwrap().sim.tick(), "hash": format!("{hash:016x}"), "size": size,
+                    "target": cell, "height":4, "actor_id":id, "scale":app.map.as_ref().unwrap().scale,
+                    "zoom":app.view.zoom, "camera":[app.view.cam_x,app.view.cam_y],"drawn_ground":point,
+                })).unwrap()).unwrap();
+            }
+        };
+        let mut matrix = Vec::new();
+        for scale in [1, 2, 4] {
+            app.scale = scale;
+            app.map = Some(yr_render::render_map(dir, "EB1.MMX", scale).unwrap());
+            for zoom in [0.25, 1.0, 1.25, 4.0] {
+                app.view.zoom = zoom;
+                for size in [(1280, 800), (800, 600), (1760, 1000)] {
+                    let viewport = (size.0 - SIDEBAR_W, size.1);
+                    let map = app.map.as_ref().unwrap();
+                    // Expected ground pixels are independent of the new helper.
+                    let flat = map.cell_to_px(cell.0, cell.1);
+                    let expected_ground = (flat.0, flat.1 - 60.0 / scale as f32);
+                    app.view.center_on_cell(map, cell, viewport);
+                    let before = (
+                        (expected_ground.0 - app.view.cam_x) * zoom,
+                        (expected_ground.1 - app.view.cam_y) * zoom,
+                    );
+                    app.selected = [id].into();
+                    let export = size == (1280, 800) && (zoom == 1.0 || zoom == 4.0)
+                        || scale == 1 && zoom == 4.0;
+                    let name = format!("s{scale}-z{zoom}-{}x{}", size.0, size.1);
+                    if export {
+                        capture(&app, size, &format!("{name}-flat"), before);
+                    }
+                    app.center_world_at(cell, viewport);
+                    let after = (
+                        (expected_ground.0 - app.view.cam_x) * zoom,
+                        (expected_ground.1 - app.view.cam_y) * zoom,
+                    );
+                    assert!(
+                        (after.0 - viewport.0 as f32 / 2.0).abs() < 0.01
+                            && (after.1 - viewport.1 as f32 / 2.0).abs() < 0.01
+                    );
+                    let hit = app
+                        .window_to_cell((f64::from(after.0), f64::from(after.1)))
+                        .unwrap();
+                    assert!((hit.0 - cell.0).abs() < 0.001 && (hit.1 - cell.1).abs() < 0.001);
+                    app.selected.clear();
+                    app.select_at((f64::from(after.0), f64::from(after.1)), false);
+                    assert_eq!(app.selected, [id].into());
+                    app.selected.clear();
+                    app.select_box(
+                        (f64::from(after.0) - 2.0, f64::from(after.1) - 2.0),
+                        (f64::from(after.0) + 2.0, f64::from(after.1) + 2.0),
+                        false,
+                    );
+                    assert_eq!(app.selected, [id].into());
+                    assert_eq!(app.session.as_ref().unwrap().sim.state_hash(), hash);
+                    assert_eq!(
+                        yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap(),
+                        save
+                    );
+                    if export {
+                        capture(&app, size, &format!("{name}-ground"), after);
+                    }
+                    matrix.push(serde_json::json!({"scale":scale,"zoom":zoom,"size":size,"before":before,"after":after}));
+                }
+            }
+        }
+        if let Some(out) = std::env::var_os("OPENYR_CAMERA_PROOF") {
+            std::fs::write(
+                PathBuf::from(out).join("camera-matrix.json"),
+                serde_json::to_vec_pretty(&matrix).unwrap(),
+            )
+            .unwrap();
+        }
+        println!("EB1 height-4 camera: {} scale/zoom/viewport cases; centered ground, click/box selection, hash {hash:016x} and save bytes preserved",matrix.len());
+    }
+
+    #[test]
+    fn ground_camera_without_an_authored_height_keeps_flat_centering() {
+        let map = yr_render::RenderedMap {
+            width: 100,
+            height: 100,
+            rgba: Vec::new(),
+            summary: String::new(),
+            origin_x: -20,
+            origin_y: -40,
+            scale: 2,
+        };
+        let grid = yr_sim::TerrainGrid::from_tiles(0, 0, 2, 2, [(0, 0, 0, 13, 0)].into_iter());
+        for (terrain, cell) in [
+            (None, (0.5, 0.5)),
+            (Some(&grid), (0.5, 0.5)),
+            (Some(&grid), (1.5, 1.5)),
+            (Some(&grid), (-0.5, 0.5)),
+            (Some(&grid), (65536.5, 0.5)),
+        ] {
+            let mut flat = View {
+                cam_x: 0.0,
+                cam_y: 0.0,
+                zoom: 1.25,
+                dirty: false,
+            };
+            flat.center_on_cell(&map, cell, (632, 600));
+            let mut ground = View {
+                cam_x: 0.0,
+                cam_y: 0.0,
+                zoom: 1.25,
+                dirty: false,
+            };
+            ground.center_on_ground(&map, terrain, cell, (632, 600));
+            assert_eq!((ground.cam_x, ground.cam_y), (flat.cam_x, flat.cam_y));
+        }
     }
 
     #[test]
