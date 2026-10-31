@@ -1,7 +1,9 @@
 //! Shared window/headless production panel and its matching hit boxes.
 
 mod art;
+mod text;
 pub use art::SidebarArt;
+use text::Typeface;
 
 pub use crate::session::BuildCategory as Category;
 use crate::session::{Session, TICKS_PER_SEC};
@@ -15,8 +17,7 @@ const TOP: i32 = 228;
 const SLOT_W: i32 = 60;
 const SLOT_H: i32 = 48;
 const GAP: i32 = 2;
-const NAME_COLS: usize = 28;
-const NAME_LINES: usize = 3;
+const NAME_COLS: usize = text::MAX_CHARS;
 const PANEL: [u8; 4] = [24, 26, 32, 255];
 const TEXT: [u8; 4] = [232, 236, 240, 255];
 const GOLD: [u8; 4] = [255, 220, 96, 255];
@@ -117,33 +118,6 @@ pub fn duration(ticks: u32) -> String {
     }
 }
 
-/// Keep word boundaries when possible, split long words, and bound both
-/// allocation and drawing for arbitrary localized names. Two dots mark a cut.
-fn name_lines(name: &str) -> Vec<String> {
-    let mut rest = name.trim();
-    let mut lines = Vec::new();
-    while !rest.is_empty() && lines.len() < NAME_LINES {
-        let end = rest.char_indices().nth(NAME_COLS).map(|(i, _)| i);
-        let Some(end) = end else {
-            lines.push(rest.to_string());
-            return lines;
-        };
-        let split = rest[..end]
-            .rfind(char::is_whitespace)
-            .filter(|&i| i > 0)
-            .unwrap_or(end);
-        lines.push(rest[..split].to_string());
-        rest = rest[split..].trim_start();
-    }
-    if !rest.is_empty() {
-        if let Some(last) = lines.last_mut() {
-            *last = last.chars().take(NAME_COLS - 2).collect();
-            last.push_str("..");
-        }
-    }
-    lines
-}
-
 /// Queue progress selects authored angular coverage, never a redraw clock.
 fn clock_phase(done: i64, total: i64, frames: usize) -> usize {
     if total <= 0 || frames == 0 {
@@ -168,6 +142,7 @@ pub fn draw(
         frame,
         width,
         height,
+        face: Typeface(session.sidebar_art.font.as_ref()),
     };
     let x0 = width.saturating_sub(WIDTH) as i32;
     let art = &session.sidebar_art;
@@ -183,8 +158,9 @@ pub fn draw(
         }
     }
     let credits = session.sim.credits().to_string();
-    let cx = x0 + (WIDTH as i32 - credits.len().min(18) as i32 * 8) / 2;
-    canvas.text((cx, 4), &credits, TEXT, 18);
+    let cx = x0 + (WIDTH as i32 - canvas.face.width(&credits)) / 2;
+    let credit_y = if canvas.face.0.is_some() { 0 } else { 4 };
+    canvas.text((cx, credit_y), &credits, TEXT, 18);
 
     // SIDE2 includes the native two-pixel gutters and the left power channel.
     for y in (TOP - 1..height as i32).step_by((SLOT_H + GAP) as usize) {
@@ -248,11 +224,22 @@ pub fn draw(
             }
         }
         if count > 0 && buildable.footprint().is_none() {
-            canvas.text((sx + 2, sy + 2), &count.to_string(), TEXT, 6);
+            let y = if canvas.face.0.is_some() {
+                sy - 2
+            } else {
+                sy + 2
+            };
+            canvas.text((sx + 2, y), &count.to_string(), TEXT, 6);
         }
         if ready == Some(slot) {
             canvas.rect((sx + 6, sy + 17), (48, 13), [0, 0, 0, 255]);
-            canvas.text((sx + 10, sy + 20), "READY", GOLD, 5);
+            let x = sx + (SLOT_W - canvas.face.width("READY")) / 2;
+            let y = if canvas.face.0.is_some() {
+                sy + 16
+            } else {
+                sy + 20
+            };
+            canvas.text((x, y), "READY", GOLD, 5);
         }
         if placing == Some(slot) {
             canvas.rect((sx, sy), (SLOT_W, 1), TEXT);
@@ -276,27 +263,29 @@ pub fn draw_tooltip(
         return;
     };
     let buildable = &session.buildables[slot];
-    let mut lines = name_lines(&buildable.name);
+    let face = Typeface(session.sidebar_art.font.as_ref());
+    let mut lines = face.name_lines(&buildable.name);
     lines.push(format!("${} {}", buildable.cost, duration(buildable.ticks)));
-    let w = lines
-        .iter()
-        .map(|line| line.chars().count())
-        .max()
-        .unwrap_or(0) as i32
-        * 8
-        + 12;
-    let h = lines.len() as i32 * 12 + 8;
+    let w = lines.iter().map(|line| face.width(line)).max().unwrap_or(0) + 12;
+    let h = lines.len() as i32 * face.line_height() + 8;
     let x = (width.saturating_sub(WIDTH) as i32 - w - 4).max(0);
     let y = (cursor.1 as i32).clamp(0, (height as i32 - h).max(0));
     let mut canvas = Canvas {
         frame,
         width,
         height,
+        face: Typeface(session.sidebar_art.font.as_ref()),
     };
     canvas.rect((x, y), (w, h), GOLD);
     canvas.rect((x + 1, y + 1), (w - 2, h - 2), [0, 0, 0, 255]);
     for (i, line) in lines.iter().enumerate() {
-        canvas.text((x + 6, y + 5 + i as i32 * 12), line, GOLD, NAME_COLS);
+        let top = if face.0.is_some() { 1 } else { 5 };
+        canvas.text(
+            (x + 6, y + top + i as i32 * face.line_height()),
+            line,
+            GOLD,
+            NAME_COLS,
+        );
     }
 }
 
@@ -304,6 +293,7 @@ struct Canvas<'a> {
     frame: &'a mut [u8],
     width: u32,
     height: u32,
+    face: Typeface<'a>,
 }
 
 impl Canvas<'_> {
@@ -353,20 +343,32 @@ impl Canvas<'_> {
     }
 
     fn text(&mut self, (x, y): (i32, i32), text: &str, color: [u8; 4], columns: usize) {
-        for (i, ch) in text.chars().take(columns).enumerate() {
-            let glyph = BASIC_FONTS
-                .get(ch)
-                .or_else(|| LATIN_FONTS.get(ch))
-                .or_else(|| GREEK_FONTS.get(ch))
-                .or_else(|| HIRAGANA_FONTS.get(ch))
-                .unwrap_or_else(|| BASIC_FONTS.get('?').unwrap());
-            for (row, bits) in glyph.iter().enumerate() {
-                for col in 0..8 {
-                    if bits & (1 << col) != 0 {
-                        self.pixel(x + i as i32 * 8 + col, y + row as i32, color);
+        let mut dx = x;
+        for ch in text.chars().take(columns) {
+            if let Some(glyph) = self.face.glyph(ch) {
+                for row in 0..glyph.height {
+                    for col in 0..u32::from(glyph.width) {
+                        if glyph.pixel(col, row) {
+                            self.pixel(dx + col as i32, y + row as i32, color);
+                        }
+                    }
+                }
+            } else {
+                let glyph = BASIC_FONTS
+                    .get(ch)
+                    .or_else(|| LATIN_FONTS.get(ch))
+                    .or_else(|| GREEK_FONTS.get(ch))
+                    .or_else(|| HIRAGANA_FONTS.get(ch))
+                    .unwrap_or_else(|| BASIC_FONTS.get('?').unwrap());
+                for (row, bits) in glyph.iter().enumerate() {
+                    for col in 0..8 {
+                        if bits & (1 << col) != 0 {
+                            self.pixel(dx + col, y + row as i32, color);
+                        }
                     }
                 }
             }
+            dx += self.face.advance(ch);
         }
     }
 }
@@ -409,15 +411,7 @@ mod tests {
     }
 
     #[test]
-    fn long_localized_tooltips_are_bounded() {
-        assert_eq!(
-            name_lines("Airforce Command Headquarters"),
-            ["Airforce Command", "Headquarters"]
-        );
-        let long = name_lines(&"界".repeat(100));
-        assert_eq!(long.len(), NAME_LINES);
-        assert!(long.iter().all(|s| s.chars().count() <= NAME_COLS));
-        assert!(long.last().unwrap().ends_with(".."));
+    fn full_power_duration_rounding_is_bounded() {
         assert_eq!(duration(441), "29.4s");
         assert_eq!(duration(1), "0.1s");
         assert_eq!(duration(u32::MAX), "286331153s");

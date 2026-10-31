@@ -380,3 +380,57 @@ fn all_retail_maps_parse_and_align() {
     }
     assert_eq!(maps, 234, "retail map count");
 }
+
+#[test]
+fn game_font_matches_every_retail_unicode_glyph() {
+    let Some(data) = nested("ra2.mix", &["LOCAL.MIX", "GAME.FNT"]) else {
+        eprintln!("skip: retail corpus not present");
+        return;
+    };
+    let font = yr_formats::UnicodeFont::parse(&data).expect("retail GAME.FNT");
+    assert_eq!(data.len(), 1_584_195);
+    assert_eq!(
+        (font.stride, font.lines, font.line_height, font.glyph_count),
+        (3, 16, 17, 29655)
+    );
+    assert_eq!(font.ideographic_space_width, 20);
+    let mut seen = std::collections::BTreeSet::new();
+    for code in 0..=u16::MAX {
+        let Some(ch) = char::from_u32(u32::from(code)) else {
+            continue;
+        };
+        let at = 28 + usize::from(code) * 2;
+        let index = u16::from_le_bytes(data[at..at + 2].try_into().unwrap());
+        if index == 0 {
+            assert!(font.glyph(ch).is_none());
+            continue;
+        }
+        let offset = 131100 + (usize::from(index) - 1) * 49;
+        let glyph = font.glyph(ch).unwrap();
+        assert_eq!(glyph.width, data[offset], "U+{code:04X} width");
+        if !seen.insert(index) {
+            continue;
+        }
+        for y in 0..16 {
+            for x in 0..u32::from(glyph.width) {
+                let byte = data[offset + 1 + y as usize * 3 + x as usize / 8];
+                assert_eq!(
+                    glyph.pixel(x, y),
+                    byte & (128 >> (x % 8)) != 0,
+                    "U+{code:04X}, glyph {index}, {x},{y}"
+                );
+            }
+        }
+    }
+    assert_eq!(seen.len(), 29655, "all physical glyphs checked");
+    for (ch, width) in [
+        ('0', 5),
+        ('1', 4),
+        ('i', 2),
+        ('W', 11),
+        (' ', 4),
+        ('界', 15),
+    ] {
+        assert_eq!(font.glyph(ch).unwrap().width, width, "{ch}");
+    }
+}
