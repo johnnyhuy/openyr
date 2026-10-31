@@ -89,6 +89,7 @@ pub struct State {
     pub slots: Vec<Slot>,
     pub selected: Option<usize>,
     pub focus: usize,
+    pub keyboard_focus: bool,
     pub scroll: usize,
     pub pressed: Option<Button>,
     pub muted: bool,
@@ -104,6 +105,7 @@ impl Default for State {
             slots: Vec::new(),
             selected: None,
             focus: 0,
+            keyboard_focus: false,
             scroll: 0,
             pressed: None,
             muted: false,
@@ -119,6 +121,7 @@ impl State {
     pub fn set(&mut self, page: Page) {
         self.page = page;
         self.focus = 0;
+        self.keyboard_focus = false;
         if self.page == Page::SinglePlayer {
             self.focus = 1;
         }
@@ -188,6 +191,7 @@ impl State {
         }
     }
     pub fn navigate(&mut self, delta: i32) {
+        self.keyboard_focus = true;
         let buttons = self.buttons();
         let n = buttons.len();
         if n == 0 {
@@ -476,7 +480,7 @@ impl Layout {
             } else {
                 199 + index as i32 * 42
             };
-            return (638, y, 156, 42);
+            return (644, y, 156, 42);
         }
         let y = if matches!(button, Button::Resume | Button::Back) {
             self.height as i32 - 65

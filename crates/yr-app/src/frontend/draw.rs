@@ -11,7 +11,7 @@ pub struct Scene<'a> {
     pub phase: u64,
     pub cursor: (f64, f64),
 }
-const YELLOW: [u8; 4] = [255, 232, 0, 255];
+const YELLOW: [u8; 4] = [255, 255, 0, 255];
 const WHITE: [u8; 4] = [220, 232, 240, 255];
 pub fn draw(frame: &mut [u8], width: u32, height: u32, art: &Art, scene: Scene<'_>) {
     if (width as usize)
@@ -67,16 +67,13 @@ pub fn draw(frame: &mut [u8], width: u32, height: u32, art: &Art, scene: Scene<'
     {
         c.image((670, 45), im);
     }
-    for y in (199..535).step_by(42) {
+    for y in (199..577).step_by(42) {
         if let Some(im) = &art.button_back {
             c.image((632, y), im);
         }
-        if let Some(im) = art.buttons.first() {
-            c.image((638, y), im);
-        }
     }
     if let Some(im) = &art.bottom {
-        c.image((632, 535), im);
+        c.image((632, 577), im);
     }
     let title = match s.page {
         Page::Main => art.label("GUI:MainMenu", "Main menu"),
@@ -86,7 +83,7 @@ pub fn draw(frame: &mut [u8], width: u32, height: u32, art: &Art, scene: Scene<'
         Page::Controls => art.label("GUI:Options", "Controls"),
         _ => "OpenYR",
     };
-    centered(&mut c, 632, 8, 168, title, YELLOW);
+    centered(&mut c, 632, 9, 168, title, YELLOW);
     if s.page == Page::Skirmish {
         centered(
             &mut c,
@@ -221,10 +218,10 @@ pub fn draw(frame: &mut [u8], width: u32, height: u32, art: &Art, scene: Scene<'
             Button::Decline => art.label("GUI:No", "Keep current"),
             _ => "",
         };
-        let text_y = y + (h - c.face.line_height()) / 2;
+        let text_y = y + (h - c.face.line_height() + 1) / 2;
         centered(
             &mut c,
-            x,
+            x - 2,
             text_y,
             w,
             label,
@@ -234,14 +231,15 @@ pub fn draw(frame: &mut [u8], width: u32, height: u32, art: &Art, scene: Scene<'
                 [128, 128, 128, 255]
             },
         );
-        if s.focus == index && enabled {
+        if s.keyboard_focus && s.focus == index && enabled {
             c.rect((x + 12, y + h - 6), (w - 24, 1), YELLOW);
         }
     }
     centered(&mut c, 638, 581, 156, "OpenYR 0.1", YELLOW);
     let status = match s.page {
-        Page::Main => "Select a mode. Gray actions are unavailable.",
-        Page::SinglePlayer => "Saved matches or supported skirmish setup.",
+        Page::Main if hovered.is_some() => "Select a mode. Gray actions are unavailable.",
+        Page::SinglePlayer if hovered.is_some() => "Saved matches or supported skirmish setup.",
+        Page::Main | Page::SinglePlayer => "",
         Page::Skirmish => "Start the supported EB1 skirmish.",
         Page::Load => "Select a saved match. Arrows select; Escape returns.",
         Page::Loading => "Escape cancels and returns.",
@@ -253,7 +251,13 @@ pub fn draw(frame: &mut [u8], width: u32, height: u32, art: &Art, scene: Scene<'
             let at = ((y * width + x) * 4) as usize;
             if let Some((sx, sy)) = l.local((f64::from(x), f64::from(y))) {
                 let src = ((sy as u32 * 800 + sx as u32) * 4) as usize;
-                frame[at..at + 4].copy_from_slice(&pixels[src..src + 4]);
+                // Observed retail shell output truncates channels to RGB565.
+                frame[at..at + 4].copy_from_slice(&[
+                    pixels[src] & 0xf8,
+                    pixels[src + 1] & 0xfc,
+                    pixels[src + 2] & 0xf8,
+                    pixels[src + 3],
+                ]);
             } else {
                 frame[at..at + 4].copy_from_slice(&[0, 0, 0, 255]);
             }
@@ -273,7 +277,7 @@ fn fit(face: Typeface<'_>, text: &str, width: i32) -> String {
 }
 fn centered(c: &mut Canvas<'_>, x: i32, y: i32, w: i32, text: &str, color: [u8; 4]) {
     let text = fit(c.face, text, w - 12);
-    c.text((x + (w - c.face.width(&text)) / 2, y), &text, color, 160);
+    c.text((x + w / 2 - c.face.width(&text) / 2, y), &text, color, 160);
 }
 fn picture(c: &mut Canvas<'_>, rect: (i32, i32, i32, i32), w: u32, h: u32, rgba: &[u8]) {
     if w == 0

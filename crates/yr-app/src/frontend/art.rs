@@ -63,7 +63,7 @@ impl Art {
         art.status = read("LWSCRNL.SHP", 632, 32, 1, &shell).pop();
         art.background = read("MNSCRNL.SHP", 632, 568, 1, &shell).pop();
         art.buttons = read("SDBTNANM.SHP", 156, 42, 17, &button);
-        art.button_back = read("SDBTNBKGD.SHP", 168, 42, 1, &button).pop();
+        art.button_back = read("SDBTNBKGD.SHP", 168, 42, 1, &shell2).pop();
         art
     }
     pub(super) fn label<'a>(&'a self, key: &str, fallback: &'a str) -> &'a str {
