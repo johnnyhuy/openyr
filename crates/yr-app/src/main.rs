@@ -46,6 +46,20 @@ struct View {
     dirty: bool,
 }
 
+impl View {
+    fn center_on_cell(
+        &mut self,
+        map: &yr_render::RenderedMap,
+        cell: (f32, f32),
+        viewport: (u32, u32),
+    ) {
+        let (x, y) = map.cell_to_px(cell.0, cell.1);
+        self.cam_x = x - viewport.0 as f32 / (2.0 * self.zoom);
+        self.cam_y = y - viewport.1 as f32 / (2.0 * self.zoom);
+        self.dirty = true;
+    }
+}
+
 struct App {
     gamedir: String,
     map_name: String,
@@ -67,6 +81,7 @@ struct App {
     left_down: Option<(f64, f64)>,
     right_down: Option<(f64, f64)>,
     right_panning: bool,
+    radar_drag: bool,
     last_cursor: (f64, f64),
     keys: std::collections::HashSet<KeyCode>,
     last_tick: Instant,
@@ -116,6 +131,7 @@ impl App {
                 self.left_down = None;
                 self.right_down = None;
                 self.right_panning = false;
+                self.radar_drag = false;
                 self.placing = None;
                 self.attack_move = false;
                 self.announced = false;
@@ -254,6 +270,43 @@ impl App {
             self.pending.push(cmd);
         }
         self.attack_move = false;
+    }
+
+    fn radar_target(&self, pos: (f64, f64)) -> Option<(f32, f32)> {
+        let width = self.pixels.as_ref()?.texture().width();
+        self.session.as_ref()?.radar.target(width, pos)
+    }
+
+    fn radar_pan(&mut self, cell: (f32, f32)) {
+        let (Some(map), Some(pixels)) = (&self.map, &self.pixels) else {
+            return;
+        };
+        self.view.center_on_cell(
+            map,
+            cell,
+            (
+                pixels.texture().width() - SIDEBAR_W,
+                pixels.texture().height(),
+            ),
+        );
+    }
+
+    fn radar_click(&mut self, cell: (f32, f32)) {
+        self.placing = None;
+        if self.selected.is_empty() {
+            self.radar_drag = true;
+            self.radar_pan(cell);
+        } else {
+            let (x, y) = Self::cell_leptons(cell);
+            for &id in &self.selected {
+                self.pending.push(if self.attack_move {
+                    Command::AttackMove { id, x, y }
+                } else {
+                    Command::Move { id, x, y }
+                });
+            }
+            self.attack_move = false;
+        }
     }
 
     /// Footprint origin and validity for the structure being placed,
@@ -630,6 +683,14 @@ impl App {
         }
         if let Some(session) = &self.session {
             sidebar::draw(frame, fw, fh, session, self.sidebar_category, self.placing);
+            let corners = [
+                map.px_to_cell(self.view.cam_x, self.view.cam_y),
+                map.px_to_cell(
+                    self.view.cam_x + (fw - SIDEBAR_W) as f32 / self.view.zoom,
+                    self.view.cam_y + fh as f32 / self.view.zoom,
+                ),
+            ];
+            session.radar.draw_viewport(frame, fw, fh, corners);
             sidebar::draw_tooltip(frame, fw, fh, session, self.sidebar_category, self.cursor);
         }
         // Box-select rubber band.
@@ -909,6 +970,10 @@ impl ApplicationHandler for App {
             }
             WindowEvent::MouseInput { state, button, .. } => match (button, state) {
                 (MouseButton::Left, ElementState::Pressed) if self.in_sidebar(self.cursor) => {
+                    if let Some(cell) = self.radar_target(self.cursor) {
+                        self.radar_click(cell);
+                        return;
+                    }
                     let tab = self
                         .pixels
                         .as_ref()
@@ -922,6 +987,12 @@ impl ApplicationHandler for App {
                     }
                 }
                 (MouseButton::Right, ElementState::Pressed) if self.in_sidebar(self.cursor) => {
+                    if self.radar_target(self.cursor).is_some() {
+                        self.selected.clear();
+                        self.attack_move = false;
+                        self.placing = None;
+                        self.view.dirty = true;
+                    }
                     if let Some(slot) = self.sidebar_slot_at(self.cursor) {
                         if self.placing == Some(slot) {
                             self.placing = None;
@@ -939,6 +1010,7 @@ impl ApplicationHandler for App {
                 }
                 (MouseButton::Left, ElementState::Pressed) => self.left_down = Some(self.cursor),
                 (MouseButton::Left, ElementState::Released) => {
+                    self.radar_drag = false;
                     if let Some(a) = self.left_down.take() {
                         if (self.cursor.0 - a.0).abs() > 6.0 || (self.cursor.1 - a.1).abs() > 6.0 {
                             self.select_box(a, self.cursor, self.shift);
@@ -973,6 +1045,11 @@ impl ApplicationHandler for App {
                     None => position,
                 };
                 self.cursor = (position.x, position.y);
+                if self.radar_drag {
+                    if let Some(cell) = self.radar_target(self.cursor) {
+                        self.radar_pan(cell);
+                    }
+                }
                 self.view.dirty = true;
                 if self.right_down.is_some() {
                     let dx = (position.x - self.last_cursor.0) as f32;
@@ -1126,6 +1203,7 @@ fn new_app(gamedir: String, map_name: String, scale: u32) -> App {
         left_down: None,
         right_down: None,
         right_panning: false,
+        radar_drag: false,
         last_cursor: (0.0, 0.0),
         keys: std::collections::HashSet::new(),
         last_tick: Instant::now(),
@@ -1498,6 +1576,60 @@ fn main() {
 #[cfg(test)]
 mod render_tests {
     use super::*;
+
+    #[test]
+    fn radar_navigation_centers_the_world_camera_at_every_zoom() {
+        let map = yr_render::RenderedMap {
+            width: 10,
+            height: 10,
+            rgba: Vec::new(),
+            summary: String::new(),
+            origin_x: -90,
+            origin_y: -200,
+            scale: 2,
+        };
+        for zoom in [0.25, 1.0, 4.0] {
+            let mut view = View {
+                cam_x: 0.0,
+                cam_y: 0.0,
+                zoom,
+                dirty: false,
+            };
+            view.center_on_cell(&map, (21.5, 31.5), (1112, 800));
+            let cell = map.px_to_cell(view.cam_x + 556.0 / zoom, view.cam_y + 400.0 / zoom);
+            assert!((cell.0 - 21.5).abs() < 0.001 && (cell.1 - 31.5).abs() < 0.001);
+            assert!(view.dirty);
+        }
+    }
+
+    #[test]
+    fn radar_orders_use_commands_and_preserve_selection() {
+        let mut app = new_app(String::new(), String::new(), 2);
+        app.selected.extend([7, 9]);
+        app.placing = Some(3);
+        app.radar_click((12.5, 20.5));
+        assert_eq!(app.selected.len(), 2);
+        assert!(app.placing.is_none());
+        assert_eq!(app.pending.len(), 2);
+        assert!(app.pending.iter().all(|cmd| matches!(cmd,
+            Command::Move { x, y, .. } if x.raw() == 12*256+128 && y.raw() == 20*256+128)));
+        app.pending.clear();
+        app.attack_move = true;
+        app.radar_click((18.5, 7.5));
+        assert!(app
+            .pending
+            .iter()
+            .all(|cmd| matches!(cmd, Command::AttackMove { .. })));
+        assert!(!app.attack_move);
+        app.pending.clear();
+        app.selected.clear();
+        app.radar_click((18.5, 7.5));
+        assert!(app.radar_drag);
+        assert!(
+            app.pending.is_empty(),
+            "unselected radar navigation sends no sim commands"
+        );
+    }
 
     #[test]
     fn save_load_options_mix_with_absolute_frame_ticks() {

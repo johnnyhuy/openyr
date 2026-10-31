@@ -1,6 +1,7 @@
 //! Shared window/headless production panel and its matching hit boxes.
 
 mod art;
+pub mod radar;
 mod text;
 pub use art::SidebarArt;
 use text::Typeface;
@@ -147,16 +148,12 @@ pub fn draw(
     let x0 = width.saturating_sub(WIDTH) as i32;
     let art = &session.sidebar_art;
     canvas.rect((x0, 0), (WIDTH as i32, height as i32), PANEL);
-    for (image, y) in [
-        (&art.credits, 0),
-        (&art.top, 16),
-        (&art.radar, 48),
-        (&art.header, 158),
-    ] {
+    for (image, y) in [(&art.credits, 0), (&art.top, 16), (&art.header, 158)] {
         if let Some(image) = image {
             canvas.image((x0, y), image);
         }
     }
+    session.radar.draw(&mut canvas, session);
     let credits = session.sim.credits().to_string();
     let cx = x0 + (WIDTH as i32 - canvas.face.width(&credits)) / 2;
     let credit_y = if canvas.face.0.is_some() { 0 } else { 4 };

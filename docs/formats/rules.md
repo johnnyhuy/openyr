@@ -129,3 +129,13 @@ advancing state or changing its hash. The snapshot layout is unchanged.
 - Ares-style `Inherit=`/`+=` (not vanilla).
 - Engine defaults per key, `[General]`/`[CombatDamage]` globals, countries,
   superweapons, animations, terrain/overlay types, and map-specific sections.
+
+## Radar presentation flags
+
+`TechnoType` carries optional `Radar=` and `RadarInvisible=` booleans through
+the existing INI first-character boolean parser. The sidebar reads them
+from the merged rules. Radar providers are matched by owned building kind
+and gated by the player's actual power balance, independently of enemy
+power. These are presentation metadata and do not alter simulation hashes
+or save compatibility. Retail providers, transition art, tests and remaining
+comparisons are recorded in [radar presentation](radar.md).

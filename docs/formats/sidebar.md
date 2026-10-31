@@ -89,9 +89,10 @@ retail UI art the panel retains basic fallback drawing and input.
 
 ## Remaining comparison work
 
-The inactive Allied emblem is currently displayed even after a radar
-structure is built. A live minimap, power meter, repair/sell actions and
-icons, top-strip controls, the bottom command bar, exact text spacing and colors,
+Powered radar now plays the retail transition and shows a live cell-based
+minimap with navigation and a camera outline (`radar.md`). Exact transition
+cadence, radar colors, scaling and shroud still need comparison. The power
+meter, repair/sell actions and icons, top-strip controls, the bottom command bar, exact text spacing and colors,
 hover/pressed/disabled tab transitions, queue hold behavior and dynamic
 sidebar scrolling remain UI fidelity work. Other factions and loose
 per-file sidebar overrides are not yet selected by this Allied loader.

@@ -108,6 +108,10 @@ pub struct TechnoType {
     pub free_unit: Option<String>,
     pub refinery: Option<bool>,
     pub construction_yard: Option<bool>,
+    /// Building `Radar=`: provides a radar display while operational.
+    pub radar: Option<bool>,
+    /// `RadarInvisible=`: explicit exclusion from the radar display.
+    pub radar_invisible: Option<bool>,
     pub wall: Option<bool>,
     /// Building `WaterBound=`: must stand on water (shipyards).
     pub water_bound: Option<bool>,
@@ -586,6 +590,8 @@ fn load_techno(
         free_unit: reference(sec, "FreeUnit"),
         refinery: sec.and_then(|x| x.get_bool("Refinery")),
         construction_yard: sec.and_then(|x| x.get_bool("ConstructionYard")),
+        radar: sec.and_then(|x| x.get_bool("Radar")),
+        radar_invisible: sec.and_then(|x| x.get_bool("RadarInvisible")),
         wall: sec.and_then(|x| x.get_bool("Wall")),
         water_bound: sec.and_then(|x| x.get_bool("WaterBound")),
         primary: reference(sec, "Primary"),
