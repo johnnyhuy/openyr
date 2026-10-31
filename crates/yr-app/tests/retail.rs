@@ -516,24 +516,24 @@ fn eb1_sidebar_dims_unaffordable_and_missing_factories_but_keeps_ready_structure
         frame
     };
     let bright = panel(&session, "funded");
-    // Cameo and label portions of every card both hit the same slot.
+    // Both native cameo corners hit the original production id.
     let mut reached = Vec::new();
     for category in sidebar::Category::ALL {
         for (i, slot) in sidebar::slots(&session, category).enumerate() {
             reached.push(slot);
-            let x = 8.0 + (i % 2) as f64 * 172.0;
-            let y = 104.0 + (i / 2) as f64 * 56.0;
-            for (dx, dy) in [(1.0, 1.0), (100.0, 42.0)] {
+            let (x, y) = sidebar::slot_origin(sidebar::WIDTH, i);
+            let (x, y) = (f64::from(x), f64::from(y));
+            for (dx, dy) in [(0.0, 0.0), (59.0, 47.0)] {
                 assert_eq!(
-                    sidebar::slot_at(sidebar::WIDTH, &session, category, (x + dx, y + dy)),
+                    sidebar::slot_at(sidebar::WIDTH, 800, &session, category, (x + dx, y + dy)),
                     Some(slot)
                 );
             }
             assert!(y + 48.0 < 800.0, "last row stays visible");
         }
-        for pos in [(7.0, 104.0), (10.0, 153.0), (10.0, 40.0)] {
+        for pos in [(22.0, 228.0), (83.0, 228.0), (24.0, 276.0), (10.0, 40.0)] {
             assert_eq!(
-                sidebar::slot_at(sidebar::WIDTH, &session, category, pos),
+                sidebar::slot_at(sidebar::WIDTH, 800, &session, category, pos),
                 None
             );
         }
@@ -550,8 +550,8 @@ fn eb1_sidebar_dims_unaffordable_and_missing_factories_but_keeps_ready_structure
     let poor = panel(&session, "unaffordable");
     // Verify the displayed cameo dims, independently of the changed credit header.
     let mut lit = 0;
-    for y in 104..152 {
-        for x in 8..68 {
+    for y in 228..276 {
+        for x in 23..83 {
             let at = (y * sidebar::WIDTH as usize + x) * 4;
             for c in 0..3 {
                 assert_eq!(poor[at + c], bright[at + c] / 3);
@@ -620,20 +620,17 @@ fn eb1_sidebar_tabs_preserve_orders_and_ready_placement() {
                 .unwrap();
                 println!("{}: tick {}", path.display(), session.sim.tick());
             }
-            // A paid structure's tab has green READY text even when hidden.
+            // A paid structure's tab retains its ready marker while hidden.
             if let Some(ready) = sidebar::ready_category(session) {
-                let start_x = if ready == Category::Structures {
-                    8
-                } else {
-                    180
-                };
+                let (start_x, start_y) = sidebar::tab_origin(sidebar::WIDTH, ready);
+                let (start_x, start_y) = (start_x as usize, start_y as usize);
                 let green = frame
                     .chunks(4)
                     .enumerate()
                     .filter(|(i, p)| {
                         let (x, y) = (i % sidebar::WIDTH as usize, i / sidebar::WIDTH as usize);
-                        (start_x..start_x + 164).contains(&x)
-                            && (40..64).contains(&y)
+                        (start_x..start_x + 28).contains(&x)
+                            && (start_y..start_y + 27).contains(&y)
                             && *p == [96, 255, 96, 255]
                     })
                     .count();
@@ -647,7 +644,7 @@ fn eb1_sidebar_tabs_preserve_orders_and_ready_placement() {
         );
     };
     let click = |session: &yr_app::session::Session, category| {
-        sidebar::slot_at(sidebar::WIDTH, session, category, (9.0, 105.0)).unwrap()
+        sidebar::slot_at(sidebar::WIDTH, 800, session, category, (23.0, 228.0)).unwrap()
     };
     let tank = click(&session, Category::Vehicles);
     let infantry = click(&session, Category::Infantry);

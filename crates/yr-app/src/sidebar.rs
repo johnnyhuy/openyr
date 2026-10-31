@@ -1,23 +1,24 @@
 //! Shared window/headless production panel and its matching hit boxes.
 
+mod art;
+pub use art::SidebarArt;
+
 pub use crate::session::BuildCategory as Category;
 use crate::session::{Session, TICKS_PER_SEC};
 use font8x8::{UnicodeFonts, BASIC_FONTS, GREEK_FONTS, HIRAGANA_FONTS, LATIN_FONTS};
 
-pub const WIDTH: u32 = 352;
-const PAD: i32 = 8;
-const TAB_TOP: i32 = 40;
-const TAB_H: i32 = 24;
-const TOP: i32 = 104;
-const SLOT_W: i32 = 164;
+pub const WIDTH: u32 = 168;
+const PAD: i32 = 23;
+const TAB_TOP: i32 = 197;
+const TAB_H: i32 = 27;
+const TOP: i32 = 228;
+const SLOT_W: i32 = 60;
 const SLOT_H: i32 = 48;
-const GAP: i32 = 8;
-const CAMEO_W: i32 = 60;
-const NAME_COLS: usize = 12;
+const GAP: i32 = 2;
+const NAME_COLS: usize = 28;
 const NAME_LINES: usize = 3;
 const PANEL: [u8; 4] = [24, 26, 32, 255];
 const TEXT: [u8; 4] = [232, 236, 240, 255];
-const DIM: [u8; 4] = [120, 124, 136, 255];
 const GOLD: [u8; 4] = [255, 220, 96, 255];
 
 impl Category {
@@ -56,39 +57,47 @@ pub fn slots(session: &Session, category: Category) -> impl Iterator<Item = usiz
         .filter_map(move |(slot, b)| (b.category == category).then_some(slot))
 }
 
-fn origin(width: u32, index: usize, top: i32, row_height: i32) -> (i32, i32) {
+/// Native-pixel geometry, also used by window input and proof tests.
+pub fn slot_origin(width: u32, index: usize) -> (i32, i32) {
     (
         width.saturating_sub(WIDTH) as i32 + PAD + (index % 2) as i32 * (SLOT_W + GAP),
-        top + (index / 2) as i32 * (row_height + GAP),
+        TOP + (index / 2) as i32 * (SLOT_H + GAP),
     )
 }
 
-fn contains((x, y): (i32, i32), height: i32, pos: (f64, f64)) -> bool {
+pub fn tab_origin(width: u32, category: Category) -> (i32, i32) {
+    let index = Category::ALL.iter().position(|&c| c == category).unwrap();
+    (
+        width.saturating_sub(WIDTH) as i32 + 26 + index as i32 * 28,
+        TAB_TOP,
+    )
+}
+
+fn contains((x, y): (i32, i32), (w, h): (i32, i32), pos: (f64, f64)) -> bool {
     pos.0 >= f64::from(x)
-        && pos.0 < f64::from(x + SLOT_W)
+        && pos.0 < f64::from(x + w)
         && pos.1 >= f64::from(y)
-        && pos.1 < f64::from(y + height)
+        && pos.1 < f64::from(y + h)
 }
 
 pub fn tab_at(width: u32, pos: (f64, f64)) -> Option<Category> {
     Category::ALL
         .into_iter()
-        .enumerate()
-        .find_map(|(i, category)| {
-            contains(origin(width, i, TAB_TOP, TAB_H), TAB_H, pos).then_some(category)
-        })
+        .find(|&category| contains(tab_origin(width, category), (28, TAB_H), pos))
 }
 
-/// The whole card is clickable, including its name, cost and time.
 pub fn slot_at(
     width: u32,
+    height: u32,
     session: &Session,
     category: Category,
     pos: (f64, f64),
 ) -> Option<usize> {
-    slots(session, category)
-        .enumerate()
-        .find_map(|(i, slot)| contains(origin(width, i, TOP, SLOT_H), SLOT_H, pos).then_some(slot))
+    slots(session, category).enumerate().find_map(|(i, slot)| {
+        let origin = slot_origin(width, i);
+        (origin.1 + SLOT_H <= height as i32 - 26 && contains(origin, (SLOT_W, SLOT_H), pos))
+            .then_some(slot)
+    })
 }
 
 pub fn ready_category(session: &Session) -> Option<Category> {
@@ -135,6 +144,18 @@ fn name_lines(name: &str) -> Vec<String> {
     lines
 }
 
+/// Queue progress selects authored angular coverage, never a redraw clock.
+fn clock_phase(done: i64, total: i64, frames: usize) -> usize {
+    if total <= 0 || frames == 0 {
+        return 0;
+    }
+    if done >= total || frames < 2 {
+        return 0;
+    }
+    // Frame 0 is clear. Frames 1..54 progressively uncover the cameo.
+    1 + (i128::from(done.max(0)) * (frames - 1) as i128 / i128::from(total)) as usize
+}
+
 pub fn draw(
     frame: &mut [u8],
     width: u32,
@@ -149,56 +170,56 @@ pub fn draw(
         height,
     };
     let x0 = width.saturating_sub(WIDTH) as i32;
+    let art = &session.sidebar_art;
     canvas.rect((x0, 0), (WIDTH as i32, height as i32), PANEL);
-    canvas.text(
-        (x0 + PAD, 7),
-        &format!("${}", session.sim.credits()),
-        GOLD,
-        40,
-    );
-    canvas.text((x0 + PAD, 23), "Build times at full power", DIM, 40);
+    for (image, y) in [
+        (&art.credits, 0),
+        (&art.top, 16),
+        (&art.radar, 48),
+        (&art.header, 158),
+    ] {
+        if let Some(image) = image {
+            canvas.image((x0, y), image);
+        }
+    }
+    let credits = session.sim.credits().to_string();
+    let cx = x0 + (WIDTH as i32 - credits.len().min(18) as i32 * 8) / 2;
+    canvas.text((cx, 4), &credits, TEXT, 18);
 
+    // SIDE2 includes the native two-pixel gutters and the left power channel.
+    for y in (TOP - 1..height as i32).step_by((SLOT_H + GAP) as usize) {
+        if let Some(image) = &art.row {
+            canvas.image((x0, y), image);
+        }
+    }
+    if let Some(image) = &art.bottom {
+        canvas.image((x0, height as i32 - 26), image);
+    }
     let ready = session.ready_structure();
     let ready_tab = ready_category(session);
     for (i, tab) in Category::ALL.into_iter().enumerate() {
-        let (x, y) = origin(width, i, TAB_TOP, TAB_H);
-        canvas.rect(
-            (x, y),
-            (SLOT_W, TAB_H),
-            if tab == category {
-                [66, 72, 90, 255]
-            } else {
-                [32, 35, 42, 255]
-            },
-        );
-        let count: usize = slots(session, tab).map(|s| session.slot_status(s).0).sum();
-        let label = if ready_tab == Some(tab) {
-            format!("{} READY", tab.label())
-        } else if count > 0 {
-            format!("{} x{count}", tab.label())
+        let (x, y) = tab_origin(width, tab);
+        // Retail sheet order: up, selected, disabled, pressed-up, pressed-selected.
+        let selected = tab == category;
+        if let Some(image) = art.tabs[i].get(usize::from(selected)) {
+            canvas.image((x, y), image);
         } else {
-            tab.label().into()
-        };
-        let color = if ready_tab == Some(tab) {
-            [96, 255, 96, 255]
-        } else if tab == category {
-            GOLD
-        } else {
-            TEXT
-        };
-        canvas.text((x + 6, y + 8), &label, color, 19);
-        if tab == category {
-            canvas.rect((x, y + TAB_H - 2), (SLOT_W, 2), GOLD);
+            canvas.rect((x, y), (28, TAB_H), if selected { GOLD } else { PANEL });
+            canvas.text((x + 10, y + 10), &i.to_string(), TEXT, 1);
+        }
+        if ready_tab == Some(tab) {
+            canvas.rect((x + 3, y + TAB_H - 3), (22, 2), [96, 255, 96, 255]);
         }
     }
     for (i, slot) in slots(session, category).enumerate() {
         let buildable = &session.buildables[slot];
-        let (sx, sy) = origin(width, i, TOP, SLOT_H);
-        canvas.rect((sx, sy), (SLOT_W, SLOT_H), [32, 35, 42, 255]);
-        canvas.rect((sx, sy), (CAMEO_W, SLOT_H), [70, 70, 80, 255]);
+        let (sx, sy) = slot_origin(width, i);
+        if sy + SLOT_H > height as i32 - 26 {
+            break;
+        }
         if let Some((w, h, pixels)) = &buildable.cameo {
             for y in 0..(*h).min(SLOT_H as u32) {
-                for x in 0..(*w).min(CAMEO_W as u32) {
+                for x in 0..(*w).min(SLOT_W as u32) {
                     let at = ((y * w + x) * 4) as usize;
                     if pixels[at + 3] != 0 {
                         canvas.pixel(
@@ -210,59 +231,72 @@ pub fn draw(
                 }
             }
         }
-        let available = session.slot_available(slot);
         let (count, head) = session.slot_status(slot);
-        // Affordability is a visual hint; existing gradual-payment orders
-        // remain queueable. Keep the progress wipe independent of that hint.
-        if !available {
-            canvas.shade((sx, sy), (CAMEO_W, SLOT_H));
+        // Paid work remains bright even when the remaining balance is below
+        // the full price. The authored clock alone covers unfinished work.
+        if !session.slot_available(slot) && head.is_none() {
+            canvas.shade((sx, sy), (SLOT_W, SLOT_H));
         }
         if let Some((done, total)) = head.filter(|(_, total)| *total > 0) {
-            let rows = (i64::from(SLOT_H) * (total - done) / total).clamp(0, i64::from(SLOT_H));
-            canvas.shade((sx, sy), (CAMEO_W, rows as i32));
-        }
-        let name_color = if available { TEXT } else { DIM };
-        for (line, name) in name_lines(&buildable.name).iter().enumerate() {
-            canvas.text(
-                (sx + 64, sy + 2 + line as i32 * 10),
-                name,
-                name_color,
-                NAME_COLS,
-            );
-        }
-        canvas.text(
-            (sx + 64, sy + 39),
-            &format!("${} {}", buildable.cost, duration(buildable.ticks)),
-            if available { GOLD } else { DIM },
-            NAME_COLS,
-        );
-        if count > 0 {
-            let count = count.to_string();
-            canvas.rect(
-                (sx + 1, sy + 1),
-                ((count.len() * 8 + 4) as i32, 12),
-                [0, 0, 0, 255],
-            );
-            canvas.text((sx + 3, sy + 3), &count, TEXT, 6);
-        }
-        let outline = if placing == Some(slot) {
-            Some([255, 255, 255, 255])
-        } else if ready == Some(slot) {
-            Some([96, 255, 96, 255])
-        } else {
-            None
-        };
-        if let Some(color) = outline {
-            for inset in 0..2 {
-                let w = SLOT_W - 2 * inset;
-                let h = SLOT_H - 2 * inset;
-                let (x, y) = (sx + inset, sy + inset);
-                canvas.rect((x, y), (w, 1), color);
-                canvas.rect((x, y + h - 1), (w, 1), color);
-                canvas.rect((x, y), (1, h), color);
-                canvas.rect((x + w - 1, y), (1, h), color);
+            let phase = clock_phase(done, total, art.clock.len());
+            if let Some(mask) = art.clock.get(phase) {
+                for (p, &coverage) in mask.iter().enumerate() {
+                    if coverage != 0 {
+                        canvas.shade((sx + p as i32 % SLOT_W, sy + p as i32 / SLOT_W), (1, 1));
+                    }
+                }
             }
         }
+        if count > 0 && buildable.footprint().is_none() {
+            canvas.text((sx + 2, sy + 2), &count.to_string(), TEXT, 6);
+        }
+        if ready == Some(slot) {
+            canvas.rect((sx + 6, sy + 17), (48, 13), [0, 0, 0, 255]);
+            canvas.text((sx + 10, sy + 20), "READY", GOLD, 5);
+        }
+        if placing == Some(slot) {
+            canvas.rect((sx, sy), (SLOT_W, 1), TEXT);
+            canvas.rect((sx, sy + SLOT_H - 1), (SLOT_W, 1), TEXT);
+            canvas.rect((sx, sy), (1, SLOT_H), TEXT);
+            canvas.rect((sx + SLOT_W - 1, sy), (1, SLOT_H), TEXT);
+        }
+    }
+}
+
+/// Localized details remain available without widening the retail cameo grid.
+pub fn draw_tooltip(
+    frame: &mut [u8],
+    width: u32,
+    height: u32,
+    session: &Session,
+    category: Category,
+    cursor: (f64, f64),
+) {
+    let Some(slot) = slot_at(width, height, session, category, cursor) else {
+        return;
+    };
+    let buildable = &session.buildables[slot];
+    let mut lines = name_lines(&buildable.name);
+    lines.push(format!("${} {}", buildable.cost, duration(buildable.ticks)));
+    let w = lines
+        .iter()
+        .map(|line| line.chars().count())
+        .max()
+        .unwrap_or(0) as i32
+        * 8
+        + 12;
+    let h = lines.len() as i32 * 12 + 8;
+    let x = (width.saturating_sub(WIDTH) as i32 - w - 4).max(0);
+    let y = (cursor.1 as i32).clamp(0, (height as i32 - h).max(0));
+    let mut canvas = Canvas {
+        frame,
+        width,
+        height,
+    };
+    canvas.rect((x, y), (w, h), GOLD);
+    canvas.rect((x + 1, y + 1), (w - 2, h - 2), [0, 0, 0, 255]);
+    for (i, line) in lines.iter().enumerate() {
+        canvas.text((x + 6, y + 5 + i as i32 * 12), line, GOLD, NAME_COLS);
     }
 }
 
@@ -277,6 +311,25 @@ impl Canvas<'_> {
         if x >= 0 && y >= 0 && (x as u32) < self.width && (y as u32) < self.height {
             let at = ((y as u32 * self.width + x as u32) * 4) as usize;
             self.frame[at..at + 4].copy_from_slice(&color);
+        }
+    }
+
+    fn image(&mut self, (x, y): (i32, i32), image: &art::Image) {
+        for (p, color) in image
+            .pixels
+            .as_chunks::<4>()
+            .0
+            .iter()
+            .take((image.width * image.height) as usize)
+            .enumerate()
+        {
+            if color[3] != 0 {
+                self.pixel(
+                    x + (p as u32 % image.width) as i32,
+                    y + (p as u32 / image.width) as i32,
+                    *color,
+                );
+            }
         }
     }
 
@@ -323,43 +376,50 @@ mod tests {
     use super::*;
 
     #[test]
-    fn tab_hit_boxes_match_both_rows_and_exclude_gaps() {
+    fn native_tab_and_cameo_geometry_excludes_gutters() {
         for width in [WIDTH, 1280] {
             let x = f64::from(width - WIDTH);
-            for (pos, category) in [
-                ((8.0, 40.0), Category::Structures),
-                ((343.0, 63.0), Category::Defences),
-                ((8.0, 72.0), Category::Infantry),
-                ((343.0, 95.0), Category::Vehicles),
-            ] {
-                assert_eq!(tab_at(width, (x + pos.0, pos.1)), Some(category));
+            for (i, category) in Category::ALL.into_iter().enumerate() {
+                for pos in [
+                    (26.0 + i as f64 * 28.0, 197.0),
+                    (53.0 + i as f64 * 28.0, 223.0),
+                ] {
+                    assert_eq!(tab_at(width, (x + pos.0, pos.1)), Some(category));
+                }
             }
-            for pos in [
-                (7.0, 40.0),
-                (172.0, 40.0),
-                (8.0, 64.0),
-                (8.0, 96.0),
-                (8.0, 104.0),
-            ] {
+            for pos in [(25.0, 197.0), (138.0, 197.0), (26.0, 196.0), (26.0, 224.0)] {
                 assert_eq!(tab_at(width, (x + pos.0, pos.1)), None);
             }
+            assert_eq!(slot_origin(width, 0), (x as i32 + 23, 228));
+            assert_eq!(slot_origin(width, 1), (x as i32 + 85, 228));
+            assert_eq!(slot_origin(width, 2), (x as i32 + 23, 278));
         }
     }
 
     #[test]
-    fn long_localized_names_stay_inside_cards() {
+    fn clock_is_bounded_by_actual_progress_including_extreme_values() {
+        assert_eq!(clock_phase(0, 100, 55), 1);
+        assert_eq!(clock_phase(25, 100, 55), 14);
+        assert_eq!(clock_phase(50, 100, 55), 28);
+        assert_eq!(clock_phase(100, 100, 55), 0);
+        assert_eq!(clock_phase(i64::MIN, i64::MAX, 55), 1);
+        assert_eq!(clock_phase(i64::MAX, i64::MAX, 55), 0);
+        assert_eq!(clock_phase(10, 0, 55), 0);
+        assert_eq!(clock_phase(0, 100, 0), 0);
+    }
+
+    #[test]
+    fn long_localized_tooltips_are_bounded() {
         assert_eq!(
             name_lines("Airforce Command Headquarters"),
-            ["Airforce", "Command", "Headquarters"]
+            ["Airforce Command", "Headquarters"]
         );
-        assert_eq!(name_lines("Infanterie élite"), ["Infanterie", "élite"]);
         let long = name_lines(&"界".repeat(100));
         assert_eq!(long.len(), NAME_LINES);
         assert!(long.iter().all(|s| s.chars().count() <= NAME_COLS));
         assert!(long.last().unwrap().ends_with(".."));
         assert_eq!(duration(441), "29.4s");
         assert_eq!(duration(1), "0.1s");
-        assert_eq!(duration(3150), "210s");
         assert_eq!(duration(u32::MAX), "286331153s");
     }
 }
