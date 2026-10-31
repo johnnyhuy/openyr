@@ -285,14 +285,15 @@ pub struct ShotOrigin {
     pub damage: i64,
 }
 
-/// A homing projectile in flight (internal; observed via events).
+/// A homing projectile in flight. Presentation observes the saved position;
+/// it cannot change the flight or advance a separate movement clock.
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Copy)]
 #[serde(deny_unknown_fields)]
-struct Projectile {
+pub struct Projectile {
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    origin: Option<ShotOrigin>,
-    x: Fix,
-    y: Fix,
+    pub origin: Option<ShotOrigin>,
+    pub x: Fix,
+    pub y: Fix,
     owner: u32,
     target: u32,
     damage: i64,
@@ -365,6 +366,10 @@ impl Sim {
 
     pub fn units(&self) -> &[Unit] {
         &self.units
+    }
+
+    pub fn projectiles(&self) -> &[Projectile] {
+        &self.projectiles
     }
 
     /// Advance one tick: apply commands (in order), then move units (in

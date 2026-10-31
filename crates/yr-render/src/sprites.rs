@@ -166,6 +166,7 @@ pub struct SpriteBank {
     buildings: HashMap<String, Option<BuildingArt>>,
     layers: HashMap<LayerKey, Option<Sprite>>,
     effects: crate::effects::Effects,
+    projectiles: crate::projectiles::Projectiles,
 }
 
 impl SpriteBank {
@@ -237,6 +238,7 @@ impl SpriteBank {
             buildings: HashMap::new(),
             layers: HashMap::new(),
             effects: Default::default(),
+            projectiles: Default::default(),
         })
     }
 
@@ -297,6 +299,17 @@ impl SpriteBank {
 
     pub fn get_effect(&mut self, name: &str, ticks: u64) -> Option<&Sprite> {
         self.effects.get(&self.vfs, &self.art_ini, name, ticks)
+    }
+
+    /// Static projectile art from the retained fired weapon identity.
+    pub fn get_projectile(&mut self, source: u64) -> Option<&Sprite> {
+        self.projectiles.get(
+            &self.vfs,
+            &self.rules,
+            &self.art_ini,
+            &self.unit_pal,
+            source,
+        )
     }
 
     /// Retail building body, bib and active/production overlays. Cache

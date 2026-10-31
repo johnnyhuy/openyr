@@ -11,6 +11,9 @@ use yr_rules::{Armor, Decimal, Rules};
 /// Armour classes are indexed by `yr_rules::Armor::ALL` order.
 pub const ARMOR_COUNT: usize = 11;
 
+/// Match the bounded velocity domain accepted by simulation snapshots.
+pub(crate) const MAX_PROJECTILE_SPEED: i32 = 1 << 24;
+
 /// A resolved weapon the sim can fire.
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
@@ -43,16 +46,23 @@ impl WeaponSpec {
         for (i, armor) in Armor::ALL.iter().enumerate() {
             verses[i] = warhead.verse(*armor);
         }
-        // Projectile speed: rules `Speed=` for the projectile object is a
-        // velocity class; map it onto leptons/tick at 4 leptons per unit.
-        let projectile = w
-            .projectile
-            .as_ref()
-            .and_then(|id| rules.projectiles.get(id));
-        let speed_units = if projectile.is_some() {
-            w.speed.unwrap_or(0)
-        } else {
-            0
+        // Four raw leptons/tick per weapon Speed unit is the native policy,
+        // pending original timing observation. One Fix backing unit is one
+        // lepton; from_int would multiply the velocity by another 256.
+        let projectile_speed = match w.projectile.as_deref() {
+            None => Fix::ZERO,
+            Some(id) => {
+                let p = rules.projectiles.get(id).filter(|p| p.defined)?;
+                if p.inviso == Some(true) {
+                    Fix::ZERO
+                } else {
+                    let raw = i32::try_from(w.speed.unwrap_or(0).checked_mul(4)?).ok()?;
+                    if !(0..=MAX_PROJECTILE_SPEED).contains(&raw) {
+                        return None;
+                    }
+                    Fix::from_raw(raw)
+                }
+            }
         };
         Some(WeaponSpec {
             source: (rules
@@ -65,7 +75,7 @@ impl WeaponSpec {
             damage: w.damage?,
             rof_ticks: w.rof.unwrap_or(0).max(0) as u32,
             range: cells_to_leptons(w.range?),
-            projectile_speed: Fix::from_int((speed_units * 4) as i32),
+            projectile_speed,
             verses,
         })
     }
@@ -90,6 +100,118 @@ pub fn cells_to_leptons(cells: Decimal) -> Fix {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn cannon_rules(speed: &str, projectile: &str) -> Rules {
+        Rules::load(&yr_formats::IniFile::parse(&format!(
+            "[VehicleTypes]\n0=TANK\n[TANK]\nPrimary=Gun\n[Gun]\nDamage=65\nROF=60\nRange=5\nSpeed={speed}\nProjectile=Bullet\nWarhead=AP\n[Bullet]\n{projectile}\n[AP]\nVerses=100%,100%,100%,100%,100%,100%,100%,100%,100%,100%,100%\n"
+        )), &yr_formats::IniFile::parse(""))
+    }
+
+    #[test]
+    fn rules_cannon_speed_keeps_launch_and_arrival_on_separate_ticks() {
+        use crate::{Command, Event, Sim};
+        let rules = cannon_rules("40", "Inviso=no");
+        let weapon = WeaponSpec::from_rules(&rules, "Gun").unwrap();
+        let mut sim = Sim::new(42);
+        let spawn = |x, weapon| Command::Spawn {
+            kind: 0,
+            x: Fix::from_int(x),
+            y: Fix::ZERO,
+            loco: crate::terrain::Loco::Track,
+            speed: Fix::ZERO,
+            hp: 1000,
+            armor: 5,
+            weapon,
+        };
+        sim.step(&[
+            spawn(0, Some(weapon)),
+            spawn(4, None),
+            Command::Attack { id: 1, target: 2 },
+        ]);
+        let launch = sim.drain_events();
+        assert!(launch.iter().any(|e| matches!(
+            e,
+            Event::Fired {
+                shooter: 1,
+                target: 2
+            }
+        )));
+        assert!(
+            !launch.iter().any(|e| matches!(e, Event::Impact { .. })),
+            "rules Speed=40 must not cross four cells on the launch tick: {launch:?}"
+        );
+        assert_eq!(
+            weapon.projectile_speed.raw(),
+            160,
+            "four raw leptons per rules speed unit"
+        );
+        assert_eq!(sim.projectiles[0].x.raw(), 160);
+        let mut restored = Sim::from_save_bytes(&sim.save_bytes().unwrap()).unwrap();
+        for tick in 2..=7 {
+            let commands = if tick == 2 {
+                vec![Command::Destroy { id: 1 }]
+            } else {
+                vec![]
+            };
+            sim.step(&commands);
+            restored.step(&commands);
+            assert_eq!(sim.state_hash(), restored.state_hash());
+            let events = sim.drain_events();
+            assert_eq!(events, restored.drain_events());
+            assert_eq!(
+                events
+                    .iter()
+                    .any(|e| matches!(e, Event::Impact { target: 2, .. })),
+                tick == 7,
+                "arrival on tick {tick}"
+            );
+        }
+        assert_eq!(sim.units()[0].hp, 935);
+    }
+
+    #[test]
+    fn invisible_rules_projectiles_remain_instant() {
+        for speed in ["40", "100", "0"] {
+            let rules = cannon_rules(speed, "Inviso=yes");
+            assert_eq!(
+                WeaponSpec::from_rules(&rules, "Gun")
+                    .unwrap()
+                    .projectile_speed,
+                Fix::ZERO
+            );
+        }
+    }
+
+    #[test]
+    fn physical_speed_conversion_rejects_negative_overflow_and_unsaveable_values() {
+        for speed in ["-1", "4194305", "536870912", "9223372036854775807"] {
+            assert!(
+                WeaponSpec::from_rules(&cannon_rules(speed, "Inviso=no"), "Gun").is_none(),
+                "unsafe speed {speed}"
+            );
+        }
+        for (speed, raw) in [("0", 0), ("1", 4), ("4194304", MAX_PROJECTILE_SPEED)] {
+            assert_eq!(
+                WeaponSpec::from_rules(&cannon_rules(speed, "Inviso=no"), "Gun")
+                    .unwrap()
+                    .projectile_speed
+                    .raw(),
+                raw
+            );
+        }
+        // Effective invisible velocity is zero even when the unused speed is huge.
+        assert_eq!(
+            WeaponSpec::from_rules(&cannon_rules("9223372036854775807", "Inviso=yes"), "Gun")
+                .unwrap()
+                .projectile_speed,
+            Fix::ZERO
+        );
+        let absent = Rules::load(&yr_formats::IniFile::parse("[VehicleTypes]\n0=TANK\n[TANK]\nPrimary=Gun\n[Gun]\nDamage=65\nRange=5\nProjectile=Missing\nWarhead=AP\n[AP]"), &yr_formats::IniFile::parse(""));
+        assert!(
+            WeaponSpec::from_rules(&absent, "Gun").is_none(),
+            "undefined projectile must not silently become hitscan"
+        );
+    }
 
     #[test]
     fn weapon_source_identity_survives_registry_reordering_and_case() {

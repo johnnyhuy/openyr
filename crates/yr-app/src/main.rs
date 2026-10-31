@@ -806,6 +806,35 @@ impl App {
             }
         }
         if let Some(bank) = bank.as_mut() {
+            if let Some(session) = &self.session {
+                for projectile in session.sim.projectiles() {
+                    let Some(sprite) = projectile
+                        .origin
+                        .and_then(|origin| origin.weapon)
+                        .and_then(|source| bank.get_projectile(source))
+                    else {
+                        continue;
+                    };
+                    let x = projectile.x.raw() as f32 / 256.0;
+                    let y = projectile.y.raw() as f32 / 256.0;
+                    let (mx, my) = map.cell_to_px(x, y);
+                    let level = session
+                        .sim
+                        .terrain()
+                        .and_then(|g| g.cell(x.max(0.0) as u16, y.max(0.0) as u16))
+                        .map_or(0, |c| c.height);
+                    blit_sprite(
+                        frame,
+                        fw,
+                        fh,
+                        sprite,
+                        (mx - self.view.cam_x) * self.view.zoom,
+                        (my - self.view.cam_y) * self.view.zoom - f32::from(level) * 15.0 * k,
+                        k,
+                        SpritePass::Effect,
+                    );
+                }
+            }
             for effect in &self.effects.active {
                 let x = effect.x.raw() as f32 / 256.0;
                 let y = effect.y.raw() as f32 / 256.0;
@@ -2058,6 +2087,7 @@ mod render_tests {
                     "tick": app.session.as_ref().unwrap().sim.tick(),
                     "state_hash": format!("{hash:016x}"),
                     "country": yr_app::session::PLAYER_COUNTRY,
+                    "projectiles": app.session.as_ref().unwrap().sim.projectiles(),
                     "player_units": app.session.as_ref().unwrap().sim.units().iter()
                         .filter(|u| u.owner == yr_sim::OWNER_PLAYER)
                         .map(|u| serde_json::json!({
@@ -2178,11 +2208,24 @@ mod render_tests {
         });
         app.tick_session();
         let shooter = app.session.as_ref().unwrap().sim.units().last().unwrap().id;
+        app.view.zoom = 4.0;
         app.view.center_on_cell(
             app.map.as_ref().unwrap(),
             (f32::from(cx) + 1.5, f32::from(cy) + 0.5),
             (WIN_W - SIDEBAR_W, WIN_H),
         );
+        // Frame the drawn high-ground patch rather than its flat projection.
+        let level = app
+            .session
+            .as_ref()
+            .unwrap()
+            .sim
+            .terrain()
+            .unwrap()
+            .cell(cx, cy)
+            .unwrap()
+            .height;
+        app.view.cam_y -= f32::from(level) * 15.0 / app.map.as_ref().unwrap().scale as f32;
         app.pending.push(Command::Spawn {
             kind: tank.kind,
             x: x + yr_sim::Fix::from_int(2),
@@ -2210,6 +2253,48 @@ mod render_tests {
             app.effects.active.iter().any(|e| e.name == "GUNFIRE"),
             "actual shot emits the muzzle art"
         );
+        let launch_tick = app.session.as_ref().unwrap().sim.tick();
+        for phase in 0..3 {
+            let session = app.session.as_ref().unwrap();
+            assert!(!app.effects.active.iter().any(|e| e.name == "S_CLSN22"));
+            assert_eq!(session.sim.projectiles().len(), 1);
+            assert_eq!(
+                session.sim.projectiles()[0].x.raw(),
+                x.raw() + 160 * (phase + 1)
+            );
+            let tick = session.sim.tick();
+            let with = capture(&app, &format!("flight-{phase:02}-t{tick:05}"), true);
+            if phase == 1 {
+                let session = app.session.as_mut().unwrap();
+                let original = session.sim.clone();
+                let hash = original.state_hash();
+                // Hide only visual provenance in a controlled comparison.
+                // Gameplay fields and the authoritative state hash stay equal.
+                let mut hidden = serde_json::to_value(&original).unwrap();
+                for projectile in hidden["projectiles"].as_array_mut().unwrap() {
+                    projectile["origin"] = serde_json::Value::Null;
+                }
+                session.sim = serde_json::from_value(hidden).unwrap();
+                assert_eq!(session.sim.state_hash(), hash);
+                let without = capture(&app, "projectile-without-source-same-tick", true);
+                app.session.as_mut().unwrap().sim = original;
+                assert_ne!(
+                    with, without,
+                    "the retained cannon source draws visible pixels"
+                );
+                capture(&app, "projectile-with-source-same-tick", true);
+                let saved = yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap();
+                yr_app::snapshot::restore(app.session.as_mut().unwrap(), &saved).unwrap();
+                app.sprites = load_sprites(dir, "EB1.MMX");
+                assert_eq!(
+                    capture(&app, "projectile-restored-same-tick", true),
+                    with,
+                    "in-flight save/load and a fresh sprite bank reconstruct the same pixels"
+                );
+            }
+            app.tick_session();
+        }
+        assert!(app.session.as_ref().unwrap().sim.projectiles().is_empty());
         assert!(
             app.effects.active.iter().any(|e| e.name == "S_CLSN22"
                 && e.x == x + yr_sim::Fix::from_int(2)
@@ -2217,7 +2302,7 @@ mod render_tests {
                 && e.born == app.session.as_ref().unwrap().sim.tick()),
             "actual shell arrival emits AP impact art"
         );
-        println!("impact proof: tick {}, shooter {shooter}, target {target}, weapon source {:?}, delivered damage {}, S_CLSN22", app.session.as_ref().unwrap().sim.tick(), tank.weapon.unwrap().source, tank.weapon.unwrap().damage);
+        println!("cannon proof: launch {launch_tick}, arrival {}, shooter {shooter}, target {target}, raw velocity {}, weapon source {:?}, delivered damage {}, S_CLSN22", app.session.as_ref().unwrap().sim.tick(), tank.weapon.unwrap().projectile_speed.raw(), tank.weapon.unwrap().source, tank.weapon.unwrap().damage);
         if let Some(out) = std::env::var_os("OPENYR_VISUAL_DUMP") {
             let weapon = tank.weapon.unwrap();
             let metadata = serde_json::json!({
@@ -2226,6 +2311,7 @@ mod render_tests {
                 "shooter_id": shooter, "target_id": target,
                 "weapon": weapon,
                 "weapon_source_hex": weapon.source.map(|source| format!("{source:016x}")),
+                "launch_tick": launch_tick, "zoom": app.view.zoom,
                 "impact": "S_CLSN22", "arrival_tick": app.session.as_ref().unwrap().sim.tick(),
             });
             std::fs::write(
