@@ -1,11 +1,11 @@
 //! Shared window/headless production panel and its matching hit boxes.
 
-mod art;
+pub(crate) mod art;
 mod controls;
 pub use controls::{control_at, draw_controls, ServiceMode};
 mod power;
 pub mod radar;
-mod text;
+pub(crate) mod text;
 pub use art::SidebarArt;
 use text::Typeface;
 
@@ -295,22 +295,22 @@ pub fn draw_tooltip(
     }
 }
 
-struct Canvas<'a> {
-    frame: &'a mut [u8],
-    width: u32,
-    height: u32,
-    face: Typeface<'a>,
+pub(crate) struct Canvas<'a> {
+    pub(crate) frame: &'a mut [u8],
+    pub(crate) width: u32,
+    pub(crate) height: u32,
+    pub(crate) face: Typeface<'a>,
 }
 
 impl Canvas<'_> {
-    fn pixel(&mut self, x: i32, y: i32, color: [u8; 4]) {
+    pub(crate) fn pixel(&mut self, x: i32, y: i32, color: [u8; 4]) {
         if x >= 0 && y >= 0 && (x as u32) < self.width && (y as u32) < self.height {
             let at = ((y as u32 * self.width + x as u32) * 4) as usize;
             self.frame[at..at + 4].copy_from_slice(&color);
         }
     }
 
-    fn image(&mut self, (x, y): (i32, i32), image: &art::Image) {
+    pub(crate) fn image(&mut self, (x, y): (i32, i32), image: &art::Image) {
         for (p, color) in image
             .pixels
             .as_chunks::<4>()
@@ -329,7 +329,7 @@ impl Canvas<'_> {
         }
     }
 
-    fn rect(&mut self, (x, y): (i32, i32), (w, h): (i32, i32), color: [u8; 4]) {
+    pub(crate) fn rect(&mut self, (x, y): (i32, i32), (w, h): (i32, i32), color: [u8; 4]) {
         for dy in 0..h {
             for dx in 0..w {
                 self.pixel(x + dx, y + dy, color);
@@ -337,7 +337,7 @@ impl Canvas<'_> {
         }
     }
 
-    fn shade(&mut self, (x, y): (i32, i32), (w, h): (i32, i32)) {
+    pub(crate) fn shade(&mut self, (x, y): (i32, i32), (w, h): (i32, i32)) {
         for py in y.max(0)..(y + h).min(self.height as i32) {
             for px in x.max(0)..(x + w).min(self.width as i32) {
                 let at = ((py as u32 * self.width + px as u32) * 4) as usize;
@@ -348,7 +348,7 @@ impl Canvas<'_> {
         }
     }
 
-    fn text(&mut self, (x, y): (i32, i32), text: &str, color: [u8; 4], columns: usize) {
+    pub(crate) fn text(&mut self, (x, y): (i32, i32), text: &str, color: [u8; 4], columns: usize) {
         let mut dx = x;
         for ch in text.chars().take(columns) {
             if let Some(glyph) = self.face.glyph(ch) {

@@ -84,10 +84,16 @@ Left-click or drag to select. With units selected, left-click to order.
 Right-click cancels; right-drag pans. Hold Ctrl+Shift or press A, then left-click to
 attack-move, S to stop, H to harvest, and M to mute/unmute. The sidebar
 queues units with left-click and cancels with right-click. Arrow keys or
-right-drag pan; the wheel zooms; Esc quits. Audio starts automatically and
+right-drag pan; the wheel zooms; Escape opens pause. Audio starts automatically and
 missing samples or an unavailable output device leave the match running.
 
-F5 quicksaves the last completed sim tick and F9 restores it. The default
+Escape cancels an active command, then opens the in-match pause screen. It
+provides named save/load, overwrite/discard confirmation, restart, quit and
+controls for mute and world zoom. Paused time does not catch up on resume.
+Tab selects controls; arrows select saved matches on Load.
+
+F5 saves the last completed sim tick with visible feedback; F9 asks before
+restoring it. The default
 file is `~/Library/Application Support/OpenYR/quicksave.oyrsave`. To open a
 saved match, use `--load <file>`; F5/F9 then use that file. Art, camera,
 selection, animation clocks and audio are rebuilt on load.
@@ -105,7 +111,7 @@ cargo run --release -- "/path/to/RA2" EB1.MMX --load /tmp/match.oyrsave
 map/rules compatibility fingerprint and full sim state travel together;
 incompatible versions or game data fail with a clear error. Save files
 contain data derived from the retail install, so keep them outside git.
-See [the save format](docs/formats/save.md).
+See [the save format](docs/formats/save.md) and [menu observations and limits](docs/formats/menus.md).
 
 To capture a scripted match without a window:
 

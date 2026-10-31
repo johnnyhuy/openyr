@@ -773,6 +773,10 @@ fn decode_cameo(
 }
 
 impl Session {
+    pub fn seed(&self) -> u64 {
+        self.seed
+    }
+
     /// Sidebar emphasis only. Payment remains gradual, so a dim slot
     /// can still be queued with insufficient credits. Paid structures
     /// waiting for placement remain bright even if their factory is lost.

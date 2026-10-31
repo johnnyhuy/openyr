@@ -7,6 +7,7 @@ pub mod cursor;
 pub mod effects;
 pub mod interaction;
 mod localization;
+pub mod menu;
 mod service;
 pub mod session;
 pub mod sidebar;

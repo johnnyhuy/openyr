@@ -270,6 +270,12 @@ impl AudioScene {
         }
     }
 
+    pub fn set_muted(&self, muted: bool) {
+        if let Output::Live(output) = &self.output {
+            output.set_muted(muted);
+        }
+    }
+
     pub fn toggle_mute(&self) {
         if let Output::Live(output) = &self.output {
             println!(

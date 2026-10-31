@@ -2,12 +2,12 @@
 
 use yr_formats::{FontGlyph, UnicodeFont};
 
-pub(super) const MAX_WIDTH: i32 = 224;
-pub(super) const MAX_CHARS: usize = 224;
+pub(crate) const MAX_WIDTH: i32 = 224;
+pub(crate) const MAX_CHARS: usize = 224;
 const MAX_LINES: usize = 3;
 
 #[derive(Clone, Copy)]
-pub(super) struct Typeface<'a>(pub Option<&'a UnicodeFont>);
+pub(crate) struct Typeface<'a>(pub Option<&'a UnicodeFont>);
 
 impl<'a> Typeface<'a> {
     pub fn glyph(self, ch: char) -> Option<FontGlyph<'a>> {

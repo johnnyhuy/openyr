@@ -45,6 +45,10 @@ impl LiveOutput {
         let _ = self.tx.try_send(sound);
     }
 
+    pub fn set_muted(&self, muted: bool) {
+        self.muted.store(muted, Ordering::Relaxed);
+    }
+
     pub fn toggle_mute(&self) -> bool {
         !self.muted.fetch_xor(true, Ordering::Relaxed)
     }
