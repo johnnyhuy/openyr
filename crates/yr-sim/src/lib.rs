@@ -14,6 +14,8 @@ pub mod building;
 pub mod combat;
 mod fix;
 mod hash;
+#[cfg(test)]
+mod impact_tests;
 pub mod path;
 pub mod production;
 mod rng;
@@ -161,6 +163,13 @@ pub enum Event {
         target: u32,
         damage: i64,
     },
+    /// A shot reached its target, including hits that inflict zero damage.
+    Impact {
+        target: u32,
+        x: Fix,
+        y: Fix,
+        origin: Option<ShotOrigin>,
+    },
     Died {
         id: u32,
     },
@@ -266,10 +275,22 @@ pub struct Unit {
     blocked: u16,
 }
 
+/// Immutable presentation provenance captured when the weapon fires.
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct ShotOrigin {
+    pub shooter: u32,
+    pub weapon: Option<u64>,
+    /// Delivered damage before target armour, used for impact art selection.
+    pub damage: i64,
+}
+
 /// A homing projectile in flight (internal; observed via events).
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Copy)]
 #[serde(deny_unknown_fields)]
 struct Projectile {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    origin: Option<ShotOrigin>,
     x: Fix,
     y: Fix,
     owner: u32,
@@ -830,7 +851,7 @@ impl Sim {
 
     fn fire_phase(&mut self) {
         let mut spawned: Vec<Projectile> = Vec::new();
-        let mut instant: Vec<(u32, u32, i64)> = Vec::new();
+        let mut instant: Vec<(ShotOrigin, u32, i64)> = Vec::new();
         for i in 0..self.units.len() {
             if self.units[i].cooldown > 0 {
                 self.units[i].cooldown -= 1;
@@ -856,10 +877,16 @@ impl Sim {
                 target: enemy_id,
             });
             let damage = w.damage_against(earmor);
+            let origin = ShotOrigin {
+                shooter: u.id,
+                weapon: w.source,
+                damage: w.damage,
+            };
             if w.projectile_speed == Fix::ZERO {
-                instant.push((u.id, enemy_id, damage));
+                instant.push((origin, enemy_id, damage));
             } else {
                 spawned.push(Projectile {
+                    origin: Some(origin),
                     x: u.x,
                     y: u.y,
                     owner: u.id,
@@ -873,14 +900,14 @@ impl Sim {
             u.cooldown = w.rof_ticks;
         }
         self.projectiles.extend(spawned);
-        for (_, target, damage) in instant {
-            self.apply_damage(target, damage);
+        for (origin, target, damage) in instant {
+            self.apply_impact(target, damage, Some(origin));
         }
         self.reap_dead();
     }
 
     fn projectile_phase(&mut self) {
-        let mut hits: Vec<(u32, i64)> = Vec::new();
+        let mut hits: Vec<(u32, i64, Option<ShotOrigin>)> = Vec::new();
         let mut alive: Vec<Projectile> = Vec::new();
         for mut p in std::mem::take(&mut self.projectiles) {
             let Some((tx, ty)) = self.target_pos(p.target) else {
@@ -888,7 +915,7 @@ impl Sim {
             };
             let (dx, dy) = (tx - p.x, ty - p.y);
             if dist2(dx, dy) <= i64::from(p.speed.raw()) * i64::from(p.speed.raw()) {
-                hits.push((p.target, p.damage));
+                hits.push((p.target, p.damage, p.origin));
             } else {
                 // Axis-clamped homing step (deterministic, no floats).
                 p.x += dx.clamp(-p.speed, p.speed);
@@ -897,13 +924,21 @@ impl Sim {
             }
         }
         self.projectiles = alive;
-        for (target, damage) in hits {
-            self.apply_damage(target, damage);
+        for (target, damage, origin) in hits {
+            self.apply_impact(target, damage, origin);
         }
         self.reap_dead();
     }
 
-    fn apply_damage(&mut self, target: u32, damage: i64) {
+    fn apply_impact(&mut self, target: u32, damage: i64, origin: Option<ShotOrigin>) {
+        if let Some((x, y)) = self.target_pos(target) {
+            self.events.push(Event::Impact {
+                target,
+                x,
+                y,
+                origin,
+            });
+        }
         if let Some(u) = self.units.iter_mut().find(|x| x.id == target) {
             if u.hp > 0 && damage > 0 {
                 u.hp -= damage;
@@ -1021,7 +1056,6 @@ impl Sim {
                     u.path.clear();
                 }
             }
-            self.projectiles.retain(|p| p.owner != id);
         }
     }
 
@@ -1689,6 +1723,7 @@ mod tests {
         let mut verses = [yr_rules::Decimal::ZERO; crate::combat::ARMOR_COUNT];
         verses[0] = yr_rules::Decimal::ONE;
         WeaponSpec {
+            source: None,
             damage,
             rof_ticks: rof,
             range: Fix::from_int(range_cells),
@@ -2219,6 +2254,7 @@ mod tests {
         let mut verses = [yr_rules::Decimal::ZERO; crate::combat::ARMOR_COUNT];
         verses[0] = yr_rules::Decimal::ONE;
         let w = WeaponSpec {
+            source: None,
             damage: 250,
             rof_ticks: 1,
             range: Fix::from_int(20),

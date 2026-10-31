@@ -2,6 +2,34 @@ use super::*;
 use std::path::PathBuf;
 
 #[test]
+fn impact_list_bands_use_delivered_damage_and_reject_unsupported_or_hostile_values() {
+    let ini = IniFile::parse("[AP]\nAnimList=SMALL,MEDIUM,LARGE\n");
+    let section = ini.section("AP").unwrap();
+    for (damage, expected) in [
+        (i64::MIN, None),
+        (-1, None),
+        (0, None),
+        (1, Some("SMALL")),
+        (24, Some("SMALL")),
+        (25, Some("MEDIUM")),
+        (49, Some("MEDIUM")),
+        (50, Some("LARGE")),
+        (i64::MAX, Some("LARGE")),
+    ] {
+        assert_eq!(impact_name(section, damage).as_deref(), expected);
+    }
+    for value in [
+        "AnimList=",
+        "AnimList=../../unsafe",
+        "AnimList=A,B\nEMEffect=yes",
+        &format!("AnimList={}", vec!["A"; 129].join(",")),
+    ] {
+        let ini = IniFile::parse(&format!("[AP]\n{value}"));
+        assert!(impact_name(ini.section("AP").unwrap(), 65).is_none());
+    }
+}
+
+#[test]
 fn hostile_optional_effects_are_rejected_before_canvas_decoding() {
     let dir = std::env::temp_dir().join(format!("openyr-effect-bounds-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
@@ -60,7 +88,7 @@ fn retail_effect_frames_match_anim_palette_and_cache_stays_bounded() {
     let mut bank = Effects::default();
     for name in [
         "GUNFIRE", "MGUN-N", "MGUN-NE", "MGUN-E", "MGUN-SE", "MGUN-S", "MGUN-SW", "MGUN-W",
-        "MGUN-NW", "TWLT070",
+        "MGUN-NW", "TWLT070", "S_CLSN16", "S_CLSN22", "PIFFPIFF",
     ] {
         let shp = ShpFile::parse(fs.read(&format!("{name}.SHP")).unwrap()).unwrap();
         println!(
@@ -69,7 +97,11 @@ fn retail_effect_frames_match_anim_palette_and_cache_stays_bounded() {
             shp.height,
             shp.frames.len()
         );
-        let alpha = if name.starts_with("MGUN-") { 255 } else { 127 };
+        let alpha = if name.starts_with("MGUN-") || name == "PIFFPIFF" {
+            255
+        } else {
+            127
+        };
         let mut seen = std::collections::BTreeSet::new();
         for tick in 0..1000 {
             let phase = tick * 200 / 225;

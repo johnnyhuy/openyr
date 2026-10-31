@@ -4,7 +4,7 @@ use crate::{BuildOrder, Product, Sim, UnitSpec, WeaponSpec};
 use std::fmt;
 
 const MAGIC: &[u8; 8] = b"OYRSIM\0\0";
-pub const VERSION: u32 = 1;
+pub const VERSION: u32 = 2;
 pub const MAX_SAVE_BYTES: usize = 64 * 1024 * 1024;
 const MAX_STAT: i64 = i32::MAX as i64;
 const MAX_COORD: i32 = 1 << 24;
@@ -29,6 +29,31 @@ pub(crate) fn require(ok: bool, message: &str) -> Result<(), SaveError> {
 }
 
 impl Sim {
+    /// Preserve the setup fingerprint used by pre-provenance match saves.
+    /// This projection is only for compatibility keys, never normal snapshots.
+    pub fn setup_fingerprint_bytes(&self) -> Result<Vec<u8>, SaveError> {
+        let mut setup = self.clone();
+        for unit in &mut setup.units {
+            if let Some(weapon) = &mut unit.weapon {
+                weapon.source = None;
+            }
+        }
+        for projectile in &mut setup.projectiles {
+            projectile.origin = None;
+        }
+        for economy in setup.economies.values_mut() {
+            for order in &mut economy.production {
+                order.product = order.product.without_weapon_source();
+            }
+        }
+        setup
+            .events
+            .retain(|event| !matches!(event, crate::Event::Impact { .. }));
+        let mut bytes = setup.save_bytes()?;
+        bytes[8..12].copy_from_slice(&1u32.to_le_bytes());
+        Ok(bytes)
+    }
+
     /// Snapshot without advancing a tick, drawing RNG or draining events.
     /// Fixed-point and decimal values are encoded as their raw integers.
     pub fn save_bytes(&self) -> Result<Vec<u8>, SaveError> {
@@ -47,9 +72,9 @@ impl Sim {
         require(bytes.len() >= 12, "truncated simulation header")?;
         require(&bytes[..8] == MAGIC, "not an OpenYR simulation snapshot")?;
         let version = u32::from_le_bytes(bytes[8..12].try_into().unwrap());
-        if version != VERSION {
+        if version != 1 && version != VERSION {
             return Err(SaveError(format!(
-                "unsupported simulation save version {version}; expected {VERSION}"
+                "unsupported simulation save version {version}; expected 1 or {VERSION}"
             )));
         }
         let sim: Self = serde_json::from_slice(&bytes[12..])
@@ -155,6 +180,13 @@ impl Sim {
             )?;
         }
         for p in &self.projectiles {
+            if let Some(origin) = p.origin {
+                require(
+                    (-MAX_STAT..=MAX_STAT).contains(&origin.damage),
+                    "shot source damage out of range",
+                )?;
+                require(origin.shooter == p.owner, "shot source owner mismatch")?;
+            }
             point((p.x, p.y))?;
             require(
                 (0..=MAX_COORD).contains(&p.speed.raw()),
@@ -347,6 +379,7 @@ mod tests {
         u.bails = 10;
         u.role = Role::Harvester;
         sim.projectiles.push(crate::Projectile {
+            origin: None,
             x: Fix::ONE,
             y: Fix::ONE,
             owner: 1,

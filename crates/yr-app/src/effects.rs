@@ -63,6 +63,21 @@ impl EffectScene {
         self.remember(session);
         entities.extend(self.entities.iter().map(|(&id, e)| (id, e.clone())));
         for event in events {
+            if let Event::Impact {
+                x,
+                y,
+                origin: Some(origin),
+                ..
+            } = *event
+            {
+                if let Some(name) = origin
+                    .weapon
+                    .and_then(|weapon| bank.impact_effect(weapon, origin.damage))
+                {
+                    self.push(bank, name, x, y, tick);
+                }
+                continue;
+            }
             let (id, firing) = match *event {
                 Event::Fired { shooter, .. } => (shooter, true),
                 Event::Died { id } => (id, false),
@@ -76,19 +91,20 @@ impl EffectScene {
             } else {
                 bank.destruction_effect(&entity.kind)
             };
-            let Some(name) = name.filter(|n| bank.effect_alive(n, 0)) else {
-                continue;
-            };
-            if self.active.len() == MAX_EFFECTS {
-                self.active.remove(0);
+            if let Some(name) = name {
+                self.push(bank, name, entity.x, entity.y, tick);
             }
-            self.active.push(Effect {
-                name,
-                x: entity.x,
-                y: entity.y,
-                born: tick,
-            });
         }
+    }
+
+    fn push(&mut self, bank: &mut SpriteBank, name: String, x: Fix, y: Fix, born: u64) {
+        if !bank.effect_alive(&name, 0) {
+            return;
+        }
+        if self.active.len() == MAX_EFFECTS {
+            self.active.remove(0);
+        }
+        self.active.push(Effect { name, x, y, born });
     }
 }
 

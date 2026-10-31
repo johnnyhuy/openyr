@@ -184,6 +184,7 @@ mod tests {
                 1,
                 OWNER_PLAYER,
                 Some(yr_sim::WeaponSpec {
+                    source: None,
                     damage: 10,
                     rof_ticks: 10,
                     range: Fix::from_int(1),

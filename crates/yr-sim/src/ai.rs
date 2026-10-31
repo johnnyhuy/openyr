@@ -303,6 +303,7 @@ mod tests {
             hp: 100,
             armor: 0,
             weapon: Some(WeaponSpec {
+                source: None,
                 damage: 10,
                 rof_ticks: 10,
                 range: Fix::from_int(3),

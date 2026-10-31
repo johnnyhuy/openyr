@@ -165,6 +165,16 @@ pub struct WeaponType {
     pub report: Vec<String>,
 }
 
+impl WeaponType {
+    /// Case-insensitive FNV-1a identity for presentation provenance. Consumers
+    /// reject collisions rather than assigning art from an ambiguous source.
+    pub fn source_id(&self) -> u64 {
+        self.id.bytes().fold(0xcbf2_9ce4_8422_2325, |hash, byte| {
+            (hash ^ u64::from(byte.to_ascii_uppercase())).wrapping_mul(0x0000_0100_0000_01b3)
+        })
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WarheadType {
     pub id: String,

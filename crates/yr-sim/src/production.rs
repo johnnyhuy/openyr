@@ -85,6 +85,20 @@ pub enum Product {
     Building(BuildingSpec),
 }
 
+impl Product {
+    /// Omit presentation metadata from the legacy setup compatibility key.
+    pub fn without_weapon_source(mut self) -> Self {
+        let unit = match &mut self {
+            Self::Unit(unit) => Some(unit),
+            Self::Building(building) => building.free_unit.as_mut().map(|(_, unit)| unit),
+        };
+        if let Some(weapon) = unit.and_then(|unit| unit.weapon.as_mut()) {
+            weapon.source = None;
+        }
+        self
+    }
+}
+
 /// One queued build. `kind` is a caller-chosen type index (the UI's
 /// buildable slot) echoed back in events.
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Copy, PartialEq, Eq)]

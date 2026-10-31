@@ -247,6 +247,7 @@ mod tests {
             spawn(
                 0,
                 Some(WeaponSpec {
+                    source: None,
                     damage: 1,
                     rof_ticks: 4,
                     range: Fix::from_int(10),

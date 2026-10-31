@@ -3,9 +3,31 @@
 use crate::sprites::Sprite;
 use std::collections::{HashMap, VecDeque};
 use yr_assets::AssetFs;
-use yr_formats::{IniFile, Palette, ShpFile};
+use yr_formats::{IniFile, IniSection, Palette, ShpFile};
 
 const MAX_CACHED_FRAMES: usize = 64;
+
+pub(crate) fn impact_name(section: &IniSection, damage: i64) -> Option<String> {
+    if damage <= 0 || section.get_bool("EMEffect") == Some(true) {
+        return None;
+    }
+    let names: Vec<_> = section
+        .get("AnimList")?
+        .split(',')
+        .map(str::trim)
+        .take(129)
+        .collect();
+    if names.is_empty() || names.len() > 128 {
+        return None;
+    }
+    // Retail lists increase with delivered damage. The documented 25-point
+    // bands ignore target armour and clamp to the final available entry.
+    let index = usize::try_from(damage / 25).ok()?.min(names.len() - 1);
+    names
+        .get(index)
+        .filter(|name| safe_name(name))
+        .map(|name| name.to_string())
+}
 
 struct Clip {
     file: String,

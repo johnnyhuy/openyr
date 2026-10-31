@@ -275,6 +275,22 @@ impl SpriteBank {
             .map(str::to_string)
     }
 
+    /// Resolve the actual fired weapon, never the victim's type or current owner.
+    pub fn impact_effect(&self, source: u64, damage: i64) -> Option<String> {
+        let mut matches = self
+            .rules
+            .weapons
+            .iter()
+            .filter(|weapon| weapon.source_id() == source);
+        let weapon = matches.next()?;
+        if matches.next().is_some() {
+            return None;
+        }
+        let warhead = weapon.warhead.as_deref()?;
+        let section = self.rules_ini.section(warhead)?;
+        crate::effects::impact_name(section, damage)
+    }
+
     pub fn effect_alive(&mut self, name: &str, ticks: u64) -> bool {
         self.effects.alive(&self.vfs, &self.art_ini, name, ticks)
     }
