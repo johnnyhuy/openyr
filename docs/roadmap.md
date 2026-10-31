@@ -124,7 +124,7 @@ Johnny on 2026-10-31.
       progress and freezes with credit stalls. Active paid work keeps its
       brightness when credits fall below full price (#85). All 54 unfinished masks
       and source panel/button pixels are checked against retail canvases
-      (`docs/formats/sidebar.md`). Repair/sell,
+      (`docs/formats/sidebar.md`). Original repair/sell animation,
       bottom command bar and original-game clock compositing remain open.
 - [x] Retail Unicode text (#88): validated `GAME.FNT` parser and native
       sidebar glyphs for credits, queue counts, READY and hover tooltips.
@@ -158,7 +158,15 @@ Johnny on 2026-10-31.
       radar calibration/shroud, power-meter calibration, repair/sell fidelity, text calibration,
       button transitions,
       queue hold/scrolling and original-game compositing comparisons.
-- [ ] Contextual animated game cursors (#98): observed retail frames,
+- [x] Native contextual cursor rendering: YR's 517-frame sheet and its
+      palette, shared select/move/attack/service resolution, authored blocked
+      states and fixed-size UI composition. Left clicks select/order and
+      right clicks cancel (#100); Ctrl+Shift attack-move and Shift toggling
+      share input validation. Focus/leave restore the system pointer and clear
+      stale gestures. Elevated ground picking and box anchors match drawing
+      (#104). Source canvases, route eligibility and native composition are
+      checked (`docs/formats/cursors.md`). Hotspots and cadence are provisional.
+- [ ] Contextual animated game cursor parity (#98): observed retail frames,
       palettes and hotspots for selection, movement, attack, harvesting,
       placement and other supported commands. Match actual command validation,
       keep size independent of map zoom, handle Retina coordinates and restore

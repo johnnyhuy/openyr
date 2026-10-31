@@ -1334,6 +1334,32 @@ impl Sim {
         std::mem::take(&mut self.events)
     }
 
+    /// Read-only route preview using the same impassable-goal substitution as movement.
+    /// Unit occupancy may change before the order takes effect.
+    pub fn can_move_to(&self, id: u32, tx: Fix, ty: Fix) -> bool {
+        let Some(unit) = self.units.iter().find(|u| u.id == id && u.hp > 0) else {
+            return false;
+        };
+        let Some(grid) = self.terrain.as_ref() else {
+            return tx.raw() >= 0 && ty.raw() >= 0;
+        };
+        let cell = |x: Fix, y: Fix| {
+            u16::try_from(x.to_int_floor())
+                .ok()
+                .zip(u16::try_from(y.to_int_floor()).ok())
+        };
+        let Some(start) = cell(unit.x, unit.y) else {
+            return false;
+        };
+        let Some(goal) = cell(tx, ty).filter(|&(x, y)| grid.cell(x, y).is_some()) else {
+            return false;
+        };
+        let Some(goal) = path::nearest_passable(grid, unit.loco, goal, GOAL_SEARCH_CELLS) else {
+            return false;
+        };
+        start == goal || path::find_path(grid, unit.loco, start, goal).is_some()
+    }
+
     fn move_on_grid(&mut self, i: usize, grid: &TerrainGrid, tx: Fix, ty: Fix) {
         let (ux, uy, loco) = {
             let u = &self.units[i];
