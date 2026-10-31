@@ -139,8 +139,17 @@ incremental, testable path where each milestone is independently useful.
       controlled retail damage/stall/repair/sale are checked
       (`docs/formats/structure-services.md`). Original rounding/timing,
       cursor/wrench art, deconstruction and survivors remain unverified.
+- [x] Allied power meter (#92): retail red/yellow/green pips show current
+      player output, consumption and spare power. A demand tick shows
+      shortages even at zero output; hover gives exact totals. Placement,
+      destruction, enemy isolation, compact windows and save/load are checked
+      in the shared window/headless panel (`docs/formats/sidebar.md`).
+      Display scale and surplus thresholds still need original-game calibration.
+- [ ] Scale generator output with observed health fractions (#93). The
+      current simulation keeps full output until destruction, including in
+      radar, production and the meter.
 - [ ] Complete original sidebar behavior and command bar (#86), including
-      radar calibration/shroud, power meter, repair/sell, text calibration,
+      radar calibration/shroud, power-meter calibration, repair/sell fidelity, text calibration,
       button transitions,
       queue hold/scrolling and original-game compositing comparisons.
 
