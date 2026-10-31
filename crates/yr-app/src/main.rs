@@ -299,7 +299,13 @@ impl App {
     fn sidebar_slot_at(&self, pos: (f64, f64)) -> Option<usize> {
         let session = self.session.as_ref()?;
         let fw = self.pixels.as_ref()?.texture().width();
-        sidebar::slot_at(fw, session, self.sidebar_category, pos)
+        sidebar::slot_at(
+            fw,
+            self.pixels.as_ref()?.texture().height(),
+            session,
+            self.sidebar_category,
+            pos,
+        )
     }
 
     fn in_sidebar(&self, pos: (f64, f64)) -> bool {
@@ -624,6 +630,7 @@ impl App {
         }
         if let Some(session) = &self.session {
             sidebar::draw(frame, fw, fh, session, self.sidebar_category, self.placing);
+            sidebar::draw_tooltip(frame, fw, fh, session, self.sidebar_category, self.cursor);
         }
         // Box-select rubber band.
         if let (Some(a), false) = (self.left_down, self.right_panning) {
@@ -966,6 +973,7 @@ impl ApplicationHandler for App {
                     None => position,
                 };
                 self.cursor = (position.x, position.y);
+                self.view.dirty = true;
                 if self.right_down.is_some() {
                     let dx = (position.x - self.last_cursor.0) as f32;
                     let dy = (position.y - self.last_cursor.1) as f32;

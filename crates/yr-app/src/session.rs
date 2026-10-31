@@ -28,6 +28,7 @@ pub struct Session {
     had_enemy: bool,
     /// What the player's sidebar can queue, in slot order.
     pub buildables: Vec<Buildable>,
+    pub sidebar_art: crate::sidebar::SidebarArt,
     /// Rules ids by sim `kind` tag (units and buildings); the first
     /// entries are the sidebar slots, so a `Produce` kind indexes here too.
     pub kinds: Vec<String>,
@@ -621,6 +622,7 @@ pub fn setup(
         outcome: Outcome::Ongoing,
         had_enemy,
         buildables,
+        sidebar_art: crate::sidebar::SidebarArt::load(fs),
         kinds,
         prerequisite_groups: rules.globals.prerequisite_groups.clone(),
         seed,
@@ -947,6 +949,7 @@ mod save_tests {
             outcome: Outcome::Ongoing,
             had_enemy: false,
             buildables,
+            sidebar_art: Default::default(),
             kinds,
             prerequisite_groups: Vec::new(),
             seed: 42,

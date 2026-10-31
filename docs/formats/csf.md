@@ -64,29 +64,32 @@ in this install on 2026-10-30 include `Name:MTNK`, `Name:GAREFN`, and
 the `UIName=` references for `AMRADR` and `GAROBO`. The app's unit tests cover
 case differences, Unicode values and all fallback cases without retail data.
 
-`yr-app::sidebar` draws both the native window and headless frames. Each
-60x48 cameo has a name beside it, wrapped to three lines, followed by its
-`Cost=` and duration. The duration is the session's integer `BuildSpeed=`
-tick count at 15 ticks/s, rounded up to tenths. For example, the Grizzly
-is $700 and 441 ticks (29.4s); the refinery is $2000 and 1260 ticks (84s).
-These are full-power estimates; low power or credit starvation can delay
+`yr-app::sidebar` draws both the native window and headless frames. The
+168-pixel Allied panel uses retail chrome, category buttons and two columns
+of 60x48 cameos. Hovering a cameo shows its localized name, `Cost=` and
+full-power duration in a bounded tooltip over the map. The duration is the
+session's integer `BuildSpeed=` tick count at 15 ticks/s, rounded up to
+tenths. For example, the Grizzly is $700 and 441 ticks (29.4s); the refinery
+is $2000 and 1260 ticks (84s). Low power or credit starvation can delay
 completion. This does not change production formulas or gradual payment.
 
-The panel is 352 pixels wide with two columns. Four category tabs sit above
-the cards, and all entries in each category fit in the 800-pixel-high frame.
-Clicking a name or price uses the same slot as its cameo. Unaffordable
-cards and cards without an owned factory or
-prerequisites dim; a paid structure remains bright while awaiting placement,
-even if the yard is lost. Progress wipes, counts and placement outlines
-remain visible. Set `OPENYR_SIDEBAR_DUMP=<dir>` while running
+All entries in each current category fit in the 800-pixel-high frame.
+Unavailable cameos dim; paid structures remain bright while awaiting
+placement, even if the yard is lost. An active queue uses the retail
+angular clock mask instead of a vertical wipe. Unfinished paid work does
+not dim a second time when credits fall below its original full price.
+Counts and placement outlines remain visible. Set
+`OPENYR_SIDEBAR_DUMP=<dir>` while running
 `cargo test -p yr-app --test retail sidebar -- --nocapture` to export
 controlled funded, unaffordable, factory-loss and ready-structure panels.
+See [sidebar art and geometry](sidebar.md) for source pixels and remaining
+original-game comparison work.
 
 Text uses the public-domain bitmap glyphs from
 [`font8x8`](https://docs.rs/font8x8/0.3.1/font8x8/). Latin, extended Latin,
 Greek and Hiragana are supported; other glyphs display `?`. Very long
 names are clipped after three lines with `..`. Full Unicode font shaping
-and alternate sidebar layouts remain presentation work.
+and the original game font remain presentation work.
 
 ## Sidebar categories
 
@@ -107,9 +110,9 @@ implementing their effects.
 
 Filtering keeps the original session slot as the production kind tag.
 Drawing, clicks, queue counts, progress, cancellation and placement all
-use that tag. Tabs show queued counts across hidden pages; a finished
-structure replaces its page's count with green READY text. Changing tabs
-backs out of the placement ghost but keeps the paid structure. Click its
+use that tag. Queue counts appear on unit cameos; a finished structure
+marks its tab with a green underline, including on hidden pages. Changing
+tabs backs out of the placement ghost but keeps the paid structure. Click its
 card again to place it. Category metadata and the selected tab are
 presentation only and do not affect saves or deterministic state hashes.
 

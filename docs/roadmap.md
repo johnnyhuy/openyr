@@ -106,10 +106,23 @@ incremental, testable path where each milestone is independently useful.
       structures stay bright until placed. Names and hit boxes share the
       window/headless panel (`docs/formats/csf.md`).
 - [x] Sidebar category tabs (#65): structures, defences, infantry and vehicles
-      filter all 22 entries without changing production ids. Tabs show queue
-      counts and a green READY marker for paid structures on hidden pages.
+      filter all 22 entries without changing production ids. Tabs show
+      a green marker for paid structures on hidden pages.
       Window and headless frames share card/tab hit boxes and drawing;
       switching tabs backs out of the ghost while keeping the paid structure.
+
+- [x] Retail Allied sidebar chrome and production clock (#84): native
+      168-pixel panel, authored category button states and 60x48 cameos at
+      the observed screen coordinates. Names, costs and full-power build
+      times move into hover tooltips. Clock coverage follows actual queue
+      progress and freezes with credit stalls. Active paid work keeps its
+      brightness when credits fall below full price (#85). All 54 unfinished masks
+      and source panel/button pixels are checked against retail canvases
+      (`docs/formats/sidebar.md`). Fonts, minimap, power meter, repair/sell,
+      bottom command bar and original-game clock compositing remain open.
+- [ ] Complete original sidebar behavior and command bar (#86), including
+      live radar, power meter, repair/sell, original fonts, button transitions,
+      queue hold/scrolling and original-game compositing comparisons.
 
 ## M4: Simulation v1
 
