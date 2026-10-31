@@ -325,8 +325,10 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       confirmation before discarding a match. Pausing stops sim ticks without
       catch-up on resume; modal input never reaches map commands. Preserve
       explicit CLI/headless launches and prove each menu state on its PR.
-- [ ] Account for terrain lift when centering world/radar camera targets (#129).
-      The flat projection currently leaves elevated targets above viewport center.
+- [x] Account for terrain lift when centering world/radar camera targets (#129).
+      Shared ground projection keeps targets at the world viewport center
+      across supported scales/zooms and three layouts; click/box selection,
+      sim/save invariance and retail before/after framing are checked.
 - [ ] Complete world interaction and desktop UX (#97): consistent selection,
       supported control groups/hotkeys, hover/target/order feedback, bounded
       camera movement and configurable edge scrolling. Clear held input on

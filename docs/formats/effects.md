@@ -169,6 +169,8 @@ muzzle sheet had picked HARV instead; its real impact is PIFFPIFF (#123).
 The close-up uses 4x zoom, records launch and arrival separately, compares
 visible/unknown-source flights at the same gameplay hash, and verifies
 identical pixels after saving the flight and rebuilding the sprite bank.
+Camera centering now uses the shared terrain-aware ground projection (#129),
+so the cannon fixture no longer needs a private height compensation.
 
 ```sh
 cargo test -p yr-render -p yr-app effects -- --nocapture
