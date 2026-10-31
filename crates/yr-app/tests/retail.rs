@@ -994,7 +994,7 @@ fn eb1_saved_match_resumes_to_the_same_win() {
     bad[20] ^= 1;
     assert!(yr_app::snapshot::restore(&mut resumed, &bad)
         .unwrap_err()
-        .contains("map or rules"));
+        .contains("map, rules or engine setup"));
     bad = bytes.clone();
     bad[28] ^= 1;
     assert!(yr_app::snapshot::restore(&mut resumed, &bad)

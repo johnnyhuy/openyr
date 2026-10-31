@@ -156,10 +156,18 @@ fn retail_radar_frames_rules_power_live_map_and_save_roundtrip() {
         .position(|b| b.id == "AMRADR")
         .unwrap();
     // Enemy ownership and enemy power cannot supply or disable player radar.
+    let grid = session.sim.terrain().unwrap();
+    let enemy_spot = (0..grid.height())
+        .find_map(|ly| {
+            (0..grid.width())
+                .map(|lx| grid.cell_at_local(lx, ly))
+                .find(|&cell| session.can_place(slot, cell))
+        })
+        .unwrap();
     session.step(&[Command::PlaceBuilding {
         kind: slot as u16,
-        x: 12,
-        y: 12,
+        x: enemy_spot.0,
+        y: enemy_spot.1,
         w: 3,
         h: 2,
         hp: 600,
@@ -248,6 +256,15 @@ fn retail_radar_frames_rules_power_live_map_and_save_roundtrip() {
         for x in 0..rect.w {
             let pos = (f64::from(rect.x + x) + 0.5, f64::from(rect.y + y) + 0.5);
             if let Some((cx, cy)) = session.radar.target(1280, pos) {
+                assert!(
+                    session
+                        .sim
+                        .terrain()
+                        .unwrap()
+                        .cell(cx.floor() as u16, cy.floor() as u16)
+                        .is_some(),
+                    "painted minimap targets must have simulation terrain"
+                );
                 let sx = x as usize * 112 / rect.w as usize;
                 let sy = y as usize * 52 / rect.h as usize;
                 assert_eq!(

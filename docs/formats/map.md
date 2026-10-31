@@ -183,3 +183,29 @@ channel-order probe. Of those, 251 samples carry gold-like RGB values and none
 carry the byte-reversed gold pattern. Cells (44,31) and (45,31) both map to
 (160,144,32). This supports retaining RGB for this retail preview rather than
 assuming a byte order from a different game's preview description.
+
+## Sparse simulation support
+
+`TerrainGrid::from_tiles` distinguishes an absent coordinate from an authored
+clear tile (#105, #125). The grid rectangle remains a storage/pathfinding bound;
+only records resolved to valid TMP subtiles create usable cells. Ground and
+flying movement, building footprints, cursor orders and session free-cell
+searches reject the remaining holes. `TerrainGrid::new` still creates a fully
+populated clear rectangle for synthetic scenarios. Resource/overlay edits
+cannot turn absent slots into playable ground.
+
+A map record with tile index -1 or 65535 is present clear ground. Simulation
+terrain resolves it through tile set 0, as the renderer already does, retaining
+the record's level and subtile. Missing/unresolved art remains unsupported
+rather than becoming invented clear ground.
+
+The retail EB1 regression enumerates all grid coordinates, checks every
+traversable cell and setup entity against the authored records, checks
+placement rejection at missing origins and round-trips the sparse terrain.
+A separate retail-backed fixture compares a clear sentinel to explicit tile 0.
+`LocalSize` is projected radar/crop metadata, not an axis-aligned rectangle in
+these map-cell coordinates. This fix preserves authored tiles outside that
+crop. Blocking those additional border tiles needs controlled original-game
+playable-bounds observation and is not inferred from the missing-cell defect.
+Sparse support is hashed and stored in simulation save version 3; see
+`docs/formats/save.md` for compatibility with older match setups.

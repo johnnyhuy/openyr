@@ -4,7 +4,7 @@ use crate::{BuildOrder, Product, Sim, UnitSpec, WeaponSpec};
 use std::fmt;
 
 const MAGIC: &[u8; 8] = b"OYRSIM\0\0";
-pub const VERSION: u32 = 2;
+pub const VERSION: u32 = 3;
 pub const MAX_SAVE_BYTES: usize = 64 * 1024 * 1024;
 const MAX_STAT: i64 = i32::MAX as i64;
 const MAX_COORD: i32 = 1 << 24;
@@ -75,9 +75,9 @@ impl Sim {
         require(bytes.len() >= 12, "truncated simulation header")?;
         require(&bytes[..8] == MAGIC, "not an OpenYR simulation snapshot")?;
         let version = u32::from_le_bytes(bytes[8..12].try_into().unwrap());
-        if version != 1 && version != VERSION {
+        if !(1..=VERSION).contains(&version) {
             return Err(SaveError(format!(
-                "unsupported simulation save version {version}; expected 1 or {VERSION}"
+                "unsupported simulation save version {version}; expected 1 through {VERSION}"
             )));
         }
         let sim: Self = serde_json::from_slice(&bytes[12..])
@@ -161,7 +161,8 @@ impl Sim {
             )?;
             if let Some(g) = &self.terrain {
                 require(
-                    g.cell(x, y).is_some() && g.cell(end_x.unwrap(), end_y.unwrap()).is_some(),
+                    (y..=end_y.unwrap())
+                        .all(|cy| (x..=end_x.unwrap()).all(|cx| g.cell(cx, cy).is_some())),
                     "building outside terrain",
                 )?;
             }

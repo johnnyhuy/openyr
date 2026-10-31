@@ -20,7 +20,7 @@ All header integers are little-endian. A match file has this layout:
 | 37 | remainder | Simulation snapshot |
 
 The simulation snapshot starts with `OYRSIM\0\0` (8 bytes), then a
-little-endian u32 version (currently 2), then UTF-8 JSON of `Sim`.
+little-endian u32 version (currently 3), then UTF-8 JSON of `Sim`.
 Fixed-point values are raw i32 integers with 256 units per cell; rule
 decimals are raw i64 millionths. No floating point enters the payload.
 JSON's integer text preserves all bits of the u64 RNG and tick fields.
@@ -57,6 +57,17 @@ therefore differ from the older engine. The version-2 save marks the updated
 schema; loading old payloads is supported, loading new saves in an old binary is
 not.
 
+Simulation version 3 distinguishes absent map coordinates with the `Absent`
+ground tag (#105). Normal grid access, movement and placement treat those
+slots as missing cells. They retain no overlays, resources or building state.
+The support pattern participates in both terrain hashes and setup fingerprints.
+Old match saves built from the permissive sparse rectangle fail the setup
+compatibility check without replacing the current session. Use a matching
+older engine to continue those matches; their old grid is not silently upgraded.
+Version-1/2 simulation payloads remain readable, and unchanged fully populated
+setups retain their existing compatibility key. New saves require an engine
+that reads version 3.
+
 ## Loading and writing
 
 Readers reject unsupported versions before parsing the payload. The app
@@ -67,8 +78,9 @@ u16 coordinate domain. Entity ids must be ordered and unique with a valid
 next id; footprints, health, weapon multipliers, coordinates, production
 progress and payments are checked before the sim is exposed. Unknown
 struct fields and malformed enum tags fail. Bump the format version when
-the state schema or tick semantics change. The version-1 to version-2 path
-above defaults only optional provenance; unsupported versions are rejected.
+the state schema or tick semantics change. Versions 1 through 3 are readable;
+the older provenance fields default as above. Sparse-grid setup changes are
+checked separately by the match wrapper. Unsupported versions are rejected.
 
 The app writes and syncs a sibling temporary file, then renames it over
 the destination. An encoding/write failure leaves the old save intact.

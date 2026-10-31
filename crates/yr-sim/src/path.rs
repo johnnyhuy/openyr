@@ -75,6 +75,9 @@ pub fn find_path_avoiding(
     to: (u16, u16),
     avoid: &[(u16, u16)],
 ) -> Option<Vec<(u16, u16)>> {
+    if grid.cell(from.0, from.1).is_none() || grid.cell(to.0, to.1).is_none() {
+        return None;
+    }
     if from == to {
         return Some(Vec::new());
     }
@@ -204,6 +207,27 @@ mod tests {
         assert_eq!(find_path(&g, Loco::Foot, (0, 0), (2, 0)), None);
         // Ships go nowhere on land.
         assert_eq!(find_path(&g, Loco::Ship, (0, 0), (4, 0)), None);
+    }
+
+    #[test]
+    fn sparse_map_paths_detour_and_reject_absent_endpoints_and_corners() {
+        let grid = TerrainGrid::from_tiles(
+            0,
+            0,
+            3,
+            3,
+            (0..3).flat_map(|y| {
+                (0..3).filter_map(move |x| ((x, y) != (1, 1)).then_some((x, y, 0, 13, 0)))
+            }),
+        );
+        for loco in [Loco::Foot, Loco::Track, Loco::Fly] {
+            let path = find_path(&grid, loco, (0, 1), (2, 1)).unwrap();
+            assert_eq!(path.len(), 4, "no diagonal corner cutting: {path:?}");
+            assert!(path.iter().all(|&(x, y)| grid.cell(x, y).is_some()));
+            assert_eq!(find_path(&grid, loco, (0, 1), (1, 1)), None);
+            assert_eq!(find_path(&grid, loco, (1, 1), (0, 1)), None);
+            assert_eq!(find_path(&grid, loco, (1, 1), (1, 1)), None);
+        }
     }
 
     #[test]

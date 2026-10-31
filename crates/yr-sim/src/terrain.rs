@@ -21,6 +21,8 @@ pub enum Ground {
     Road,
     Rough,
     Cliff,
+    /// No authored tile at this coordinate inside the grid rectangle.
+    Absent,
 }
 
 impl Ground {
@@ -87,6 +89,7 @@ fn speed_pct(ground: Ground, loco: Loco) -> Option<i32> {
     use Ground::*;
     use Loco::*;
     Some(match (ground, loco) {
+        (Absent, _) => return None,
         (_, Fly) => 100,
         (Water, Ship) => 100,
         (Water, _) => return None,
@@ -129,6 +132,17 @@ impl TerrainGrid {
                 && valid_axis(self.origin_y, self.height)
                 && self.width.checked_mul(self.height) == Some(self.cells.len()),
             "terrain dimensions do not match its cells or coordinate range",
+        )?;
+        require(
+            self.cells.iter().all(|c| {
+                c.ground != Ground::Absent
+                    || *c
+                        == Cell {
+                            ground: Ground::Absent,
+                            ..Cell::default()
+                        }
+            }),
+            "absent terrain cell contains mutable state",
         )
     }
 
@@ -144,6 +158,7 @@ impl TerrainGrid {
     }
 
     /// Build from map tiles: `(x, y, level, raw_terrain_type, ramp)`.
+    /// Coordinates without an authored tile are absent, including for aircraft.
     pub fn from_tiles(
         origin_x: i32,
         origin_y: i32,
@@ -152,8 +167,12 @@ impl TerrainGrid {
         tiles: impl Iterator<Item = (u16, u16, u8, u8, u8)>,
     ) -> TerrainGrid {
         let mut g = TerrainGrid::new(origin_x, origin_y, width, height);
+        for c in &mut g.cells {
+            c.ground = Ground::Absent;
+        }
         for (x, y, level, raw, ramp) in tiles {
-            if let Some(c) = g.cell_mut(x, y) {
+            if let Some(i) = g.index(x, y) {
+                let c = &mut g.cells[i];
                 c.height = level;
                 c.ground = Ground::from_raw(raw);
                 c.ramp = ramp;
@@ -171,12 +190,16 @@ impl TerrainGrid {
     }
 
     pub fn cell(&self, x: u16, y: u16) -> Option<&Cell> {
-        self.index(x, y).map(|i| &self.cells[i])
+        self.index(x, y)
+            .map(|i| &self.cells[i])
+            .filter(|c| c.ground != Ground::Absent)
     }
 
     pub fn cell_mut(&mut self, x: u16, y: u16) -> Option<&mut Cell> {
         self.fingerprint.set(None);
-        self.index(x, y).map(|i| &mut self.cells[i])
+        self.index(x, y)
+            .map(|i| &mut self.cells[i])
+            .filter(|c| c.ground != Ground::Absent)
     }
 
     pub fn set_overlay(&mut self, x: u16, y: u16, overlay: Overlay) {
@@ -250,6 +273,7 @@ impl TerrainGrid {
     /// Grid-local index for pathfinding scratch arrays.
     pub fn local_index(&self, x: u16, y: u16) -> Option<usize> {
         self.index(x, y)
+            .filter(|&i| self.cells[i].ground != Ground::Absent)
     }
 
     /// Map cell from grid-local coordinates.
@@ -313,7 +337,7 @@ impl TerrainGrid {
     /// Can a ground unit step from `(x0, y0)` to adjacent `(x1, y1)`?
     /// Height steps over 1 level need a ramp on either side.
     pub fn can_step(&self, loco: Loco, x0: u16, y0: u16, x1: u16, y1: u16) -> bool {
-        if !self.passable(loco, x1, y1) {
+        if self.cell(x0, y0).is_none() || !self.passable(loco, x1, y1) {
             return false;
         }
         if loco == Loco::Fly || loco == Loco::Ship {
@@ -327,7 +351,7 @@ impl TerrainGrid {
     }
 
     /// Count cells per ground class (debug/tests).
-    pub fn ground_counts(&self) -> [(Ground, usize); 7] {
+    pub fn ground_counts(&self) -> [(Ground, usize); 8] {
         let mut out = [
             (Ground::Clear, 0),
             (Ground::Water, 0),
@@ -336,6 +360,7 @@ impl TerrainGrid {
             (Ground::Road, 0),
             (Ground::Rough, 0),
             (Ground::Cliff, 0),
+            (Ground::Absent, 0),
         ];
         for c in &self.cells {
             for e in &mut out {
@@ -361,6 +386,85 @@ mod tests {
             tiles.push((2, y, 3, 15, 0));
         }
         TerrainGrid::from_tiles(0, 0, 3, 3, tiles.into_iter())
+    }
+
+    #[test]
+    fn sparse_tiles_block_holes_without_changing_synthetic_rectangles() {
+        let mut g = TerrainGrid::from_tiles(
+            10,
+            20,
+            3,
+            2,
+            [(10, 20, 0, 13, 0), (12, 20, 0, 13, 0), (10, 21, 0, 9, 0)].into_iter(),
+        );
+        let rectangular = TerrainGrid::new(10, 20, 3, 2);
+        for loco in [Loco::Foot, Loco::Track, Loco::Ship, Loco::Fly] {
+            assert!(!g.passable(loco, 11, 20));
+            assert!(!g.can_step(loco, 10, 20, 11, 20));
+            assert!(!g.can_step(loco, 11, 20, 10, 20));
+        }
+        assert!(rectangular.passable(Loco::Track, 11, 20));
+        assert!(g.passable(Loco::Ship, 10, 21));
+        assert!(g.cell(11, 20).is_none());
+        assert!(g.local_index(11, 20).is_none());
+        let hash = g.hash();
+        assert_ne!(hash, rectangular.hash());
+        g.set_resource(11, 20, Overlay::Gem, 20);
+        g.set_building(11, 20, 1, 1, true);
+        assert!(g.cell_mut(11, 20).is_none());
+        assert!(g.nearest_resource((11, 20)).is_none());
+        assert_eq!(g.hash(), hash, "edits cannot create ground in a hole");
+        assert_eq!(g.ground_counts()[7], (Ground::Absent, 3));
+    }
+
+    #[test]
+    fn sparse_saves_preserve_holes_and_reject_state_hidden_inside_them() {
+        let mut sim = crate::Sim::new(42);
+        sim.set_terrain(TerrainGrid::from_tiles(
+            0,
+            0,
+            3,
+            3,
+            (0..3).flat_map(|y| {
+                (0..3).filter_map(move |x| ((x, y) != (1, 1)).then_some((x, y, 0, 13, 0)))
+            }),
+        ));
+        let bytes = sim.save_bytes().unwrap();
+        let restored = crate::Sim::from_save_bytes(&bytes).unwrap();
+        assert_eq!(sim.state_hash(), restored.state_hash());
+        assert!(restored.terrain().unwrap().cell(1, 1).is_none());
+        for field in ["height", "resource", "building"] {
+            let mut state = serde_json::to_value(&sim).unwrap();
+            state["terrain"]["cells"][4][field] = if field == "building" {
+                true.into()
+            } else {
+                1.into()
+            };
+            let mut bad = bytes[..12].to_vec();
+            bad.extend(serde_json::to_vec(&state).unwrap());
+            assert!(crate::Sim::from_save_bytes(&bad)
+                .unwrap_err()
+                .to_string()
+                .contains("absent terrain"));
+        }
+        sim.step(&[crate::Command::PlaceBuilding {
+            kind: 0,
+            x: 0,
+            y: 0,
+            w: 3,
+            h: 3,
+            hp: 100,
+            armor: 0,
+            power: 0,
+            owner: crate::OWNER_PLAYER,
+            role: crate::Role::Combat,
+        }]);
+        let mut invalid = bytes[..12].to_vec();
+        invalid.extend(serde_json::to_vec(&sim).unwrap());
+        assert!(crate::Sim::from_save_bytes(&invalid)
+            .unwrap_err()
+            .to_string()
+            .contains("building outside terrain"));
     }
 
     #[test]
