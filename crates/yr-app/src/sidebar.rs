@@ -1,6 +1,8 @@
 //! Shared window/headless production panel and its matching hit boxes.
 
 mod art;
+mod controls;
+pub use controls::{control_at, draw_controls, ServiceMode};
 mod power;
 pub mod radar;
 mod text;
@@ -154,6 +156,7 @@ pub fn draw(
             canvas.image((x0, y), image);
         }
     }
+    controls::paint(&mut canvas, session, ServiceMode::None);
     session.radar.draw(&mut canvas, session);
     let credits = session.sim.credits().to_string();
     let cx = x0 + (WIDTH as i32 - canvas.face.width(&credits)) / 2;

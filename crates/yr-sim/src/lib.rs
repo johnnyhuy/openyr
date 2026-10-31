@@ -18,6 +18,7 @@ pub mod path;
 pub mod production;
 mod rng;
 pub mod save;
+pub mod service;
 pub mod terrain;
 
 pub use building::Building;
@@ -25,6 +26,7 @@ pub use combat::WeaponSpec;
 pub use fix::Fix;
 pub use production::{BuildOrder, BuildingSpec, Factory, Product, UnitSpec};
 pub use rng::Rng;
+pub use service::RepairSpec;
 pub use terrain::TerrainGrid;
 
 /// One cell in leptons: positions are in leptons (256 per cell), the
@@ -117,6 +119,17 @@ pub enum Command {
         x: u16,
         y: u16,
     },
+    /// Toggle repair of a player-owned structure using a rules recipe.
+    Repair {
+        id: u32,
+        spec: Option<RepairSpec>,
+    },
+    /// Sell an owned structure. The session supplies its rules value.
+    Sell {
+        id: u32,
+        cost: i64,
+        percent: yr_rules::Decimal,
+    },
     /// Cancel the newest order of `kind` in `factory`'s queue; refunds
     /// what it had drawn.
     CancelProduce {
@@ -132,6 +145,14 @@ pub enum Command {
 /// to. Deterministic, drained by the caller after each step.
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Event {
+    RepairStarted {
+        id: u32,
+    },
+    Sold {
+        id: u32,
+        value: i64,
+        total: i64,
+    },
     Fired {
         shooter: u32,
         target: u32,
@@ -273,6 +294,8 @@ pub struct Sim {
     buildings: Vec<Building>,
     /// (min, max) low-power production speed factors from the rules.
     low_power_speeds: (Fix, Fix),
+    #[serde(default, skip_serializing_if = "std::collections::BTreeMap::is_empty")]
+    repairs: std::collections::BTreeMap<u32, service::RepairJob>,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Default)]
@@ -296,6 +319,7 @@ impl Sim {
             ai: None,
             buildings: Vec::new(),
             low_power_speeds: (Fix::from_raw(128), Fix::ONE),
+            repairs: Default::default(),
         }
     }
 
@@ -394,6 +418,8 @@ impl Sim {
                 Command::PlaceProduced { kind, x, y } => {
                     self.place_produced(OWNER_PLAYER, kind, x, y);
                 }
+                Command::Repair { id, spec } => self.set_repair(id, spec),
+                Command::Sell { id, cost, percent } => self.sell_structure(id, cost, percent),
                 Command::AssignOwner { id, owner } => {
                     if let Some(u) = self.units.iter_mut().find(|u| u.id == id) {
                         u.owner = owner;
@@ -479,6 +505,7 @@ impl Sim {
             self.ai = Some(ai);
         }
         self.production_phase();
+        self.service_phase();
         self.harvest_phase();
         // Idle armed units defend themselves: an idle combat unit (no
         // order of any kind) engages the nearest hostile in weapon range.
@@ -971,17 +998,8 @@ impl Sim {
         if !dead_buildings.is_empty() {
             self.buildings.retain(|b| b.hp > 0);
             for b in &dead_buildings {
-                if let Some(g) = self.terrain.as_mut() {
-                    g.set_building(b.cell.0, b.cell.1, b.size.0, b.size.1, false);
-                }
+                self.release_structure(b);
                 self.events.push(Event::Died { id: b.id });
-                for u in &mut self.units {
-                    if u.attack == Some(b.id) {
-                        u.attack = None;
-                        u.target = None;
-                        u.path.clear();
-                    }
-                }
             }
         }
         let dead: Vec<u32> = self

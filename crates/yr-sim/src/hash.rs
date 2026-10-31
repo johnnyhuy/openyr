@@ -194,6 +194,20 @@ pub(crate) fn state(sim: &crate::Sim) -> u64 {
         ai.hash(&mut h);
     }
     // Events are presentation output. Draining them cannot change future play.
+    // Empty service state preserves pre-service hashes and old saves.
+    if !sim.repairs.is_empty() {
+        h.write_u64(0x524550414952);
+        h.write_u64(sim.repairs.len() as u64);
+        for (&id, job) in &sim.repairs {
+            h.write_u64(u64::from(id));
+            h.write_i64(job.spec.cost);
+            h.write_i64(job.spec.percent.units());
+            h.write_i64(job.spec.step);
+            h.write_u64(u64::from(job.spec.interval));
+            h.write_u64(u64::from(job.remaining));
+            h.write_i64(job.remainder);
+        }
+    }
     h.finish()
 }
 

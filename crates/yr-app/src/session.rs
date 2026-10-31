@@ -30,6 +30,7 @@ pub struct Session {
     pub buildables: Vec<Buildable>,
     pub sidebar_art: crate::sidebar::SidebarArt,
     pub radar: crate::sidebar::radar::Radar,
+    pub(crate) services: crate::service::Services,
     /// Rules ids by sim `kind` tag (units and buildings); the first
     /// entries are the sidebar slots, so a `Produce` kind indexes here too.
     pub kinds: Vec<String>,
@@ -622,6 +623,7 @@ pub fn setup(
     radar.reset(&sim, &kinds);
     Ok(Session {
         radar,
+        services: crate::service::Services::load(rules),
         sim,
         outcome: Outcome::Ongoing,
         had_enemy,
@@ -956,6 +958,7 @@ mod save_tests {
             buildables,
             sidebar_art: Default::default(),
             radar: Default::default(),
+            services: Default::default(),
             kinds,
             prerequisite_groups: Vec::new(),
             seed: 42,

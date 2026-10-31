@@ -20,6 +20,7 @@ The local SHP headers and decoded canvases contain:
 | `TAB00.SHP` through `TAB03.SHP` | 28x27 | 5 each | Structure, defence, infantry, vehicle buttons |
 | `GCLOCK2.SHP` | 60x48 | 55 | Production-clock coverage |
 | `POWERP.SHP` | 12x2 | 5 | Power meter pips |
+| `REPAIR.SHP`, `SELL.SHP` | 64x31 | 2 each | Structure service controls |
 
 Index zero is transparent. The first clock frame is empty. Frame 1 covers
 2,868 pixels, frame 27 covers 1,444, and frame 54 covers 60. Coverage
@@ -41,6 +42,7 @@ below are relative to the panel's left edge and the top of the screen:
 | Top surround | (0, 16) |
 | Radar | (0, 48) |
 | Category surround | (0, 158) |
+| Repair and sell | (20, 166), (84, 166) |
 | Four category buttons | (26 + 28*n, 197) |
 | Cameo columns | x = 23, 85 |
 | Cameo rows | y = 228 + 50*n |
@@ -60,6 +62,9 @@ stalls and low-power progress use the actual production state. Drawing
 never advances the clock or modifies the sim. A paid queue head keeps its
 normal brightness beneath the clock even when the balance is below its
 full cost. Unavailable unqueued entries dim as before.
+
+Repair and sell use their authored normal/active sheets and shared input
+modes. See [structure service rules and limits](structure-services.md).
 
 Selected tabs use sheet frame 1 and other tabs frame 0. A green underline
 keeps a paid structure visible on a hidden category. The `READY` label,
@@ -93,7 +98,8 @@ retail UI art the panel retains basic fallback drawing and input.
 Powered radar now plays the retail transition and shows a live cell-based
 minimap with navigation and a camera outline (`radar.md`). Exact transition
 cadence, radar colors, scaling and shroud still need comparison. Power-meter
-calibration, repair/sell actions and icons, top-strip controls, the bottom command bar, exact text spacing and colors,
+calibration, original repair/sell timing and animations, top-strip controls,
+the bottom command bar, exact text spacing and colors,
 hover/pressed/disabled tab transitions, queue hold behavior and dynamic
 sidebar scrolling remain UI fidelity work. Other factions and loose
 per-file sidebar overrides are not yet selected by this Allied loader.

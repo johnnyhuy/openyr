@@ -138,6 +138,22 @@ impl Sim {
                 )?;
             }
         }
+        for (&id, job) in &self.repairs {
+            let b = self.buildings.iter().find(|b| {
+                b.id == id && b.owner == crate::OWNER_PLAYER && b.hp > 0 && b.hp < b.max_hp
+            });
+            require(b.is_some(), "repair target is absent or ineligible")?;
+            require(job.spec.valid(), "invalid repair recipe")?;
+            require(
+                job.remaining > 0 && job.remaining <= job.spec.interval,
+                "invalid repair countdown",
+            )?;
+            let denominator = i128::from(b.unwrap().max_hp) * 1_000_000;
+            require(
+                job.remainder >= 0 && i128::from(job.remainder) < denominator,
+                "invalid repair fraction",
+            )?;
+        }
         for p in &self.projectiles {
             point((p.x, p.y))?;
             require(

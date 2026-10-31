@@ -138,6 +138,13 @@ Johnny on 2026-10-31.
       frame pixels, power loss/recovery, source-cell clicks and save/load
       reconstruction are checked (`docs/formats/radar.md`). Exact cadence,
       color/scale calibration and shroud remain in #86.
+- [x] Native repair/sell controls (#94): authored Allied button states,
+      K/L input modes, rules-gated owned structure actions, deterministic
+      credit-funded repair jobs and sale refunds. Jobs survive save/load;
+      sale frees footprints and uses its retail EVA cue. Source pixels and
+      controlled retail damage/stall/repair/sale are checked
+      (`docs/formats/structure-services.md`). Original rounding/timing,
+      cursor/wrench art, deconstruction and survivors remain unverified.
 - [x] Allied power meter (#92): retail red/yellow/green pips show current
       player output, consumption and spare power. A demand tick shows
       shortages even at zero output; hover gives exact totals. Placement,
@@ -148,7 +155,7 @@ Johnny on 2026-10-31.
       current simulation keeps full output until destruction, including in
       radar, production and the meter.
 - [ ] Complete original sidebar behavior and command bar (#86), including
-      radar calibration/shroud, power-meter calibration, repair/sell, text calibration,
+      radar calibration/shroud, power-meter calibration, repair/sell fidelity, text calibration,
       button transitions,
       queue hold/scrolling and original-game compositing comparisons.
 - [ ] Contextual animated game cursors (#98): observed retail frames,
