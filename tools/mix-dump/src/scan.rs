@@ -8,7 +8,8 @@ use std::collections::{BTreeMap, HashSet};
 use std::io::Write;
 use yr_formats::names::NameDb;
 use yr_formats::{
-    AudFile, CsfFile, HvaFile, IniFile, MixArchive, Palette, PcxImage, ShpFile, TmpFile, VxlFile,
+    AudFile, CsfFile, HvaFile, IniFile, MixArchive, Palette, PcxImage, ShpFile, TmpFile,
+    UnicodeFont, VxlFile,
 };
 
 #[derive(Default)]
@@ -272,7 +273,19 @@ fn classify(d: &[u8], label: &str, c: &mut Census) -> &'static str {
                 }
             };
         }
-        [b'F', b'o', b'N', b't', ..] | [b'f', b'o', b'n', b'T', ..] => return "fnt",
+        [b'f', b'o', b'n', b'T', ..] => {
+            return match UnicodeFont::parse(d) {
+                Ok(font) => {
+                    c.detail(format!("unicode font glyphs {}", font.glyph_count));
+                    "fnt"
+                }
+                Err(e) => {
+                    c.errors.push(format!("{label}: Unicode font: {e}"));
+                    "fnt?"
+                }
+            }
+        }
+        [b'F', b'o', b'N', b't', ..] => return "fnt",
         // Classic Westwood font (6POINT/8POINT/GRAD6FNT.FNT): u16 file size,
         // then u16 2 and block offsets.
         [a, b, 0x02, 0x00, ..] if usize::from(u16::from_le_bytes([*a, *b])) == d.len() => {

@@ -7,6 +7,7 @@ pub mod audio;
 mod bytes;
 pub mod compress;
 pub mod csf;
+pub mod font;
 pub mod hash;
 pub mod hva;
 pub mod ini;
@@ -23,6 +24,7 @@ pub mod vxl;
 
 pub use audio::{AudFile, AudioError, BagEntry, Pcm};
 pub use csf::{CsfEntry, CsfError, CsfFile};
+pub use font::{FontError, FontGlyph, UnicodeFont};
 pub use hash::{crc32, mix_id, mix_id_td};
 pub use hva::{HvaError, HvaFile};
 pub use ini::{IniFile, IniSection};

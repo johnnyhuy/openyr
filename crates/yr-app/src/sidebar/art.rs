@@ -1,7 +1,7 @@
 //! Allied sidebar assets, kept outside the world's shared filename namespace.
 
 use yr_assets::AssetFs;
-use yr_formats::{mix_id, MixArchive, Palette, ShpFile};
+use yr_formats::{mix_id, MixArchive, Palette, ShpFile, UnicodeFont};
 
 pub(super) struct Image {
     pub width: u32,
@@ -11,6 +11,7 @@ pub(super) struct Image {
 
 #[derive(Default)]
 pub struct SidebarArt {
+    pub(super) font: Option<UnicodeFont>,
     pub(super) credits: Option<Image>,
     pub(super) top: Option<Image>,
     pub(super) radar: Option<Image>,
@@ -24,18 +25,42 @@ pub struct SidebarArt {
 
 impl SidebarArt {
     pub fn load(fs: &AssetFs) -> Self {
+        let font = fs
+            .read("GAME.FNT")
+            .and_then(|data| match UnicodeFont::parse(data) {
+                Ok(font) if font.stride <= 8 && font.lines <= 32 && font.line_height <= 40 => {
+                    Some(font)
+                }
+                Ok(_) => {
+                    eprintln!("OpenYR: UI font exceeds supported text dimensions");
+                    None
+                }
+                Err(e) => {
+                    eprintln!("OpenYR: UI font unavailable ({e})");
+                    None
+                }
+            });
         // The sandbox currently uses the Americans. SIDEC archives repeat
         // filenames, so mounting all sides would silently mix their artwork.
         let Some(bytes) = fs.read("SIDEC01.MIX") else {
-            return Self::default();
+            return Self {
+                font,
+                ..Self::default()
+            };
         };
         let Ok(archive) = MixArchive::parse(bytes) else {
             eprintln!("OpenYR: cannot decode Allied sidebar archive");
-            return Self::default();
+            return Self {
+                font,
+                ..Self::default()
+            };
         };
         let read = |name: &str| archive.get_by_id(mix_id(name));
         let Some(palette) = read("SIDEBAR.PAL").and_then(Palette::parse) else {
-            return Self::default();
+            return Self {
+                font,
+                ..Self::default()
+            };
         };
         let frames = |name: &str, w: u16, h: u16, count: usize| -> Vec<Image> {
             let Some(shp) = read(name).and_then(|data| ShpFile::parse(data).ok()) else {
@@ -65,6 +90,7 @@ impl SidebarArt {
         };
         let one = |name, w, h| frames(name, w, h, 1).pop();
         Self {
+            font,
             credits: one("CREDITS.SHP", 168, 16),
             top: one("TOP.SHP", 168, 32),
             radar: frames("RADAR.SHP", 168, 110, 33).into_iter().next(),
@@ -163,7 +189,7 @@ mod tests {
                     p as u32 / u32::from(shp.width),
                 );
                 // Credit glyphs overlay the source strip.
-                if index == 0 || (name == "CREDITS.SHP" && (4..12).contains(&dy)) {
+                if index == 0 || (name == "CREDITS.SHP" && (4..13).contains(&dy)) {
                     continue;
                 }
                 let at = (((y + dy) * width + x + dx) * 4) as usize;

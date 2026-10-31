@@ -62,8 +62,9 @@ full cost. Unavailable unqueued entries dim as before.
 
 Selected tabs use sheet frame 1 and other tabs frame 0. A green underline
 keeps a paid structure visible on a hidden category. The `READY` label,
-placement outline, queue counts and hover tooltip use the app's existing
-bitmap font; these are still prototype presentation. Localized names,
+placement outline and other status presentation remain provisional.
+Credits, queue counts, READY and hover tooltips now use the retail
+[Unicode bitmap font](font.md) with measured widths. Localized names,
 costs and duration estimates remain available by hovering a cameo.
 
 `retail_sidebar_matches_source_pixels_and_all_clock_phases` independently
@@ -90,7 +91,7 @@ retail UI art the panel retains basic fallback drawing and input.
 
 The inactive Allied emblem is currently displayed even after a radar
 structure is built. A live minimap, power meter, repair/sell actions and
-icons, top-strip controls, the bottom command bar, original bitmap fonts,
+icons, top-strip controls, the bottom command bar, exact text spacing and colors,
 hover/pressed/disabled tab transitions, queue hold behavior and dynamic
 sidebar scrolling remain UI fidelity work. Other factions and loose
 per-file sidebar overrides are not yet selected by this Allied loader.

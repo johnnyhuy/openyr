@@ -85,11 +85,13 @@ controlled funded, unaffordable, factory-loss and ready-structure panels.
 See [sidebar art and geometry](sidebar.md) for source pixels and remaining
 original-game comparison work.
 
-Text uses the public-domain bitmap glyphs from
-[`font8x8`](https://docs.rs/font8x8/0.3.1/font8x8/). Latin, extended Latin,
-Greek and Hiragana are supported; other glyphs display `?`. Very long
-names are clipped after three lines with `..`. Full Unicode font shaping
-and the original game font remain presentation work.
+Text uses the installed `GAME.FNT` bitmaps with variable glyph widths,
+falling back to public-domain `font8x8` glyphs when the font is absent or
+invalid. Unsupported characters use the retail question mark. Names wrap
+at 224 pixels and at most three lines, ending with `..` when truncated.
+The line height comes from the font. Font bytes remain outside save
+compatibility and simulation hashes. See [font format and checks](font.md)
+for raw-glyph comparisons and remaining typography calibration.
 
 ## Sidebar categories
 

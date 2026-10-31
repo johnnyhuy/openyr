@@ -118,10 +118,15 @@ incremental, testable path where each milestone is independently useful.
       progress and freezes with credit stalls. Active paid work keeps its
       brightness when credits fall below full price (#85). All 54 unfinished masks
       and source panel/button pixels are checked against retail canvases
-      (`docs/formats/sidebar.md`). Fonts, minimap, power meter, repair/sell,
+      (`docs/formats/sidebar.md`). Minimap, power meter, repair/sell,
       bottom command bar and original-game clock compositing remain open.
+- [x] Retail Unicode text (#88): validated `GAME.FNT` parser and native
+      sidebar glyphs for credits, queue counts, READY and hover tooltips.
+      Text measures variable widths and wraps wide characters; all 29,655
+      glyphs match raw retail records. Exact original spacing and colors
+      remain in #86 (`docs/formats/font.md`).
 - [ ] Complete original sidebar behavior and command bar (#86), including
-      live radar, power meter, repair/sell, original fonts, button transitions,
+      live radar, power meter, repair/sell, text calibration, button transitions,
       queue hold/scrolling and original-game compositing comparisons.
 
 ## M4: Simulation v1
