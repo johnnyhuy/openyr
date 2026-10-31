@@ -2208,6 +2208,10 @@ mod render_tests {
         });
         app.tick_session();
         let shooter = app.session.as_ref().unwrap().sim.units().last().unwrap().id;
+        app.pending.push(Command::AssignOwner {
+            id: shooter,
+            owner: yr_sim::OWNER_PLAYER,
+        });
         app.view.zoom = 4.0;
         app.view.center_on_cell(
             app.map.as_ref().unwrap(),
@@ -2238,6 +2242,18 @@ mod render_tests {
         });
         app.tick_session();
         let target = app.session.as_ref().unwrap().sim.units().last().unwrap().id;
+        assert_eq!(
+            app.session
+                .as_ref()
+                .unwrap()
+                .sim
+                .units()
+                .iter()
+                .find(|u| u.id == shooter)
+                .unwrap()
+                .owner,
+            yr_sim::OWNER_PLAYER
+        );
         app.pending.extend([
             Command::AssignOwner {
                 id: target,
@@ -2249,6 +2265,18 @@ mod render_tests {
             },
         ]);
         app.tick_session();
+        assert_eq!(
+            app.session
+                .as_ref()
+                .unwrap()
+                .sim
+                .units()
+                .iter()
+                .find(|u| u.id == target)
+                .unwrap()
+                .owner,
+            yr_sim::OWNER_ENEMY
+        );
         assert!(
             app.effects.active.iter().any(|e| e.name == "GUNFIRE"),
             "actual shot emits the muzzle art"
@@ -2284,6 +2312,10 @@ mod render_tests {
                 );
                 capture(&app, "projectile-with-source-same-tick", true);
                 let saved = yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap();
+                if let Some(out) = std::env::var_os("OPENYR_VISUAL_DUMP") {
+                    std::fs::write(PathBuf::from(out).join("flight-t00005.oyrsave"), &saved)
+                        .unwrap();
+                }
                 yr_app::snapshot::restore(app.session.as_mut().unwrap(), &saved).unwrap();
                 app.sprites = load_sprites(dir, "EB1.MMX");
                 assert_eq!(

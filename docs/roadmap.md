@@ -135,6 +135,8 @@ Johnny on 2026-10-31.
       (#102, #122), including exact source pixels, invisible-weapon exclusion,
       bounded optional decoding and immediate in-flight save/load reconstruction.
       Original arcs, launch offsets, trajectories, lighting and depth remain open.
+- [x] Give the controlled cannon proof shooter player ownership (#131), so its
+      real tank body is drawn alongside the muzzle, projectile and enemy target.
 - [x] Sidebar labels from `ra2md.csf` (#47): all 22 Allied entries show
       CSF names, retail costs and full-power build times. Missing/invalid
       strings warn and fall back to rules names or type ids. Cards dim
