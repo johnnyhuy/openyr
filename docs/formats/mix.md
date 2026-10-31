@@ -154,6 +154,24 @@ is the **second** character: `A` snow, `G` generic, `T` temperate, `U` urban,
 `D` desert, `L` lunar, `N` new urban. Main sprites ship only in snow (`A`)
 and generic (`G`) variants. Build-ups (`MK`) ship for every theater.
 
+### Corpus scan exit status
+
+`mix-dump scan <archive.mix>...` prints the census across all supplied archives
+and reports parser failures, including recognized malformed CSF assets and
+invalid archive entry ranges. A nonempty error list gives exit code 1 after
+the census and diagnostics are printed. The total includes every collected
+error even when only the first 40 diagnostics are displayed. A clean scan
+exits with code 0. Unrecognized binary entries are still counted as binary;
+successful scanning does not validate formats without a parser.
+
+An intentionally closed stdout pipe exits successfully, as with the other
+inspection commands (#79). Use an output file or let the command finish
+printing when checking the corpus; an early consumer such as `head` can stop
+the report before its validation result is returned. Other output failures
+still fail the command. Synthetic CLI tests in `tools/mix-dump/tests/cli.rs`
+exercise malformed archives, nested WAV/CSF failures, continued census
+collection, the diagnostic limit and closed-pipe behavior (#111, #113).
+
 ## Resolved questions
 
 - The 7,033/7,631-byte binaries in `expandmd01.mix` with prefix
