@@ -395,6 +395,7 @@ impl App {
             animation: yr_render::sprites::InfantryAnimation,
             building: Option<yr_render::sprites::BuildingAnimation>,
         }
+        let tick = self.session.as_ref().map_or(0, |s| s.sim.tick());
         let mut markers: Vec<Marker> = Vec::new();
         // Placement ghost: window centres of the footprint cells.
         let mut ghost: Vec<(f32, f32)> = Vec::new();
@@ -544,7 +545,9 @@ impl App {
                             );
                         }
                     }
-                } else if let Some(sprite) = bank.get_animated(id, *facing, remap, m.animation) {
+                } else if let Some(sprite) =
+                    bank.get_animated_at(id, *facing, remap, m.animation, tick)
+                {
                     blit_sprite(
                         frame,
                         fw,
@@ -573,7 +576,7 @@ impl App {
                             false
                         }
                     } else {
-                        match bank.get_animated(id, *facing, remap, m.animation) {
+                        match bank.get_animated_at(id, *facing, remap, m.animation, tick) {
                             Some(s) => {
                                 blit_sprite(frame, fw, fh, s, m.ax, m.ay, k, SpritePass::Body);
                                 true

@@ -1,5 +1,5 @@
 //! Shared voxel projection for map objects and live sprites.
-//! Authored bounds and the first HVA pose place every part in model space.
+//! Authored bounds and HVA poses place every part in model space.
 
 use yr_assets::AssetFs;
 use yr_formats::{hva::Transform, Palette, VxlFile};
@@ -13,7 +13,22 @@ pub(crate) struct VoxelModel {
     parts: Vec<Part>,
 }
 
+/// Presentation cadence at 15 ticks/s, pending the Wine comparison.
+const HVA_FRAME_TICKS: u64 = 2;
+
 impl VoxelModel {
+    /// Resolve each part independently. Attachment lengths need not match
+    /// the body, and no common period or allocation depends on a clock.
+    pub(crate) fn frames_at(&self, tick: u64) -> Vec<usize> {
+        self.parts
+            .iter()
+            .map(|p| {
+                let count = p.hva.as_ref().map_or(1, |h| h.frames.len()).max(1);
+                ((tick / HVA_FRAME_TICKS) % count as u64) as usize
+            })
+            .collect()
+    }
+
     pub(crate) fn load(vfs: &AssetFs, image: &str) -> Option<Self> {
         let load = |suffix: &str| {
             let stem = format!("{image}{suffix}");
@@ -32,13 +47,24 @@ impl VoxelModel {
 
 /// Size live sprites from their projected pixels, keeping the model origin
 /// as the anchor. Bounds are capped before allocation for loose/modded data.
+#[cfg(test)]
 pub(crate) fn sprite(
     model: &VoxelModel,
     facing: u16,
     pal: &Palette,
     remap: [u8; 3],
 ) -> Option<crate::sprites::Sprite> {
-    let points = projected_points(model, facing);
+    animated_sprite(model, facing, &[], pal, remap)
+}
+
+pub(crate) fn animated_sprite(
+    model: &VoxelModel,
+    facing: u16,
+    frames: &[usize],
+    pal: &Palette,
+    remap: [u8; 3],
+) -> Option<crate::sprites::Sprite> {
+    let points = projected_points(model, facing, frames);
     if points.is_empty() {
         return None;
     }
@@ -76,13 +102,13 @@ fn finite_transform(m: &Transform) -> bool {
 /// HVA translation is in source units; VXL base translation is already
 /// scaled. HVA replaces the base pose. See the retail ROBO measurements
 /// in docs/formats/vxl.md.
-fn pose(part: &Part, limb: &yr_formats::vxl::VxlLimb) -> Option<Transform> {
+fn pose(part: &Part, limb: &yr_formats::vxl::VxlLimb, frame: usize) -> Option<Transform> {
     let hva = part.hva.as_ref().and_then(|h| {
         let index = h
             .limbs
             .iter()
             .position(|n| n.eq_ignore_ascii_case(&limb.name))?;
-        h.frames.first()?.get(index).copied()
+        h.frames.get(frame)?.get(index).copied()
     });
     if let Some(mut m) = hva.filter(finite_transform) {
         for row in &mut m {
@@ -133,7 +159,8 @@ fn project([x, y, z]: [f32; 3], facing: u16) -> [f32; 3] {
 
 /// Draw the combined body/turret/barrel with one ground anchor and one
 /// depth ordering. Two-pixel samples fill gaps in the projected grid;
-/// normal-table lighting and animated HVA poses remain fidelity work.
+/// normal-table lighting remains fidelity work. Static map objects use
+/// frame zero; live sprites select their per-part frames separately.
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn draw_voxel(
     rgba: &mut [u8],
@@ -152,7 +179,7 @@ pub(crate) fn draw_voxel(
         h,
         cx,
         cy,
-        projected_points(model, facing),
+        projected_points(model, facing, &[]),
         pal,
         remap,
     );
@@ -160,11 +187,13 @@ pub(crate) fn draw_voxel(
 
 type Point = ([f32; 3], u8);
 
-fn projected_points(model: &VoxelModel, facing: u16) -> Vec<Point> {
+fn projected_points(model: &VoxelModel, facing: u16, frames: &[usize]) -> Vec<Point> {
     let mut points = Vec::new();
-    for part in &model.parts {
+    for (i, part) in model.parts.iter().enumerate() {
         for limb in &part.vxl.limbs {
-            let Some(m) = pose(part, limb) else { continue };
+            let Some(m) = pose(part, limb, frames.get(i).copied().unwrap_or(0)) else {
+                continue;
+            };
             for v in &limb.voxels {
                 let Some(p) = model_point(limb, &m, v) else {
                     continue;
@@ -284,16 +313,145 @@ mod tests {
             frames: vec![vec![rotated, IDENTITY]],
         });
         close(
-            model_point(&b, &pose(&p, &b).unwrap(), &b.voxels[0]).unwrap(),
+            model_point(&b, &pose(&p, &b, 0).unwrap(), &b.voxels[0]).unwrap(),
             [3., 10., 8.],
         );
         close(
-            model_point(&a, &pose(&p, &a).unwrap(), &a.voxels[0]).unwrap(),
+            model_point(&a, &pose(&p, &a, 0).unwrap(), &a.voxels[0]).unwrap(),
             [11., -1., 5.],
         );
         // An unmatched limb retains its base, rather than using another limb's HVA.
         a.name = "missing".into();
-        assert_eq!(pose(&p, &a), Some(a.transform));
+        assert_eq!(pose(&p, &a, 0), Some(a.transform));
+    }
+
+    #[test]
+    fn animation_wraps_each_part_and_keeps_invalid_frame_fallback_local() {
+        let mut body = part(vec![limb("body")]);
+        let mut second = IDENTITY;
+        second[0][3] = 24.;
+        body.hva = Some(yr_formats::HvaFile {
+            name: String::new(),
+            limbs: vec!["BODY".into()],
+            frames: vec![vec![IDENTITY], vec![second]],
+        });
+        let mut turret = part(vec![limb("turret")]);
+        let mut third = IDENTITY;
+        third[1][3] = 48.;
+        turret.hva = Some(yr_formats::HvaFile {
+            name: String::new(),
+            limbs: vec!["turret".into()],
+            frames: vec![vec![IDENTITY], vec![second], vec![third]],
+        });
+        let mut model = VoxelModel {
+            parts: vec![body, turret, part(vec![limb("barrel")])],
+        };
+        assert_eq!(model.frames_at(0), [0, 0, 0]);
+        assert_eq!(model.frames_at(1), [0, 0, 0]);
+        assert_eq!(model.frames_at(2), [1, 1, 0]);
+        assert_eq!(model.frames_at(4), [0, 2, 0]);
+        assert_eq!(model.frames_at(12), [0, 0, 0]);
+        assert_eq!(model.frames_at(u64::MAX), [1, 1, 0]);
+        let p = &model.parts[0];
+        close(
+            model_point(
+                &p.vxl.limbs[0],
+                &pose(p, &p.vxl.limbs[0], 1).unwrap(),
+                &p.vxl.limbs[0].voxels[0],
+            )
+            .unwrap(),
+            [13., -1., 5.],
+        );
+        // A bad later pose falls back only for that limb and frame.
+        model.parts[0].hva.as_mut().unwrap().frames[1][0][0][0] = f32::NAN;
+        let p = &model.parts[0];
+        assert_eq!(pose(p, &p.vxl.limbs[0], 1), Some(IDENTITY));
+        assert_eq!(pose(p, &p.vxl.limbs[0], usize::MAX), Some(IDENTITY));
+        let p = &model.parts[1];
+        assert_eq!(pose(p, &p.vxl.limbs[0], 2).unwrap()[1][3], 4.);
+        model.parts[0].hva.as_mut().unwrap().frames.clear();
+        assert_eq!(model.frames_at(u64::MAX)[0], 0);
+    }
+
+    #[test]
+    fn retail_black_hawk_rotors_animate_around_a_fixed_fuselage() {
+        let Some(home) = std::env::var_os("HOME") else {
+            return;
+        };
+        let dir = std::path::PathBuf::from(home).join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+        if !dir.is_dir() {
+            return;
+        }
+        let mut fs = AssetFs::open(&dir).unwrap();
+        fs.set_theater(yr_assets::Theater::Temperate);
+        let model = VoxelModel::load(&fs, "SHAD").unwrap();
+        let part = &model.parts[0];
+        let hva = part.hva.as_ref().unwrap();
+        assert_eq!((hva.frames.len(), hva.limbs.len()), (2, 3));
+        assert_eq!(hva.frames[0][2], hva.frames[1][2], "fuselage stays fixed");
+        for rotor in 0..2 {
+            assert!((hva.frames[1][rotor][0][0] - 0.809017).abs() < 0.00001);
+            assert!((hva.frames[1][rotor][0][1] - 0.587785).abs() < 0.00001);
+        }
+        let pal = Palette::parse(fs.read("UNITTEM.PAL").unwrap()).unwrap();
+        let out = std::env::var_os("OPENYR_HVA_DUMP").map(std::path::PathBuf::from);
+        if let Some(out) = &out {
+            std::fs::create_dir_all(out).unwrap();
+        }
+        for facing in (0..256).step_by(32) {
+            let mut images = Vec::new();
+            for frame in 0..2 {
+                // Independently turn the authored pose into a one-frame
+                // model, then compare against live frame selection.
+                let mut expected = VoxelModel::load(&fs, "SHAD").unwrap();
+                let h = expected.parts[0].hva.as_mut().unwrap();
+                h.frames = vec![h.frames[frame].clone()];
+                let expected = sprite(&expected, facing, &pal, [220, 30, 30]).unwrap();
+                let ticks = frame as u64 * HVA_FRAME_TICKS;
+                let got =
+                    animated_sprite(&model, facing, &model.frames_at(ticks), &pal, [220, 30, 30])
+                        .unwrap();
+                assert_eq!(
+                    (got.w, got.h, got.ax, got.ay, &got.rgba),
+                    (
+                        expected.w,
+                        expected.h,
+                        expected.ax,
+                        expected.ay,
+                        &expected.rgba
+                    )
+                );
+                // Compare on a fixed ground canvas so changing bounds
+                // cannot disguise anchor drift between rotor phases.
+                let mut canvas = vec![0; 256 * 256 * 4];
+                for y in 0..got.h as i32 {
+                    for x in 0..got.w as i32 {
+                        let (dx, dy) = (128 + x - got.ax, 128 + y - got.ay);
+                        assert!((0..256).contains(&dx) && (0..256).contains(&dy));
+                        let src = ((y as u32 * got.w + x as u32) * 4) as usize;
+                        let dst = (dy as usize * 256 + dx as usize) * 4;
+                        canvas[dst..dst + 4].copy_from_slice(&got.rgba[src..src + 4]);
+                    }
+                }
+                if let Some(out) = &out {
+                    std::fs::write(
+                        out.join(format!("SHAD-{facing:03}-pose-{frame}.png")),
+                        crate::png::encode_rgba(256, 256, &canvas),
+                    )
+                    .unwrap();
+                }
+                images.push(canvas);
+            }
+            assert_ne!(images[0], images[1], "rotors change at facing {facing}");
+        }
+        for id in ["MTNK", "CMIN", "ROBO"] {
+            let model = VoxelModel::load(&fs, id).unwrap();
+            assert_eq!(
+                model.frames_at(0),
+                model.frames_at(u64::MAX),
+                "{id} stays static"
+            );
+        }
     }
 
     #[test]
@@ -307,9 +465,9 @@ mod tests {
             limbs: vec!["body".into()],
             frames: vec![vec![m]],
         });
-        assert_eq!(pose(&p, &l), Some(IDENTITY));
+        assert_eq!(pose(&p, &l, 0), Some(IDENTITY));
         l.transform[0][0] = f32::INFINITY;
-        assert!(pose(&p, &l).is_none());
+        assert!(pose(&p, &l, 0).is_none());
         for size in [[0, 2, 2], [2, 0, 2], [2, 2, 0]] {
             l.size = size;
             assert!(model_point(&l, &IDENTITY, &l.voxels[0]).is_none());
@@ -415,7 +573,7 @@ mod tests {
             .iter()
             .map(|p| {
                 let l = &p.vxl.limbs[0];
-                assert_eq!(pose(p, l), Some(IDENTITY));
+                assert_eq!(pose(p, l, 0), Some(IDENTITY));
                 let points: Vec<_> = l
                     .voxels
                     .iter()
@@ -438,7 +596,7 @@ mod tests {
         );
         let robo = VoxelModel::load(&fs, "ROBO").unwrap();
         for l in &robo.parts[0].vxl.limbs {
-            let m = pose(&robo.parts[0], l).unwrap();
+            let m = pose(&robo.parts[0], l, 0).unwrap();
             for (row, base) in m.iter().zip(l.transform) {
                 assert!((row[3] - base[3]).abs() < 0.00001);
             }
@@ -451,7 +609,7 @@ mod tests {
         let fallback = VoxelModel::load(&bare, "MTNK").unwrap();
         assert_eq!(fallback.parts.len(), 1);
         assert_eq!(
-            pose(&fallback.parts[0], &fallback.parts[0].vxl.limbs[0]),
+            pose(&fallback.parts[0], &fallback.parts[0].vxl.limbs[0], 0),
             Some(IDENTITY)
         );
         assert!(VoxelModel::load(&bare, "missing").is_none());
@@ -510,7 +668,7 @@ mod tests {
         assert_eq!(shad.parts[0].vxl.limbs.len(), 3);
         let p = &shad.parts[0];
         let rotor = &p.vxl.limbs[0];
-        let m = pose(p, rotor).unwrap();
+        let m = pose(p, rotor, 0).unwrap();
         assert!(m[0][3] < -35. && m[2][3] > 28.);
         println!("retail MTNK body/turret/barrel limits {limits:?}; ROBO source translation matches VXL base; SHAD rotor offset {:?}",m.map(|r|r[3]));
     }
