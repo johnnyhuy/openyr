@@ -12,3 +12,6 @@ mod service;
 pub mod session;
 pub mod sidebar;
 pub mod snapshot;
+
+pub mod frontend;
+pub mod movie;

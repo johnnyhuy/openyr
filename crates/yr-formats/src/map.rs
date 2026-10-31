@@ -80,6 +80,9 @@ pub struct MapFile {
 }
 
 impl MapFile {
+    pub fn preview(&self) -> Result<Option<crate::MapPreview>, MapError> {
+        crate::MapPreview::parse(&self.ini)
+    }
     pub fn parse(text: &str) -> Result<MapFile, MapError> {
         let ini = IniFile::parse(text);
         let map = ini.section("Map").ok_or(MapError::MissingSection("Map"))?;

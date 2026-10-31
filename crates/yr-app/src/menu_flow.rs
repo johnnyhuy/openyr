@@ -2,14 +2,18 @@ use super::*;
 use std::io::Read;
 use yr_app::menu::{Effect, Intent, Layout, Page};
 
-pub(super) struct Prepared {
-    session: Session,
-    map: yr_render::RenderedMap,
-    save_path: Option<PathBuf>,
+pub(super) enum Prepared {
+    Match {
+        session: Box<Session>,
+        map: yr_render::RenderedMap,
+        save_path: Option<PathBuf>,
+    },
+    Preview(yr_app::frontend::Preview),
 }
 pub(super) struct LoadJob {
-    receiver: std::sync::mpsc::Receiver<Result<Prepared, String>>,
-    cancelled: bool,
+    pub(super) receiver: std::sync::mpsc::Receiver<Result<Prepared, String>>,
+    pub(super) cancelled: bool,
+    pub(super) back: Page,
 }
 #[derive(serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -40,7 +44,7 @@ impl App {
         }
         self.view.dirty = true;
     }
-    fn reset_menu_clock(&mut self) {
+    pub(super) fn reset_menu_clock(&mut self) {
         self.accum = Duration::ZERO;
         self.last_tick = Instant::now();
         self.view.dirty = true;
@@ -59,7 +63,7 @@ impl App {
         self.placing = None;
         self.service_mode = ServiceMode::None;
         self.menu.zoom = (self.view.zoom * 100.0).round().clamp(25.0, 400.0) as u16;
-        if matches!(page, Page::Pause | Page::Save | Page::Load) {
+        if matches!(page, Page::Main | Page::Pause | Page::Save | Page::Load) {
             match yr_app::menu::slots(self.save_directory()) {
                 Ok(slots) => {
                     self.menu.slots = slots;
@@ -67,7 +71,14 @@ impl App {
                     self.menu.scroll = 0;
                 }
                 Err(e) => {
-                    self.menu.message(e, Page::Pause);
+                    self.menu.message(
+                        e,
+                        if self.menu.front {
+                            Page::Main
+                        } else {
+                            Page::Pause
+                        },
+                    );
                     self.reset_menu_clock();
                     return;
                 }
@@ -101,7 +112,7 @@ impl App {
         stepped
     }
     pub(super) fn menu_mouse(&mut self, state: ElementState, button: MouseButton) {
-        let layout = Layout::new(WIN_W, WIN_H);
+        let layout = Layout::for_state(&self.menu, WIN_W, WIN_H);
         if button == MouseButton::Left {
             match state {
                 ElementState::Pressed => {
@@ -133,7 +144,7 @@ impl App {
         };
         self.menu_key_code(code, event.text.as_deref(), event.repeat);
     }
-    fn menu_key_code(&mut self, code: KeyCode, text: Option<&str>, repeat: bool) {
+    pub(super) fn menu_key_code(&mut self, code: KeyCode, text: Option<&str>, repeat: bool) {
         match code {
             KeyCode::Escape if !repeat => {
                 let e = self.menu.escape();
@@ -141,7 +152,8 @@ impl App {
             }
             KeyCode::ArrowDown if self.menu.page == Page::Load => self.menu.navigate_slot(1),
             KeyCode::ArrowUp if self.menu.page == Page::Load => self.menu.navigate_slot(-1),
-            KeyCode::Tab | KeyCode::ArrowDown => self.menu.navigate(1),
+            KeyCode::Tab => self.menu.navigate(if self.shift { -1 } else { 1 }),
+            KeyCode::ArrowDown => self.menu.navigate(1),
             KeyCode::ArrowUp => self.menu.navigate(-1),
             KeyCode::Enter | KeyCode::NumpadEnter if !repeat => {
                 if let Some((button, _)) = self.menu.buttons().get(self.menu.focus).copied() {
@@ -163,6 +175,10 @@ impl App {
     pub(super) fn apply_menu_effect(&mut self, effect: Effect) {
         match effect {
             Effect::None => {}
+            Effect::MainMenu => self.enter_front(),
+            Effect::PrepareSkirmish => self.start_front_preview(),
+            Effect::StartMatch => self.start_menu_load(None),
+            Effect::ChooseFolder => self.choose_front_directory(),
             Effect::Resume => {
                 self.cancel_pointer_action();
                 self.keys.clear();
@@ -211,7 +227,11 @@ impl App {
                 if let Some(job) = &mut self.load_job {
                     job.cancelled = true;
                 }
-                self.menu.set(Page::Pause);
+                let back = self
+                    .load_job
+                    .as_ref()
+                    .map_or(Page::Pause, |job| job.back.clone());
+                self.menu.set(back);
             }
         }
         self.reset_menu_clock();
@@ -234,11 +254,15 @@ impl App {
         self.keys.clear();
         self.reset_menu_clock();
     }
-    fn start_menu_load(&mut self, path: Option<PathBuf>) {
+    pub(super) fn start_menu_load(&mut self, path: Option<PathBuf>) {
         if self.load_job.is_some() {
             self.menu.message(
                 "Please wait for the previous load to finish".into(),
-                Page::Pause,
+                if self.menu.front {
+                    Page::Load
+                } else {
+                    Page::Pause
+                },
             );
             return;
         }
@@ -247,6 +271,15 @@ impl App {
         let scale = self.scale;
         let seed = self.session.as_ref().map_or(42, Session::seed);
         let (sender, receiver) = std::sync::mpsc::channel();
+        let back = if self.menu.front {
+            if path.is_some() {
+                Page::Load
+            } else {
+                Page::Skirmish
+            }
+        } else {
+            Page::Pause
+        };
         let spawned = std::thread::Builder::new()
             .name("openyr-match-load".into())
             .spawn(move || {
@@ -256,8 +289,8 @@ impl App {
                         None => yr_app::session::load(&directory, &map, seed)?,
                     };
                     let map = yr_render::render_map(&directory, &map, scale)?;
-                    Ok(Prepared {
-                        session,
+                    Ok(Prepared::Match {
+                        session: Box::new(session),
                         map,
                         save_path: path,
                     })
@@ -269,10 +302,11 @@ impl App {
                 self.load_job = Some(LoadJob {
                     receiver,
                     cancelled: false,
+                    back,
                 });
                 self.open_menu(Page::Loading);
             }
-            Err(e) => self.menu.message(e.to_string(), Page::Pause),
+            Err(e) => self.menu.message(e.to_string(), back),
         }
     }
     pub(super) fn poll_menu_load(&mut self) {
@@ -286,22 +320,39 @@ impl App {
                 Err("The match loader stopped".into())
             }
         };
-        let cancelled = self.load_job.take().unwrap().cancelled;
+        let job = self.load_job.take().unwrap();
+        let cancelled = job.cancelled;
+        let back = job.back;
         if cancelled {
             return;
         }
         match result {
-            Ok(prepared) => {
-                if let Some(path) = prepared.save_path {
+            Ok(Prepared::Preview(preview)) => {
+                self.front_preview = Some(preview);
+                self.menu.set(Page::Skirmish);
+            }
+            Ok(Prepared::Match {
+                session,
+                map,
+                save_path,
+            }) => {
+                self.menu.front = false;
+                self.movie = None;
+                self.front_preview = None;
+                self.front_art = Default::default();
+                if let Some(path) = save_path {
                     self.save_path = path;
                 }
-                self.session = Some(prepared.session);
-                self.map = Some(prepared.map);
+                self.session = Some(*session);
+                self.map = Some(map);
                 self.sprites = load_sprites(&self.gamedir, &self.map_name);
                 self.animations = Default::default();
                 self.effects = Default::default();
                 self.selected.clear();
                 self.pending.clear();
+                self.keys.clear();
+                self.shift = false;
+                self.control = false;
                 self.cancel_pointer_action();
                 self.announced = false;
                 if let Some(session) = &self.session {
@@ -324,12 +375,11 @@ impl App {
                     }
                 }
                 if let Some(map) = &self.map {
-                    self.view.cam_x = (map.width as f32 - (WIN_W - SIDEBAR_W) as f32) / 2.0;
-                    self.view.cam_y = (map.height as f32 - WIN_H as f32) / 2.0;
+                    self.view.center_map(map, (WIN_W - SIDEBAR_W, WIN_H));
                 }
                 self.menu.set(Page::Closed);
             }
-            Err(e) => self.menu.message(e, Page::Pause),
+            Err(e) => self.menu.message(e, back),
         }
         self.reset_menu_clock();
     }

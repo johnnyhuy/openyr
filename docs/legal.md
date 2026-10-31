@@ -20,6 +20,10 @@ Everything here is built by observation and documentation.
    the *style* of the genre, no traced or extracted EA art, no EA voice lines, no
    trademarked logos or names in shipped assets.
 
+Codec playback uses ordinary Cargo dependencies with their own upstream
+attribution. See [dependency provenance](third-party.md) for the Bink library;
+its implementation is not copied into this source tree.
+
 ## Precedent summary (detail in `docs/research/`)
 
 | Project | Rights-holder response | Outcome |

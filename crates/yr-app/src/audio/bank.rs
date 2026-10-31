@@ -236,6 +236,20 @@ impl SoundBank {
         }
         None
     }
+
+    pub fn menu_theme(&mut self) -> Option<Cue> {
+        let sample = self.themes.section("Intro")?.get("Sound")?.to_string();
+        let pcm = self.sample(&sample)?;
+        Some(Cue {
+            event: "MenuTheme".into(),
+            sample,
+            playback: Playback {
+                pcm,
+                bus: Bus::Music,
+                gain: 1.0,
+            },
+        })
+    }
 }
 
 #[cfg(test)]
@@ -322,5 +336,23 @@ mod tests {
         assert_eq!(bank.sample("shared").unwrap().samples, [200]);
         assert_eq!(bank.sample("legacy").unwrap().samples, [100]);
         assert!(bank.sample("absent").is_none());
+    }
+    #[test]
+    fn retail_menu_uses_the_declared_intro_theme_even_when_not_in_the_normal_playlist() {
+        let dir = std::path::PathBuf::from(std::env::var("HOME").unwrap_or_default())
+            .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+        if !dir.is_dir() {
+            return;
+        }
+        let fs = AssetFs::open(&dir).unwrap();
+        let themes = read_ini(&fs, "THEMEMD.INI");
+        let intro = themes.section("INTRO").unwrap();
+        assert_eq!(intro.get_bool("Normal"), Some(false));
+        let sample = intro.get("Sound").unwrap().to_string();
+        let mut bank = SoundBank::new(fs, "");
+        let cue = bank.menu_theme().unwrap();
+        assert_eq!(cue.sample, sample);
+        assert_eq!(cue.playback.bus, Bus::Music);
+        assert!(!cue.playback.pcm.samples.is_empty());
     }
 }

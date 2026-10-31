@@ -57,8 +57,26 @@ impl AudioScene {
     }
 
     fn new(dir: &str, map: &str, session: &Session, output: Output) -> Result<Self, String> {
+        let mut scene = Self::empty(dir, map, output)?;
+        scene.remember(session);
+        if let Some(theme) = scene.bank.theme() {
+            scene.emit(session.sim.tick(), theme);
+        }
+        Ok(scene)
+    }
+
+    pub fn front_live(dir: &str) -> Result<Self, String> {
+        let mut scene = Self::empty(dir, "", Output::Live(LiveOutput::open()?))?;
+        if let Some(theme) = scene.bank.menu_theme() {
+            println!("OpenYR: menu theme {}", theme.sample);
+            scene.emit(0, theme);
+        }
+        Ok(scene)
+    }
+
+    fn empty(dir: &str, map: &str, output: Output) -> Result<Self, String> {
         let fs = AssetFs::open(Path::new(dir)).map_err(|e| e.to_string())?;
-        let mut scene = Self {
+        let scene = Self {
             bank: SoundBank::new(fs, map),
             output,
             entities: BTreeMap::new(),
@@ -68,10 +86,6 @@ impl AudioScene {
             outcome: Outcome::Ongoing,
             error: None,
         };
-        scene.remember(session);
-        if let Some(theme) = scene.bank.theme() {
-            scene.emit(session.sim.tick(), theme);
-        }
         Ok(scene)
     }
 

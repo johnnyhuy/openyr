@@ -13,7 +13,8 @@ distribution builds remain future packaging work. The bundle layout follows
 
 ## Starting a match
 
-No arguments starts a fresh EB1.MMX skirmish. OpenYR looks for game data in
+No arguments opens the animated native main menu. Single Player offers saved
+matches or the supported EB1.MMX skirmish setup. OpenYR looks for game data in
 this order:
 
 1. `OPENYR_GAMEDIR`, when set. An invalid explicit override is an error.

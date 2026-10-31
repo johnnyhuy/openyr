@@ -4,6 +4,7 @@
 //! data out. Format specs and evidence: `docs/formats/`.
 
 pub mod audio;
+pub mod bink;
 mod bytes;
 pub mod compress;
 pub mod csf;
@@ -12,6 +13,7 @@ pub mod hash;
 pub mod hva;
 pub mod ini;
 pub mod map;
+pub mod map_preview;
 pub mod mix;
 pub mod names;
 pub mod pal;
@@ -23,12 +25,14 @@ pub mod tmp;
 pub mod vxl;
 
 pub use audio::{AudFile, AudioError, BagEntry, Pcm};
+pub use bink::{BinkError, BinkFile, BinkFrame, BinkTrack};
 pub use csf::{CsfEntry, CsfError, CsfFile};
 pub use font::{FontError, FontGlyph, UnicodeFont};
 pub use hash::{crc32, mix_id, mix_id_td};
 pub use hva::{HvaError, HvaFile};
 pub use ini::{IniFile, IniSection};
 pub use map::{IsoTile, MapError, MapFile, MapObject};
+pub use map_preview::MapPreview;
 pub use mix::{MixArchive, MixEntry, MixError, MixVersion};
 pub use pal::Palette;
 pub use pcx::{PcxError, PcxImage, PcxPixels};

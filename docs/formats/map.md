@@ -163,3 +163,23 @@ parser rejects packs whose decompressed shape is not exactly the retail
 shape (entry stream + zero trailer; exactly 262,144 overlay bytes).
 Unit tests cover truncated chunks, lying chunk sizes, a corrupted iso
 trailer, and a short overlay pack.
+
+## Authored preview
+
+`MapPreview::parse` reads the optional `[Preview] Size=x,y,width,height` and
+numbered `[PreviewPack]`. The latter uses the same chunk container with LZO1X;
+the expanded bytes are row-major RGB, exactly width*height*3. The retail EB1
+thumbnail is 118x61 and expands to 21,594 bytes. The native front menu uses this
+source image rather than substituting a newly rendered overview.
+
+Dimensions are limited to 1024x1024, encoded input to 8 MiB, and every chunk's
+input range and total declared output are checked before decompression. Duplicate
+line numbers, invalid dimensions, truncated chunks and output-size mismatches
+are rejected. No preview is different from a corrupt preview. The 234-map corpus
+check now validates every present authored thumbnail as well as terrain data.
+
+For EB1, 356 ore cells were projected into the authored thumbnail during the
+channel-order probe. Of those, 251 samples carry gold-like RGB values and none
+carry the byte-reversed gold pattern. Cells (44,31) and (45,31) both map to
+(160,144,32). This supports retaining RGB for this retail preview rather than
+assuming a byte order from a different game's preview description.

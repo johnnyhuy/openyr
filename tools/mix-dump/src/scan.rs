@@ -8,7 +8,7 @@ use std::collections::{BTreeMap, HashSet};
 use std::io::Write;
 use yr_formats::names::NameDb;
 use yr_formats::{
-    AudFile, CsfFile, HvaFile, IniFile, MixArchive, Palette, PcxImage, ShpFile, TmpFile,
+    AudFile, BinkFile, CsfFile, HvaFile, IniFile, MixArchive, Palette, PcxImage, ShpFile, TmpFile,
     UnicodeFont, VxlFile,
 };
 
@@ -199,7 +199,19 @@ fn classify(d: &[u8], label: &str, c: &mut Census) -> &'static str {
         };
     }
     if head == b"BIKi" {
-        return "bink";
+        return match BinkFile::parse(d) {
+            Ok(movie) => {
+                c.detail(format!(
+                    "bink {}x{} {}/{} fps",
+                    movie.width, movie.height, movie.fps_num, movie.fps_den
+                ));
+                "bink"
+            }
+            Err(e) => {
+                c.errors.push(format!("{label}: bink: {e}"));
+                "bink?"
+            }
+        };
     }
     if head == b" FSC" {
         return match CsfFile::parse(d) {
