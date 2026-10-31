@@ -116,6 +116,7 @@ impl App {
         if button == MouseButton::Left {
             match state {
                 ElementState::Pressed => {
+                    self.menu.keyboard_focus = false;
                     self.menu.pressed = layout.hit(&self.menu, self.cursor);
                     if let Some(index) = layout.slot(&self.menu, self.cursor) {
                         self.menu.select_slot(index);

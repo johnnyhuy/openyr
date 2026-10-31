@@ -319,6 +319,11 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       CLI/headless launches bypass menus (`docs/formats/front-menu.md`).
 - [x] Reload pause-menu art with the chosen game-data folder (#118), including
       font, labels and backgrounds. A retail render comparison covers the cache.
+- [x] Calibrate static main/single-player shell output against local original
+      renderer captures (#133): RGB565 presentation, button/text alignment,
+      blank-row palette and bottom-cap placement. Thirteen captured regions
+      and five complete enabled buttons match. Timing and broader menus remain
+      in #96; captures and limits are in `docs/formats/front-menu.md`.
 - [ ] Native menu and match flow (#96): original-style main menu, skirmish
       setup/map preview, saved matches, pause/resume, save/load, restart,
       options and quit. Add Won/Lost screens, loading/error feedback and

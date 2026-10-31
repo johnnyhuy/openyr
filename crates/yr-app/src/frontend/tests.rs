@@ -1,5 +1,78 @@
 use super::*;
 use crate::menu::{Button, Effect, Layout, Page, State};
+
+#[test]
+fn retail_front_static_regions_match_original_renderer_observations() {
+    let dir = std::path::PathBuf::from(std::env::var("HOME").unwrap_or_default())
+        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    if !dir.is_dir() {
+        return;
+    }
+    let fs = yr_assets::AssetFs::open(&dir).unwrap();
+    let art = Art::load(&fs);
+    // FNV-1a of RGBA crops from the local retail renderer, 2026-11-01.
+    // Coordinates, raw capture SHA256 and scope are in formats/front-menu.md.
+    for (page, regions) in [
+        (
+            Page::Main,
+            vec![
+                ((632, 0, 168, 8), 0xbb8be164b63a8b65u64),
+                ((632, 140, 168, 59), 0x3800aa0f95589be5),
+                ((0, 570, 632, 8), 0x5916703b917a4c81),
+                ((632, 409, 168, 126), 0xf479b292bacc4861),
+                ((632, 577, 168, 4), 0x81c8ee303ad1f191),
+                ((644, 199, 156, 12), 0x8b0d40ddf7ddee4d),
+                ((644, 230, 156, 11), 0xaa9d92d10df12785),
+                ((644, 199, 156, 42), 0x5cc895a15249c25d),
+                ((644, 367, 156, 42), 0x7f8187862b1871fd),
+                ((644, 535, 156, 42), 0xef59c7ba54f7c219),
+            ],
+        ),
+        (
+            Page::SinglePlayer,
+            vec![
+                ((632, 325, 168, 210), 0xb72a48ec29d9b121),
+                ((644, 283, 156, 42), 0xfd4fc484ed4c627d),
+                ((644, 535, 156, 42), 0x84ab987638a33ca5),
+            ],
+        ),
+    ] {
+        let mut state = State {
+            front: true,
+            ..State::default()
+        };
+        state.set(page);
+        let mut pixels = vec![0; 800 * 600 * 4];
+        draw(
+            &mut pixels,
+            800,
+            600,
+            &art,
+            Scene {
+                state: &state,
+                movie: None,
+                preview: None,
+                phase: 0,
+                cursor: (-1.0, -1.0),
+            },
+        );
+        for ((x, y, width, height), expected) in regions {
+            let hash = (y..y + height)
+                .flat_map(|row| {
+                    let at = (row * 800 + x) * 4;
+                    pixels[at..at + width * 4].iter().copied()
+                })
+                .fold(0xcbf29ce484222325u64, |h, byte| {
+                    (h ^ u64::from(byte)).wrapping_mul(0x100000001b3)
+                });
+            assert_eq!(
+                hash, expected,
+                "{:?} region ({x},{y},{width},{height})",
+                state.page
+            );
+        }
+    }
+}
 #[test]
 fn front_navigation_geometry_and_disabled_modes_are_consistent() {
     let mut s = State {
@@ -7,6 +80,12 @@ fn front_navigation_geometry_and_disabled_modes_are_consistent() {
         ..State::default()
     };
     s.set(Page::Main);
+    assert!(!s.keyboard_focus);
+    s.navigate(1);
+    assert!(s.keyboard_focus);
+    assert_eq!(s.buttons()[s.focus].0, Button::Controls);
+    s.set(Page::Main);
+    assert!(!s.keyboard_focus);
     for b in [Button::Internet, Button::Network, Button::Movies] {
         assert_eq!(s.activate(b), Effect::None);
         assert_eq!(s.page, Page::Main);
@@ -51,6 +130,39 @@ fn retail_shell_uses_its_own_button_palette_and_preserves_source_pixels() {
     }
     let fs = yr_assets::AssetFs::open(&dir).unwrap();
     let art = Art::load(&fs);
+    if let Some(out) = std::env::var_os("OPENYR_FRONT_CALIBRATION_PROOF") {
+        let out = std::path::PathBuf::from(out);
+        std::fs::create_dir_all(&out).unwrap();
+        let write = |name: &str, width, height, pixels: &[u8]| {
+            std::fs::write(
+                out.join(format!("{name}.png")),
+                yr_render::png::encode_rgba(width, height, pixels),
+            )
+            .unwrap();
+        };
+        for (name, page) in [("main", Page::Main), ("single-player", Page::SinglePlayer)] {
+            let mut state = State {
+                front: true,
+                ..State::default()
+            };
+            state.set(page);
+            let mut pixels = vec![0; 800 * 600 * 4];
+            draw(
+                &mut pixels,
+                800,
+                600,
+                &art,
+                Scene {
+                    state: &state,
+                    movie: None,
+                    preview: None,
+                    phase: 0,
+                    cursor: (-1.0, -1.0),
+                },
+            );
+            write(name, 800, 600, &pixels);
+        }
+    }
     for (name, palette, images) in [
         ("SDTP.SHP", "SHELL.PAL", &art.top),
         ("SDWRNANM.SHP", "SHELL2.PAL", &art.warning),
@@ -93,8 +205,11 @@ fn retail_shell_uses_its_own_button_palette_and_preserves_source_pixels() {
             let source = (y * 156 + x) * 4;
             let pixel = &art.buttons[2].pixels[source..source + 4];
             if pixel[3] != 0 {
-                let dest = ((199 + y) * 800 + 638 + x) * 4;
-                assert_eq!(&frame[dest..dest + 4], pixel);
+                let dest = ((199 + y) * 800 + 644 + x) * 4;
+                assert_eq!(
+                    &frame[dest..dest + 4],
+                    &[pixel[0] & 0xf8, pixel[1] & 0xfc, pixel[2] & 0xf8, pixel[3]],
+                );
             }
         }
     }
