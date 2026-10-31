@@ -3,6 +3,7 @@
 
 pub mod animation;
 pub mod audio;
+pub mod effects;
 mod localization;
 mod service;
 pub mod session;
