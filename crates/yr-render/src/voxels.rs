@@ -4,9 +4,19 @@
 use yr_assets::AssetFs;
 use yr_formats::{hva::Transform, Palette, VxlFile};
 
+mod lighting;
+
 struct Part {
     vxl: VxlFile,
     hva: Option<yr_formats::HvaFile>,
+    normals: Vec<Vec<[f32; 3]>>,
+}
+
+impl Part {
+    fn new(vxl: VxlFile, hva: Option<yr_formats::HvaFile>) -> Self {
+        let normals = vxl.limbs.iter().map(lighting::surface_normals).collect();
+        Self { vxl, hva, normals }
+    }
 }
 
 pub(crate) struct VoxelModel {
@@ -36,7 +46,7 @@ impl VoxelModel {
             let hva = vfs
                 .read(&format!("{stem}.HVA"))
                 .and_then(|data| yr_formats::HvaFile::parse(data).ok());
-            Some(Part { vxl, hva })
+            Some(Part::new(vxl, hva))
         };
         let body = load("")?;
         let mut parts = vec![body];
@@ -70,7 +80,7 @@ pub(crate) fn animated_sprite(
     }
     let mut min = [0.0_f32; 2];
     let mut max = [0.0_f32; 2];
-    for (p, _) in &points {
+    for (p, _, _) in &points {
         for axis in 0..2 {
             min[axis] = min[axis].min(p[axis].floor() - 1.);
             max[axis] = max[axis].max(p[axis].ceil() + 2.);
@@ -159,7 +169,7 @@ fn project([x, y, z]: [f32; 3], facing: u16) -> [f32; 3] {
 
 /// Draw the combined body/turret/barrel with one ground anchor and one
 /// depth ordering. Two-pixel samples fill gaps in the projected grid;
-/// normal-table lighting remains fidelity work. Static map objects use
+/// geometry-derived lighting approximates surface shading. Static map objects use
 /// frame zero; live sprites select their per-part frames separately.
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn draw_voxel(
@@ -185,22 +195,23 @@ pub(crate) fn draw_voxel(
     );
 }
 
-type Point = ([f32; 3], u8);
+type Point = ([f32; 3], u8, u8);
 
 fn projected_points(model: &VoxelModel, facing: u16, frames: &[usize]) -> Vec<Point> {
     let mut points = Vec::new();
     for (i, part) in model.parts.iter().enumerate() {
-        for limb in &part.vxl.limbs {
+        for (limb_index, limb) in part.vxl.limbs.iter().enumerate() {
             let Some(m) = pose(part, limb, frames.get(i).copied().unwrap_or(0)) else {
                 continue;
             };
-            for v in &limb.voxels {
+            for (voxel_index, v) in limb.voxels.iter().enumerate() {
                 let Some(p) = model_point(limb, &m, v) else {
                     continue;
                 };
                 let p = project(p, facing);
                 if p.iter().all(|v| v.is_finite()) {
-                    points.push((p, v.color));
+                    let normal = part.normals[limb_index][voxel_index];
+                    points.push((p, v.color, lighting::brightness(normal, &m, facing)));
                 }
             }
         }
@@ -220,14 +231,14 @@ fn raster(
     remap: Option<[u8; 3]>,
 ) {
     points.sort_by(|a, b| a.0[2].total_cmp(&b.0[2]));
-    for ([x, y, _], color) in points {
+    for ([x, y, _], color, brightness) in points {
         // Clip before narrowing so hostile finite offsets cannot overflow.
         let (px, py) = (f64::from(cx) + f64::from(x), f64::from(cy) + f64::from(y));
         if px < -2.0 || py < -2.0 || px >= w as f64 || py >= h as f64 {
             continue;
         }
         let (px, py) = (px.round() as i64, py.round() as i64);
-        let color = crate::remap_rgba(pal, color, remap);
+        let color = lighting::shade(crate::remap_rgba(pal, color, remap), brightness);
         for dy in 0..2 {
             for dx in 0..2 {
                 let (Ok(x), Ok(y)) = (usize::try_from(px + dx), usize::try_from(py + dy)) else {
@@ -273,14 +284,14 @@ mod tests {
     }
 
     fn part(limbs: Vec<VxlLimb>) -> Part {
-        Part {
-            vxl: VxlFile {
+        Part::new(
+            VxlFile {
                 palette: [0; 768],
                 remap: (16, 31),
                 limbs,
             },
-            hva: None,
-        }
+            None,
+        )
     }
 
     fn close(a: [f32; 3], b: [f32; 3]) {
@@ -555,6 +566,41 @@ mod tests {
         }
         assert!(sprite(&model, 0, &pal, [255; 3]).is_none());
         draw_voxel(&mut [], 32, 32, 16, 16, &model, 0, &pal, None);
+    }
+
+    #[test]
+    fn raster_lights_palette_and_house_colours_without_changing_coverage() {
+        let mut pal = Palette::parse(&[0; 768]).unwrap();
+        pal.entries[42] = (63, 31, 15);
+        let remap = Some([220, 30, 30]);
+        let points = vec![([2., 2., 0.], 42, 158), ([6., 2., 0.], 24, 158)];
+        let mut shaded = vec![0; 10 * 6 * 4];
+        raster(&mut shaded, 10, 6, 0, 0, points.clone(), &pal, remap);
+        let mut unlit = vec![0; shaded.len()];
+        raster(
+            &mut unlit,
+            10,
+            6,
+            0,
+            0,
+            points.into_iter().map(|(p, c, _)| (p, c, 255)).collect(),
+            &pal,
+            remap,
+        );
+        let expected = [[158, 77, 37, 255], [121, 16, 16, 255]];
+        for (x, expected) in [2, 6].into_iter().zip(expected) {
+            let at = (2 * 10 + x) * 4;
+            assert_eq!(&shaded[at..at + 4], &expected);
+        }
+        for (lit, unlit) in shaded
+            .as_chunks::<4>()
+            .0
+            .iter()
+            .zip(unlit.as_chunks::<4>().0)
+        {
+            assert_eq!(lit[3], unlit[3]);
+            assert!(lit[..3].iter().zip(&unlit[..3]).all(|(a, b)| a <= b));
+        }
     }
 
     #[test]

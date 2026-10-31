@@ -114,7 +114,7 @@ two-pixel samples fill projection gaps. All six sampled retail models
 facings and match the map renderer at the same ground anchor.
 
 Voxel-centre sampling, camera calibration and sample coverage remain
-presentation approximations pending Wine crops. Normal tables/VPL lighting,
+presentation approximations pending Wine crops. Retail normal tables/VPL lighting,
 independent turret facing and voxel shadows remain
 follow-ups. No parser layout changed in this slice.
 
@@ -155,6 +155,44 @@ unit sprites at 512 entries, including failed decodes. Coprime part
 lengths cannot create an unbounded sprite cache or require a common loop
 period. Repeated ticks, movement changes, wrapping and eviction are
 checked by `retail_voxel_cache_uses_resolved_poses_and_stays_bounded`.
+
+## Geometry-derived lighting (#82)
+
+The shared map/live voxel renderer now shades palette and house colours
+under one light fixed above and to the left in camera space. This is a
+clean-room presentation approximation. It does not decode the retail
+indexed normal tables, apply VPL lookups or claim Wine parity. No original
+normal vectors or executable code were copied into the renderer.
+
+When a model loads, each limb builds a sparse occupancy set from its
+decoded voxels. For each voxel, the negative density gradient over the
+26 neighbours supplies an outward surface normal. Neighbours at squared
+grid distances 1, 2 and 3 contribute integer weights 6, 3 and 2. Symmetric
+interiors therefore cancel exactly. Dividing each gradient component by
+the authored cell spacing handles unequal grid dimensions. Cache storage
+follows the actual decoded voxel count; it never allocates a dense volume
+from a limb header. The cached normals do not change with animation ticks.
+
+Each selected HVA/VXL pose applies its inverse transpose to the normals,
+including scale, shear and reflection, without translation. The camera
+then rotates them with the unit facing. The light direction in projected
+camera coordinates is the normalized vector `(-0.45, -0.65, 0.61)`.
+Brightness is `0.62 + 0.38 * max(dot(normal, light), 0)`, rounded to an
+8-bit multiplier and applied after palette/house remapping. Alpha, camera
+depth, sampling coverage and ground anchors remain unchanged. Isolated
+voxels, symmetric thin surfaces, invalid geometry and singular poses use
+unlit colours rather than an arbitrary normal. These constants are artistic
+choices pending the Wine comparison, not discovered format fields.
+
+Synthetic cube tests check all six outward faces, stretched corners,
+translation independence, scale/shear/reflection, fixed-light facing and
+pose changes, malformed values and palette/remap shading. The retail pose
+test exports MTNK, HTNK, CMIN, ROBO, SHAD and ZEP at eight facings through
+`OPENYR_VOXEL_DUMP=<external-dir>`. Before/after canvases from the installed
+MIX cascade on 2026-10-31 have identical alpha masks at all 48 views;
+77,247 pixels receive shading. The existing retail tests also check
+shared map/live pixels and ground anchors, animated rotor poses and
+bounded sprite caching. Proof crops stay outside git.
 
 ## Sources
 

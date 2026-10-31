@@ -58,6 +58,12 @@ incremental, testable path where each milestone is independently useful.
       Authored limb bounds, first HVA poses, fixed camera scale and a
       shared ground anchor replace guessed attachment placement (#73).
       Normal-table lighting remains open
+- [x] Geometry-derived voxel lighting (#82): cached local surface normals
+      follow HVA poses and facings under a fixed camera light. Palette and
+      house colours share bounded ambient/diffuse shading; ambiguous surfaces
+      retain their unlit colours. Six retail models keep identical silhouettes
+      at eight facings and share map/live shading. Retail indexed normals,
+      VPL lookup and Wine calibration remain fidelity work.
 - [x] Native window (`openyr`, winit+pixels/wgpu): rendered map with
       drag/WASD pan and wheel zoom; initial redraw after session loading (#50);
       screenshot-vs-PNG check still open
