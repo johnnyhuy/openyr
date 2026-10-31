@@ -4,6 +4,12 @@ Precedent says 2–3.5 years to a faithful playable port with a small team (re3 
 with ~6 people; OpenRCT2 ~3.5y). We are one person plus agents, aiming for an
 incremental, testable path where each milestone is independently useful.
 
+The playable milestone includes original-style menus, contextual game cursors
+and complete interaction feedback (#96, #98, #97). Finish these M3/M5 items,
+the sidebar work in #86 and repair/sell in #94 before addon/roguelite work or
+declaring the continuation schedule complete. This scope was confirmed by
+Johnny on 2026-10-31.
+
 ## M0: Research and repo (done)
 
 - Precedent study: `docs/research/`
@@ -118,7 +124,7 @@ incremental, testable path where each milestone is independently useful.
       progress and freezes with credit stalls. Active paid work keeps its
       brightness when credits fall below full price (#85). All 54 unfinished masks
       and source panel/button pixels are checked against retail canvases
-      (`docs/formats/sidebar.md`). Power meter, repair/sell,
+      (`docs/formats/sidebar.md`). Repair/sell,
       bottom command bar and original-game clock compositing remain open.
 - [x] Retail Unicode text (#88): validated `GAME.FNT` parser and native
       sidebar glyphs for credits, queue counts, READY and hover tooltips.
@@ -145,6 +151,12 @@ incremental, testable path where each milestone is independently useful.
       radar calibration/shroud, power-meter calibration, repair/sell, text calibration,
       button transitions,
       queue hold/scrolling and original-game compositing comparisons.
+- [ ] Contextual animated game cursors (#98): observed retail frames,
+      palettes and hotspots for selection, movement, attack, harvesting,
+      placement and other supported commands. Match actual command validation,
+      keep size independent of map zoom, handle Retina coordinates and restore
+      the system pointer on leave/focus loss/native dialogs. Include cursor
+      states in shared headless proof and compare original-game behavior.
 
 ## M4: Simulation v1
 
@@ -220,6 +232,18 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       retail data or a remembered folder chosen through macOS. Startup errors
       appear in a native alert; Finder logs live in `~/Library/Logs/OpenYR`.
       Explicit CLI and headless commands still work (`docs/macos-app.md`).
+- [ ] Native menu and match flow (#96): original-style main menu, skirmish
+      setup/map preview, saved matches, pause/resume, save/load, restart,
+      options and quit. Add Won/Lost screens, loading/error feedback and
+      confirmation before discarding a match. Pausing stops sim ticks without
+      catch-up on resume; modal input never reaches map commands. Preserve
+      explicit CLI/headless launches and prove each menu state on its PR.
+- [ ] Complete world interaction and desktop UX (#97): consistent selection,
+      supported control groups/hotkeys, hover/target/order feedback, bounded
+      camera movement and configurable edge scrolling. Clear held input on
+      focus/menu changes; verify resizing, Retina hit coordinates, tooltip
+      clipping and visible save/load feedback. Sidebar queues and command-bar
+      controls remain in #86; repair/sell remains in #94.
 
 ## M6: Fidelity pass
 
