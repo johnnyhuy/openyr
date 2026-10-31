@@ -106,9 +106,43 @@ normal lighting and cadence remain provisional, as above. Random EMEffect
 selection is omitted; water-cell detonation/splash, special warhead overrides,
 impact sounds, craters and scorch are not implemented in this slice.
 
-Projectile art/trails, smoke/fire, debris, environmental animations, infantry
+Projectile trails and other projectile classes, smoke/fire, debris, environmental animations, infantry
 death sequences and special weapon effects remain in #102. Exact destruction
 selection and original compositing remain there too.
+
+## Cannon bodies and travel
+
+Retail `RULESMD.INI` resolves MTNK's `105mm` and HTNK's `120mm` to `Cannon`,
+with `Speed=40`, `Image=120MM` and `Arcing=true`. The corresponding art section
+is empty. `RA2.MIX/CONQUER.MIX/120MM.SHP` is 48 bytes, one 24x24 canvas with
+12 opaque pixels. Static projectile bodies now decode every pixel with the
+current theater's unit palette, transparent index zero and no shadow half.
+The retained weapon identity selects the projectile image independently of
+the current shooter or target. The renderer accepts one-frame SHP bodies,
+caps canvases at 128x128 and caches at most 128 weapon sources. Missing or
+ambiguous sources, invalid names/data, invisible types, directional/animated
+sheets and voxel projectiles have no guessed body.
+
+The previous rules conversion used `Fix::from_int(Speed * 4)` and multiplied
+velocity by an extra 256 (#122). The current native policy uses raw leptons:
+Speed 40 becomes 160 leptons/tick. A stationary four-cell test therefore
+fires on tick 1 and impacts on tick 7, with a saved flight continuing exactly.
+Negative/overflowing physical velocities and values outside the save domain
+are rejected. `Inviso=yes` uses an instant hit regardless of its unused Speed;
+retail M60/InvisibleLow declares Speed 100 but fires and impacts on tick 1.
+The existing no-projectile and zero-speed paths remain instant. A named but
+undefined projectile is incomplete weapon data and is rejected.
+
+This corrects an internal unit mismatch; the factor of four is still a native
+policy pending controlled original observation in #19. Flight positions keep
+the existing deterministic axis-clamped homing model. Original arcing height,
+barrel launch offsets, collision, trajectories, trails, palette lighting and
+depth against tall objects remain unimplemented or uncalibrated. Bodies draw
+at the authoritative ground position with terrain lift, before transient
+effects. No new flight clock or physics approximation is added by rendering.
+Save/load immediately reconstructs the body from saved position/provenance;
+old flights without provenance omit optional art. Rendering never changes
+the sim, save bytes or RNG.
 
 ## Verification
 
@@ -129,8 +163,12 @@ zoomed to match native world magnification. The latter exposes lost terrain
 detail without changing unit size. A controlled EB1 target then receives an
 actual attack order and a destruction command, exercising shared event
 routing and compositing rather than fabricated effect instances.
-The AP proof actor is an HTNK cannon. Selecting only by the shared GUNFIRE
+The AP proof actor is the American MTNK from the corrected setup (#124).
+Selecting only by the shared GUNFIRE
 muzzle sheet had picked HARV instead; its real impact is PIFFPIFF (#123).
+The close-up uses 4x zoom, records launch and arrival separately, compares
+visible/unknown-source flights at the same gameplay hash, and verifies
+identical pixels after saving the flight and rebuilding the sprite bank.
 
 ```sh
 cargo test -p yr-render -p yr-app effects -- --nocapture

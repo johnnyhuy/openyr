@@ -193,7 +193,7 @@ impl Sim {
             }
             point((p.x, p.y))?;
             require(
-                (0..=MAX_COORD).contains(&p.speed.raw()),
+                (0..=crate::combat::MAX_PROJECTILE_SPEED).contains(&p.speed.raw()),
                 "projectile speed out of range",
             )?;
             require(
@@ -240,7 +240,7 @@ fn weapon(w: WeaponSpec) -> Result<(), SaveError> {
     )?;
     require(
         (0..=MAX_COORD).contains(&w.range.raw())
-            && (0..=MAX_COORD).contains(&w.projectile_speed.raw()),
+            && (0..=crate::combat::MAX_PROJECTILE_SPEED).contains(&w.projectile_speed.raw()),
         "weapon range/speed out of range",
     )?;
     require(

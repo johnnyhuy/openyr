@@ -49,6 +49,17 @@ rejected without changing the current match; continue them with a matching
 older engine. Newly created Allied matches round-trip normally. The match
 wrapper and simulation schema versions are unchanged by this setup change.
 
+The raw-lepton projectile conversion (#122) changes stored weapon velocities
+and the effective setup key. Old matches created with the extra 256 factor
+are rejected by the match wrapper before replacing the session. The sim
+schema remains 3: raw positions and velocities already carry their units,
+and the tick-phase algorithm is unchanged. Standalone old sim snapshots
+remain readable and retain their encoded velocities; they are not silently
+rescaled. Newly created physical flights round-trip and continue with the
+same positions, events and hash. Invisible projectiles now use the explicit
+zero-speed instant path. Presentation observes the saved flight directly,
+so rebuilding its sprite cache cannot advance or restart it.
+
 Simulation version 2 adds optional weapon/shot provenance and `Impact` output
 events. The match wrapper remains version 1. Version-1 sim payloads are accepted
 with unknown source metadata; their in-flight shots do not guess impact art.

@@ -13,6 +13,7 @@ mod buildings;
 pub mod depth;
 mod effects;
 pub mod png;
+mod projectiles;
 pub mod sprites;
 mod voxels;
 

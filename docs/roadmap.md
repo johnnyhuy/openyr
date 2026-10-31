@@ -68,8 +68,8 @@ Johnny on 2026-10-31.
       and death events route type/weapon art through ANIM.PAL, bounded caches
       and one-shot presentation clocks. All 78 source frames, colored alpha,
       same-tick fire/death and unchanged sim/save data are checked.
-- [ ] Complete original effects and graphics calibration (#102): warhead
-      impacts, projectile art/trails, smoke/fire, debris, environmental and
+- [ ] Complete original effects and graphics calibration (#102): special
+      warhead impacts, other projectile classes/trails, smoke/fire, debris, environmental and
       special-weapon effects, infantry deaths, muzzle offsets, depth, timing
       and transparency. Refine display scaling/filtering and indexed voxel
       lighting against original-game captures.
@@ -131,6 +131,12 @@ Johnny on 2026-10-31.
       AnimList selection uses delivered damage; AP and SA source pixels and
       shared composition are checked (`docs/formats/effects.md`). Exact
       original cadence, depth, lighting and special overrides remain open.
+- [x] Draw single-frame retail cannon bodies at authoritative flight positions
+      (#102, #122), including exact source pixels, invisible-weapon exclusion,
+      bounded optional decoding and immediate in-flight save/load reconstruction.
+      Original arcs, launch offsets, trajectories, lighting and depth remain open.
+- [x] Give the controlled cannon proof shooter player ownership (#131), so its
+      real tank body is drawn alongside the muzzle, projectile and enemy target.
 - [x] Sidebar labels from `ra2md.csf` (#47): all 22 Allied entries show
       CSF names, retail costs and full-power build times. Missing/invalid
       strings warn and fall back to rules names or type ids. Cards dim
@@ -201,6 +207,11 @@ Johnny on 2026-10-31.
 
 ## M4: Simulation v1
 
+- [x] Use raw leptons for physical projectile velocities and preserve
+      explicit invisible instant hits (#122). Bound unsafe rules speeds and
+      verify launch versus arrival, shooter death and in-flight save/load.
+      Correct the retail Rhino duel to use its actual 120mm primary (#128).
+      The factor of four and original trajectories still need #19 observation.
 - [x] Deterministic core: yr-sim skeleton (fixed-point, RNG, hash);
       terrain grid with passability/speed per locomotor (retail-verified)
 - [x] Unit movement on the grid (A*, occupancy)
@@ -314,6 +325,8 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       confirmation before discarding a match. Pausing stops sim ticks without
       catch-up on resume; modal input never reaches map commands. Preserve
       explicit CLI/headless launches and prove each menu state on its PR.
+- [ ] Account for terrain lift when centering world/radar camera targets (#129).
+      The flat projection currently leaves elevated targets above viewport center.
 - [ ] Complete world interaction and desktop UX (#97): consistent selection,
       supported control groups/hotkeys, hover/target/order feedback, bounded
       camera movement and configurable edge scrolling. Clear held input on
