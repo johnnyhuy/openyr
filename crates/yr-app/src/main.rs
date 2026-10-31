@@ -72,6 +72,7 @@ struct App {
     session: Option<Session>,
     audio: Option<yr_app::audio::AudioScene>,
     animations: yr_app::animation::UnitAnimations,
+    effects: yr_app::effects::EffectScene,
     view: View,
     selected: BTreeSet<u32>,
     pending: Vec<Command>,
@@ -125,6 +126,7 @@ impl App {
                     Err(e) => eprintln!("OpenYR: audio unavailable ({e}); continuing silently"),
                 }
                 self.animations = Default::default();
+                self.effects = Default::default();
                 self.animations.update(&session.sim);
                 self.session = Some(session);
                 self.selected.clear();
@@ -398,6 +400,7 @@ impl App {
             return;
         };
         let cmds = std::mem::take(&mut self.pending);
+        self.effects.remember(session);
         self.animations.update(&session.sim);
         if let Some(audio) = &mut self.audio {
             audio.commands(session, &cmds);
@@ -405,6 +408,10 @@ impl App {
         session.step(&cmds);
         self.animations.update(&session.sim);
         let events = session.sim.drain_events();
+        if let Some(bank) = &self.sprites {
+            self.effects
+                .update(session, &events, &mut bank.borrow_mut());
+        }
         if let Some(audio) = &mut self.audio {
             audio.update(session, &events);
         }
@@ -676,6 +683,33 @@ impl App {
                 draw_diamond(frame, fw, fh, m.wx, m.wy, m.half_w, m.col);
             }
         }
+        if let Some(bank) = bank.as_mut() {
+            for effect in &self.effects.active {
+                let x = effect.x.raw() as f32 / 256.0;
+                let y = effect.y.raw() as f32 / 256.0;
+                let (mx, my) = map.cell_to_px(x, y);
+                let level = self
+                    .session
+                    .as_ref()
+                    .and_then(|s| s.sim.terrain())
+                    .and_then(|g| g.cell(x.max(0.0) as u16, y.max(0.0) as u16))
+                    .map_or(0, |c| c.height);
+                if let Some(sprite) =
+                    bank.get_effect(&effect.name, tick.saturating_sub(effect.born))
+                {
+                    blit_sprite(
+                        frame,
+                        fw,
+                        fh,
+                        sprite,
+                        (mx - self.view.cam_x) * self.view.zoom,
+                        (my - self.view.cam_y) * self.view.zoom - f32::from(level) * 15.0 * k,
+                        k,
+                        SpritePass::Effect,
+                    );
+                }
+            }
+        }
         drop(bank);
         for m in &markers {
             if m.selected {
@@ -749,6 +783,7 @@ fn owner_remap(bank: &yr_render::sprites::SpriteBank, owner: u8) -> [u8; 3] {
 
 enum SpritePass<'a> {
     Body,
+    Effect,
     Shadow(&'a mut [bool]),
 }
 
@@ -799,6 +834,13 @@ fn blit_sprite(
                 }
                 (255, SpritePass::Body) => {
                     frame[dst..dst + 4].copy_from_slice(&s.rgba[src..src + 4])
+                }
+                (alpha, SpritePass::Effect) if alpha > 0 => {
+                    for c in 0..3 {
+                        frame[dst + c] = ((u32::from(s.rgba[src + c]) * u32::from(alpha)
+                            + u32::from(frame[dst + c]) * u32::from(255 - alpha))
+                            / 255) as u8;
+                    }
                 }
                 _ => {}
             }
@@ -1250,6 +1292,7 @@ fn new_app(gamedir: String, map_name: String, scale: u32) -> App {
         session: None,
         audio: None,
         animations: Default::default(),
+        effects: Default::default(),
         view: View {
             cam_x: 0.0,
             cam_y: 0.0,
@@ -1540,7 +1583,7 @@ fn parse_args(args: &[String]) -> Result<Options, String> {
     let mut out = Options {
         gamedir: g.clone(),
         map: m.clone(),
-        scale: 2,
+        scale: 1,
         ..Default::default()
     };
     let mut i = 0;
@@ -1576,8 +1619,8 @@ fn parse_args(args: &[String]) -> Result<Options, String> {
     if out.frames.is_some() && out.ticks.is_empty() {
         return Err("--frames needs at least one absolute tick".into());
     }
-    if out.scale == 0 || out.scale > 8 {
-        return Err("scale must be between 1 and 8".into());
+    if !matches!(out.scale, 1 | 2 | 4) {
+        return Err("scale must be 1, 2 or 4".into());
     }
     if out
         .end
@@ -1638,6 +1681,230 @@ fn main() {
 #[cfg(test)]
 mod render_tests {
     use super::*;
+
+    #[test]
+    fn default_view_keeps_native_art_pixels() {
+        let opts = parse_args(&["retail".into(), "EB1.MMX".into()]).unwrap();
+        assert_eq!(
+            opts.scale, 1,
+            "the default must not discard three of every four source pixels"
+        );
+    }
+
+    #[test]
+    fn render_scale_validation_matches_the_renderer() {
+        for scale in [0, 1, 2, 3, 4, 5, 6, 7, 8, u32::MAX] {
+            let result = parse_args(&["game".into(), "EB1.MMX".into(), scale.to_string()]);
+            assert_eq!(result.is_ok(), matches!(scale, 1 | 2 | 4));
+        }
+    }
+
+    #[test]
+    fn effect_translucency_blends_color_without_painting_a_shadow() {
+        let sprite = yr_render::sprites::Sprite {
+            w: 2,
+            h: 1,
+            ax: 0,
+            ay: 0,
+            rgba: vec![240, 120, 0, 128, 255, 255, 255, 0],
+        };
+        let mut frame = vec![100, 80, 60, 255, 100, 80, 60, 255];
+        blit_sprite(&mut frame, 2, 1, &sprite, 0.0, 0.0, 1.0, SpritePass::Effect);
+        assert_eq!(frame, [170, 100, 29, 255, 100, 80, 60, 255]);
+    }
+
+    #[test]
+    fn retail_native_detail_and_event_effect_proof() {
+        let dir = PathBuf::from(std::env::var("HOME").unwrap())
+            .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+        if !dir.is_dir() {
+            return;
+        }
+        let dir = dir.to_str().unwrap();
+        let prepare = |scale| {
+            let mut app = new_app(dir.into(), "EB1.MMX".into(), scale);
+            app.map = Some(yr_render::render_map(dir, "EB1.MMX", scale).unwrap());
+            app.sprites = load_sprites(dir, "EB1.MMX");
+            let mut session = app.load_session().unwrap();
+            session.sim.set_ai(None);
+            app.session = Some(session);
+            app
+        };
+        let capture = |app: &App, name: &str, full: bool| {
+            let hash = app.session.as_ref().unwrap().sim.state_hash();
+            let save = yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap();
+            let mut frame = vec![0; (WIN_W * WIN_H * 4) as usize];
+            app.compose(&mut frame, WIN_W, WIN_H);
+            if let Some(out) = std::env::var_os("OPENYR_VISUAL_DUMP") {
+                let out = PathBuf::from(out);
+                std::fs::create_dir_all(&out).unwrap();
+                if full {
+                    std::fs::write(
+                        out.join(format!("{name}.png")),
+                        yr_render::png::encode_rgba(WIN_W, WIN_H, &frame),
+                    )
+                    .unwrap();
+                }
+                let mut crop = Vec::with_capacity(400 * 280 * 4);
+                for y in 260..540 {
+                    let at = ((y * WIN_W + 356) * 4) as usize;
+                    crop.extend_from_slice(&frame[at..at + 400 * 4]);
+                }
+                std::fs::write(
+                    out.join(format!("{name}-detail.png")),
+                    yr_render::png::encode_rgba(400, 280, &crop),
+                )
+                .unwrap();
+            }
+            assert_eq!(app.session.as_ref().unwrap().sim.state_hash(), hash);
+            assert!(yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap() == save);
+            frame
+        };
+        let opts = parse_args(&[dir.into(), "EB1.MMX".into()]).unwrap();
+        let mut app = prepare(opts.scale);
+        let tank = app
+            .session
+            .as_ref()
+            .unwrap()
+            .sim
+            .units()
+            .iter()
+            .find(|u| {
+                u.owner == yr_sim::OWNER_PLAYER
+                    && app
+                        .sprites
+                        .as_ref()
+                        .unwrap()
+                        .borrow()
+                        .muzzle_effect(
+                            &app.session.as_ref().unwrap().kinds[usize::from(u.kind)],
+                            u.facing,
+                        )
+                        .as_deref()
+                        == Some("GUNFIRE")
+            })
+            .unwrap()
+            .clone();
+        let focus = (tank.x.raw() as f32 / 256.0, tank.y.raw() as f32 / 256.0);
+        app.view
+            .center_on_cell(app.map.as_ref().unwrap(), focus, (WIN_W - SIDEBAR_W, WIN_H));
+        let native = capture(&app, "native-default-t00001", true);
+        let mut before = prepare(2);
+        before.view.center_on_cell(
+            before.map.as_ref().unwrap(),
+            focus,
+            (WIN_W - SIDEBAR_W, WIN_H),
+        );
+        capture(&before, "old-default-t00001", true);
+        before.view.zoom = 2.0;
+        before.view.center_on_cell(
+            before.map.as_ref().unwrap(),
+            focus,
+            (WIN_W - SIDEBAR_W, WIN_H),
+        );
+        let lossy = capture(&before, "old-matched-magnification-t00001", true);
+        assert!(
+            native.iter().zip(&lossy).filter(|(a, b)| a != b).count() > 10_000,
+            "half-resolution terrain cannot recover its source detail by zooming back in"
+        );
+        drop(before);
+        let session = app.session.as_ref().unwrap();
+        let grid = session.sim.terrain().unwrap();
+        let fs = yr_assets::AssetFs::open(std::path::Path::new(dir)).unwrap();
+        let retail_map =
+            yr_formats::MapFile::parse(&String::from_utf8_lossy(fs.read("EB1.MMX").unwrap()))
+                .unwrap();
+        let present: BTreeSet<_> = retail_map.tiles.iter().map(|t| (t.x, t.y)).collect();
+        let (cx, cy) = (6..grid.height().saturating_sub(6))
+            .find_map(|ly| {
+                (6..grid.width().saturating_sub(6))
+                    .map(|lx| grid.cell_at_local(lx, ly))
+                    .find(|&(x, y)| {
+                        (-5..=5).all(|dy| {
+                            (-5..=5).all(|dx| {
+                                let (Some(px), Some(py)) = (
+                                    u16::try_from(i32::from(x) + dx).ok(),
+                                    u16::try_from(i32::from(y) + dy).ok(),
+                                ) else {
+                                    return false;
+                                };
+                                present.contains(&(px, py))
+                                    && grid.passable(yr_sim::terrain::Loco::Track, px, py)
+                                    && grid.cell(px, py).unwrap().height
+                                        == grid.cell(x, y).unwrap().height
+                            })
+                        }) && session.sim.units().iter().all(|u| {
+                            u.x.to_int_floor().abs_diff(i32::from(x)) > 6
+                                || u.y.to_int_floor().abs_diff(i32::from(y)) > 6
+                        })
+                    })
+            })
+            .expect("open, level retail combat patch");
+        let (x, y) = (
+            yr_sim::Fix::from_int(i32::from(cx)) + yr_sim::Fix::from_raw(128),
+            yr_sim::Fix::from_int(i32::from(cy)) + yr_sim::Fix::from_raw(128),
+        );
+        app.pending.push(Command::Spawn {
+            kind: tank.kind,
+            x,
+            y,
+            loco: tank.loco,
+            speed: yr_sim::Fix::ZERO,
+            hp: tank.max_hp,
+            armor: tank.armor,
+            weapon: tank.weapon,
+        });
+        app.tick_session();
+        let shooter = app.session.as_ref().unwrap().sim.units().last().unwrap().id;
+        app.view.center_on_cell(
+            app.map.as_ref().unwrap(),
+            (f32::from(cx) + 1.5, f32::from(cy) + 0.5),
+            (WIN_W - SIDEBAR_W, WIN_H),
+        );
+        app.pending.push(Command::Spawn {
+            kind: tank.kind,
+            x: x + yr_sim::Fix::from_int(2),
+            y,
+            loco: yr_sim::terrain::Loco::Track,
+            speed: yr_sim::Fix::ZERO,
+            hp: 2000,
+            armor: tank.armor,
+            weapon: None,
+        });
+        app.tick_session();
+        let target = app.session.as_ref().unwrap().sim.units().last().unwrap().id;
+        app.pending.extend([
+            Command::AssignOwner {
+                id: target,
+                owner: yr_sim::OWNER_ENEMY,
+            },
+            Command::Attack {
+                id: shooter,
+                target,
+            },
+        ]);
+        app.tick_session();
+        assert!(
+            app.effects.active.iter().any(|e| e.name == "GUNFIRE"),
+            "actual shot emits the muzzle art"
+        );
+        for phase in 0..9 {
+            let tick = app.session.as_ref().unwrap().sim.tick();
+            capture(&app, &format!("fire-{phase:02}-t{tick:05}"), phase == 1);
+            app.tick_session();
+        }
+        app.pending.push(Command::Destroy { id: target });
+        app.tick_session();
+        assert!(app.effects.active.iter().any(|e| e.name == "TWLT070"));
+        for phase in 0..36 {
+            let tick = app.session.as_ref().unwrap().sim.tick();
+            if phase % 2 == 0 {
+                capture(&app, &format!("death-{phase:02}-t{tick:05}"), phase == 6);
+            }
+            app.tick_session();
+        }
+        assert!(app.effects.active.iter().all(|e| e.name != "TWLT070"));
+    }
 
     #[test]
     fn radar_navigation_centers_the_world_camera_at_every_zoom() {

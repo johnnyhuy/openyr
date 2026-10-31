@@ -165,6 +165,7 @@ pub struct SpriteBank {
     voxels: HashMap<String, Option<crate::voxels::VoxelModel>>,
     buildings: HashMap<String, Option<BuildingArt>>,
     layers: HashMap<LayerKey, Option<Sprite>>,
+    effects: crate::effects::Effects,
 }
 
 impl SpriteBank {
@@ -235,12 +236,51 @@ impl SpriteBank {
             voxels: HashMap::new(),
             buildings: HashMap::new(),
             layers: HashMap::new(),
+            effects: Default::default(),
         })
     }
 
     /// RGB house colour of a rules house/country section (`Color=`).
     pub fn house_color(&self, house: &str) -> [u8; 3] {
         crate::house_color(&self.rules_ini, house)
+    }
+
+    pub fn muzzle_effect(&self, kind: &str, facing: u8) -> Option<String> {
+        let weapon = self.rules_ini.value(kind, "Primary")?;
+        let names: Vec<_> = self
+            .rules_ini
+            .value(weapon, "Anim")?
+            .split(',')
+            .map(str::trim)
+            .take(9)
+            .collect();
+        let index = if names.len() == 8 {
+            usize::from(screen_octant(facing))
+        } else {
+            0
+        };
+        names
+            .get(index)
+            .filter(|n| !n.is_empty())
+            .map(|n| n.to_string())
+    }
+
+    pub fn destruction_effect(&self, kind: &str) -> Option<String> {
+        self.rules_ini
+            .value(kind, "Explosion")?
+            .split(',')
+            .next()
+            .map(str::trim)
+            .filter(|n| !n.is_empty())
+            .map(str::to_string)
+    }
+
+    pub fn effect_alive(&mut self, name: &str, ticks: u64) -> bool {
+        self.effects.alive(&self.vfs, &self.art_ini, name, ticks)
+    }
+
+    pub fn get_effect(&mut self, name: &str, ticks: u64) -> Option<&Sprite> {
+        self.effects.get(&self.vfs, &self.art_ini, name, ticks)
     }
 
     /// Retail building body, bib and active/production overlays. Cache
