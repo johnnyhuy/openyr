@@ -28,6 +28,8 @@ fn retail_theme_eva_voices_and_weapon_reports_decode() {
         ("EVA_UnitReady", Bus::Eva),
         ("EVA_Training", Bus::Eva),
         ("EVA_LowPower", Bus::Eva),
+        ("EVA_Repairing", Bus::Eva),
+        ("EVA_StructureSold", Bus::Eva),
         ("EVA_UnitLost", Bus::Eva),
         ("EVA_YouAreVictorious", Bus::Eva),
         ("EVA_YouHaveLost", Bus::Eva),

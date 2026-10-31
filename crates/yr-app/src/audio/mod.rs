@@ -184,6 +184,8 @@ impl AudioScene {
         let tick = session.sim.tick();
         for event in events {
             match *event {
+                Event::RepairStarted { .. } => self.event(tick, "EVA_Repairing", Bus::Eva, 15),
+                Event::Sold { .. } => self.event(tick, "EVA_StructureSold", Bus::Eva, 15),
                 Event::Fired { shooter, .. } => {
                     let report = self
                         .entities

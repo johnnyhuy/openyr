@@ -132,6 +132,13 @@ incremental, testable path where each milestone is independently useful.
       frame pixels, power loss/recovery, source-cell clicks and save/load
       reconstruction are checked (`docs/formats/radar.md`). Exact cadence,
       color/scale calibration and shroud remain in #86.
+- [x] Native repair/sell controls (#94): authored Allied button states,
+      K/L input modes, rules-gated owned structure actions, deterministic
+      credit-funded repair jobs and sale refunds. Jobs survive save/load;
+      sale frees footprints and uses its retail EVA cue. Source pixels and
+      controlled retail damage/stall/repair/sale are checked
+      (`docs/formats/structure-services.md`). Original rounding/timing,
+      cursor/wrench art, deconstruction and survivors remain unverified.
 - [ ] Complete original sidebar behavior and command bar (#86), including
       radar calibration/shroud, power meter, repair/sell, text calibration,
       button transitions,

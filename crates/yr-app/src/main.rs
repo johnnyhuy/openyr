@@ -4,7 +4,7 @@
 //! Left-click / box-drag select own units, right-click move or attack
 //! (enemy under cursor), `A` then right-click = attack-move, `S` stop,
 //! `H` harvest, right-drag / arrows pan, wheel or +/- zoom,
-//! M toggles audio, F5 saves, F9 loads, Esc quits. Sidebar tabs select a category.
+//! K toggles repair, L toggles sell, M toggles audio, F5 saves, F9 loads, Esc quits. Sidebar tabs select a category.
 //! Left-click a cameo to queue it at the
 //! war factory/barracks/construction yard, right-click cancels (refund). A finished
 //! structure (green outline) is placed by clicking its cameo, then a map cell under a
@@ -24,7 +24,7 @@ use winit::event_loop::{ActiveEventLoop, EventLoop};
 use winit::keyboard::{KeyCode, PhysicalKey};
 use winit::window::{Window, WindowId};
 use yr_app::session::{Outcome, Session};
-use yr_app::sidebar::{self, Category, WIDTH as SIDEBAR_W};
+use yr_app::sidebar::{self, Category, ServiceMode, WIDTH as SIDEBAR_W};
 use yr_sim::{Command, Fix};
 
 const WIN_W: u32 = 1280;
@@ -92,6 +92,7 @@ struct App {
     /// Sidebar slot of the finished structure being placed.
     placing: Option<usize>,
     sidebar_category: Category,
+    service_mode: ServiceMode,
     load_path: Option<PathBuf>,
     save_path: PathBuf,
     save_requested: bool,
@@ -131,6 +132,7 @@ impl App {
                 self.left_down = None;
                 self.right_down = None;
                 self.right_panning = false;
+                self.service_mode = ServiceMode::None;
                 self.radar_drag = false;
                 self.placing = None;
                 self.attack_move = false;
@@ -292,6 +294,7 @@ impl App {
     }
 
     fn radar_click(&mut self, cell: (f32, f32)) {
+        self.service_mode = ServiceMode::None;
         self.placing = None;
         if self.selected.is_empty() {
             self.radar_drag = true;
@@ -306,6 +309,28 @@ impl App {
                 });
             }
             self.attack_move = false;
+        }
+    }
+
+    fn toggle_service(&mut self, mode: ServiceMode) {
+        self.service_mode.toggle(mode);
+        self.placing = None;
+        self.attack_move = false;
+        self.left_down = None;
+        self.right_down = None;
+        self.radar_drag = false;
+        self.view.dirty = true;
+    }
+
+    fn service_click(&mut self) {
+        let Some(cell) = self.window_to_cell(self.cursor) else {
+            return;
+        };
+        if let Some(command) = self.session.as_ref().and_then(|session| {
+            self.service_mode
+                .command(session, (cell.0.floor() as i32, cell.1.floor() as i32))
+        }) {
+            self.pending.push(command);
         }
     }
 
@@ -338,6 +363,7 @@ impl App {
     /// Left-click on a cameo: start placing a finished structure, else
     /// queue the slot.
     fn sidebar_click(&mut self, slot: usize) {
+        self.service_mode = ServiceMode::None;
         let Some(session) = self.session.as_ref() else {
             return;
         };
@@ -683,6 +709,7 @@ impl App {
         }
         if let Some(session) = &self.session {
             sidebar::draw(frame, fw, fh, session, self.sidebar_category, self.placing);
+            sidebar::draw_controls(frame, fw, fh, session, self.service_mode);
             let corners = [
                 map.px_to_cell(self.view.cam_x, self.view.cam_y),
                 map.px_to_cell(
@@ -945,7 +972,7 @@ impl ApplicationHandler for App {
                 return;
             }
         }
-        println!("OpenYR: left-click/box select, right-click order, A=attack-move, S=stop, H=harvest, M=mute, F5=save, F9=load, right-drag/arrows pan, wheel zoom; sidebar: left-click build or place a ready structure, right-click cancel");
+        println!("OpenYR: left-click/box select, right-click order, A=attack-move, S=stop, H=harvest, K=repair, L=sell, M=mute, F5=save, F9=load, right-drag/arrows pan, wheel zoom; sidebar: left-click build or place a ready structure, right-click cancel");
         window.request_redraw();
         self.window = Some(window);
         self.pixels = Some(pixels);
@@ -970,6 +997,17 @@ impl ApplicationHandler for App {
             }
             WindowEvent::MouseInput { state, button, .. } => match (button, state) {
                 (MouseButton::Left, ElementState::Pressed) if self.in_sidebar(self.cursor) => {
+                    let control =
+                        self.pixels
+                            .as_ref()
+                            .zip(self.session.as_ref())
+                            .and_then(|(p, s)| {
+                                sidebar::control_at(p.texture().width(), s, self.cursor)
+                            });
+                    if let Some(mode) = control {
+                        self.toggle_service(mode);
+                        return;
+                    }
                     if let Some(cell) = self.radar_target(self.cursor) {
                         self.radar_click(cell);
                         return;
@@ -980,6 +1018,7 @@ impl ApplicationHandler for App {
                         .and_then(|p| sidebar::tab_at(p.texture().width(), self.cursor));
                     if let Some(category) = tab {
                         self.sidebar_category = category;
+                        self.service_mode = ServiceMode::None;
                         self.placing = None;
                         self.view.dirty = true;
                     } else if let Some(slot) = self.sidebar_slot_at(self.cursor) {
@@ -987,6 +1026,7 @@ impl ApplicationHandler for App {
                     }
                 }
                 (MouseButton::Right, ElementState::Pressed) if self.in_sidebar(self.cursor) => {
+                    self.service_mode = ServiceMode::None;
                     if self.radar_target(self.cursor).is_some() {
                         self.selected.clear();
                         self.attack_move = false;
@@ -1001,6 +1041,16 @@ impl ApplicationHandler for App {
                             self.pending.push(cmd);
                         }
                     }
+                }
+                (MouseButton::Left, ElementState::Pressed)
+                    if self.service_mode != ServiceMode::None =>
+                {
+                    self.service_click();
+                }
+                (MouseButton::Right, ElementState::Pressed)
+                    if self.service_mode != ServiceMode::None =>
+                {
+                    self.service_mode = ServiceMode::None;
                 }
                 (MouseButton::Left, ElementState::Pressed) if self.placing.is_some() => {
                     self.try_place();
@@ -1083,7 +1133,9 @@ impl ApplicationHandler for App {
                             self.keys.insert(code);
                             match code {
                                 KeyCode::Escape => {
-                                    if self.placing.is_some() {
+                                    if self.service_mode != ServiceMode::None {
+                                        self.service_mode = ServiceMode::None;
+                                    } else if self.placing.is_some() {
                                         self.placing = None;
                                     } else if self.attack_move {
                                         self.attack_move = false;
@@ -1094,7 +1146,16 @@ impl ApplicationHandler for App {
                                 }
                                 KeyCode::Equal => self.view.zoom = (self.view.zoom * 1.2).min(4.0),
                                 KeyCode::Minus => self.view.zoom = (self.view.zoom / 1.2).max(0.25),
-                                KeyCode::KeyA => self.attack_move = true,
+                                KeyCode::KeyA => {
+                                    self.service_mode = ServiceMode::None;
+                                    self.attack_move = true;
+                                }
+                                KeyCode::KeyK if !event.repeat => {
+                                    self.toggle_service(ServiceMode::Repair)
+                                }
+                                KeyCode::KeyL if !event.repeat => {
+                                    self.toggle_service(ServiceMode::Sell)
+                                }
                                 KeyCode::KeyM if !event.repeat => {
                                     if let Some(audio) = &self.audio {
                                         audio.toggle_mute();
@@ -1212,6 +1273,7 @@ fn new_app(gamedir: String, map_name: String, scale: u32) -> App {
         announced: false,
         placing: None,
         sidebar_category: Category::default(),
+        service_mode: ServiceMode::None,
         load_path: None,
         save_path: yr_app::snapshot::quicksave_path(),
         save_requested: false,
@@ -1691,5 +1753,33 @@ mod render_tests {
         let mut frame = vec![0; 16];
         blit_sprite(&mut frame, 2, 2, &sprite, 0.0, 0.0, 1.0, SpritePass::Body);
         assert_eq!(frame, [0; 16]);
+    }
+}
+
+#[cfg(test)]
+mod service_input_tests {
+    use super::*;
+
+    #[test]
+    fn service_modes_cancel_placement_and_stale_pointer_orders() {
+        let mut app = new_app(String::new(), String::new(), 2);
+        app.placing = Some(3);
+        app.attack_move = true;
+        app.left_down = Some((12.0, 34.0));
+        app.right_down = Some((56.0, 78.0));
+        app.radar_drag = true;
+        app.toggle_service(ServiceMode::Repair);
+        assert_eq!(app.service_mode, ServiceMode::Repair);
+        assert!(
+            app.placing.is_none()
+                && !app.attack_move
+                && app.left_down.is_none()
+                && app.right_down.is_none()
+                && !app.radar_drag
+        );
+        app.toggle_service(ServiceMode::Sell);
+        assert_eq!(app.service_mode, ServiceMode::Sell);
+        app.toggle_service(ServiceMode::Sell);
+        assert_eq!(app.service_mode, ServiceMode::None);
     }
 }

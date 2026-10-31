@@ -18,6 +18,8 @@ pub struct SidebarArt {
     pub(super) header: Option<Image>,
     pub(super) row: Option<Image>,
     pub(super) bottom: Option<Image>,
+    pub(super) repair: Vec<Image>,
+    pub(super) sell: Vec<Image>,
     pub(super) tabs: [Vec<Image>; 4],
     /// Coverage only. The clock's palette colour is not painted on the cameo.
     pub(super) clock: Vec<Vec<u8>>,
@@ -97,6 +99,8 @@ impl SidebarArt {
             header: one("SIDE1.SHP", 168, 69),
             row: one("SIDE2.SHP", 168, 50),
             bottom: one("SIDE3.SHP", 168, 26),
+            repair: frames("REPAIR.SHP", 64, 31, 2),
+            sell: frames("SELL.SHP", 64, 31, 2),
             tabs: std::array::from_fn(|i| frames(&format!("TAB{i:02}.SHP"), 28, 27, 5)),
             clock: frames("GCLOCK2.SHP", 60, 48, 55)
                 .into_iter()
