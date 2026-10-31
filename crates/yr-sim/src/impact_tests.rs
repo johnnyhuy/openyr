@@ -156,3 +156,66 @@ fn hostile_saved_provenance_is_rejected() {
         assert!(Sim::from_save_bytes(&bytes).is_err(), "{field}");
     }
 }
+
+#[test]
+fn ai_build_profiles_preserve_the_legacy_serialized_setup_shape() {
+    let make = |source| {
+        let unit = UnitSpec {
+            loco: terrain::Loco::Track,
+            speed: Fix::ONE,
+            hp: 100,
+            armor: 0,
+            role: Role::Combat,
+            weapon: Some(WeaponSpec {
+                source,
+                damage: 10,
+                rof_ticks: 10,
+                range: Fix::ONE,
+                projectile_speed: Fix::ZERO,
+                verses: [yr_rules::Decimal::ONE; combat::ARMOR_COUNT],
+            }),
+        };
+        let building = BuildingSpec {
+            w: 1,
+            h: 1,
+            hp: 100,
+            armor: 0,
+            power: 0,
+            role: Role::Refinery,
+            adjacent: 1,
+            base_normal: true,
+            free_unit: Some((3, unit)),
+        };
+        let mut sim = Sim::new(42);
+        sim.set_ai(Some(ai::SkirmishAi::new(
+            OWNER_ENEMY,
+            OWNER_PLAYER,
+            [Product::Unit(unit), Product::Building(building)]
+                .into_iter()
+                .map(|product| ai::AiBuild {
+                    factory: match product {
+                        Product::Unit(_) => Factory::Vehicle,
+                        Product::Building(_) => Factory::Building,
+                    },
+                    kind: 3,
+                    product,
+                    cost: 100,
+                    ticks: 10,
+                    prerequisites: vec![],
+                })
+                .collect(),
+        )));
+        sim
+    };
+    let legacy = make(None);
+    let current = make(Some(7));
+    let mut legacy_bytes = legacy.save_bytes().unwrap();
+    legacy_bytes[8..12].copy_from_slice(&1u32.to_le_bytes());
+    assert_eq!(current.setup_fingerprint_bytes().unwrap(), legacy_bytes);
+    assert_eq!(current.state_hash(), legacy.state_hash());
+    assert_ne!(
+        current.save_bytes().unwrap(),
+        legacy.save_bytes().unwrap(),
+        "normal saves retain full AI provenance"
+    );
+}

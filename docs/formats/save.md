@@ -47,8 +47,8 @@ events. The match wrapper remains version 1. Version-1 sim payloads are accepted
 with unknown source metadata; their in-flight shots do not guess impact art.
 New shots and flights retain provenance in version-2 snapshots. Setup keys use
 the original version-1 projection without those visual fields, including unit,
-queued-product and FreeUnit weapon metadata. This preserves existing setup
-fingerprints while normal snapshots retain all new provenance. Visual metadata
+queued-product, AI-build-profile and FreeUnit weapon metadata. This preserves
+existing setup fingerprints while normal snapshots retain all new provenance. Visual metadata
 does not enter the gameplay state hash.
 
 Restored version-1 games use current corrected combat behavior: an already-fired

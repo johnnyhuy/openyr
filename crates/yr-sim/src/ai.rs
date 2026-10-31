@@ -28,6 +28,12 @@ pub struct SkirmishAi {
 }
 
 impl SkirmishAi {
+    pub(crate) fn clear_weapon_sources(&mut self) {
+        for build in &mut self.builds {
+            build.product = build.product.without_weapon_source();
+        }
+    }
+
     pub(crate) fn validate_save(&self) -> Result<(), crate::save::SaveError> {
         use crate::save::{order, require};
         require(

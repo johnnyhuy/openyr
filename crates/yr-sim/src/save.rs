@@ -41,6 +41,9 @@ impl Sim {
         for projectile in &mut setup.projectiles {
             projectile.origin = None;
         }
+        if let Some(ai) = &mut setup.ai {
+            ai.clear_weapon_sources();
+        }
         for economy in setup.economies.values_mut() {
             for order in &mut economy.production {
                 order.product = order.product.without_weapon_source();

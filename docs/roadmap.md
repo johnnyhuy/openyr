@@ -215,6 +215,9 @@ Johnny on 2026-10-31.
 - [x] Keep fired shells after shooter death (#119), with original damage and
       weapon provenance through arrival and save/load. Target loss still
       discards homing shots; a moving-target regression covers continuation.
+- [x] Preserve legacy setup fingerprints when adding shot metadata (#121),
+      including AI build profiles and FreeUnit weapons. Version-1 match saves
+      remain loadable; version 2 retains full new shot provenance.
 - [x] `sim-bench` headless benchmark; state hashing
 
 ## M5: Playable sandbox (the playable baseline)
