@@ -72,6 +72,121 @@ fn assert_success(output: &Output) {
     assert!(output.stderr.is_empty(), "{output:?}");
 }
 
+fn archive(payloads: &[&[u8]]) -> Vec<u8> {
+    let mut mix = u16::try_from(payloads.len())
+        .unwrap()
+        .to_le_bytes()
+        .to_vec();
+    let body_len: usize = payloads.iter().map(|p| p.len()).sum();
+    mix.extend(u32::try_from(body_len).unwrap().to_le_bytes());
+    let mut offset = 0u32;
+    for (i, payload) in payloads.iter().enumerate() {
+        mix.extend(u32::try_from(i + 1).unwrap().to_le_bytes());
+        mix.extend(offset.to_le_bytes());
+        let len = u32::try_from(payload.len()).unwrap();
+        mix.extend(len.to_le_bytes());
+        offset += len;
+    }
+    for payload in payloads {
+        mix.extend_from_slice(payload);
+    }
+    mix
+}
+
+#[test]
+fn scan_fails_for_an_invalid_archive_after_printing_the_census() {
+    let fixture = Fixture::new();
+    let invalid = fixture.0.join("invalid.mix");
+    fs::write(&invalid, b"invalid").unwrap();
+    let output = Command::new(env!("CARGO_BIN_EXE_mix-dump"))
+        .arg("scan")
+        .arg(invalid)
+        .arg(fixture.0.join("test.mix"))
+        .output()
+        .unwrap();
+    assert_eq!(output.status.code(), Some(1), "{output:?}");
+    let text = String::from_utf8(output.stdout).unwrap();
+    assert!(text.contains("2048 unique IDs"), "{text}");
+    assert!(
+        text.contains("errors (1):\n  invalid.mix: not a MIX"),
+        "{text}"
+    );
+    assert_eq!(
+        String::from_utf8(output.stderr).unwrap(),
+        "error: archive scan found 1 parser error(s)\n"
+    );
+}
+
+#[test]
+fn scan_reports_nested_asset_errors_and_continues_to_valid_assets() {
+    let fixture = Fixture::new();
+    let nested = archive(&[b"RIFF", b" FSC"]);
+    fs::write(
+        fixture.0.join("test.mix"),
+        archive(&[&nested, b"RIFF", b"[valid]\nvalue=1\n"]),
+    )
+    .unwrap();
+    let output = fixture.command("scan").output().unwrap();
+    assert_eq!(output.status.code(), Some(1), "{output:?}");
+    let text = String::from_utf8(output.stdout).unwrap();
+    assert!(
+        text.contains("test.mix/0x00000001/0x00000001: wav:"),
+        "{text}"
+    );
+    assert!(
+        text.contains("test.mix/0x00000001/0x00000002: csf:"),
+        "{text}"
+    );
+    assert!(text.contains("test.mix/0x00000002: wav:"), "{text}");
+    assert!(text.contains("test.mix/0x00000003 (16 B)"), "{text}");
+    assert!(text.contains("errors (3):"), "{text}");
+    assert_eq!(
+        String::from_utf8(output.stderr).unwrap(),
+        "error: archive scan found 3 parser error(s)\n"
+    );
+}
+
+#[test]
+fn scan_fails_for_a_malformed_csf() {
+    let fixture = Fixture::new();
+    fs::write(fixture.0.join("test.mix"), archive(&[b" FSC"])).unwrap();
+    let output = fixture.command("scan").output().unwrap();
+    assert_eq!(output.status.code(), Some(1), "{output:?}");
+    let text = String::from_utf8(output.stdout).unwrap();
+    assert!(
+        text.contains("test.mix/0x00000001: csf: not a CSF file"),
+        "{text}"
+    );
+    assert!(text.contains("errors (1):"), "{text}");
+}
+
+#[test]
+fn scan_counts_errors_beyond_the_diagnostic_limit() {
+    let fixture = Fixture::new();
+    fs::write(fixture.0.join("test.mix"), archive(&[&b"RIFF"[..]; 43])).unwrap();
+    let output = fixture.command("scan").output().unwrap();
+    assert_eq!(output.status.code(), Some(1), "{output:?}");
+    let text = String::from_utf8(output.stdout).unwrap();
+    assert!(text.contains("errors (43):"), "{text}");
+    assert_eq!(text.matches(": wav:").count(), 40, "{text}");
+    assert_eq!(
+        String::from_utf8(output.stderr).unwrap(),
+        "error: archive scan found 43 parser error(s)\n"
+    );
+}
+
+#[test]
+fn scan_accepts_closed_stdout_even_when_assets_are_invalid() {
+    let fixture = Fixture::new();
+    fs::write(fixture.0.join("test.mix"), archive(&[b"RIFF"])).unwrap();
+    let output = fixture
+        .command("scan")
+        .stdout(closed_stdout())
+        .output()
+        .unwrap();
+    assert_success(&output);
+}
+
 #[test]
 fn inspection_output_is_complete() {
     let fixture = Fixture::new();

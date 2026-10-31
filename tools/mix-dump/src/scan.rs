@@ -103,6 +103,7 @@ pub fn cmd_scan(paths: &[&str], verbose: bool, stdout: &mut dyn Write) -> crate:
         for e in census.errors.iter().take(40) {
             writeln!(stdout, "  {e}")?;
         }
+        return Err(format!("archive scan found {} parser error(s)", census.errors.len()).into());
     }
     Ok(())
 }
@@ -201,10 +202,12 @@ fn classify(d: &[u8], label: &str, c: &mut Census) -> &'static str {
         return "bink";
     }
     if head == b" FSC" {
-        return if CsfFile::parse(d).is_ok() {
-            "csf"
-        } else {
-            "csf?"
+        return match CsfFile::parse(d) {
+            Ok(_) => "csf",
+            Err(e) => {
+                c.errors.push(format!("{label}: csf: {e}"));
+                "csf?"
+            }
         };
     }
     if d.starts_with(b"Voxel Animation\0") {

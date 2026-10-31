@@ -33,6 +33,11 @@ Johnny on 2026-10-31.
 - [x] VXL + HVA readers (vehicles)
 - [x] TMP terrain tiles
 - [x] `mix-dump scan`: recursive census + corpus-wide parser check
+- [x] Fail the corpus check when the census contains parser errors (#111,
+      #113), including malformed CSF files. Print the census and first 40
+      diagnostics before failing; intentionally closed output pipes still
+      exit successfully. Synthetic CLI tests cover malformed archives,
+      nested assets and the uncapped error total.
 - [x] PCX reader (8-bit paletted + 24-bit planar; all 271 retail files)
 - [x] AUD / AUDIO.BAG+IDX / IMA WAV decoders, bit-exact vs ffmpeg
 - [ ] WSA/BIK metadata
