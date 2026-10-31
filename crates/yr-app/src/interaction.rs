@@ -214,6 +214,25 @@ mod tests {
     }
 
     #[test]
+    fn absent_tiles_produce_blocked_cursor_and_no_world_orders() {
+        let mut sim = scene();
+        sim.set_terrain(TerrainGrid::from_tiles(
+            0,
+            0,
+            8,
+            6,
+            (0..6).flat_map(|y| {
+                (0..8).filter_map(move |x| ((x, y) != (3, 2)).then_some((x, y, 0, 13, 0)))
+            }),
+        ));
+        for attack_move in [false, true] {
+            let action = orders(&sim, &[1].into(), (3, 2), attack_move);
+            assert_eq!(action.cursor, Kind::Blocked);
+            assert!(action.commands.is_empty());
+        }
+    }
+
+    #[test]
     fn same_resolver_selects_and_filters_click_commands_by_ownership_weapon_and_route() {
         let sim = scene();
         let armed = [1].into();

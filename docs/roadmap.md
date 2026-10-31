@@ -204,8 +204,14 @@ Johnny on 2026-10-31.
 - [x] Deterministic core: yr-sim skeleton (fixed-point, RNG, hash);
       terrain grid with passability/speed per locomotor (retail-verified)
 - [x] Unit movement on the grid (A*, occupancy)
-- [ ] Reject absent map tiles inside the terrain bounding rectangle (#105).
-      Map-built grids currently leave those holes as passable clear ground.
+- [x] Reject absent map tiles inside the terrain bounding rectangle (#105).
+      Missing coordinates block movement, placement, setup searches and world
+      orders; sparse support survives version-3 saves and changes setup keys.
+      Authored border tiles outside LocalSize remain available pending original
+      playable-bounds observation. Synthetic rectangles remain fully populated.
+- [x] Preserve authored clear-sentinel tiles in simulation terrain (#125).
+      Resolve them through tile set 0, matching the map renderer, rather than
+      treating their records as missing ground.
 - [x] Building placement, harvesting loop (production queues in M5 sidebar)
 - [x] Full-footprint refinery docking (#68, #69): harvesters deliver beside
       the retail 4x3 foundation and retain cargo if their refinery is lost.

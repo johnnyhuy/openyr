@@ -2605,6 +2605,37 @@ mod tests {
     }
 
     #[test]
+    fn ready_structures_cannot_cover_an_absent_tile() {
+        let spec = plant_spec();
+        let mut sim = sim_with_ready(spec);
+        assert!(sim.can_place(OWNER_PLAYER, &spec, 5, 2));
+        let mut grid = TerrainGrid::from_tiles(
+            0,
+            0,
+            16,
+            16,
+            (0..16).flat_map(|y| {
+                (0..16).filter_map(move |x| ((x, y) != (6, 3)).then_some((x, y, 0, 13, 0)))
+            }),
+        );
+        for b in sim.buildings() {
+            grid.set_building(b.cell.0, b.cell.1, b.size.0, b.size.1, true);
+        }
+        sim.set_terrain(grid);
+        assert!(!sim.can_place(OWNER_PLAYER, &spec, 5, 2));
+        sim.step(&[Command::PlaceProduced {
+            kind: 7,
+            x: 5,
+            y: 2,
+        }]);
+        assert_eq!(sim.buildings().len(), 1);
+        assert!(
+            sim.production()[0].done(),
+            "rejected placement keeps the paid structure"
+        );
+    }
+
+    #[test]
     fn placement_needs_flat_clear_land_and_base_buildings() {
         let mut sim = sim_with_ready(BuildingSpec {
             base_normal: false,

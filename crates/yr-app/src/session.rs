@@ -997,7 +997,50 @@ mod save_tests {
         let mut rebalanced = fresh("GI", 250, None);
         assert!(crate::snapshot::restore(&mut rebalanced, &bytes)
             .unwrap_err()
-            .contains("map or rules"));
+            .contains("map, rules or engine setup"));
+    }
+
+    #[test]
+    fn sparse_terrain_changes_setup_keys_and_rejects_old_rectangular_matches() {
+        let make = |sparse| {
+            let mut session = fresh("GI", 200, None);
+            session.sim.set_terrain(if sparse {
+                TerrainGrid::from_tiles(0, 0, 2, 2, [(1, 1, 0, 13, 0)].into_iter())
+            } else {
+                TerrainGrid::new(0, 0, 2, 2)
+            });
+            session.setup_hash =
+                setup_fingerprint(&session.sim, &session.buildables, &session.kinds, &[]).unwrap();
+            session
+        };
+        let permissive = make(false);
+        let mut current = make(true);
+        assert_ne!(current.setup_hash, permissive.setup_hash);
+        let before = current.sim.state_hash();
+        assert!(crate::snapshot::restore(
+            &mut current,
+            &crate::snapshot::encode(&permissive).unwrap()
+        )
+        .is_err());
+        assert_eq!(current.sim.state_hash(), before);
+        let mut restored = make(true);
+        crate::snapshot::restore(&mut restored, &crate::snapshot::encode(&current).unwrap())
+            .unwrap();
+        assert_eq!(restored.sim.state_hash(), before);
+        assert!(restored.sim.terrain().unwrap().cell(0, 0).is_none());
+    }
+
+    #[test]
+    fn setup_free_cells_skip_sparse_holes() {
+        let grid = TerrainGrid::from_tiles(0, 0, 4, 4, [(2, 2, 0, 13, 0)].into_iter());
+        assert_eq!(
+            free_cell(&grid, Loco::Track, (1, 1), &Sim::new(42), &[]),
+            Some((2, 2))
+        );
+        assert_eq!(
+            free_cell(&grid, Loco::Fly, (1, 1), &Sim::new(42), &[(2, 2)]),
+            None
+        );
     }
 
     #[test]

@@ -648,7 +648,7 @@ pub fn build_terrain(
     let mut tmps: std::collections::HashMap<String, TmpFile> = std::collections::HashMap::new();
     let mut rows: Vec<(u16, u16, u8, u8, u8)> = Vec::new();
     for t in &map.tiles {
-        let Some(id) = t.tile else { continue };
+        let id = t.tile.unwrap_or(0);
         let Some(name) = index.file_for(id) else {
             continue;
         };

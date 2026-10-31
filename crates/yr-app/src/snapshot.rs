@@ -66,7 +66,7 @@ fn header(bytes: &[u8]) -> Result<Header, String> {
 pub fn restore(session: &mut Session, bytes: &[u8]) -> Result<(), String> {
     let h = header(bytes)?;
     if h.seed != session.seed || h.setup_hash != session.setup_hash {
-        return Err("save does not match this map or rules; use the original game data".into());
+        return Err("save does not match this map, rules or engine setup; use matching game data and a compatible OpenYR version".into());
     }
     let sim = yr_sim::Sim::from_save_bytes(&bytes[HEADER..]).map_err(|e| e.to_string())?;
     if sim.state_hash() != h.state_hash {

@@ -1921,6 +1921,98 @@ mod render_tests {
     }
 
     #[test]
+    fn retail_sparse_boundary_cursor_proof() {
+        let dir = PathBuf::from(std::env::var_os("HOME").unwrap())
+            .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+        if !dir.is_dir() {
+            return;
+        }
+        let dir = dir.to_str().unwrap();
+        let mut app = new_app(dir.into(), "EB1.MMX".into(), 1);
+        app.map = Some(yr_render::render_map(dir, "EB1.MMX", 1).unwrap());
+        app.sprites = load_sprites(dir, "EB1.MMX");
+        let mut session = app.load_session().unwrap();
+        session.sim.set_ai(None);
+        let grid = session.sim.terrain().unwrap();
+        let map = app.map.as_ref().unwrap();
+        let (land, hole) = (1..grid.height())
+            .find_map(|ly| {
+                (1..grid.width()).find_map(|lx| {
+                    let land = grid.cell_at_local(lx, ly);
+                    let hole = (land.0 - 1, land.1);
+                    let center = (f32::from(hole.0) + 0.5, f32::from(hole.1) + 0.5);
+                    let pixel = map.cell_to_px(center.0, center.1);
+                    (grid.passable(yr_sim::terrain::Loco::Track, land.0, land.1)
+                        && grid.cell(land.0, land.1).unwrap().height == 0
+                        && grid.cell(hole.0, hole.1).is_none()
+                        && yr_app::interaction::cell_at(map, Some(grid), pixel) == center)
+                        .then_some((land, hole))
+                })
+            })
+            .expect("flat retail map edge with an unobscured missing cell");
+        let tank = session
+            .sim
+            .units()
+            .iter()
+            .find(|u| u.owner == yr_sim::OWNER_PLAYER)
+            .unwrap()
+            .clone();
+        let id = session.sim.next_id_peek();
+        session.sim.step(&[
+            Command::Spawn {
+                kind: tank.kind,
+                x: Fix::from_int(i32::from(land.0)) + Fix::from_raw(128),
+                y: Fix::from_int(i32::from(land.1)) + Fix::from_raw(128),
+                loco: tank.loco,
+                speed: tank.speed,
+                hp: tank.max_hp,
+                armor: tank.armor,
+                weapon: None,
+            },
+            Command::AssignOwner {
+                id,
+                owner: yr_sim::OWNER_PLAYER,
+            },
+        ]);
+        app.session = Some(session);
+        app.selected.insert(id);
+        app.view.center_on_cell(
+            map,
+            (f32::from(land.0) + 0.5, f32::from(land.1) + 0.5),
+            (WIN_W - SIDEBAR_W, WIN_H),
+        );
+        let point = map.cell_to_px(f32::from(hole.0) + 0.5, f32::from(hole.1) + 0.5);
+        app.cursor = (
+            f64::from(point.0 - app.view.cam_x),
+            f64::from(point.1 - app.view.cam_y),
+        );
+        app.pointer.inside = true;
+        assert_eq!(app.cursor_kind(WIN_W), yr_app::cursor::Kind::Blocked);
+        let hash = app.session.as_ref().unwrap().sim.state_hash();
+        app.left_click(app.cursor);
+        assert!(
+            app.pending.is_empty(),
+            "blocked cursor and click share validation"
+        );
+        let mut frame = vec![0; (WIN_W * WIN_H * 4) as usize];
+        app.compose(&mut frame, WIN_W, WIN_H);
+        assert_eq!(app.session.as_ref().unwrap().sim.state_hash(), hash);
+        if let Some(out) = std::env::var_os("OPENYR_TERRAIN_DUMP") {
+            std::fs::create_dir_all(&out).unwrap();
+            std::fs::write(
+                PathBuf::from(&out).join("blocked-boundary-t00002.png"),
+                yr_render::png::encode_rgba(WIN_W, WIN_H, &frame),
+            )
+            .unwrap();
+            std::fs::write(PathBuf::from(out).join("boundary.json"), serde_json::to_vec_pretty(&serde_json::json!({
+                "tick": app.session.as_ref().unwrap().sim.tick(), "land": land, "hole": hole,
+                "cursor": "Blocked", "pending_commands": app.pending.len(), "state_hash": format!("{hash:016x}"),
+            })).unwrap()).unwrap();
+        }
+        println!("EB1 boundary tick 2: selected unit at {land:?}, blocked cursor over {hole:?}, click queues no orders, composition preserves hash {hash:016x}");
+    }
+
+    #[test]
     fn retail_native_detail_and_event_effect_proof() {
         let dir = PathBuf::from(std::env::var("HOME").unwrap())
             .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
