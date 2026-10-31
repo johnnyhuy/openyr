@@ -256,6 +256,15 @@ fn retail_radar_frames_rules_power_live_map_and_save_roundtrip() {
         for x in 0..rect.w {
             let pos = (f64::from(rect.x + x) + 0.5, f64::from(rect.y + y) + 0.5);
             if let Some((cx, cy)) = session.radar.target(1280, pos) {
+                assert!(
+                    session
+                        .sim
+                        .terrain()
+                        .unwrap()
+                        .cell(cx.floor() as u16, cy.floor() as u16)
+                        .is_some(),
+                    "painted minimap targets must have simulation terrain"
+                );
                 let sx = x as usize * 112 / rect.w as usize;
                 let sy = y as usize * 52 / rect.h as usize;
                 assert_eq!(
