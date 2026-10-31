@@ -3,12 +3,13 @@
 //!   mix-dump rules <gamedir>            summary + validation issues
 //!   mix-dump rules <gamedir> <ID>...    resolved techno, weapon chain, art
 
+use std::io::Write;
 use std::path::Path;
 use yr_assets::AssetFs;
 use yr_formats::{CsfFile, IniFile};
 use yr_rules::{Armor, Rules, Severity, TechnoType};
 
-pub fn cmd_rules(args: &[&str]) -> Result<(), String> {
+pub fn cmd_rules(args: &[&str], stdout: &mut dyn Write) -> crate::CommandResult {
     let (dir, ids) = args
         .split_first()
         .ok_or("usage: mix-dump rules <gamedir> [ID...]")?;
@@ -22,20 +23,20 @@ pub fn cmd_rules(args: &[&str]) -> Result<(), String> {
     let csf = fs.read("RA2MD.CSF").and_then(|d| CsfFile::parse(d).ok());
 
     if ids.is_empty() {
-        summary(&rules);
+        summary(&rules, stdout)?;
         return Ok(());
     }
     for id in ids {
         let t = rules
             .techno(id)
             .ok_or_else(|| format!("{id}: not a registered techno type"))?;
-        techno(&fs, &rules, &rules_ini, &art_ini, csf.as_ref(), t);
+        techno(&fs, &rules, &rules_ini, &art_ini, csf.as_ref(), t, stdout)?;
     }
     Ok(())
 }
 
-fn summary(rules: &Rules) {
-    println!(
+fn summary(rules: &Rules, stdout: &mut dyn Write) -> crate::CommandResult {
+    writeln!(stdout,
         "infantry {}  vehicles {}  aircraft {}  buildings {}  weapons {}  warheads {}  projectiles {}",
         rules.infantry.len(),
         rules.vehicles.len(),
@@ -44,25 +45,27 @@ fn summary(rules: &Rules) {
         rules.weapons.len(),
         rules.warheads.len(),
         rules.projectiles.len()
-    );
-    println!(
+    )?;
+    writeln!(
+        stdout,
         "globals   build_speed {}  refund {}  houses {}  skirmish money {} (units {})",
         opt(&rules.globals.build_speed),
         opt(&rules.globals.refund_percent),
         rules.houses.len(),
         opt(&rules.skirmish.money),
         opt(&rules.skirmish.unit_count)
-    );
+    )?;
     let mut issues: Vec<_> = rules.issues.iter().collect();
     issues.sort_by_key(|i| std::cmp::Reverse(i.severity));
-    println!("\nissues ({}):", issues.len());
+    writeln!(stdout, "\nissues ({}):", issues.len())?;
     for i in issues {
         let sev = match i.severity {
             Severity::Warning => "warn",
             Severity::Note => "note",
         };
-        println!("  {sev}  [{}] {}", i.section, i.message);
+        writeln!(stdout, "  {sev}  [{}] {}", i.section, i.message)?;
     }
+    Ok(())
 }
 
 fn opt<T: std::fmt::Display>(v: &Option<T>) -> String {
@@ -76,24 +79,27 @@ fn techno(
     art_ini: &IniFile,
     csf: Option<&CsfFile>,
     t: &TechnoType,
-) {
+    stdout: &mut dyn Write,
+) -> crate::CommandResult {
     let display = t
         .ui_name
         .as_deref()
         .and_then(|label| csf.and_then(|c| c.get(label)))
         .or(t.name.as_deref())
         .unwrap_or("?");
-    println!("{} \u{2014} {display}", t.id);
-    println!(
+    writeln!(stdout, "{}: {display}", t.id)?;
+    writeln!(
+        stdout,
         "  kind      {:?} #{}{}",
         t.kind,
         t.index,
         if t.defined { "" } else { " (no rules section)" }
-    );
+    )?;
     if let Some(label) = &t.ui_name {
-        println!("  UIName    {label}");
+        writeln!(stdout, "  UIName    {label}")?;
     }
-    println!(
+    writeln!(
+        stdout,
         "  strength  {}   armor {}   cost {}   tech {}   sight {}   speed {}",
         opt(&t.strength),
         t.armor.map_or("(default)", Armor::name),
@@ -101,18 +107,19 @@ fn techno(
         opt(&t.tech_level),
         opt(&t.sight),
         opt(&t.speed)
-    );
+    )?;
     if !t.owner.is_empty() {
-        println!("  owner     {}", t.owner.join(", "));
+        writeln!(stdout, "  owner     {}", t.owner.join(", "))?;
     }
     if !t.prerequisite.is_empty() {
-        println!("  prereq    {}", t.prerequisite.join(", "));
+        writeln!(stdout, "  prereq    {}", t.prerequisite.join(", "))?;
     }
 
-    println!(
+    writeln!(
+        stdout,
         "  art       [{}]",
         t.art.as_ref().map_or("(none)", |a| a.section.as_str())
-    );
+    )?;
     let mut files = Vec::new();
     if let Some(art) = &t.art {
         if art.voxel {
@@ -132,7 +139,11 @@ fn techno(
     }
     for f in files {
         if let Some(loc) = fs.locate(&f) {
-            println!("            {f:<18} {:>8} B  {}", loc.size, loc.source);
+            writeln!(
+                stdout,
+                "            {f:<18} {:>8} B  {}",
+                loc.size, loc.source
+            )?;
         }
     }
 
@@ -157,7 +168,8 @@ fn techno(
         let Some(weapon) = rules.weapons.get(&w) else {
             continue;
         };
-        println!(
+        writeln!(
+            stdout,
             "  {slot:<14} {w}: damage {} ROF {} range {} burst {} projectile {} warhead {}",
             opt(&weapon.damage),
             opt(&weapon.rof),
@@ -168,7 +180,7 @@ fn techno(
             opt(&weapon.burst),
             opt(&weapon.projectile),
             opt(&weapon.warhead)
-        );
+        )?;
         if let (Some(wh), Some(dmg)) = (
             weapon
                 .warhead
@@ -180,7 +192,7 @@ fn techno(
                 .iter()
                 .map(|&a| format!("{} {}", a.name(), wh.verse(a).mul_int(dmg)))
                 .collect();
-            println!("                 damage/shot: {}", row.join(", "));
+            writeln!(stdout, "                 damage/shot: {}", row.join(", "))?;
         }
     }
 
@@ -189,21 +201,23 @@ fn techno(
         ("artmd.ini", art_ini, t.image.as_str()),
     ] {
         if let Some(sec) = ini.section(section) {
-            println!("  {file} [{}]:", sec.name);
+            writeln!(stdout, "  {file} [{}]:", sec.name)?;
             for (i, (k, v)) in sec.entries.iter().enumerate() {
                 let shadowed = sec.entries[i + 1..]
                     .iter()
                     .any(|(k2, _)| k2.eq_ignore_ascii_case(k));
-                println!(
+                writeln!(
+                    stdout,
                     "    {k}={v}{}",
                     if shadowed {
                         "   (overridden below)"
                     } else {
                         ""
                     }
-                );
+                )?;
             }
         }
     }
-    println!();
+    writeln!(stdout)?;
+    Ok(())
 }

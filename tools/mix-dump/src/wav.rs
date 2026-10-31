@@ -6,19 +6,21 @@
 
 use crate::render::load_spec;
 use std::fs;
+use std::io::Write;
 use yr_formats::audio::{decode_wav, encode_wav, parse_bag_index};
 use yr_formats::{AudFile, Pcm};
 
-pub fn cmd_wav(asset: &str, out: &str) -> Result<(), String> {
+pub fn cmd_wav(asset: &str, out: &str, stdout: &mut dyn Write) -> crate::CommandResult {
     let pcm = decode(asset)?;
     fs::write(out, encode_wav(&pcm)).map_err(|e| e.to_string())?;
-    println!(
+    writeln!(
+        stdout,
         "decoded {asset} -> {out} ({} Hz, {} ch, {} samples, {:.2} s)",
         pcm.sample_rate,
         pcm.channels,
         pcm.samples.len(),
         pcm.samples.len() as f64 / f64::from(pcm.channels) / f64::from(pcm.sample_rate)
-    );
+    )?;
     Ok(())
 }
 

@@ -5,6 +5,7 @@
 //! decoded, every VXL limb's spans walked, every TMP cell read.
 
 use std::collections::{BTreeMap, HashSet};
+use std::io::Write;
 use yr_formats::names::NameDb;
 use yr_formats::{
     AudFile, CsfFile, HvaFile, IniFile, MixArchive, Palette, PcxImage, ShpFile, TmpFile, VxlFile,
@@ -42,7 +43,7 @@ impl Census {
     }
 }
 
-pub fn cmd_scan(paths: &[&str], verbose: bool) -> Result<(), String> {
+pub fn cmd_scan(paths: &[&str], verbose: bool, stdout: &mut dyn Write) -> crate::CommandResult {
     let mut archives = Vec::new();
     for path in paths {
         let (data, _) = crate::load(path)?;
@@ -66,37 +67,40 @@ pub fn cmd_scan(paths: &[&str], verbose: bool) -> Result<(), String> {
         walk(data, name, 0, &names, &mut census, verbose);
     }
 
-    println!(
+    writeln!(
+        stdout,
         "{} INIs, {} unique IDs, {} names known ({} built-in, {} learned from INIs)\n",
         inis.len(),
         ids.len(),
         names.len(),
         builtin,
         names.len() - builtin
-    );
-    println!(
+    )?;
+    writeln!(
+        stdout,
         "{:<12} {:>7} {:>7} {:>12}  examples",
         "kind", "count", "named", "bytes"
-    );
+    )?;
     for (kind, b) in &census.kinds {
-        println!(
+        writeln!(
+            stdout,
             "{kind:<12} {:>7} {:>7} {:>12}  {}",
             b.count, b.named, b.bytes, b.examples[0]
-        );
+        )?;
         for ex in &b.examples[1..] {
-            println!("{:<42}{ex}", "");
+            writeln!(stdout, "{:<42}{ex}", "")?;
         }
     }
     if !census.details.is_empty() {
-        println!("\ndetails:");
+        writeln!(stdout, "\ndetails:")?;
         for (k, n) in &census.details {
-            println!("  {k:<40} {n}");
+            writeln!(stdout, "  {k:<40} {n}")?;
         }
     }
     if !census.errors.is_empty() {
-        println!("\nerrors ({}):", census.errors.len());
+        writeln!(stdout, "\nerrors ({}):", census.errors.len())?;
         for e in census.errors.iter().take(40) {
-            println!("  {e}");
+            writeln!(stdout, "  {e}")?;
         }
     }
     Ok(())
