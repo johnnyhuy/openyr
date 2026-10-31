@@ -263,6 +263,12 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       retail data or a remembered folder chosen through macOS. Startup errors
       appear in a native alert; Finder logs live in `~/Library/Logs/OpenYR`.
       Explicit CLI and headless commands still work (`docs/macos-app.md`).
+- [x] In-match menu flow (#108): retail Allied pause plates and controls,
+      named save/load with confirmation, restart/quit, actual mute/zoom settings,
+      recoverable loading/errors and Won/Lost actions. Menus stop sim ticks
+      without catch-up and isolate map input. Shared-compositor proof and
+      source-pixel checks are described in `docs/formats/menus.md`. Exact
+      oracle calibration, non-Allied skins and delete remain in #96.
 - [ ] Native menu and match flow (#96): original-style main menu, skirmish
       setup/map preview, saved matches, pause/resume, save/load, restart,
       options and quit. Add Won/Lost screens, loading/error feedback and

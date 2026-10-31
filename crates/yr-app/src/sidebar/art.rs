@@ -3,7 +3,7 @@
 use yr_assets::AssetFs;
 use yr_formats::{mix_id, MixArchive, Palette, ShpFile, UnicodeFont};
 
-pub(super) struct Image {
+pub(crate) struct Image {
     pub width: u32,
     pub height: u32,
     pub pixels: Vec<u8>,

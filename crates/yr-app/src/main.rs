@@ -4,7 +4,7 @@
 //! Left-click / box-drag selects own units. With units selected, left-click
 //! moves or attacks; right-click cancels. `A` then left-click = attack-move, `S` stop,
 //! `H` harvest, right-drag / arrows pan, wheel or +/- zoom,
-//! K toggles repair, L toggles sell, M toggles audio, F5 saves, F9 loads, Esc quits. Sidebar tabs select a category.
+//! K toggles repair, L toggles sell, M toggles audio, F5 saves, F9 loads, Esc pauses. Sidebar tabs select a category.
 //! Left-click a cameo to queue it at the
 //! war factory/barracks/construction yard, right-click cancels (refund). A finished
 //! structure (green outline) is placed by clicking its cameo, then a map cell under a
@@ -12,6 +12,7 @@
 //! `yr_sim::Command` only, the UI never mutates sim state directly (issue #15).
 
 mod launcher;
+mod menu_flow;
 
 use pixels::{Pixels, SurfaceTexture};
 use std::collections::BTreeSet;
@@ -100,6 +101,11 @@ struct App {
     save_path: PathBuf,
     save_requested: bool,
     startup_error: Option<String>,
+    menu: yr_app::menu::State,
+    menu_art: yr_app::menu::Art,
+    load_job: Option<menu_flow::LoadJob>,
+    preferences_path: Option<PathBuf>,
+    quit_requested: bool,
 }
 
 impl App {
@@ -107,45 +113,6 @@ impl App {
         match &self.load_path {
             Some(path) => yr_app::snapshot::load(&self.gamedir, &self.map_name, path),
             None => yr_app::session::load(&self.gamedir, &self.map_name, 42),
-        }
-    }
-
-    fn quicksave(&self) {
-        if let Some(session) = &self.session {
-            if let Err(e) = yr_app::snapshot::save(session, &self.save_path) {
-                eprintln!("OpenYR: save failed ({e})");
-            }
-        }
-    }
-
-    fn quickload(&mut self) {
-        match yr_app::snapshot::load(&self.gamedir, &self.map_name, &self.save_path) {
-            Ok(session) => {
-                // Rebuild all presentation and discard orders from the replaced match.
-                self.audio = None;
-                match yr_app::audio::AudioScene::live(&self.gamedir, &self.map_name, &session) {
-                    Ok(audio) => self.audio = Some(audio),
-                    Err(e) => eprintln!("OpenYR: audio unavailable ({e}); continuing silently"),
-                }
-                self.animations = Default::default();
-                self.effects = Default::default();
-                self.animations.update(&session.sim);
-                self.session = Some(session);
-                self.selected.clear();
-                self.pending.clear();
-                self.left_down = None;
-                self.right_down = None;
-                self.right_panning = false;
-                self.service_mode = ServiceMode::None;
-                self.radar_drag = false;
-                self.placing = None;
-                self.attack_move = false;
-                self.announced = false;
-                self.accum = Duration::ZERO;
-                self.last_tick = Instant::now();
-                self.view.dirty = true;
-            }
-            Err(e) => eprintln!("OpenYR: load failed ({e}); current match retained"),
         }
     }
 
@@ -299,6 +266,7 @@ impl App {
     }
 
     fn cancel_pointer_action(&mut self) {
+        self.menu.pressed = None;
         self.left_down = None;
         self.right_down = None;
         self.right_panning = false;
@@ -320,6 +288,7 @@ impl App {
     fn focus_changed(&mut self, focused: bool) {
         self.pointer.focused = focused;
         if !focused {
+            self.pointer.inside = false;
             self.keys.clear();
             self.shift = false;
             self.control = false;
@@ -486,6 +455,9 @@ impl App {
     }
 
     fn tick_session(&mut self) {
+        if self.menu.visible() {
+            return;
+        }
         let Some(session) = &mut self.session else {
             return;
         };
@@ -553,6 +525,24 @@ impl App {
     /// Draw the full window frame (map, markers, sidebar, rubber band)
     /// into an RGBA buffer; shared by the window and `--frame` dumps.
     fn compose(&self, frame: &mut [u8], fw: u32, fh: u32) {
+        if self.menu.visible() {
+            yr_app::menu::draw(frame, fw, fh, &self.menu_art, &self.menu, self.cursor);
+            if let Some(session) = &self.session {
+                if self
+                    .pointer
+                    .custom(&session.cursor_art, (fw, fh), self.cursor)
+                {
+                    session.cursor_art.draw(
+                        frame,
+                        (fw, fh),
+                        self.cursor,
+                        yr_app::cursor::Kind::Pointer,
+                        session.sim.tick(),
+                    );
+                }
+            }
+            return;
+        }
         let Some(map) = &self.map else {
             return;
         };
@@ -1075,6 +1065,10 @@ impl ApplicationHandler for App {
                 return;
             }
         };
+        if let Ok(fs) = yr_assets::AssetFs::open(std::path::Path::new(&self.gamedir)) {
+            self.menu_art = yr_app::menu::Art::load(&fs);
+        }
+        self.pointer.focused = window.has_focus();
         match yr_render::render_map(&self.gamedir, &self.map_name, self.scale) {
             Ok(map) => {
                 println!("OpenYR: rendered {}", map.summary);
@@ -1103,7 +1097,10 @@ impl ApplicationHandler for App {
                     s.sim.credits()
                 );
                 match yr_app::audio::AudioScene::live(&self.gamedir, &self.map_name, &s) {
-                    Ok(audio) => self.audio = Some(audio),
+                    Ok(audio) => {
+                        audio.set_muted(self.menu.muted);
+                        self.audio = Some(audio);
+                    }
                     Err(e) => eprintln!("OpenYR: audio unavailable ({e}); continuing silently"),
                 }
                 self.session = Some(s);
@@ -1114,7 +1111,7 @@ impl ApplicationHandler for App {
                 return;
             }
         }
-        println!("OpenYR: left-click select/order, box select, right-click cancel, A=attack-move, S=stop, H=harvest, K=repair, L=sell, M=mute, F5=save, F9=load, right-drag/arrows pan, wheel zoom; sidebar: left-click build or place a ready structure, right-click cancel");
+        println!("OpenYR: left-click select/order, box select, right-click cancel, A=attack-move, S=stop, H=harvest, K=repair, L=sell, M=mute, F5=save, F9=load, Esc=pause, right-drag/arrows pan, wheel zoom; sidebar: left-click build or place a ready structure, right-click cancel");
         window.request_redraw();
         self.window = Some(window);
         self.pixels = Some(pixels);
@@ -1126,6 +1123,14 @@ impl ApplicationHandler for App {
     fn window_event(&mut self, el: &ActiveEventLoop, _id: WindowId, event: WindowEvent) {
         match event {
             WindowEvent::CloseRequested => {
+                if self
+                    .session
+                    .as_ref()
+                    .is_some_and(|s| s.outcome == Outcome::Ongoing)
+                {
+                    self.open_menu(yr_app::menu::Page::Abort);
+                    return;
+                }
                 if let Some(window) = &self.window {
                     window.set_cursor_visible(true);
                 }
@@ -1151,6 +1156,9 @@ impl ApplicationHandler for App {
             WindowEvent::ModifiersChanged(m) => {
                 self.shift = m.state().shift_key();
                 self.control = m.state().control_key();
+            }
+            WindowEvent::MouseInput { state, button, .. } if self.menu.visible() => {
+                self.menu_mouse(state, button)
             }
             WindowEvent::MouseInput { state, button, .. } => match (button, state) {
                 (MouseButton::Left, ElementState::Pressed) if self.in_sidebar(self.cursor) => {
@@ -1238,6 +1246,12 @@ impl ApplicationHandler for App {
                     None => position,
                 };
                 self.cursor = (position.x, position.y);
+                self.pointer.inside = self.pointer.focused;
+                if self.menu.visible() {
+                    self.view.dirty = true;
+                    self.update_pointer_visibility();
+                    return;
+                }
                 if self.radar_drag {
                     if let Some(cell) = self.radar_target(self.cursor) {
                         self.radar_pan(cell);
@@ -1261,6 +1275,14 @@ impl ApplicationHandler for App {
                 }
                 self.last_cursor = (position.x, position.y);
             }
+            WindowEvent::MouseWheel { delta, .. } if self.menu.visible() => {
+                let down = match delta {
+                    MouseScrollDelta::LineDelta(_, y) => y < 0.0,
+                    MouseScrollDelta::PixelDelta(p) => p.y < 0.0,
+                };
+                self.menu.scroll_by(if down { 1 } else { -1 });
+                self.view.dirty = true;
+            }
             WindowEvent::MouseWheel { delta, .. } => {
                 let d = match delta {
                     MouseScrollDelta::LineDelta(_, y) => y,
@@ -1269,23 +1291,17 @@ impl ApplicationHandler for App {
                 self.view.zoom = (self.view.zoom * (1.0 + d * 0.1)).clamp(0.25, 4.0);
                 self.view.dirty = true;
             }
+            WindowEvent::KeyboardInput { event, .. } if self.menu.visible() => {
+                self.menu_key(&event)
+            }
             WindowEvent::KeyboardInput { event, .. } => {
                 if let PhysicalKey::Code(code) = event.physical_key {
                     match event.state {
                         ElementState::Pressed => {
                             self.keys.insert(code);
                             match code {
-                                KeyCode::Escape => {
-                                    if self.service_mode != ServiceMode::None {
-                                        self.service_mode = ServiceMode::None;
-                                    } else if self.placing.is_some() {
-                                        self.placing = None;
-                                    } else if self.attack_move {
-                                        self.attack_move = false;
-                                    } else {
-                                        self.report_audio();
-                                        el.exit();
-                                    }
+                                KeyCode::Escape if !event.repeat => {
+                                    self.escape_command_or_pause();
                                 }
                                 KeyCode::Equal => self.view.zoom = (self.view.zoom * 1.2).min(4.0),
                                 KeyCode::Minus => self.view.zoom = (self.view.zoom / 1.2).max(0.25),
@@ -1300,12 +1316,16 @@ impl ApplicationHandler for App {
                                     self.toggle_service(ServiceMode::Sell)
                                 }
                                 KeyCode::KeyM if !event.repeat => {
-                                    if let Some(audio) = &self.audio {
-                                        audio.toggle_mute();
-                                    }
+                                    self.apply_menu_effect(yr_app::menu::Effect::Mute);
                                 }
-                                KeyCode::F5 if !event.repeat => self.quicksave(),
-                                KeyCode::F9 if !event.repeat => self.quickload(),
+                                KeyCode::F5 if !event.repeat => {
+                                    self.save_menu_path(self.save_path.clone())
+                                }
+                                KeyCode::F9 if !event.repeat => {
+                                    self.open_menu(yr_app::menu::Page::Confirm(
+                                        yr_app::menu::Intent::Load(self.save_path.clone()),
+                                    ));
+                                }
                                 KeyCode::KeyS => {
                                     for &id in &self.selected {
                                         self.pending.push(Command::Stop { id });
@@ -1327,17 +1347,19 @@ impl ApplicationHandler for App {
                 }
             }
             WindowEvent::RedrawRequested => {
-                // Fixed 15 tps sim, decoupled from frame rate.
-                let now = Instant::now();
-                self.accum += now.duration_since(self.last_tick);
-                self.last_tick = now;
-                let mut stepped = false;
-                while self.accum >= TICK {
-                    self.accum -= TICK;
-                    if self.session.is_some() {
-                        self.tick_session();
-                        stepped = true;
-                    }
+                self.poll_menu_load();
+                let stepped = self.advance_clock(Instant::now());
+                if !self.menu.visible()
+                    && self
+                        .session
+                        .as_ref()
+                        .is_some_and(|s| s.outcome != Outcome::Ongoing)
+                {
+                    self.open_menu(yr_app::menu::Page::Result(
+                        self.session
+                            .as_ref()
+                            .is_some_and(|s| s.outcome == Outcome::Won),
+                    ));
                 }
                 // Camera: arrows pan (A/S are order hotkeys, right-drag pans).
                 let step = 18.0 / self.view.zoom;
@@ -1347,7 +1369,7 @@ impl ApplicationHandler for App {
                     (KeyCode::ArrowUp, 0.0, -step),
                     (KeyCode::ArrowDown, 0.0, step),
                 ] {
-                    if self.keys.contains(&k) {
+                    if !self.menu.visible() && self.keys.contains(&k) {
                         self.view.cam_x += dx;
                         self.view.cam_y += dy;
                         self.view.dirty = true;
@@ -1366,6 +1388,13 @@ impl ApplicationHandler for App {
             _ => {}
         }
         self.update_pointer_visibility();
+        if self.quit_requested {
+            if let Some(window) = &self.window {
+                window.set_cursor_visible(true);
+            }
+            self.report_audio();
+            el.exit();
+        }
     }
 }
 
@@ -1428,6 +1457,11 @@ fn new_app(gamedir: String, map_name: String, scale: u32) -> App {
         save_path: yr_app::snapshot::quicksave_path(),
         save_requested: false,
         startup_error: None,
+        menu: Default::default(),
+        menu_art: Default::default(),
+        load_job: None,
+        preferences_path: None,
+        quit_requested: false,
     }
 }
 
@@ -1768,6 +1802,7 @@ fn run(args: &[String]) -> Result<(), String> {
     if app.load_path.is_some() {
         app.session = Some(app.load_session()?);
     }
+    app.read_preferences();
     let event_loop = EventLoop::new().map_err(|e| e.to_string())?;
     event_loop.run_app(&mut app).map_err(|e| e.to_string())?;
     match app.startup_error.take() {
