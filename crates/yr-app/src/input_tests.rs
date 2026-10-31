@@ -128,6 +128,25 @@ mod retail_pointer_tests {
             .clone();
         let cell = (unit.x.to_int_floor(), unit.y.to_int_floor());
         centre(&mut app, cell);
+        // Exercise the actual picking and box handler on a lifted object.
+        let original_grid = app.session.as_ref().unwrap().sim.terrain().unwrap().clone();
+        let mut lifted = original_grid.clone();
+        lifted
+            .cell_mut(cell.0 as u16, cell.1 as u16)
+            .unwrap()
+            .height = 4;
+        app.session.as_mut().unwrap().sim.set_terrain(lifted);
+        app.cursor = point(&app, cell);
+        assert_eq!(app.world_action(app.cursor).unwrap().select, Some(unit.id));
+        let p = app.cursor;
+        app.select_box((p.0 - 3.0, p.1 - 3.0), (p.0 + 3.0, p.1 + 3.0), false);
+        assert!(
+            app.selected.contains(&unit.id),
+            "box selection uses the drawn height lift"
+        );
+        app.selected.clear();
+        app.session.as_mut().unwrap().sim.set_terrain(original_grid);
+        centre(&mut app, cell);
         assert_eq!(app.cursor_kind(WIN_W), Kind::Select);
         proof(&app, "select-tick-1");
         app.left_down = Some(app.cursor);
