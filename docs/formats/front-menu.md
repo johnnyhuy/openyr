@@ -72,7 +72,9 @@ load center the world viewport using its actual zoom, excluding the sidebar
 Front options use actual mute and world zoom preferences. Game Data Folder
 opens the existing macOS picker, restores the system pointer for the dialog,
 validates both root MIX archives before remembering the directory, then reloads
-front art and audio. Invalid/cancelled selections retain a recovery route.
+front art, pause-menu art and audio. The pause-menu font, labels and backgrounds
+are replaced from the selected install as well (#118). Invalid/cancelled
+selections retain a recovery route.
 The chooser's script and acceptance helper are tested separately; physical
 desktop/Retina/resizing exercise remains open in #97 because the live binding
 was unavailable.

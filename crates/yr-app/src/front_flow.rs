@@ -67,6 +67,7 @@ impl App {
         let fs = yr_assets::AssetFs::open(std::path::Path::new(&self.gamedir))
             .map_err(|e| e.to_string())?;
         self.front_art = yr_app::frontend::Art::load(&fs);
+        self.menu_art = yr_app::menu::Art::load(&fs);
         let bytes = fs
             .read("RA2TS_L.BIK")
             .ok_or("Menu movie RA2TS_L.BIK is missing")?;

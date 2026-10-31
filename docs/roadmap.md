@@ -277,6 +277,8 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       Abort/results return to Main Menu. All 431 movie frames match independent
       YUV decoding; limited-range RGB conversion preserves contrast. Explicit
       CLI/headless launches bypass menus (`docs/formats/front-menu.md`).
+- [x] Reload pause-menu art with the chosen game-data folder (#118), including
+      font, labels and backgrounds. A retail render comparison covers the cache.
 - [ ] Native menu and match flow (#96): original-style main menu, skirmish
       setup/map preview, saved matches, pause/resume, save/load, restart,
       options and quit. Add Won/Lost screens, loading/error feedback and

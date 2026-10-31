@@ -55,6 +55,37 @@ fn proof(app: &App, name: &str) {
     .unwrap();
 }
 #[test]
+fn retail_front_art_reload_replaces_cached_pause_menu_art() {
+    let dir = PathBuf::from(std::env::var("HOME").unwrap_or_default())
+        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    if !dir.is_dir() {
+        eprintln!("skip: retail install not present");
+        return;
+    }
+    let mut app = new_app(dir.to_string_lossy().into(), "EB1.MMX".into(), 1);
+    app.menu.front = false;
+    app.menu.set(Page::Pause);
+    let render = |art: &yr_app::menu::Art| {
+        let mut frame = vec![0; (WIN_W * WIN_H * 4) as usize];
+        yr_app::menu::draw(&mut frame, WIN_W, WIN_H, art, &app.menu, app.cursor);
+        frame
+    };
+    let fs = yr_assets::AssetFs::open(&dir).unwrap();
+    let expected = render(&yr_app::menu::Art::load(&fs));
+    assert_ne!(render(&app.menu_art), expected);
+    app.load_front_art().unwrap();
+    let mut actual = vec![0; (WIN_W * WIN_H * 4) as usize];
+    yr_app::menu::draw(
+        &mut actual,
+        WIN_W,
+        WIN_H,
+        &app.menu_art,
+        &app.menu,
+        app.cursor,
+    );
+    assert_eq!(actual, expected);
+}
+#[test]
 fn retail_front_menu_preview_start_save_return_load_cancel_options_and_exit() {
     let dir = PathBuf::from(std::env::var("HOME").unwrap_or_default())
         .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
