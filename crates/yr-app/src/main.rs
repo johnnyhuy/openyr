@@ -1991,6 +1991,8 @@ mod render_tests {
             .iter()
             .find(|u| {
                 u.owner == yr_sim::OWNER_PLAYER
+                    && app.session.as_ref().unwrap().kinds[usize::from(u.kind)] == "HTNK"
+                    && u.weapon.is_some()
                     && app
                         .sprites
                         .as_ref()
@@ -2109,10 +2111,27 @@ mod render_tests {
             "actual shot emits the muzzle art"
         );
         assert!(
-            app.effects.active.iter().any(|e| e.name == "S_CLSN22"),
+            app.effects.active.iter().any(|e| e.name == "S_CLSN22"
+                && e.x == x + yr_sim::Fix::from_int(2)
+                && e.y == y
+                && e.born == app.session.as_ref().unwrap().sim.tick()),
             "actual shell arrival emits AP impact art"
         );
         println!("impact proof: tick {}, shooter {shooter}, target {target}, weapon source {:?}, delivered damage {}, S_CLSN22", app.session.as_ref().unwrap().sim.tick(), tank.weapon.unwrap().source, tank.weapon.unwrap().damage);
+        if let Some(out) = std::env::var_os("OPENYR_VISUAL_DUMP") {
+            let weapon = tank.weapon.unwrap();
+            let metadata = serde_json::json!({
+                "actor_kind": "HTNK", "shooter_id": shooter, "target_id": target,
+                "weapon": weapon,
+                "weapon_source_hex": weapon.source.map(|source| format!("{source:016x}")),
+                "impact": "S_CLSN22", "arrival_tick": app.session.as_ref().unwrap().sim.tick(),
+            });
+            std::fs::write(
+                PathBuf::from(out).join("impact-scene.json"),
+                serde_json::to_vec_pretty(&metadata).unwrap(),
+            )
+            .unwrap();
+        }
         for phase in 0..36 {
             let tick = app.session.as_ref().unwrap().sim.tick();
             capture(&app, &format!("fire-{phase:02}-t{tick:05}"), phase == 1);

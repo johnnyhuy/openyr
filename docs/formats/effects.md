@@ -129,6 +129,8 @@ zoomed to match native world magnification. The latter exposes lost terrain
 detail without changing unit size. A controlled EB1 target then receives an
 actual attack order and a destruction command, exercising shared event
 routing and compositing rather than fabricated effect instances.
+The AP proof actor is an HTNK cannon. Selecting only by the shared GUNFIRE
+muzzle sheet had picked HARV instead; its real impact is PIFFPIFF (#123).
 
 ```sh
 cargo test -p yr-render -p yr-app effects -- --nocapture

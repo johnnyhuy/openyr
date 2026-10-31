@@ -126,7 +126,7 @@ Johnny on 2026-10-31.
 - [ ] Wine side-by-side infantry and Construction Yard crops; verify
       cadence (including HVA playback), overlay depth adjustments and
       factory doors (#6)
-- [x] Warhead target impacts from retained shot provenance (#102), including
+- [x] Warhead target impacts from retained shot provenance (#102, #123), including
       instant shots, projectile arrival and in-flight save/load. Ordinary
       AnimList selection uses delivered damage; AP and SA source pixels and
       shared composition are checked (`docs/formats/effects.md`). Exact
