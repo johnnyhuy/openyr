@@ -132,8 +132,17 @@ incremental, testable path where each milestone is independently useful.
       frame pixels, power loss/recovery, source-cell clicks and save/load
       reconstruction are checked (`docs/formats/radar.md`). Exact cadence,
       color/scale calibration and shroud remain in #86.
+- [x] Allied power meter (#92): retail red/yellow/green pips show current
+      player output, consumption and spare power. A demand tick shows
+      shortages even at zero output; hover gives exact totals. Placement,
+      destruction, enemy isolation, compact windows and save/load are checked
+      in the shared window/headless panel (`docs/formats/sidebar.md`).
+      Display scale and surplus thresholds still need original-game calibration.
+- [ ] Scale generator output with observed health fractions (#93). The
+      current simulation keeps full output until destruction, including in
+      radar, production and the meter.
 - [ ] Complete original sidebar behavior and command bar (#86), including
-      radar calibration/shroud, power meter, repair/sell, text calibration,
+      radar calibration/shroud, power-meter calibration, repair/sell, text calibration,
       button transitions,
       queue hold/scrolling and original-game compositing comparisons.
 

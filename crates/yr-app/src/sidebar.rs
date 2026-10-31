@@ -1,6 +1,7 @@
 //! Shared window/headless production panel and its matching hit boxes.
 
 mod art;
+mod power;
 pub mod radar;
 mod text;
 pub use art::SidebarArt;
@@ -168,6 +169,7 @@ pub fn draw(
     if let Some(image) = &art.bottom {
         canvas.image((x0, height as i32 - 26), image);
     }
+    power::draw(&mut canvas, session);
     let ready = session.ready_structure();
     let ready_tab = ready_category(session);
     for (i, tab) in Category::ALL.into_iter().enumerate() {
@@ -256,13 +258,17 @@ pub fn draw_tooltip(
     category: Category,
     cursor: (f64, f64),
 ) {
-    let Some(slot) = slot_at(width, height, session, category, cursor) else {
+    let face = Typeface(session.sidebar_art.font.as_ref());
+    let lines = if power::contains(width, height, cursor) {
+        power::tooltip(session.sim.power())
+    } else if let Some(slot) = slot_at(width, height, session, category, cursor) {
+        let buildable = &session.buildables[slot];
+        let mut lines = face.name_lines(&buildable.name);
+        lines.push(format!("${} {}", buildable.cost, duration(buildable.ticks)));
+        lines
+    } else {
         return;
     };
-    let buildable = &session.buildables[slot];
-    let face = Typeface(session.sidebar_art.font.as_ref());
-    let mut lines = face.name_lines(&buildable.name);
-    lines.push(format!("${} {}", buildable.cost, duration(buildable.ticks)));
     let w = lines.iter().map(|line| face.width(line)).max().unwrap_or(0) + 12;
     let h = lines.len() as i32 * face.line_height() + 8;
     let x = (width.saturating_sub(WIDTH) as i32 - w - 4).max(0);
