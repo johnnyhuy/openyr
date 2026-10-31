@@ -3,10 +3,11 @@
 //!
 //!   mix-dump vfs <gamedir> [--theater <name>] [file...]
 
+use std::io::Write;
 use std::path::Path;
 use yr_assets::{AssetFs, Theater};
 
-pub fn cmd_vfs(args: &[&str]) -> Result<(), String> {
+pub fn cmd_vfs(args: &[&str], stdout: &mut dyn Write) -> crate::CommandResult {
     let (dir, rest) = args
         .split_first()
         .ok_or("usage: mix-dump vfs <gamedir> [--theater <name>] [file...]")?;
@@ -24,16 +25,16 @@ pub fn cmd_vfs(args: &[&str]) -> Result<(), String> {
         }
     }
     if files.is_empty() {
-        println!("lookup order (loose files in {dir} first):");
+        writeln!(stdout, "lookup order (loose files in {dir} first):")?;
         for (i, label) in fs.mounts().enumerate() {
-            println!("  {:>2}. {label}", i + 1);
+            writeln!(stdout, "  {:>2}. {label}", i + 1)?;
         }
         return Ok(());
     }
     for name in files {
         match fs.locate(name) {
-            Some(loc) => println!("{name:<20} {:>10} B  {}", loc.size, loc.source),
-            None => println!("{name:<20} {:>10}    not found", "-"),
+            Some(loc) => writeln!(stdout, "{name:<20} {:>10} B  {}", loc.size, loc.source)?,
+            None => writeln!(stdout, "{name:<20} {:>10}    not found", "-")?,
         }
     }
     Ok(())

@@ -17,7 +17,10 @@ incremental, testable path where each milestone is independently useful.
 - [x] CSF reader (labels, UTF-16 inverted strings)
 - [x] INI reader (sections, keys, comments, order-preserving)
 - [x] `mix-dump` CLI (list/extract/info/names)
-- [ ] Exit cleanly when an inspection output pipe closes early (#79)
+- [x] Exit cleanly when an inspection output pipe closes early (#79).
+      All `mix-dump` commands propagate stdout failures; BrokenPipe exits
+      successfully without a panic. Input errors and other output failures
+      keep a failing exit code. Synthetic CLI tests run without retail assets.
 - [x] PAL / colour tables (6-bit RGB palettes)
 - [x] SHP reader (cameos, buildings, infantry sprites): every retail frame decodes
 - [x] VXL + HVA readers (vehicles)

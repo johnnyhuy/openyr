@@ -1,9 +1,10 @@
 //! `mix-dump render-map`: PNG front-end over the shared yr-render rasteriser.
 
 use std::fs;
+use std::io::Write;
 use yr_render::png;
 
-pub fn cmd_render_map(args: &[&str]) -> Result<(), String> {
+pub fn cmd_render_map(args: &[&str], stdout: &mut dyn Write) -> crate::CommandResult {
     let (gamedir, map_name, out) = match args {
         [g, m, o, ..] => (*g, *m, *o),
         _ => return Err("usage: render-map <gamedir> <map> <out.png> [scale]".into()),
@@ -12,6 +13,6 @@ pub fn cmd_render_map(args: &[&str]) -> Result<(), String> {
     let map = yr_render::render_map(gamedir, map_name, scale)?;
     fs::write(out, png::encode_rgba(map.width, map.height, &map.rgba))
         .map_err(|e| e.to_string())?;
-    println!("rendered {} -> {out}", map.summary);
+    writeln!(stdout, "rendered {} -> {out}", map.summary)?;
     Ok(())
 }

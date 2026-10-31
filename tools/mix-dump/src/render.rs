@@ -5,16 +5,22 @@
 //! `ra2.mix:SNOW.MIX/GACNST.SHP`.
 
 use std::fs;
+use std::io::Write;
 use yr_formats::{Palette, PcxImage, ShpFile, TmpFile};
 use yr_render::png;
 
 /// `palette` is required for SHP/TMP; PCX carries its own colours.
-pub fn cmd_render(asset: &str, palette: Option<&str>, out: &str) -> Result<(), String> {
+pub fn cmd_render(
+    asset: &str,
+    palette: Option<&str>,
+    out: &str,
+    stdout: &mut dyn Write,
+) -> crate::CommandResult {
     let data = load_spec(asset)?;
     if let Ok(img) = PcxImage::parse(&data) {
         let (w, h) = (img.width, img.height);
         fs::write(out, png::encode_rgba(w, h, &img.to_rgba())).map_err(|e| e.to_string())?;
-        println!("rendered {asset} -> {out} ({w}x{h})");
+        writeln!(stdout, "rendered {asset} -> {out} ({w}x{h})")?;
         return Ok(());
     }
     let palette = palette.ok_or("SHP/TMP need a palette argument")?;
@@ -24,10 +30,10 @@ pub fn cmd_render(asset: &str, palette: Option<&str>, out: &str) -> Result<(), S
     } else if let Ok(shp) = ShpFile::parse(&data) {
         render_shp(&shp, &pal)?
     } else {
-        return Err(format!("{asset}: not an SHP or TMP"));
+        return Err(format!("{asset}: not an SHP or TMP").into());
     };
     fs::write(out, png::encode_rgba(w, h, &rgba)).map_err(|e| e.to_string())?;
-    println!("rendered {asset} -> {out} ({w}x{h})");
+    writeln!(stdout, "rendered {asset} -> {out} ({w}x{h})")?;
     Ok(())
 }
 
