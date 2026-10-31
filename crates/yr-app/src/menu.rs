@@ -9,6 +9,10 @@ use std::path::PathBuf;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Page {
     Closed,
+    Main,
+    SinglePlayer,
+    Skirmish,
+    Exit,
     Pause,
     Save,
     Load,
@@ -28,6 +32,15 @@ pub enum Intent {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Button {
+    SinglePlayer,
+    Internet,
+    Network,
+    Movies,
+    Campaign,
+    Skirmish,
+    MainMenu,
+    Start,
+    Folder,
     Controls,
     Load,
     Save,
@@ -56,6 +69,10 @@ pub enum Effect {
     Zoom(i16),
     Commit(Intent),
     CancelLoad,
+    MainMenu,
+    PrepareSkirmish,
+    StartMatch,
+    ChooseFolder,
 }
 
 #[derive(Debug, Clone)]
@@ -66,6 +83,7 @@ pub struct Slot {
 
 #[derive(Debug, Clone)]
 pub struct State {
+    pub front: bool,
     pub page: Page,
     pub name: String,
     pub slots: Vec<Slot>,
@@ -80,6 +98,7 @@ pub struct State {
 impl Default for State {
     fn default() -> Self {
         Self {
+            front: false,
             page: Page::Closed,
             name: String::new(),
             slots: Vec::new(),
@@ -100,6 +119,9 @@ impl State {
     pub fn set(&mut self, page: Page) {
         self.page = page;
         self.focus = 0;
+        if self.page == Page::SinglePlayer {
+            self.focus = 1;
+        }
         self.pressed = None;
     }
     pub fn message(&mut self, text: String, back: Page) {
@@ -112,6 +134,22 @@ impl State {
         use Button::*;
         match &self.page {
             Page::Closed => Vec::new(),
+            Page::Main => vec![
+                (SinglePlayer, true),
+                (Internet, false),
+                (Network, false),
+                (Movies, false),
+                (Controls, true),
+                (Quit, true),
+            ],
+            Page::SinglePlayer => vec![
+                (Campaign, false),
+                (Load, true),
+                (Skirmish, true),
+                (MainMenu, true),
+            ],
+            Page::Skirmish => vec![(Start, true), (Back, true)],
+            Page::Exit => vec![(Accept, true), (Decline, true)],
             Page::Pause => vec![
                 (Controls, true),
                 (Load, true),
@@ -125,14 +163,25 @@ impl State {
                 (Load, self.selected.is_some_and(|i| i < self.slots.len())),
                 (Back, true),
             ],
-            Page::Controls => vec![
-                (Mute, true),
-                (ZoomOut, self.zoom > 25),
-                (ZoomIn, self.zoom < 400),
-                (Back, true),
+            Page::Controls => {
+                let mut controls = vec![
+                    (Mute, true),
+                    (ZoomOut, self.zoom > 25),
+                    (ZoomIn, self.zoom < 400),
+                ];
+                if self.front {
+                    controls.push((Folder, true));
+                }
+                controls.push((Back, true));
+                controls
+            }
+            Page::Abort => vec![
+                (Quit, true),
+                (Restart, true),
+                (MainMenu, true),
+                (Resume, true),
             ],
-            Page::Abort => vec![(Quit, true), (Restart, true), (Resume, true)],
-            Page::Result(_) => vec![(Restart, true), (Quit, true)],
+            Page::Result(_) => vec![(Restart, true), (MainMenu, true), (Quit, true)],
             Page::Confirm(_) => vec![(Accept, true), (Decline, true)],
             Page::Loading => vec![(Back, true)],
             Page::Message { .. } => vec![(Back, true)],
@@ -161,6 +210,39 @@ impl State {
         }
         use Button::*;
         let effect = match (&self.page, button) {
+            (Page::Main, SinglePlayer) => {
+                self.set(Page::SinglePlayer);
+                Effect::None
+            }
+            (Page::Main, Controls) => {
+                self.set(Page::Controls);
+                Effect::None
+            }
+            (Page::Main, Quit) => {
+                self.set(Page::Exit);
+                Effect::None
+            }
+            (Page::Exit, Accept) => Effect::Quit,
+            (Page::Exit, Decline) => {
+                self.set(Page::Main);
+                Effect::None
+            }
+            (Page::SinglePlayer, Skirmish) => Effect::PrepareSkirmish,
+            (Page::SinglePlayer, Load) => {
+                self.set(Page::Load);
+                Effect::None
+            }
+            (Page::SinglePlayer, MainMenu) => {
+                self.set(Page::Main);
+                Effect::None
+            }
+            (Page::Skirmish, Start) => Effect::StartMatch,
+            (Page::Skirmish, Back) => {
+                self.set(Page::SinglePlayer);
+                Effect::None
+            }
+            (Page::Controls, Folder) => Effect::ChooseFolder,
+            (Page::Abort | Page::Result(_), MainMenu) => Effect::MainMenu,
             (Page::Pause, Controls) => {
                 self.set(Page::Controls);
                 Effect::None
@@ -204,7 +286,15 @@ impl State {
             }
             (Page::Loading, Back) => Effect::CancelLoad,
             (_, Back) => {
-                self.set(Page::Pause);
+                self.set(if self.front {
+                    if self.page == Page::Load {
+                        Page::SinglePlayer
+                    } else {
+                        Page::Main
+                    }
+                } else {
+                    Page::Pause
+                });
                 Effect::None
             }
             _ => Effect::None,
@@ -215,6 +305,9 @@ impl State {
     pub fn escape(&mut self) -> Effect {
         match self.page {
             Page::Closed | Page::Result(_) => Effect::None,
+            Page::Main => self.activate(Button::Quit),
+            Page::Exit => self.activate(Button::Decline),
+            Page::SinglePlayer => self.activate(Button::MainMenu),
             Page::Pause | Page::Abort => self.activate(Button::Resume),
             Page::Confirm(_) => self.activate(Button::Decline),
             _ => self.activate(Button::Back),
@@ -322,6 +415,7 @@ pub struct Layout {
     pub height: u32,
     pub scale: f64,
     pub origin: (f64, f64),
+    pub front: bool,
 }
 impl Layout {
     pub fn new(width: u32, height: u32) -> Self {
@@ -336,6 +430,7 @@ impl Layout {
             .min(f64::from(height) / f64::from(h))
             .min(1.0);
         Self {
+            front: false,
             width: w,
             height: h,
             scale,
@@ -343,6 +438,24 @@ impl Layout {
                 (f64::from(width) - f64::from(w) * scale) / 2.0,
                 (f64::from(height) - f64::from(h) * scale) / 2.0,
             ),
+        }
+    }
+    pub fn for_state(state: &State, width: u32, height: u32) -> Self {
+        if !state.front {
+            return Self::new(width, height);
+        }
+        let scale = (f64::from(width) / 800.0)
+            .min(f64::from(height) / 600.0)
+            .min(1.0);
+        Self {
+            width: 800,
+            height: 600,
+            scale,
+            origin: (
+                (f64::from(width) - 800.0 * scale) / 2.0,
+                (f64::from(height) - 600.0 * scale) / 2.0,
+            ),
+            front: true,
         }
     }
     pub fn local(self, pos: (f64, f64)) -> Option<(i32, i32)> {
@@ -357,6 +470,14 @@ impl Layout {
             .then_some((p.0.floor() as i32, p.1.floor() as i32))
     }
     pub fn button(self, index: usize, button: Button) -> (i32, i32, i32, i32) {
+        if self.front {
+            let y = if matches!(button, Button::MainMenu | Button::Back | Button::Quit) {
+                535
+            } else {
+                199 + index as i32 * 42
+            };
+            return (638, y, 156, 42);
+        }
         let y = if matches!(button, Button::Resume | Button::Back) {
             self.height as i32 - 65
         } else {

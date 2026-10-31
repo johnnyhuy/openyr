@@ -97,7 +97,9 @@ pub fn draw(
         Page::Result(true) => (art.label("TXT_VICTORIOUS", "Victory"), String::new()),
         Page::Result(false) => (art.label("TXT_SCENARIO_LOST", "Defeat"), String::new()),
         Page::Message { text, .. } => ("OpenYR", text.clone()),
-        Page::Closed => ("", String::new()),
+        Page::Closed | Page::Main | Page::SinglePlayer | Page::Skirmish | Page::Exit => {
+            ("", String::new())
+        }
     };
     let title = fit(c.face, title, world - 48);
     let x = (world - c.face.width(&title)) / 2;
@@ -159,6 +161,15 @@ pub fn draw(
             c.shade((x, y), (w, h));
         }
         let label = match button {
+            Button::MainMenu => art.label("GUI:MainMenu", "Main menu"),
+            Button::SinglePlayer
+            | Button::Internet
+            | Button::Network
+            | Button::Movies
+            | Button::Campaign
+            | Button::Skirmish
+            | Button::Start
+            | Button::Folder => "",
             Button::Controls => art.label("GUI:GameControls", "Controls"),
             Button::Load => art.label("GUI:LoadGame", "Restore"),
             Button::Save => art.label("GUI:SaveGame", "Store"),

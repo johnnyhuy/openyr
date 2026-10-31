@@ -341,6 +341,15 @@ fn all_retail_maps_parse_and_align() {
             }
             let m =
                 MapFile::parse(&text).unwrap_or_else(|err| panic!("{top}/0x{:08x}: {err}", e.id));
+            if let Some(preview) = m
+                .preview()
+                .unwrap_or_else(|error| panic!("{top}/0x{:08x} preview: {error}", e.id))
+            {
+                assert_eq!(
+                    preview.rgb.len(),
+                    preview.width as usize * preview.height as usize * 3
+                );
+            }
             maps += 1;
             let cells: std::collections::HashSet<(u16, u16)> =
                 m.tiles.iter().map(|t| (t.x, t.y)).collect();

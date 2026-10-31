@@ -110,6 +110,43 @@ fn choose_install() -> Result<Option<PathBuf>, String> {
     Err("game data not found; supply a game directory or set OPENYR_GAMEDIR".into())
 }
 
+pub fn choose_and_remember_install() -> Result<Option<String>, String> {
+    let Some(path) = choose_install()? else {
+        return Ok(None);
+    };
+    accept_install(
+        &path,
+        std::env::var_os("HOME").map(PathBuf::from).as_deref(),
+    )
+    .map(Some)
+}
+
+fn accept_install(path: &Path, home: Option<&Path>) -> Result<String, String> {
+    if !is_install(path) {
+        return Err("The selected folder needs ra2.mix and ra2md.mix".into());
+    }
+    for name in ["ra2.mix", "ra2md.mix"] {
+        let file = std::fs::read_dir(path)
+            .map_err(|e| e.to_string())?
+            .flatten()
+            .find(|e| e.file_name().to_string_lossy().eq_ignore_ascii_case(name))
+            .ok_or("A required game archive is missing")?;
+        let bytes = std::fs::read(file.path()).map_err(|e| e.to_string())?;
+        let archive = yr_formats::MixArchive::parse(&bytes).map_err(|e| format!("{name}: {e}"))?;
+        if archive.entries().is_empty() {
+            return Err(format!("{name} is empty"));
+        }
+    }
+    let text = path
+        .to_str()
+        .ok_or("Game directory path must be UTF-8")?
+        .to_string();
+    if let Some(home) = home {
+        remember(home, path)?;
+    }
+    Ok(text)
+}
+
 fn default_directory(interactive: bool) -> Result<Option<String>, String> {
     let home = std::env::var_os("HOME").map(PathBuf::from);
     let override_path = std::env::var_os("OPENYR_GAMEDIR").map(PathBuf::from);
@@ -204,6 +241,36 @@ mod tests {
             );
             std::fs::remove_file(&path).unwrap();
         }
+    }
+
+    #[test]
+    fn selected_install_is_validated_before_remembering() {
+        let root =
+            std::env::temp_dir().join(format!("openyr-folder-selection-{}", std::process::id()));
+        let game = root.join("game");
+        let home = root.join("home");
+        std::fs::create_dir_all(&game).unwrap();
+        for name in ["RA2.MIX", "ra2md.mix"] {
+            std::fs::write(game.join(name), []).unwrap();
+        }
+        assert!(accept_install(&game, Some(&home)).is_err());
+        assert!(remembered(&home).is_none());
+        let mut bytes = Vec::new();
+        bytes.extend(1u16.to_le_bytes());
+        bytes.extend(4u32.to_le_bytes());
+        bytes.extend(yr_formats::mix_id("DUMMY").to_le_bytes());
+        bytes.extend(0u32.to_le_bytes());
+        bytes.extend(4u32.to_le_bytes());
+        bytes.extend(b"DATA");
+        for name in ["RA2.MIX", "ra2md.mix"] {
+            std::fs::write(game.join(name), &bytes).unwrap();
+        }
+        assert_eq!(
+            accept_install(&game, Some(&home)).unwrap(),
+            game.to_str().unwrap()
+        );
+        assert_eq!(remembered(&home), Some(game));
+        std::fs::remove_dir_all(root).unwrap();
     }
 
     #[test]

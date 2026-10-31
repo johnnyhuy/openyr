@@ -1,0 +1,234 @@
+use super::*;
+use yr_app::menu::{Button, Layout};
+fn click(app: &mut App, button: Button) {
+    let i = app
+        .menu
+        .buttons()
+        .iter()
+        .position(|b| b.0 == button)
+        .unwrap();
+    let l = Layout::for_state(&app.menu, WIN_W, WIN_H);
+    let (x, y, _, _) = l.button(i, button);
+    app.cursor = (
+        l.origin.0 + f64::from(x + 12) * l.scale,
+        l.origin.1 + f64::from(y + 12) * l.scale,
+    );
+    app.menu_mouse(ElementState::Pressed, MouseButton::Left);
+    app.menu_mouse(ElementState::Released, MouseButton::Left);
+}
+fn wait(app: &mut App) {
+    let deadline = Instant::now() + Duration::from_secs(180);
+    while app.load_job.is_some() {
+        app.poll_menu_load();
+        assert!(Instant::now() < deadline, "front loader timed out");
+        std::thread::sleep(Duration::from_millis(5));
+    }
+}
+fn proof(app: &App, name: &str) {
+    let Some(dir) = std::env::var_os("OPENYR_FRONT_PROOF") else {
+        return;
+    };
+    let dir = PathBuf::from(dir);
+    std::fs::create_dir_all(&dir).unwrap();
+    let mut frame = vec![0; (WIN_W * WIN_H * 4) as usize];
+    app.compose(&mut frame, WIN_W, WIN_H);
+    std::fs::write(
+        dir.join(format!("{name}.png")),
+        yr_render::png::encode_rgba(WIN_W, WIN_H, &frame),
+    )
+    .unwrap();
+    std::fs::write(
+        dir.join(format!("{name}.txt")),
+        format!(
+            "page={:?}\nfront={}\nsim={:?}\nmovie={:?}\n",
+            app.menu.page,
+            app.menu.front,
+            app.session
+                .as_ref()
+                .map(|s| (s.sim.tick(), s.sim.state_hash())),
+            app.movie
+                .as_ref()
+                .and_then(|m| m.current.as_ref())
+                .map(|f| (f.index, f.sequence))
+        ),
+    )
+    .unwrap();
+}
+#[test]
+fn retail_front_menu_preview_start_save_return_load_cancel_options_and_exit() {
+    let dir = PathBuf::from(std::env::var("HOME").unwrap_or_default())
+        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    if !dir.is_dir() {
+        eprintln!("skip: retail install not present");
+        return;
+    }
+    let temp = std::env::temp_dir().join(format!("openyr-front-flow-{}", std::process::id()));
+    std::fs::create_dir_all(&temp).unwrap();
+    let mut app = new_app(dir.to_string_lossy().into(), "EB1.MMX".into(), 1);
+    app.save_path = temp.join("named.oyrsave");
+    app.preferences_path = Some(temp.join("interface.json"));
+    app.enter_front();
+    assert!(app.menu.front && app.session.is_none());
+    assert_eq!(app.menu.page, Page::Main);
+    let deadline = Instant::now() + Duration::from_secs(120);
+    while app.movie.as_ref().unwrap().current.is_none() {
+        app.movie.as_mut().unwrap().poll();
+        assert!(Instant::now() < deadline);
+        std::thread::sleep(Duration::from_millis(5));
+    }
+    proof(&app, "01-main-movie-frame0");
+    assert!(!app.advance_clock(app.last_tick + Duration::from_secs(3600)));
+    for button in [Button::Internet, Button::Network, Button::Movies] {
+        click(&mut app, button);
+        assert_eq!(app.menu.page, Page::Main);
+    }
+    click(&mut app, Button::SinglePlayer);
+    proof(&app, "02-single-player");
+    click(&mut app, Button::Campaign);
+    assert_eq!(app.menu.page, Page::SinglePlayer);
+    click(&mut app, Button::Skirmish);
+    proof(&app, "03-preview-loading");
+    wait(&mut app);
+    assert_eq!(app.menu.page, Page::Skirmish);
+    assert!(app.session.is_none());
+    assert_eq!(
+        (
+            app.front_preview.as_ref().unwrap().width,
+            app.front_preview.as_ref().unwrap().height
+        ),
+        (118, 61)
+    );
+    assert!(app.front_preview.as_ref().unwrap().authored);
+    proof(&app, "04-skirmish-real-preview");
+    click(&mut app, Button::Start);
+    proof(&app, "05-match-loading");
+    app.keys.insert(KeyCode::ArrowRight);
+    app.shift = true;
+    app.control = true;
+    wait(&mut app);
+    assert!(app.keys.is_empty() && !app.shift && !app.control);
+    assert!(!app.menu.front && !app.menu.visible() && app.movie.is_none());
+    let hash = app.session.as_ref().unwrap().sim.state_hash();
+    assert_eq!(app.session.as_ref().unwrap().seed(), 42);
+    proof(&app, "06-match-tick1");
+    app.save_menu_path(app.save_path.clone());
+    let e = app.menu.escape();
+    app.apply_menu_effect(e);
+    click(&mut app, Button::Abort);
+    proof(&app, "07-abort-return-choice");
+    click(&mut app, Button::MainMenu);
+    assert!(app.session.is_none() && app.map.is_none() && app.pending.is_empty());
+    assert_eq!(app.menu.page, Page::Main);
+    proof(&app, "08-returned-main");
+    click(&mut app, Button::Controls);
+    click(&mut app, Button::Mute);
+    click(&mut app, Button::ZoomIn);
+    assert!(app.menu.muted && app.menu.zoom == 125);
+    proof(&app, "09-front-options");
+    assert!(app.menu.buttons().contains(&(Button::Folder, true)));
+    click(&mut app, Button::Back);
+    click(&mut app, Button::SinglePlayer);
+    app.menu_key_code(KeyCode::Enter, None, false);
+    assert_eq!(app.menu.page, Page::Load);
+    proof(&app, "10-front-saved-match");
+    app.menu.select_slot(0);
+    click(&mut app, Button::Load);
+    proof(&app, "11-front-load-confirmation");
+    click(&mut app, Button::Accept);
+    wait(&mut app);
+    assert!(!app.menu.front && app.session.as_ref().unwrap().sim.state_hash() == hash);
+    let map = app.map.as_ref().unwrap();
+    assert!(
+        (app.view.cam_x + (WIN_W - SIDEBAR_W) as f32 / (2.0 * app.view.zoom)
+            - map.width as f32 / 2.0)
+            .abs()
+            < 0.01
+    );
+    assert!(
+        (app.view.cam_y + WIN_H as f32 / (2.0 * app.view.zoom) - map.height as f32 / 2.0).abs()
+            < 0.01
+    );
+    app.open_menu(Page::Result(true));
+    proof(&app, "12-result-return-choice");
+    click(&mut app, Button::MainMenu);
+    click(&mut app, Button::SinglePlayer);
+    click(&mut app, Button::Skirmish);
+    click(&mut app, Button::Back);
+    wait(&mut app);
+    assert_eq!(
+        app.menu.page,
+        Page::SinglePlayer,
+        "cancelled preview cannot open setup later"
+    );
+    proof(&app, "13-preview-cancelled");
+    app.save_path = temp.join("bad.oyrsave");
+    std::fs::write(&app.save_path, b"bad").unwrap();
+    app.open_menu(Page::Load);
+    let index = app
+        .menu
+        .slots
+        .iter()
+        .position(|s| s.path == app.save_path)
+        .unwrap();
+    app.menu.select_slot(index);
+    click(&mut app, Button::Load);
+    click(&mut app, Button::Accept);
+    wait(&mut app);
+    assert!(
+        app.session.is_none() && app.menu.front && matches!(app.menu.page, Page::Message { .. })
+    );
+    proof(&app, "14-front-load-error");
+    click(&mut app, Button::Back);
+    assert_eq!(app.menu.page, Page::Load);
+    click(&mut app, Button::Back);
+    click(&mut app, Button::MainMenu);
+    let mut bad = b"BIKi".to_vec();
+    for value in [48u32, 1, 4, 1, 8, 8, 15, 1, 0, 0, 53, 56] {
+        bad.extend(value.to_le_bytes());
+    }
+    bad.extend([0; 4]);
+    app.movie = Some(yr_app::movie::Movie::new(bad).unwrap());
+    let deadline = Instant::now() + Duration::from_secs(10);
+    while !matches!(app.menu.page, Page::Message { .. }) {
+        app.poll_front_presentation();
+        assert!(Instant::now() < deadline);
+        std::thread::sleep(Duration::from_millis(5));
+    }
+    proof(&app, "16-movie-error-recovery");
+    click(&mut app, Button::Back);
+    assert_eq!(app.menu.page, Page::Main);
+    click(&mut app, Button::Quit);
+    proof(&app, "15-exit-confirmation");
+    click(&mut app, Button::Decline);
+    assert!(!app.quit_requested);
+    click(&mut app, Button::Quit);
+    click(&mut app, Button::Accept);
+    assert!(app.quit_requested);
+    drop(app);
+    std::fs::remove_dir_all(temp).unwrap();
+    println!("Front flow verified: no session before Start, source movie, real preview, hash {hash:016x} restored, return/cancel/errors retained correct front page.");
+}
+
+#[test]
+fn initial_camera_center_excludes_the_sidebar_and_accounts_for_zoom() {
+    let map = yr_render::RenderedMap {
+        width: 3780,
+        height: 2115,
+        rgba: Vec::new(),
+        summary: String::new(),
+        origin_x: 0,
+        origin_y: 0,
+        scale: 1,
+    };
+    for zoom in [0.25, 1.0, 1.25, 4.0] {
+        let mut view = View {
+            cam_x: 0.0,
+            cam_y: 0.0,
+            zoom,
+            dirty: false,
+        };
+        view.center_map(&map, (WIN_W - SIDEBAR_W, WIN_H));
+        assert!((view.cam_x + (WIN_W - SIDEBAR_W) as f32 / (2.0 * zoom) - 1890.0).abs() < 0.01);
+        assert!((view.cam_y + WIN_H as f32 / (2.0 * zoom) - 1057.5).abs() < 0.01);
+    }
+}

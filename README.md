@@ -67,12 +67,17 @@ On macOS, build a Finder-launchable app:
 open target/OpenYR.app
 ```
 
-Double-click `OpenYR.app` for later launches. It starts EB1.MMX using the
+Double-click `OpenYR.app` for later launches. It opens the animated main menu using the
 retail install at `~/Games/RA2YR/prefix/drive_c/Westwood/RA2`. If that folder
 is absent, choose your own game folder in the macOS picker; OpenYR remembers
 it. The app contains no game assets. `cargo run --release` also works without
 arguments. See [macOS packaging](docs/macos-app.md) for preferences, logs and
 custom locations.
+
+Single Player opens saved matches or the supported EB1 skirmish setup with its
+authored map preview. Options includes mute, world zoom and Game Data Folder.
+Abort and match results offer Main Menu. Broader match choices are unavailable.
+See [front-menu observations](docs/formats/front-menu.md).
 
 Launch a match with your own install:
 

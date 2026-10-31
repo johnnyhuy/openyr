@@ -11,6 +11,7 @@
 //! green ghost; right-click or Esc backs out of placement (issue #46). Orders go through
 //! `yr_sim::Command` only, the UI never mutates sim state directly (issue #15).
 
+mod front_flow;
 mod launcher;
 mod menu_flow;
 
@@ -48,6 +49,12 @@ struct View {
 }
 
 impl View {
+    fn center_map(&mut self, map: &yr_render::RenderedMap, viewport: (u32, u32)) {
+        self.cam_x = (map.width as f32 - viewport.0 as f32 / self.zoom) / 2.0;
+        self.cam_y = (map.height as f32 - viewport.1 as f32 / self.zoom) / 2.0;
+        self.dirty = true;
+    }
+
     fn center_on_cell(
         &mut self,
         map: &yr_render::RenderedMap,
@@ -106,6 +113,12 @@ struct App {
     load_job: Option<menu_flow::LoadJob>,
     preferences_path: Option<PathBuf>,
     quit_requested: bool,
+    startup_menu: bool,
+    front_art: yr_app::frontend::Art,
+    front_preview: Option<yr_app::frontend::Preview>,
+    movie: Option<yr_app::movie::Movie>,
+    front_epoch: Instant,
+    front_phase: u64,
 }
 
 impl App {
@@ -321,17 +334,18 @@ impl App {
 
     fn update_pointer_visibility(&self) {
         if let Some(window) = &self.window {
-            let custom =
-                self.pixels
-                    .as_ref()
-                    .zip(self.session.as_ref())
-                    .is_some_and(|(pixels, session)| {
-                        self.pointer.custom(
-                            &session.cursor_art,
-                            (pixels.texture().width(), pixels.texture().height()),
-                            self.cursor,
-                        )
-                    });
+            let art = if self.menu.front {
+                Some(&self.front_art.cursor)
+            } else {
+                self.session.as_ref().map(|s| &s.cursor_art)
+            };
+            let custom = self.pixels.as_ref().zip(art).is_some_and(|(pixels, art)| {
+                self.pointer.custom(
+                    art,
+                    (pixels.texture().width(), pixels.texture().height()),
+                    self.cursor,
+                )
+            });
             window.set_cursor_visible(!custom);
         }
     }
@@ -525,6 +539,34 @@ impl App {
     /// Draw the full window frame (map, markers, sidebar, rubber band)
     /// into an RGBA buffer; shared by the window and `--frame` dumps.
     fn compose(&self, frame: &mut [u8], fw: u32, fh: u32) {
+        if self.menu.front {
+            yr_app::frontend::draw(
+                frame,
+                fw,
+                fh,
+                &self.front_art,
+                yr_app::frontend::Scene {
+                    state: &self.menu,
+                    movie: self.movie.as_ref().and_then(|v| v.current.as_ref()),
+                    preview: self.front_preview.as_ref(),
+                    phase: self.front_phase,
+                    cursor: self.cursor,
+                },
+            );
+            if self
+                .pointer
+                .custom(&self.front_art.cursor, (fw, fh), self.cursor)
+            {
+                self.front_art.cursor.draw(
+                    frame,
+                    (fw, fh),
+                    self.cursor,
+                    yr_app::cursor::Kind::Pointer,
+                    self.front_phase,
+                );
+            }
+            return;
+        }
         if self.menu.visible() {
             yr_app::menu::draw(frame, fw, fh, &self.menu_art, &self.menu, self.cursor);
             if let Some(session) = &self.session {
@@ -1069,11 +1111,23 @@ impl ApplicationHandler for App {
             self.menu_art = yr_app::menu::Art::load(&fs);
         }
         self.pointer.focused = window.has_focus();
+        if self.startup_menu {
+            self.window = Some(window);
+            self.pixels = Some(pixels);
+            let preferences_error = match &self.menu.page {
+                yr_app::menu::Page::Message { text, .. } => Some(text.clone()),
+                _ => None,
+            };
+            self.enter_front();
+            if let Some(error) = preferences_error {
+                self.menu.message(error, yr_app::menu::Page::Main);
+            }
+            return;
+        }
         match yr_render::render_map(&self.gamedir, &self.map_name, self.scale) {
             Ok(map) => {
                 println!("OpenYR: rendered {}", map.summary);
-                self.view.cam_x = (map.width as f32 - WIN_W as f32) / 2.0;
-                self.view.cam_y = (map.height as f32 - WIN_H as f32) / 2.0;
+                self.view.center_map(&map, (WIN_W - SIDEBAR_W, WIN_H));
                 self.map = Some(map);
                 self.sprites = load_sprites(&self.gamedir, &self.map_name);
             }
@@ -1347,6 +1401,7 @@ impl ApplicationHandler for App {
                 }
             }
             WindowEvent::RedrawRequested => {
+                self.poll_front_presentation();
                 self.poll_menu_load();
                 let stepped = self.advance_clock(Instant::now());
                 if !self.menu.visible()
@@ -1462,6 +1517,12 @@ fn new_app(gamedir: String, map_name: String, scale: u32) -> App {
         load_job: None,
         preferences_path: None,
         quit_requested: false,
+        startup_menu: false,
+        front_art: Default::default(),
+        front_preview: None,
+        movie: None,
+        front_epoch: Instant::now(),
+        front_phase: 0,
     }
 }
 
@@ -1776,9 +1837,10 @@ fn parse_args(args: &[String]) -> Result<Options, String> {
 
 fn run(args: &[String]) -> Result<(), String> {
     if args.iter().any(|a| a == "--help" || a == "-h") {
-        println!("{}\n\nWithout arguments, OpenYR finds your retail install and starts EB1.MMX.\nSet OPENYR_GAMEDIR to override the remembered or standard install.", launcher::USAGE);
+        println!("{}\n\nWithout arguments, OpenYR finds your retail install and opens the main menu.\nSet OPENYR_GAMEDIR to override the remembered or standard install.", launcher::USAGE);
         return Ok(());
     }
+    let startup_menu = args.is_empty();
     let Some(args) = launcher::arguments(args)? else {
         return Ok(());
     };
@@ -1802,6 +1864,7 @@ fn run(args: &[String]) -> Result<(), String> {
     if app.load_path.is_some() {
         app.session = Some(app.load_session()?);
     }
+    app.startup_menu = startup_menu;
     app.read_preferences();
     let event_loop = EventLoop::new().map_err(|e| e.to_string())?;
     event_loop.run_app(&mut app).map_err(|e| e.to_string())?;

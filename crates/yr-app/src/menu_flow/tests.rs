@@ -28,7 +28,7 @@ fn click(app: &mut App, button: Button) {
         .iter()
         .position(|b| b.0 == button)
         .unwrap();
-    let layout = Layout::new(WIN_W, WIN_H);
+    let layout = Layout::for_state(&app.menu, WIN_W, WIN_H);
     let (x, y, _, _) = layout.button(index, button);
     app.cursor = (
         layout.origin.0 + f64::from(x + 10) * layout.scale,

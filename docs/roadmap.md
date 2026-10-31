@@ -35,7 +35,9 @@ Johnny on 2026-10-31.
 - [x] `mix-dump scan`: recursive census + corpus-wide parser check
 - [x] PCX reader (8-bit paletted + 24-bit planar; all 271 retail files)
 - [x] AUD / AUDIO.BAG+IDX / IMA WAV decoders, bit-exact vs ffmpeg
-- [ ] WSA/BIK metadata
+- [x] Bink 1 container metadata (#110): all 146 retail Bink entries validate
+      with bounded frame/track tables and packet ranges (`docs/formats/bink.md`).
+- [ ] WSA metadata
 - [x] `yr-assets` VFS: engine-order MIX cascade, nested mounts, theaters, loose overrides
 - [ ] Side-specific archives (SIDEC##) and per-file loader exceptions
 - [x] MIX name database: every nested archive named; ~88% of all entries named
@@ -269,6 +271,12 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       without catch-up and isolate map input. Shared-compositor proof and
       source-pixel checks are described in `docs/formats/menus.md`. Exact
       oracle calibration, non-Allied skins and delete remain in #96.
+- [x] Animated front menu and match entry (#110, #112): native retail Bink
+      playback, shell/warning art, single-player navigation, authored map preview,
+      supported EB1 setup, saved matches, actual options and data-folder action.
+      Abort/results return to Main Menu. All 431 movie frames match independent
+      YUV decoding; limited-range RGB conversion preserves contrast. Explicit
+      CLI/headless launches bypass menus (`docs/formats/front-menu.md`).
 - [ ] Native menu and match flow (#96): original-style main menu, skirmish
       setup/map preview, saved matches, pause/resume, save/load, restart,
       options and quit. Add Won/Lost screens, loading/error feedback and

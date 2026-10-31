@@ -58,8 +58,8 @@ controls, loading and result screens are provisional. Control frames currently
 use 0 for normal, 1 for pressed and 2 for hover. Exact frame semantics, tracking,
 widescreen layout, non-Allied skins and timing still need an original oracle.
 
-The noncombat archives and `ra2ts_l.bik` main-menu movie are a separate task.
-The pause eagle is not used as a substitute for that animated main menu.
+The noncombat shell and `ra2ts_l.bik` main-menu movie now have their own
+[front-menu flow](front-menu.md). The pause eagle is not used as a substitute.
 
 ## Match flow
 
@@ -84,7 +84,7 @@ old match intact. Cancellation marks the result unwanted, so a late worker
 cannot replace or resume it. Presentation is rebuilt after successful load;
 queued commands and selection are discarded. The loaded slot becomes the
 F5/F9 target. Restart rebuilds the same map with the same seed. Quit exits the
-app; returning to an animated main menu remains in #96.
+app; Main Menu discards the match through the explicit abort choice.
 
 Controls persist actual mute and world zoom in
 `~/Library/Application Support/OpenYR/interface.json`, through a sibling
