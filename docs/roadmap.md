@@ -5,7 +5,8 @@ with ~6 people; OpenRCT2 ~3.5y). We are one person plus agents, aiming for an
 incremental, testable path where each milestone is independently useful.
 
 The playable milestone includes original-style menus, contextual game cursors
-and complete interaction feedback (#96, #98, #97). Finish these M3/M5 items,
+and complete interaction feedback (#96, #98, #97), plus native-resolution
+world rendering and original effects (#101, #102). Finish these M3/M5 items,
 the sidebar work in #86 and repair/sell in #94 before addon/roguelite work or
 declaring the continuation schedule complete. This scope was confirmed by
 Johnny on 2026-10-31.
@@ -52,6 +53,19 @@ Johnny on 2026-10-31.
 
 ## M3: Renderer v1
 
+- [x] Preserve native source detail by default (#101, #103): scale 1 retains
+      60x30 TMP cells and full-size unit art at zoom 1. Explicit inspection
+      scales are limited to 1/2/4. Matched-magnification retail comparisons
+      expose the old half-resolution terrain loss (`docs/formats/effects.md`).
+- [x] Retail muzzle and vehicle destruction effects (#102): actual firing
+      and death events route type/weapon art through ANIM.PAL, bounded caches
+      and one-shot presentation clocks. All 78 source frames, colored alpha,
+      same-tick fire/death and unchanged sim/save data are checked.
+- [ ] Complete original effects and graphics calibration (#102): warhead
+      impacts, projectile art/trails, smoke/fire, debris, environmental and
+      special-weapon effects, infantry deaths, muzzle offsets, depth, timing
+      and transparency. Refine display scaling/filtering and indexed voxel
+      lighting against original-game captures.
 - [x] Map parsing: LZO/IsoMapPack5 + overlay packs, all 234 retail maps
       (`docs/formats/map.md`); tile-set index maps tile numbers to TMPs
 - [x] TMP terrain rendering from real maps as PNG (`mix-dump render-map`;
@@ -178,6 +192,8 @@ Johnny on 2026-10-31.
 - [x] Deterministic core: yr-sim skeleton (fixed-point, RNG, hash);
       terrain grid with passability/speed per locomotor (retail-verified)
 - [x] Unit movement on the grid (A*, occupancy)
+- [ ] Reject absent map tiles inside the terrain bounding rectangle (#105).
+      Map-built grids currently leave those holes as passable clear ground.
 - [x] Building placement, harvesting loop (production queues in M5 sidebar)
 - [x] Full-footprint refinery docking (#68, #69): harvesters deliver beside
       the retail 4x3 foundation and retain cargo if their refinery is lost.
