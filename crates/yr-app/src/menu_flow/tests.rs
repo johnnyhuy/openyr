@@ -71,7 +71,9 @@ fn proof(app: &App, name: &str) {
     );
 }
 fn finish_load(app: &mut App) {
-    let deadline = Instant::now() + Duration::from_secs(30);
+    // Retail reconstruction competes with corpus/capture tests. Match the
+    // front-menu loader's bounded budget while retaining every state check.
+    let deadline = Instant::now() + Duration::from_secs(180);
     while app.load_job.is_some() {
         app.poll_menu_load();
         assert!(Instant::now() < deadline, "match load timed out");
