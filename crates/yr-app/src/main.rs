@@ -19,6 +19,7 @@ mod death_tests;
 mod front_flow;
 mod launcher;
 mod menu_flow;
+mod order_feedback;
 
 use pixels::{Pixels, SurfaceTexture};
 use std::collections::BTreeSet;
@@ -103,6 +104,7 @@ struct App {
     camera: camera::Input,
     selected: BTreeSet<u32>,
     groups: control_groups::ControlGroups,
+    order_feedback: order_feedback::Feedback,
     pending: Vec<Command>,
     attack_move: bool,
     shift: bool,
@@ -182,6 +184,7 @@ impl App {
 
     fn select_at(&mut self, pos: (f64, f64), additive: bool) {
         self.groups.interrupt();
+        self.order_feedback.clear();
         let Some(cell) = self.window_to_cell(pos) else {
             return;
         };
@@ -208,6 +211,7 @@ impl App {
 
     fn select_box(&mut self, a: (f64, f64), b: (f64, f64), additive: bool) {
         self.groups.interrupt();
+        self.order_feedback.clear();
         if !additive {
             self.selected.clear();
         }
@@ -272,6 +276,7 @@ impl App {
         if action.select.is_some() || (self.shift && !self.control) {
             self.select_at(pos, self.shift);
         } else if !self.selected.is_empty() {
+            self.acknowledge_order(&action, pos, Instant::now());
             self.pending.extend(action.commands);
             self.attack_move = false;
         } else {
@@ -309,6 +314,7 @@ impl App {
 
     fn cancel_mode_or_selection(&mut self) {
         self.groups.interrupt();
+        self.order_feedback.clear();
         if self.placing.take().is_none()
             && self.service_mode == ServiceMode::None
             && !self.attack_move
@@ -324,6 +330,7 @@ impl App {
         self.pointer.focused = focused;
         if !focused {
             self.groups.interrupt();
+            self.order_feedback.clear();
             self.pointer.inside = false;
             self.keys.clear();
             self.shift = false;
@@ -402,6 +409,7 @@ impl App {
     }
 
     fn radar_click(&mut self, cell: (f32, f32)) {
+        self.order_feedback.clear();
         self.service_mode = ServiceMode::None;
         self.placing = None;
         if self.selected.is_empty() {
@@ -421,6 +429,7 @@ impl App {
     }
 
     fn toggle_service(&mut self, mode: ServiceMode) {
+        self.order_feedback.clear();
         self.service_mode.toggle(mode);
         self.placing = None;
         self.attack_move = false;
@@ -471,6 +480,7 @@ impl App {
     /// Left-click on a cameo: start placing a finished structure, else
     /// queue the slot.
     fn sidebar_click(&mut self, slot: usize) {
+        self.order_feedback.clear();
         self.service_mode = ServiceMode::None;
         let Some(session) = self.session.as_ref() else {
             return;
@@ -571,6 +581,10 @@ impl App {
     /// Draw the full window frame (map, markers, sidebar, rubber band)
     /// into an RGBA buffer; shared by the window and `--frame` dumps.
     fn compose(&self, frame: &mut [u8], fw: u32, fh: u32) {
+        self.compose_at(frame, fw, fh, Instant::now());
+    }
+
+    fn compose_at(&self, frame: &mut [u8], fw: u32, fh: u32, now: Instant) {
         if self.menu.front {
             yr_app::frontend::draw(
                 frame,
@@ -942,6 +956,7 @@ impl App {
                 [tint[0], tint[1], tint[2], 255],
             );
         }
+        self.draw_order_marker(frame, (fw, fh), now);
         if let Some(session) = &self.session {
             sidebar::draw(frame, fw, fh, session, self.sidebar_category, self.placing);
             sidebar::draw_controls(frame, fw, fh, session, self.service_mode);
@@ -954,7 +969,11 @@ impl App {
             ];
             session.radar.draw_viewport(frame, fw, fh, corners);
             sidebar::draw_tooltip(frame, fw, fh, session, self.sidebar_category, self.cursor);
-            if let Some(message) = self.groups.message(Instant::now()) {
+            if let Some(message) = self
+                .order_feedback
+                .message(now)
+                .or_else(|| self.groups.message(now))
+            {
                 yr_app::interaction::draw_feedback(frame, fw, fh, session, message);
             }
         }
@@ -1438,6 +1457,9 @@ impl ApplicationHandler for App {
                     if self.group_key(code, event.state, event.repeat, Instant::now()) {
                         return;
                     }
+                    if self.unit_order_key(code, event.state, event.repeat, Instant::now()) {
+                        return;
+                    }
                     match event.state {
                         ElementState::Pressed => {
                             self.groups.interrupt();
@@ -1451,6 +1473,7 @@ impl ApplicationHandler for App {
                                     self.zoom_camera((self.view.zoom / 1.2).max(0.25))
                                 }
                                 KeyCode::KeyA => {
+                                    self.order_feedback.clear();
                                     self.service_mode = ServiceMode::None;
                                     self.attack_move = true;
                                 }
@@ -1471,16 +1494,6 @@ impl ApplicationHandler for App {
                                         yr_app::menu::Intent::Load(self.save_path.clone()),
                                     ));
                                 }
-                                KeyCode::KeyS => {
-                                    for &id in &self.selected {
-                                        self.pending.push(Command::Stop { id });
-                                    }
-                                }
-                                KeyCode::KeyH => {
-                                    for &id in &self.selected {
-                                        self.pending.push(Command::Harvest { id });
-                                    }
-                                }
                                 _ => {}
                             }
                             self.view.dirty = true;
@@ -1492,6 +1505,7 @@ impl ApplicationHandler for App {
                 }
             }
             WindowEvent::RedrawRequested => {
+                self.view.dirty |= self.order_feedback.expire(Instant::now());
                 self.poll_front_presentation();
                 self.poll_menu_load();
                 let stepped = self.advance_clock(Instant::now());
@@ -1566,6 +1580,7 @@ fn new_app(gamedir: String, map_name: String, scale: u32) -> App {
         camera: Default::default(),
         selected: BTreeSet::new(),
         groups: Default::default(),
+        order_feedback: Default::default(),
         pending: Vec::new(),
         attack_move: false,
         shift: false,

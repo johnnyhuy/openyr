@@ -137,6 +137,7 @@ impl App {
             self.shift,
             now,
         );
+        self.order_feedback.clear();
         self.cancel_pointer_action();
         self.attack_move = false;
         self.placing = None;
