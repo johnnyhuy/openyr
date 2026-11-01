@@ -170,6 +170,17 @@ pub enum Event {
         y: Fix,
         origin: Option<ShotOrigin>,
     },
+    /// The positive-health target was killed by this hit. Later arrivals in
+    /// the same phase cannot replace the lethal shot's provenance.
+    FatalHit {
+        target: u32,
+        kind: u16,
+        owner: u8,
+        facing: u8,
+        x: Fix,
+        y: Fix,
+        origin: Option<ShotOrigin>,
+    },
     Died {
         id: u32,
     },
@@ -948,6 +959,17 @@ impl Sim {
             if u.hp > 0 && damage > 0 {
                 u.hp -= damage;
                 self.events.push(Event::Hit { target, damage });
+                if u.hp <= 0 {
+                    self.events.push(Event::FatalHit {
+                        target,
+                        kind: u.kind,
+                        owner: u.owner,
+                        facing: u.facing,
+                        x: u.x,
+                        y: u.y,
+                        origin,
+                    });
+                }
             }
             return;
         }
@@ -955,6 +977,18 @@ impl Sim {
             if b.hp > 0 && damage > 0 {
                 b.hp -= damage;
                 self.events.push(Event::Hit { target, damage });
+                if b.hp <= 0 {
+                    let (x, y) = b.centre();
+                    self.events.push(Event::FatalHit {
+                        target,
+                        kind: b.kind,
+                        owner: b.owner,
+                        facing: 0,
+                        x,
+                        y,
+                        origin,
+                    });
+                }
             }
         }
     }

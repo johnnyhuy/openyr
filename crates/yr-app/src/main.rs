@@ -11,6 +11,8 @@
 //! green ghost; right-click or Esc backs out of placement (issue #46). Orders go through
 //! `yr_sim::Command` only, the UI never mutates sim state directly (issue #15).
 
+#[cfg(test)]
+mod death_tests;
 mod front_flow;
 mod launcher;
 mod menu_flow;
@@ -628,6 +630,7 @@ impl App {
             art: Option<(String, u8, u8)>,
             animation: yr_render::sprites::InfantryAnimation,
             building: Option<yr_render::sprites::BuildingAnimation>,
+            death: Option<(u8, u64)>,
         }
         let tick = self.session.as_ref().map_or(0, |s| s.sim.tick());
         let mut markers: Vec<Marker> = Vec::new();
@@ -685,6 +688,7 @@ impl App {
                         .flatten(),
                     animation: Default::default(),
                     building: Some(yr_app::animation::building_animation(sim, b)),
+                    death: None,
                 });
             }
             for u in sim.units() {
@@ -713,6 +717,31 @@ impl App {
                         .flatten(),
                     animation: self.animations.get(u.id),
                     building: None,
+                    death: None,
+                });
+            }
+            for death in &self.effects.deaths {
+                let (fx, fy) = (death.x.raw() as f32 / 256.0, death.y.raw() as f32 / 256.0);
+                let (wx, wy) = to_win(fx, fy);
+                markers.push(Marker {
+                    footprint: yr_render::depth::Footprint {
+                        x: fx,
+                        y: fy,
+                        w: 0.0,
+                        h: 0.0,
+                    },
+                    ax: wx,
+                    ay: wy,
+                    wx,
+                    wy,
+                    half_w: 0.0,
+                    col: [0; 4],
+                    selected: false,
+                    hp: 1.0,
+                    art: Some((death.kind.clone(), death.facing, death.owner)),
+                    animation: Default::default(),
+                    building: None,
+                    death: Some((death.sequence, tick.saturating_sub(death.born))),
                 });
             }
         }
@@ -768,9 +797,12 @@ impl App {
                             );
                         }
                     }
-                } else if let Some(sprite) =
-                    bank.get_animated_at(id, *facing, remap, m.animation, tick)
-                {
+                } else if let Some(sprite) = match m.death {
+                    Some((sequence, age)) => {
+                        bank.get_infantry_death(id, sequence, *facing, remap, age)
+                    }
+                    None => bank.get_animated_at(id, *facing, remap, m.animation, tick),
+                } {
                     blit_sprite(
                         frame,
                         fw,
@@ -799,18 +831,23 @@ impl App {
                             false
                         }
                     } else {
-                        match bank.get_animated_at(id, *facing, remap, m.animation, tick) {
-                            Some(s) => {
-                                blit_sprite(frame, fw, fh, s, m.ax, m.ay, k, SpritePass::Body);
-                                true
+                        let sprite = match m.death {
+                            Some((sequence, age)) => {
+                                bank.get_infantry_death(id, sequence, *facing, remap, age)
                             }
-                            None => false,
+                            None => bank.get_animated_at(id, *facing, remap, m.animation, tick),
+                        };
+                        if let Some(s) = sprite {
+                            blit_sprite(frame, fw, fh, s, m.ax, m.ay, k, SpritePass::Body);
+                            true
+                        } else {
+                            false
                         }
                     }
                 }
                 _ => false,
             };
-            if !drawn {
+            if !drawn && m.death.is_none() {
                 draw_diamond(frame, fw, fh, m.wx, m.wy, m.half_w, m.col);
             }
         }

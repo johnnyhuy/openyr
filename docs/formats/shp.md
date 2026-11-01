@@ -110,8 +110,54 @@ The live window and `--frames` share the following prototype policy:
   action data falls back to Ready, then a safe standing frame. The
   decoded cache is keyed by the resulting frame, not an unbounded tick.
 
-Prone, deployed, death and paradrop sequences are not wired to sim
-states yet. Wine side-by-side validation remains under #6.
+Prone, deployed and paradrop sequences are not wired to sim states yet.
+Wine side-by-side validation remains under #6.
+
+## Ordinary infantry deaths
+
+Retail `RULESMD.INI` documents `InfDeath` as the warhead's infantry death
+selector. SA and HollowPoint use 1; HE uses 2. GISequence and
+GuardianGISequence both declare `Die1=134,15,0` and `Die2=149,15,0`.
+These are non-directional body ranges with corresponding shadow frames
+at the normal half-sheet offset. AP uses 3, whose flying-death behavior
+is separate; the placeholder `Die3=0,1,1` is not a supported death clip.
+
+Only explicit selectors 1 and 2 play in this slice. The fatal positive
+health transition emits `FatalHit` with the actual shot origin and victim
+type, position, facing and owner at that hit. The app associates it with
+the later `Died` event, including victims spawned or reassigned during
+the tick. A later arrival against the already dead
+target cannot replace the lethal weapon. Saved in-flight shots keep their
+source even after the shooter dies. Unknown/legacy origins, direct destroy
+commands and other selectors omit this optional animation.
+
+The clip uses the theater unit palette and the victim's house remap,
+with the matching half-alpha shadow in the shared ground coverage mask.
+Bodies join live objects in foundation painter order, so dying infantry
+do not paint over buildings in front of them. There is no selectable
+entity, health bar, occupancy or simulation timer for a death clip.
+The existing provisional two-tick cadence plays each frame once, then
+removes the sprite at age 30 for the retail 15-frame clips. Drawing never
+advances the clock. Each scene caps dying actors at 256; their decoded
+frames share the existing 512-entry unit cache. Loading clears deaths
+along with other past transients, while later saved-projectile arrivals
+can create new ones.
+
+Sequence arithmetic validates all eight facings before selection. Infantry
+sequence loading rejects zero/oversized canvases (over 256x256), odd frame
+counts and sheets above 4096 frames; parser table allocations remain
+bounded by source bytes. Missing, malformed and expired death data draw
+nothing, including no fallback standing unit or marker. Retail tests compare
+all 60 GI/Guardian GI death body/shadow frames, all facings and two house
+colors against independent canvases. App tests exercise actual fatal shots,
+saved flights, source loss, expiry, repeated redraws and unchanged sim/save
+bytes. `OPENYR_INFANTRY_DEATH_PROOF=<external-dir>` exports a controlled
+EB1 GI/IFV sequence from the shared compositor.
+
+This establishes retail frame layout and native routing, not original
+playback parity. Original cadence, corpse persistence, death/corpse layering,
+special death selectors, death overrides and prone/deployed deaths remain
+in #102. No original implementation code was consulted.
 
 ## Building layers
 

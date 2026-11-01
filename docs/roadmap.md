@@ -70,9 +70,16 @@ Johnny on 2026-10-31.
       same-tick fire/death and unchanged sim/save data are checked.
 - [ ] Complete original effects and graphics calibration (#102): special
       warhead impacts, other projectile classes/trails, smoke/fire, debris, environmental and
-      special-weapon effects, infantry deaths, muzzle offsets, depth, timing
+      special-weapon effects, special infantry deaths, muzzle offsets, depth, timing
       and transparency. Refine display scaling/filtering and indexed voxel
       lighting against original-game captures.
+- [x] Ordinary infantry death sequences (#102, #137): explicit lethal-weapon
+      `InfDeath=1/2` selects retail `Die1/Die2`, retaining victim house art,
+      body/shadow frames and world depth outside simulation state. Saved
+      flights work after shooter loss; fatal metadata handles same-tick victim
+      spawn or reassignment. One-shot expiry, source pixels and redraw/save
+      invariance are checked. Original cadence, corpses and
+      special death selectors remain in #102 (`docs/formats/shp.md`).
 - [x] Map parsing: LZO/IsoMapPack5 + overlay packs, all 234 retail maps
       (`docs/formats/map.md`); tile-set index maps tile numbers to TMPs
 - [x] TMP terrain rendering from real maps as PNG (`mix-dump render-map`;

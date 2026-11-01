@@ -106,8 +106,17 @@ normal lighting and cadence remain provisional, as above. Random EMEffect
 selection is omitted; water-cell detonation/splash, special warhead overrides,
 impact sounds, craters and scorch are not implemented in this slice.
 
-Projectile trails and other projectile classes, smoke/fire, debris, environmental animations, infantry
-death sequences and special weapon effects remain in #102. Exact destruction
+Ordinary infantry `Die1`/`Die2` sequences now use the lethal shot's explicit
+warhead selector and retain victim art and owner outside the sim. Their
+unit-palette bodies and shadows follow world depth ordering; see
+`docs/formats/shp.md` for layout, limits and the provisional playback policy.
+`FatalHit` records only the first positive-health transition to death;
+later same-phase impacts cannot change its cause. Past death clips reset
+on load, while newly arriving saved shots can start them.
+
+Projectile trails and other projectile classes, smoke/fire, debris,
+environmental animations, special infantry deaths and special weapon effects
+remain in #102. Exact destruction
 selection and original compositing remain there too.
 
 ## Cannon bodies and travel
