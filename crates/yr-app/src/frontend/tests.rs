@@ -21,7 +21,7 @@ fn retail_front_headings_match_original_renderer_captures() {
     for (name, page, height, expected) in [
         ("main", Page::Main, 40, 0xe789aaaf10a7f8d1u64),
         ("single-player", Page::SinglePlayer, 40, 0x29e7b0529ab9bf19),
-        ("skirmish", Page::Skirmish, 37, 0xaf5382b7a6dc6151),
+        ("skirmish", Page::Skirmish, 40, 0x1091ed8ace62e049),
     ] {
         let mut state = State {
             front: true,
@@ -62,6 +62,166 @@ fn retail_front_headings_match_original_renderer_captures() {
         }
     }
     assert!(mismatches.is_empty(), "original headings: {mismatches:?}");
+}
+
+#[test]
+fn retail_skirmish_preview_matches_original_unoccluded_pixels() {
+    let dir = std::path::PathBuf::from(std::env::var("HOME").unwrap_or_default())
+        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    if !dir.is_dir() {
+        return;
+    }
+    let fs = yr_assets::AssetFs::open(&dir).unwrap();
+    let art = Art::load(&fs);
+    let proof = std::env::var_os("OPENYR_PREVIEW_PROOF").map(std::path::PathBuf::from);
+    let mut mismatches = Vec::new();
+    for (name, asset, size, top, markers, expected, expected_samples) in [
+        (
+            "alamo",
+            "XMP29U2.MAP",
+            (110, 50),
+            0,
+            [(765, 65, 18, 18), (647, 107, 18, 18)],
+            0x4ab7b3efc5ec5dc9u64,
+            25_392,
+        ),
+        (
+            "lake",
+            "XMP08T2.MAP",
+            (70, 67),
+            37,
+            [(668, 49, 18, 18), (698, 126, 18, 18)],
+            0x22dd8120185cff9d,
+            19_176,
+        ),
+    ] {
+        let map = load_preview(dir.to_str().unwrap(), asset, 1).unwrap();
+        assert!(map.authored);
+        assert_eq!((map.width, map.height), size);
+        let mut state = State {
+            front: true,
+            ..State::default()
+        };
+        state.set(Page::Skirmish);
+        let mut pixels = vec![0; 800 * 600 * 4];
+        draw(
+            &mut pixels,
+            800,
+            600,
+            &art,
+            Scene {
+                state: &state,
+                movie: None,
+                preview: Some(&map),
+                phase: 0,
+                cursor: (-1.0, -1.0),
+            },
+        );
+        if let Some(path) = &proof {
+            std::fs::create_dir_all(path).unwrap();
+            std::fs::write(
+                path.join(format!("{name}.png")),
+                yr_render::png::encode_rgba(800, 600, &pixels),
+            )
+            .unwrap();
+        }
+        let mut hash = 0xcbf29ce484222325u64;
+        let mut samples = 0;
+        // Start markers are separate work in #152. Modal heading color is #153,
+        // so the Lake observation checks the preview and surrounding rim only.
+        for y in top..155 {
+            for x in 632..800 {
+                if markers
+                    .iter()
+                    .any(|&(mx, my, w, h)| (mx..mx + w).contains(&x) && (my..my + h).contains(&y))
+                {
+                    continue;
+                }
+                let at = (y * 800 + x) * 4;
+                for &byte in &pixels[at..at + 4] {
+                    hash = (hash ^ u64::from(byte)).wrapping_mul(0x100000001b3);
+                }
+                samples += 1;
+            }
+        }
+        assert_eq!(samples, expected_samples, "{name}");
+        if hash != expected {
+            mismatches.push((name, hash, expected));
+        }
+    }
+    assert!(mismatches.is_empty(), "original previews: {mismatches:?}");
+}
+
+#[test]
+fn preview_client_fits_both_axes_and_keeps_invalid_images_black() {
+    let render = |preview: Option<&Preview>| {
+        let mut state = State {
+            front: true,
+            ..State::default()
+        };
+        state.set(Page::Skirmish);
+        let mut frame = vec![0; 800 * 600 * 4];
+        draw(
+            &mut frame,
+            800,
+            600,
+            &Art::default(),
+            Scene {
+                state: &state,
+                movie: None,
+                preview,
+                phase: 0,
+                cursor: (-1.0, -1.0),
+            },
+        );
+        frame
+    };
+    let pixel = |frame: &[u8], x: usize, y: usize| {
+        let at = (y * 800 + x) * 4;
+        <[u8; 4]>::try_from(&frame[at..at + 4]).unwrap()
+    };
+    let red = [248, 0, 0, 255];
+    let green = [0, 252, 0, 255];
+    let black = [0, 0, 0, 255];
+    let mut map = Preview {
+        width: 2,
+        height: 1,
+        rgba: vec![255, 0, 0, 255, 0, 255, 0, 255],
+        authored: true,
+    };
+    let wide = render(Some(&map));
+    assert_eq!(pixel(&wide, 644, 57), red);
+    assert_eq!(pixel(&wide, 715, 128), red);
+    assert_eq!(pixel(&wide, 716, 57), green);
+    assert_eq!(pixel(&wide, 787, 128), green);
+    for (x, y) in [(644, 37), (644, 56), (788, 57), (787, 129), (788, 149)] {
+        assert_eq!(pixel(&wide, x, y), black);
+    }
+    map.width = 1;
+    map.height = 2;
+    let tall = render(Some(&map));
+    assert_eq!(pixel(&tall, 688, 37), red);
+    assert_eq!(pixel(&tall, 743, 92), red);
+    assert_eq!(pixel(&tall, 688, 93), green);
+    assert_eq!(pixel(&tall, 743, 148), green);
+    for (x, y) in [(687, 37), (744, 37), (688, 149)] {
+        assert_eq!(pixel(&tall, x, y), black);
+    }
+    for (width, height, rgba) in [
+        (0, 1, Vec::new()),
+        (1, 0, Vec::new()),
+        (2, 1, vec![0; 7]),
+        (u32::MAX, u32::MAX, Vec::new()),
+    ] {
+        map.width = width;
+        map.height = height;
+        map.rgba = rgba;
+        let frame = render(Some(&map));
+        assert_eq!(pixel(&frame, 644, 37), black);
+        assert_eq!(pixel(&frame, 788, 149), black);
+    }
+    let unavailable = render(None);
+    assert_eq!(pixel(&unavailable, 700, 50), [8, 12, 16, 255]);
 }
 
 #[test]

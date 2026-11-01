@@ -8,7 +8,36 @@ IMP void *CALL GetProcAddress(HANDLE, const char *);
 IMP __declspec(noreturn) void CALL ExitProcess(DWORD);
 typedef struct { HANDLE window; unsigned message, wparam; long lparam; DWORD time; long x, y; } MSG;
 _Static_assert(sizeof(MSG) == 28, "Win32 MSG ABI");
+#ifdef BOOTSTRAP
+typedef struct {
+    DWORD size; char *reserved, *desktop, *title;
+    DWORD x, y, xsize, ysize, xchars, ychars, fill, flags;
+    unsigned short show, reserved_size; unsigned char *reserved_data;
+    HANDLE input, output, error;
+} STARTUP;
+typedef struct { HANDLE process, thread; DWORD pid, tid; } PROCESS;
+_Static_assert(sizeof(STARTUP) == 68, "STARTUPINFOA ABI");
+static void bootstrap(void) {
+    HANDLE kernel = LoadLibraryA("kernel32.dll");
+    int (CALL *create)(const char *, char *, void *, void *, int, DWORD, void *, const char *, STARTUP *, PROCESS *) =
+        (void *)GetProcAddress(kernel, "CreateProcessA");
+    DWORD (CALL *wait)(HANDLE, DWORD) = (void *)GetProcAddress(kernel, "WaitForSingleObject");
+    int (CALL *exit_code)(HANDLE, DWORD *) = (void *)GetProcAddress(kernel, "GetExitCodeProcess");
+    int (CALL *close)(HANDLE) = (void *)GetProcAddress(kernel, "CloseHandle");
+    if (!create || !wait || !exit_code || !close) ExitProcess(2);
+    STARTUP info = {0}; PROCESS child = {0}; info.size = sizeof(info);
+    char command[] = "\"C:\\openyr-oracle\\fixture32.exe\"";
+    if (!create("C:\\openyr-oracle\\fixture32.exe", command, 0, 0, 0, 0, 0,
+                "C:\\openyr-oracle", &info, &child)) ExitProcess(6);
+    DWORD code = 0;
+    if (wait(child.process, 0xffffffff) != 0 || !exit_code(child.process, &code)) ExitProcess(5);
+    close(child.thread); close(child.process); ExitProcess(code);
+}
+#endif
 void mainCRTStartup(void) {
+#ifdef BOOTSTRAP
+    bootstrap();
+#endif
 #ifdef NO_WINDOW
     ExitProcess(0);
 #endif

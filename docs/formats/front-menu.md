@@ -93,8 +93,11 @@ The heading correction in #142/#143 matches Main Menu, Single Player and
 Skirmish Game, including the observed final glyph color. The native regression
 adds three complete heading regions to the thirteen static rectangles above.
 The [heading observations](front-headings.md) record the masks, source labels,
-coordinates and limits. Eleven preview-edge pixels remain different below
-the Skirmish heading (#144). Unsupported actions remain visibly disabled and
+coordinates and limits. Public control measurements and original raster
+comparisons now calibrate the Skirmish preview background, image bounds and
+independent-axis sampling (#144, #151). The [preview observations](front-preview.md)
+record exact landscape/portrait checks and the remaining numbered markers
+and modal heading state (#152, #153). Unsupported actions remain visibly disabled and
 the version strip identifies OpenYR. Broader setup, animation timing and
 physical macOS interaction remain in #96 and #97.
 

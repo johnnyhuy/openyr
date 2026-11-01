@@ -48,13 +48,22 @@ native frames outside git. The twenty specified capture regions contain
 
 ## Remaining preview and menu work
 
-The checked Skirmish region ends above preview row 37. Extending it through
-row 39 exposes eleven pixels at row 37: native SDTP art is dark blue there,
-while all three original captures show opaque black. Switching the top art
+The original heading proof stopped above preview row 37. Extending it through
+row 39 exposed eleven dark-blue SDTP pixels where the original control was
+opaque black. Switching the top art
 to SHELL2.PAL introduces 4,674 differences in the extended 168x40 comparison,
 so it does not explain the control background. SHELL.PAL remains correct.
-The preview client bounds/background require their own observation in #144.
-The proof includes this extended comparison and its remaining differences.
+Public control measurements now establish the preview client at
+`(644,37,145,113)` (#144). Painting its background resolves those eleven
+pixels. The native heading regression now checks all 40 rows for its wide
+preview fixture, with RGBA FNV-1a `1091ed8ace62e049`.
+The [preview observations](front-preview.md) cover its raster and limits.
+
+A fresh capture after returning from the map chooser paints Skirmish's final
+`e` blue 0 instead of blue 24. Its 25 ink pixels change while the prefix,
+mask and baseline stay fixed. This newly observed interaction state is #153;
+the default-state captures and their matches remain valid. The native helper
+still uses the default foreground rule, and full modal behavior remains open.
 
 An earlier 08:25:09 export has an empty heading during a transition. It is
 retained as an observation and excluded from the stable heading assertions.

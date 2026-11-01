@@ -341,16 +341,25 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
 - [x] Match captured front menu headings (#142, #143): final glyph color,
       authored Skirmish Game caption and compact-header baseline. Three native
       heading regions match original exports (`docs/formats/front-headings.md`).
-- [ ] Calibrate the Skirmish preview client edge (#144). Eleven pixels on
-      row 37 still show source art where the original control is opaque black.
+- [x] Calibrate the Skirmish preview client and raster (#144, #151): measured
+      145x113 black control, landscape/portrait image bounds and discrete
+      nearest-neighbor sampling. Original crops check unoccluded pixels;
+      numbered markers and modal heading state remain separate work.
+- [ ] Draw original numbered start-position markers in previews (#152),
+      using the map's actual waypoints and observed artwork/placement.
+- [ ] Calibrate heading foreground after map selection (#153). Returning
+      from the original chooser changes 25 final-glyph pixels; retain the
+      separately verified default heading states.
 - [x] Preserve guarded public Win32 window/control observations and actual
       child exit status in `tools/wine-oracle`, with synthetic geometry,
       private Edit exclusion, silent-exit and absent-target checks. Publish
       the complete fixture before it becomes visible (#150).
-- [ ] Restore a usable original-game reference front menu (#148). The
-      2026-11-01 session exits without a verified page, blocking new preview
-      bounds and animation timing observations. Existing static captures
-      remain valid; normal/GDI and temporary 800x600 attempts failed.
+- [ ] Make original-game reference startup repeatable (#148). Installed
+      RA2MD.exe reached a verified gamemd.exe menu and supplied fresh preview
+      observations. The observer supports that bootstrap with a synthetic
+      lineage check and preserves processes at its deadline. A stopped-state
+      recheck still found no windows, with a Wine window-driver error. Keep
+      the successful pixel evidence and the failing startup receipts.
 - [ ] Native menu and match flow (#96): original-style main menu, skirmish
       setup/map preview, saved matches, pause/resume, save/load, restart,
       options and quit. Add Won/Lost screens, loading/error feedback and
