@@ -65,7 +65,7 @@ pub fn draw(frame: &mut [u8], width: u32, height: u32, art: &Art, scene: Scene<'
         .warning
         .get(scene.phase as usize % art.warning.len().max(1))
     {
-        c.image((670, 45), im);
+        c.image((670, 48), im);
     }
     for y in (199..577).step_by(42) {
         if let Some(im) = &art.button_back {

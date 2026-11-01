@@ -5,6 +5,8 @@ pub use art::Art;
 pub use draw::{draw, Scene};
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod warning_tests;
 
 pub struct Preview {
     pub width: u32,

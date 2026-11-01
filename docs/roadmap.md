@@ -324,6 +324,13 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       blank-row palette and bottom-cap placement. Thirteen captured regions
       and five complete enabled buttons match. Timing and broader menus remain
       in #96; captures and limits are in `docs/formats/front-menu.md`.
+- [x] Match captured front animation pixels (#135, #136): warning anchor and
+      eleven warning phases, plus exact visible movie output at fourteen original
+      phases. Independent full-clip decoding remains checked. Warning cadence,
+      transitions and movie/shell synchronization still need calibration (#96).
+- [x] Keep retail menu-load test waits consistent (#138): the in-match test
+      uses the front-menu test's bounded 180-second budget for reconstruction
+      while retaining all save/load, cancellation and state assertions.
 - [ ] Native menu and match flow (#96): original-style main menu, skirmish
       setup/map preview, saved matches, pause/resume, save/load, restart,
       options and quit. Add Won/Lost screens, loading/error feedback and
