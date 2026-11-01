@@ -1,5 +1,52 @@
 use super::*;
 
+#[test]
+fn fatal_hit_keeps_the_first_lethal_source_and_ignores_later_arrivals() {
+    let mut sim = duel(Fix::ZERO, yr_rules::Decimal::ONE);
+    sim.drain_events();
+    let first = Some(ShotOrigin {
+        shooter: 9,
+        weapon: Some(11),
+        damage: 500,
+    });
+    let later = Some(ShotOrigin {
+        shooter: 10,
+        weapon: Some(12),
+        damage: 500,
+    });
+    sim.apply_impact(2, 0, later);
+    assert!(!sim
+        .drain_events()
+        .iter()
+        .any(|e| matches!(e, Event::FatalHit { .. })));
+    sim.apply_impact(2, 500, first);
+    sim.apply_impact(2, 500, later);
+    sim.reap_dead();
+    let events = sim.drain_events();
+    let fatal: Vec<_> = events
+        .iter()
+        .filter(|e| matches!(e, Event::FatalHit { .. }))
+        .collect();
+    assert_eq!(
+        fatal,
+        [&Event::FatalHit {
+            target: 2,
+            kind: 3,
+            owner: OWNER_ENEMY,
+            facing: 128,
+            x: Fix::from_int(8),
+            y: Fix::ONE,
+            origin: first
+        }]
+    );
+    assert_eq!(events.last(), Some(&Event::Died { id: 2 }));
+    sim.step(&[Command::Destroy { id: 1 }]);
+    assert!(!sim
+        .drain_events()
+        .iter()
+        .any(|e| matches!(e, Event::FatalHit { .. })));
+}
+
 fn duel(speed: Fix, multiplier: yr_rules::Decimal) -> Sim {
     let weapon = WeaponSpec {
         source: Some(7),

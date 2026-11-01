@@ -3,6 +3,155 @@ use std::path::PathBuf;
 use yr_sim::{Command, OWNER_PLAYER};
 
 #[test]
+fn retail_infantry_deaths_use_lethal_weapon_after_saved_flight_and_shooter_loss() {
+    let dir = PathBuf::from(std::env::var("HOME").unwrap())
+        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    if !dir.is_dir() {
+        return;
+    }
+    let fs = yr_assets::AssetFs::open(&dir).unwrap();
+    let rules = yr_rules::Rules::load(
+        &yr_formats::IniFile::parse(&String::from_utf8_lossy(fs.read("RULESMD.INI").unwrap())),
+        &yr_formats::IniFile::parse(&String::from_utf8_lossy(fs.read("ARTMD.INI").unwrap())),
+    );
+    let dir = dir.to_str().unwrap();
+    let mut session = crate::session::load(dir, "EB1.MMX", 42).unwrap();
+    let kind = session.kinds.iter().position(|k| k == "E1").unwrap() as u16;
+    let mut bank = SpriteBank::open(dir, "EB1.MMX").unwrap();
+    for (weapon, expected) in [("M60", Some(1)), ("HoverMissile", Some(2)), ("105mm", None)] {
+        session.sim = yr_sim::Sim::new(42);
+        let mut spec = yr_sim::WeaponSpec::from_rules(&rules, weapon).unwrap();
+        assert_eq!(
+            bank.infantry_death_sequence("E1", spec.source.unwrap()),
+            expected
+        );
+        spec.projectile_speed = Fix::from_raw(128);
+        let spawn = |x, weapon| Command::Spawn {
+            kind,
+            x: Fix::from_int(x),
+            y: Fix::ONE,
+            loco: yr_sim::terrain::Loco::Foot,
+            speed: Fix::from_raw(32),
+            hp: 1,
+            armor: 0,
+            weapon,
+        };
+        session.sim.step(&[
+            spawn(1, Some(spec)),
+            spawn(3, None),
+            Command::AssignOwner {
+                id: 2,
+                owner: yr_sim::OWNER_ENEMY,
+            },
+            Command::Attack { id: 1, target: 2 },
+        ]);
+        session.sim.drain_events();
+        session.sim.step(&[Command::Destroy { id: 1 }]);
+        session.sim.drain_events();
+        session.sim.step(&[Command::Move {
+            id: 2,
+            x: Fix::from_int(4),
+            y: Fix::ONE,
+        }]);
+        session.sim.drain_events();
+        let save = crate::snapshot::encode(&session).unwrap();
+        crate::snapshot::restore(&mut session, &save).unwrap();
+        let mut scene = EffectScene::default();
+        scene.remember(&session);
+        let mut died = false;
+        for _ in 0..12 {
+            scene.remember(&session);
+            session.sim.step(&[]);
+            let events = session.sim.drain_events();
+            let save = crate::snapshot::encode(&session).unwrap();
+            let hash = session.sim.state_hash();
+            scene.update(&session, &events, &mut bank);
+            assert_eq!(session.sim.state_hash(), hash);
+            assert_eq!(crate::snapshot::encode(&session).unwrap(), save);
+            if events.contains(&Event::Died { id: 2 }) {
+                died = true;
+                assert_eq!(scene.deaths.first().map(|d| d.sequence), expected);
+                if let Some(death) = scene.deaths.first() {
+                    let position = events
+                        .iter()
+                        .find_map(|e| match *e {
+                            Event::FatalHit {
+                                target: 2, x, y, ..
+                            } => Some((x, y)),
+                            _ => None,
+                        })
+                        .unwrap();
+                    assert_eq!(
+                        (&*death.kind, death.owner, death.x, death.y, death.born),
+                        (
+                            "E1",
+                            yr_sim::OWNER_ENEMY,
+                            position.0,
+                            position.1,
+                            session.sim.tick()
+                        )
+                    );
+                    assert!(
+                        death.x > Fix::from_int(3),
+                        "death uses the moved fatal-hit position"
+                    );
+                }
+                break;
+            }
+        }
+        assert!(died);
+        // Sim updates expire the one-shot even if no frame was drawn.
+        for _ in 0..30 {
+            session.sim.step(&[]);
+        }
+        scene.update(&session, &[], &mut bank);
+        assert!(scene.deaths.is_empty());
+        assert!(EffectScene::default().deaths.is_empty());
+    }
+    // A victim created and reassigned in the fatal tick has no previous pose.
+    session.sim = yr_sim::Sim::new(42);
+    let spawn = |weapon| Command::Spawn {
+        kind,
+        x: Fix::ONE,
+        y: Fix::ONE,
+        loco: yr_sim::terrain::Loco::Foot,
+        speed: Fix::ZERO,
+        hp: 1,
+        armor: 0,
+        weapon,
+    };
+    session.sim.step(&[
+        spawn(yr_sim::WeaponSpec::from_rules(&rules, "M60")),
+        Command::AssignOwner {
+            id: 1,
+            owner: OWNER_PLAYER,
+        },
+    ]);
+    let mut scene = EffectScene::default();
+    scene.remember(&session);
+    assert!(!scene.entities.contains_key(&2));
+    session.sim.step(&[
+        spawn(None),
+        Command::AssignOwner {
+            id: 2,
+            owner: yr_sim::OWNER_ENEMY,
+        },
+        Command::Attack { id: 1, target: 2 },
+    ]);
+    let events = session.sim.drain_events();
+    scene.update(&session, &events, &mut bank);
+    assert_eq!(scene.deaths.len(), 1);
+    assert_eq!(
+        (
+            &*scene.deaths[0].kind,
+            scene.deaths[0].owner,
+            scene.deaths[0].facing
+        ),
+        ("E1", yr_sim::OWNER_ENEMY, 128)
+    );
+}
+
+#[test]
 fn retail_impacts_use_the_fired_weapon_after_shooter_death_and_restore() {
     let dir = PathBuf::from(std::env::var("HOME").unwrap())
         .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");

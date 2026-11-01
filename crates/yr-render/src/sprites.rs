@@ -70,6 +70,12 @@ impl Sequence {
     fn duration(self) -> u64 {
         (self.count as u64).saturating_mul(INFANTRY_FRAME_TICKS)
     }
+
+    fn once(self, facing: usize, elapsed: u64, body_frames: usize) -> Option<usize> {
+        (elapsed < self.duration())
+            .then(|| self.frame(facing, elapsed, body_frames))
+            .flatten()
+    }
 }
 
 struct InfantrySequences {
@@ -78,6 +84,7 @@ struct InfantrySequences {
     walk: Option<Sequence>,
     fire: Option<Sequence>,
     idle: [Option<Sequence>; 2],
+    death: [Option<Sequence>; 2],
 }
 
 impl InfantrySequences {
@@ -212,6 +219,15 @@ impl SpriteBank {
             else {
                 continue;
             };
+            if shp.width == 0
+                || shp.height == 0
+                || shp.width > 256
+                || shp.height > 256
+                || shp.frames.len() > 4096
+                || shp.frames.len() % 2 != 0
+            {
+                continue;
+            }
             let read = |key| sequence.get(key).and_then(Sequence::parse);
             infantry.insert(
                 t.id.to_ascii_uppercase(),
@@ -221,6 +237,7 @@ impl SpriteBank {
                     walk: read("Walk"),
                     fire: read("FireUp"),
                     idle: [read("Idle1"), read("Idle2")],
+                    death: [read("Die1"), read("Die2")],
                 },
             );
         }
@@ -279,6 +296,10 @@ impl SpriteBank {
 
     /// Resolve the actual fired weapon, never the victim's type or current owner.
     pub fn impact_effect(&self, source: u64, damage: i64) -> Option<String> {
+        crate::effects::impact_name(self.fired_warhead(source)?, damage)
+    }
+
+    fn fired_warhead(&self, source: u64) -> Option<&yr_formats::IniSection> {
         let mut matches = self
             .rules
             .weapons
@@ -289,8 +310,48 @@ impl SpriteBank {
             return None;
         }
         let warhead = weapon.warhead.as_deref()?;
-        let section = self.rules_ini.section(warhead)?;
-        crate::effects::impact_name(section, damage)
+        self.rules_ini.section(warhead)
+    }
+
+    /// Ordinary infantry deaths use the lethal weapon's explicit InfDeath.
+    /// Special deaths and unknown sources have no guessed sequence.
+    pub fn infantry_death_sequence(&self, kind: &str, source: u64) -> Option<u8> {
+        let sequence = self.fired_warhead(source)?.get("InfDeath")?.parse().ok()?;
+        self.infantry_death_frame(kind, sequence, 0, 0)?;
+        Some(sequence)
+    }
+
+    fn infantry_death_frame(
+        &self,
+        kind: &str,
+        sequence: u8,
+        facing: u8,
+        age: u64,
+    ) -> Option<usize> {
+        let index = usize::from(sequence.checked_sub(1)?);
+        let data = self.infantry.get(&kind.to_ascii_uppercase())?;
+        data.death.get(index).copied().flatten()?.once(
+            infantry_stand_frame(screen_octant(facing)),
+            age,
+            data.body_frames,
+        )
+    }
+
+    pub fn infantry_death_alive(&self, kind: &str, sequence: u8, age: u64) -> bool {
+        self.infantry_death_frame(kind, sequence, 0, age).is_some()
+    }
+
+    /// One-shot body and matching ground shadow, with the unit's house color.
+    pub fn get_infantry_death(
+        &mut self,
+        kind: &str,
+        sequence: u8,
+        facing: u8,
+        remap: [u8; 3],
+        age: u64,
+    ) -> Option<&Sprite> {
+        let frame = self.infantry_death_frame(kind, sequence, facing, age)?;
+        self.cached_sprite(kind.to_ascii_uppercase(), SpriteFrame::Shp(frame), remap)
     }
 
     pub fn effect_alive(&mut self, name: &str, ticks: u64) -> bool {
@@ -459,6 +520,10 @@ impl SpriteBank {
                 |s| s.frame(octant, animation),
             ))
         };
+        self.cached_sprite(id, frame, remap)
+    }
+
+    fn cached_sprite(&mut self, id: String, frame: SpriteFrame, remap: [u8; 3]) -> Option<&Sprite> {
         let key = (id.clone(), frame.clone(), remap);
         if !self.cache.contains_key(&key) {
             let sprite = self.decode(&id, &frame, remap);
@@ -676,6 +741,7 @@ mod tests {
             walk: Sequence::parse("8,6,6"),
             fire: Sequence::parse("164,6,6"),
             idle: [Sequence::parse("56,15,0,S"), Sequence::parse("71,15,0,E")],
+            death: [Sequence::parse("134,15,0"), Sequence::parse("149,15,0")],
         }
     }
 
@@ -802,6 +868,30 @@ mod tests {
             (14..20).contains(&frame),
             "large clocks wrap within the walk sequence"
         );
+    }
+
+    #[test]
+    fn death_sequences_play_once_and_reject_entire_invalid_ranges() {
+        for value in ["134,15,0", "164,6,6"] {
+            let sequence = Sequence::parse(value).unwrap();
+            for facing in 0..8 {
+                assert!(sequence
+                    .once(facing, sequence.duration() - 1, 400)
+                    .is_some());
+                assert!(sequence.once(facing, sequence.duration(), 400).is_none());
+                assert!(sequence.once(facing, u64::MAX, 400).is_none());
+            }
+        }
+        for value in [
+            format!("{},15,0", usize::MAX),
+            format!("134,{},0", usize::MAX),
+            format!("134,15,{}", usize::MAX),
+            "399,2,0".into(),
+            "360,6,6".into(),
+        ] {
+            let sequence = Sequence::parse(&value).unwrap();
+            assert!(sequence.once(0, 0, 400).is_none(), "{value}");
+        }
     }
 
     #[test]

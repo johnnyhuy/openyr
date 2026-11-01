@@ -257,6 +257,72 @@ fn infantry_animation_matches_retail_sequence_canvases() {
     }
 }
 
+#[test]
+fn infantry_deaths_match_retail_body_shadow_and_house_pixels() {
+    use yr_render::sprites::{SpriteBank, SHADOW_ALPHA};
+    let Some(dir) = install_dir() else { return };
+    let mut fs = AssetFs::open(&dir).unwrap();
+    fs.set_theater(Theater::Temperate);
+    let palette = yr_formats::Palette::parse(fs.read("UNITTEM.PAL").unwrap()).unwrap();
+    let mut bank = SpriteBank::open(dir.to_str().unwrap(), "EB1.MMX").unwrap();
+    for (id, image) in [("E1", "GI.SHP"), ("GGI", "GGI.SHP")] {
+        let shp = yr_formats::ShpFile::parse(fs.read(image).unwrap()).unwrap();
+        for (sequence, start) in [(1, 134), (2, 149)] {
+            for phase in 0..15 {
+                let body = shp.decode_frame_canvas(start + phase).unwrap();
+                let shadow = shp
+                    .decode_frame_canvas(start + phase + shp.frames.len() / 2)
+                    .unwrap();
+                for remap in [[220, 30, 30], [30, 30, 220]] {
+                    for facing in (0..=224u8).step_by(32) {
+                        let s = bank
+                            .get_infantry_death(id, sequence, facing, remap, phase as u64 * 2)
+                            .unwrap();
+                        assert_eq!(
+                            (s.ax, s.ay),
+                            (i32::from(shp.width) / 2, i32::from(shp.height) / 2)
+                        );
+                        for (p, &index) in body.iter().enumerate() {
+                            let expected = if (16..=31).contains(&index) {
+                                let factor = 0.45 + f32::from(index - 16) * 0.055;
+                                [
+                                    (f32::from(remap[0]) * factor).min(255.0) as u8,
+                                    (f32::from(remap[1]) * factor).min(255.0) as u8,
+                                    (f32::from(remap[2]) * factor).min(255.0) as u8,
+                                    255,
+                                ]
+                            } else if index != 0 {
+                                palette.rgba(index)
+                            } else if shadow[p] != 0 {
+                                [0, 0, 0, SHADOW_ALPHA]
+                            } else {
+                                [0; 4]
+                            };
+                            assert_eq!(
+                                s.rgba[p * 4..p * 4 + 4],
+                                expected,
+                                "{id} Die{sequence} phase {phase} pixel {p}"
+                            );
+                        }
+                    }
+                }
+            }
+            for age in [30, 31, u64::MAX] {
+                assert!(bank
+                    .get_infantry_death(id, sequence, 0, [0; 3], age)
+                    .is_none());
+            }
+        }
+    }
+    assert!(bank.infantry_death_sequence("MTNK", 0).is_none());
+    assert!(bank.infantry_death_sequence("E1", u64::MAX).is_none());
+    for sequence in [0, 3, 4, 5, 255] {
+        assert!(bank
+            .get_infantry_death("E1", sequence, 0, [0; 3], 0)
+            .is_none());
+    }
+}
+
 /// Check each resolved layer against independent retail SHP canvases,
 /// including damaged ranges, shadow flags, anchors and production gating.
 #[test]
