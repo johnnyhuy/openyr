@@ -3,6 +3,45 @@
 use crate::{cursor::Kind, session::Session, sidebar::ServiceMode};
 use yr_sim::{Command, Fix, OWNER_PLAYER};
 
+/// Brief command feedback in framebuffer pixels, independent of world zoom.
+pub fn draw_feedback(frame: &mut [u8], width: u32, height: u32, session: &Session, text: &str) {
+    use crate::sidebar::{text::Typeface, Canvas, WIDTH};
+    if (width as usize)
+        .checked_mul(height as usize)
+        .and_then(|n| n.checked_mul(4))
+        != Some(frame.len())
+    {
+        return;
+    }
+    let available = width.saturating_sub(WIDTH + 24).min(512) as i32;
+    if available <= 0 {
+        return;
+    }
+    let mut canvas = Canvas {
+        frame,
+        width,
+        height,
+        face: Typeface(session.sidebar_art.font.as_ref()),
+    };
+    let mut fitted = String::new();
+    for ch in text.chars().take(80) {
+        fitted.push(ch);
+        if canvas.face.width(&fitted) > available {
+            fitted.pop();
+            break;
+        }
+    }
+    canvas.rect(
+        (8, 8),
+        (
+            canvas.face.width(&fitted) + 8,
+            canvas.face.line_height() + 8,
+        ),
+        [0, 0, 0, 255],
+    );
+    canvas.text((12, 12), &fitted, [255, 255, 0, 255], 80);
+}
+
 /// Project a world ground point with the terrain lift used by live art.
 /// Missing cells and callers without terrain retain the flat projection.
 pub fn ground_point(

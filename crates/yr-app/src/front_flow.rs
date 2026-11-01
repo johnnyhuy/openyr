@@ -29,6 +29,7 @@ impl App {
         self.animations = Default::default();
         self.effects = Default::default();
         self.selected.clear();
+        self.groups = Default::default();
         self.pending.clear();
         self.front_preview = None;
         self.map_name = launcher::DEFAULT_MAP.into();

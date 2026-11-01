@@ -86,6 +86,8 @@ cargo run --release -- "/path/to/RA2" EB1.MMX
 ```
 
 Left-click or drag to select. With units selected, left-click to order.
+Ctrl+1-9 assigns unit teams; 1-9 recalls them, Shift+number adds a team to
+the selection, and two presses center the view. [Team behavior](docs/control-groups.md).
 Right-click cancels; right-drag pans. Hold Ctrl+Shift or press A, then left-click to
 attack-move, S to stop, H to harvest, and M to mute/unmute. The sidebar
 queues units with left-click and cancels with right-click. Arrow keys or
