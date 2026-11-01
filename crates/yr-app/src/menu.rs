@@ -53,6 +53,7 @@ pub enum Button {
     Mute,
     ZoomOut,
     ZoomIn,
+    EdgeScroll,
     Accept,
     Decline,
 }
@@ -67,6 +68,7 @@ pub enum Effect {
     Quit,
     Mute,
     Zoom(i16),
+    EdgeScroll,
     Commit(Intent),
     CancelLoad,
     MainMenu,
@@ -94,6 +96,7 @@ pub struct State {
     pub pressed: Option<Button>,
     pub muted: bool,
     pub zoom: u16,
+    pub edge_scroll: bool,
 }
 
 impl Default for State {
@@ -110,6 +113,7 @@ impl Default for State {
             pressed: None,
             muted: false,
             zoom: 100,
+            edge_scroll: false,
         }
     }
 }
@@ -171,6 +175,7 @@ impl State {
                     (Mute, true),
                     (ZoomOut, self.zoom > 25),
                     (ZoomIn, self.zoom < 400),
+                    (EdgeScroll, true),
                 ];
                 if self.front {
                     controls.push((Folder, true));
@@ -268,6 +273,7 @@ impl State {
             (Page::Controls, Mute) => Effect::Mute,
             (Page::Controls, ZoomOut) => Effect::Zoom(-25),
             (Page::Controls, ZoomIn) => Effect::Zoom(25),
+            (Page::Controls, EdgeScroll) => Effect::EdgeScroll,
             (Page::Abort | Page::Result(_), Quit) => Effect::Quit,
             (Page::Abort | Page::Result(_), Restart) => Effect::Restart,
             (Page::Pause | Page::Abort, Resume) => {

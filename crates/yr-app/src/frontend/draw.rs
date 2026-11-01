@@ -208,6 +208,13 @@ pub fn draw(frame: &mut [u8], width: u32, height: u32, art: &Art, scene: Scene<'
             }
             Button::ZoomIn => "Zoom in",
             Button::ZoomOut => "Zoom out",
+            Button::EdgeScroll => {
+                if s.edge_scroll {
+                    "Edge scroll off"
+                } else {
+                    "Edge scroll on"
+                }
+            }
             Button::Accept => art.label("GUI:Yes", "Confirm"),
             Button::Decline => art.label("GUI:No", "Keep current"),
             _ => "",
