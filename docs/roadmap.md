@@ -345,7 +345,8 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       row 37 still show source art where the original control is opaque black.
 - [x] Preserve guarded public Win32 window/control observations and actual
       child exit status in `tools/wine-oracle`, with synthetic geometry,
-      private Edit exclusion, silent-exit and absent-target checks.
+      private Edit exclusion, silent-exit and absent-target checks. Publish
+      the complete fixture before it becomes visible (#150).
 - [ ] Restore a usable original-game reference front menu (#148). The
       2026-11-01 session exits without a verified page, blocking new preview
       bounds and animation timing observations. Existing static captures
