@@ -2,6 +2,69 @@ use super::*;
 use crate::menu::{Button, Effect, Layout, Page, State};
 
 #[test]
+fn retail_front_headings_match_original_renderer_captures() {
+    let dir = std::path::PathBuf::from(std::env::var("HOME").unwrap_or_default())
+        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    if !dir.is_dir() {
+        return;
+    }
+    let fs = yr_assets::AssetFs::open(&dir).unwrap();
+    let art = Art::load(&fs);
+    let preview = load_preview(dir.to_str().unwrap(), "EB1.MMX", 1).unwrap();
+    assert!(preview.authored);
+    let proof = std::env::var_os("OPENYR_TITLE_PROOF").map(std::path::PathBuf::from);
+    if let Some(path) = &proof {
+        std::fs::create_dir_all(path).unwrap();
+    }
+    let mut mismatches = Vec::new();
+    // Original RGBA at (632,0,168,height), including each heading frame.
+    for (name, page, height, expected) in [
+        ("main", Page::Main, 40, 0xe789aaaf10a7f8d1u64),
+        ("single-player", Page::SinglePlayer, 40, 0x29e7b0529ab9bf19),
+        ("skirmish", Page::Skirmish, 37, 0xaf5382b7a6dc6151),
+    ] {
+        let mut state = State {
+            front: true,
+            ..State::default()
+        };
+        state.set(page);
+        let mut pixels = vec![0; 800 * 600 * 4];
+        draw(
+            &mut pixels,
+            800,
+            600,
+            &art,
+            Scene {
+                state: &state,
+                movie: None,
+                preview: matches!(&state.page, Page::Skirmish).then_some(&preview),
+                phase: 0,
+                cursor: (-1.0, -1.0),
+            },
+        );
+        let hash = (0..height)
+            .flat_map(|row| {
+                let at = (row * 800 + 632) * 4;
+                pixels[at..at + 168 * 4].iter().copied()
+            })
+            .fold(0xcbf29ce484222325u64, |h, byte| {
+                (h ^ u64::from(byte)).wrapping_mul(0x100000001b3)
+            });
+        if hash != expected {
+            mismatches.push((name, hash, expected));
+        }
+        if let Some(path) = &proof {
+            std::fs::write(
+                path.join(format!("{name}.png")),
+                yr_render::png::encode_rgba(800, 600, &pixels),
+            )
+            .unwrap();
+        }
+    }
+    assert!(mismatches.is_empty(), "original headings: {mismatches:?}");
+}
+
+#[test]
 fn retail_front_static_regions_match_original_renderer_observations() {
     let dir = std::path::PathBuf::from(std::env::var("HOME").unwrap_or_default())
         .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");

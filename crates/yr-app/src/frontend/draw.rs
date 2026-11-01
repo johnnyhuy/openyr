@@ -78,12 +78,12 @@ pub fn draw(frame: &mut [u8], width: u32, height: u32, art: &Art, scene: Scene<'
     let title = match s.page {
         Page::Main => art.label("GUI:MainMenu", "Main menu"),
         Page::SinglePlayer => art.label("GUI:SinglePlayer", "Solo play"),
-        Page::Skirmish => art.label("GUI:Skirmish", "Match setup"),
+        Page::Skirmish => art.label("GUI:SkirmishGame", "Skirmish Game"),
         Page::Load => art.label("GUI:LoadGame", "Saved matches"),
         Page::Controls => art.label("GUI:Options", "Controls"),
         _ => "OpenYR",
     };
-    centered(&mut c, 632, 9, 168, title, YELLOW);
+    heading(&mut c, 632, if map_top { 3 } else { 9 }, 168, title);
     if s.page == Page::Skirmish {
         centered(
             &mut c,
@@ -278,6 +278,18 @@ fn fit(face: Typeface<'_>, text: &str, width: i32) -> String {
 fn centered(c: &mut Canvas<'_>, x: i32, y: i32, w: i32, text: &str, color: [u8; 4]) {
     let text = fit(c.face, text, w - 12);
     c.text((x + w / 2 - c.face.width(&text) / 2, y), &text, color, 160);
+}
+fn heading(c: &mut Canvas<'_>, x: i32, y: i32, w: i32, text: &str) {
+    let text = fit(c.face, text, w - 12);
+    let Some((tail, _)) = text.char_indices().next_back() else {
+        return;
+    };
+    let x = x + w / 2 - c.face.width(&text) / 2;
+    let prefix = &text[..tail];
+    c.text((x, y), prefix, YELLOW, 160);
+    let advance: i32 = prefix.chars().map(|ch| c.face.advance(ch)).sum();
+    // Captured headings give their final glyph a packed blue component of 24.
+    c.text((x + advance, y), &text[tail..], [255, 255, 24, 255], 1);
 }
 fn picture(c: &mut Canvas<'_>, rect: (i32, i32, i32, i32), w: u32, h: u32, rgba: &[u8]) {
     if w == 0
