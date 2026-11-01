@@ -43,7 +43,7 @@ handles drawing, pointer hits and saved-slot clicks. World zoom has no effect.
 
 The observed normal control uses frame 2. Native hover/pressed phases still use
 frames 3/4 pending controlled comparison. Empty rows use SDBTNBKGD alone.
-The warning sheet currently advances at 15 fps. Entry/exit transitions,
+The warning sheet is anchored at `(670,48)` and currently advances at 15 fps. Entry/exit transitions,
 warning cadence, keyboard focus decoration and movie/shell synchronization
 remain uncalibrated. The source movie advances on its declared rational clock.
 
@@ -101,6 +101,9 @@ not export an image. Native helpers worked when staged inside the prefix's
 C drive; Unix-path invocation failed before producing an entry marker.
 No Z drive mapping or game configuration change was needed. The previously
 permission-blocked macOS screenshot and recording paths were skipped.
+
+The [animation capture observations](front-animation-oracle.md) add eleven
+warning phases and fourteen visible movie phases from the original renderer.
 
 ## Match entry and recovery
 

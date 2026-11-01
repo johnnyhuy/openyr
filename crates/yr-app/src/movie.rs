@@ -182,8 +182,8 @@ fn play(data: Arc<[u8]>, timing: Timing, shared: &Shared) -> Result<(), String> 
         }
     }
 }
-/// Limited-range BT.601. The menu's Y=16 black and Y=235 white must expand
-/// to display black/white; treating these planes as full-range lifts shadows.
+/// Limited-range BT.601 contributions truncated separately toward zero.
+/// Original RGB565 capture comparisons and limits are in formats/bink.md.
 pub fn limited_rgba(planes: &infinitier_bik_decoder::VideoFrame) -> Result<Vec<u8>, String> {
     let (w, h) = (planes.y.width as usize, planes.y.height as usize);
     if w == 0 || h == 0 || w > 1024 || h > 1024 {
@@ -204,17 +204,25 @@ pub fn limited_rgba(planes: &infinitier_bik_decoder::VideoFrame) -> Result<Vec<u
             return Err("Truncated menu movie plane".into());
         }
     }
+    let table = |coefficient: i32, offset: i32| -> [i32; 256] {
+        std::array::from_fn(|value| coefficient * (value as i32 - offset) / 65536)
+    };
+    let luma = table(76309, 16).map(|value| value.max(0));
+    let red_v = table(104597, 128);
+    let green_u = table(25675, 128);
+    let green_v = table(53279, 128);
+    let blue_u = table(132202, 128);
+    let value = |n: i32| n.clamp(0, 255) as u8;
     let mut rgba = Vec::with_capacity(w * h * 4);
     for y in 0..h {
         for x in 0..w {
-            let c = i32::from(planes.y.data[y * planes.y.stride + x]) - 16;
-            let d = i32::from(planes.u.data[(y / 2) * planes.u.stride + x / 2]) - 128;
-            let e = i32::from(planes.v.data[(y / 2) * planes.v.stride + x / 2]) - 128;
-            let value = |n: i32| ((n + 128) >> 8).clamp(0, 255) as u8;
+            let c = luma[usize::from(planes.y.data[y * planes.y.stride + x])];
+            let d = usize::from(planes.u.data[(y / 2) * planes.u.stride + x / 2]);
+            let e = usize::from(planes.v.data[(y / 2) * planes.v.stride + x / 2]);
             rgba.extend([
-                value(298 * c + 409 * e),
-                value(298 * c - 100 * d - 208 * e),
-                value(298 * c + 516 * d),
+                value(c + red_v[e]),
+                value(c - green_u[d] - green_v[e]),
+                value(c + blue_u[d]),
                 255,
             ]);
         }
@@ -226,7 +234,28 @@ pub fn limited_rgba(planes: &infinitier_bik_decoder::VideoFrame) -> Result<Vec<u
 mod tests {
     use super::*;
     #[test]
-    fn limited_range_black_white_and_truncated_planes() {
+    fn retail_signed_terms_match_original_packed_color_samples() {
+        let mut frame = infinitier_bik_decoder::VideoFrame::new(2, 2, false);
+        // Original frame 311 at (3,0)/(160,129), 357 at (432,257), and
+        // frame 365 at (432,256).
+        // The independent YUV decode and original RGB565 capture agree here.
+        for (y, u, v, expected) in [
+            (36, 129, 127, [16, 20, 24]),
+            (100, 116, 175, [168, 60, 72]),
+            (150, 70, 142, [176, 164, 32]),
+            (212, 70, 142, [248, 236, 104]),
+            (14, 125, 134, [8, 0, 0]),
+        ] {
+            frame.y.data.fill(y);
+            frame.u.data.fill(u);
+            frame.v.data.fill(v);
+            let rgba = limited_rgba(&frame).unwrap();
+            let packed = [rgba[0] & 0xf8, rgba[1] & 0xfc, rgba[2] & 0xf8];
+            assert_eq!(packed, expected, "original color for Y={y}, U={u}, V={v}");
+        }
+    }
+    #[test]
+    fn limited_range_packed_black_white_and_truncated_planes() {
         let mut frame = infinitier_bik_decoder::VideoFrame::new(2, 2, false);
         frame.y.data.fill(16);
         frame.u.data.fill(128);
@@ -243,7 +272,7 @@ mod tests {
             .as_chunks::<4>()
             .0
             .iter()
-            .all(|p| *p == [255, 255, 255, 255]));
+            .all(|p| [p[0] & 0xf8, p[1] & 0xfc, p[2] & 0xf8, p[3]] == [248, 252, 248, 255]));
         frame.u.data.clear();
         assert!(limited_rgba(&frame).is_err());
     }

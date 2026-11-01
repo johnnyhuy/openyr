@@ -31,6 +31,7 @@ fn retail_video_planes_match_optional_independent_oracle_and_export_rgb_frames()
         .map(|p| std::io::BufReader::new(std::fs::File::open(p).unwrap()));
     let mut hash = 0xcbf29ce484222325u64;
     let mut decoded = 0;
+    let mut original_mismatches = Vec::new();
     let mut rgb_max = 0u8;
     let mut rgb_error = 0u64;
     let proof = std::env::var_os("OPENYR_FRONT_PROOF").map(std::path::PathBuf::from);
@@ -82,28 +83,62 @@ fn retail_video_planes_match_optional_independent_oracle_and_export_rgb_frames()
             sequence: decoded as u64,
             rgba,
         };
-        if let Some(path) = &proof {
-            let all = std::env::var_os("OPENYR_FRONT_VIDEO").is_some();
-            if all || [0, 1, 15, 60, 120, 240, 300, 430].contains(&decoded) {
-                let state = crate::menu::State {
-                    front: true,
-                    page: crate::menu::Page::Main,
-                    ..Default::default()
-                };
-                let mut composed = vec![0; 800 * 600 * 4];
-                crate::frontend::draw(
-                    &mut composed,
-                    800,
-                    600,
-                    &shell,
-                    crate::frontend::Scene {
-                        state: &state,
-                        movie: Some(&movie_frame),
-                        preview: None,
-                        phase: decoded as u64,
-                        cursor: (-1.0, -1.0),
-                    },
-                );
+        // Original renderer fingerprints cover the visible 632x568 movie area.
+        // The lower two source rows are covered by the retail status strip.
+        let original_hash = match decoded {
+            16 => Some(0x8668bbcc0ff167bdu64),
+            18 => Some(0xd2940c751d352169u64),
+            206 => Some(0x0a3d6c5fac68d625u64),
+            224 => Some(0x0ccd8879e0edad79u64),
+            311 => Some(0xcec89b37cd7756e9u64),
+            319 => Some(0xb9bfd5bdad43b9a9),
+            326 => Some(0xeb9a5778a57cbad1),
+            337 => Some(0xa78f86236e9a6b0d),
+            345 => Some(0xba7e5c93a034e11d),
+            351 => Some(0x5fbc84c31b91a919),
+            357 => Some(0xb6a3bdfc7f1f86cd),
+            365 => Some(0x34a1b33de6baa2cd),
+            366 => Some(0x0b52ee6c313addbd),
+            371 => Some(0xc2998403de658965),
+            _ => None,
+        };
+        let all = proof.is_some() && std::env::var_os("OPENYR_FRONT_VIDEO").is_some();
+        let sampled = [0, 1, 15, 60, 120, 240, 300, 430].contains(&decoded);
+        if original_hash.is_some() || (proof.is_some() && (all || sampled)) {
+            let state = crate::menu::State {
+                front: true,
+                page: crate::menu::Page::Main,
+                ..Default::default()
+            };
+            let mut composed = vec![0; 800 * 600 * 4];
+            crate::frontend::draw(
+                &mut composed,
+                800,
+                600,
+                &shell,
+                crate::frontend::Scene {
+                    state: &state,
+                    movie: Some(&movie_frame),
+                    preview: None,
+                    phase: decoded as u64,
+                    cursor: (-1.0, -1.0),
+                },
+            );
+            if let Some(expected) = original_hash {
+                let actual = composed
+                    .as_chunks::<{ 800 * 4 }>()
+                    .0
+                    .iter()
+                    .take(568)
+                    .flat_map(|row| row[..632 * 4].iter())
+                    .fold(0xcbf29ce484222325u64, |h, &byte| {
+                        (h ^ u64::from(byte)).wrapping_mul(0x100000001b3)
+                    });
+                if actual != expected {
+                    original_mismatches.push((decoded, actual, expected));
+                }
+            }
+            if let Some(path) = &proof {
                 if all {
                     let folder = path.join("movie-sequence");
                     std::fs::create_dir_all(&folder).unwrap();
@@ -113,7 +148,7 @@ fn retail_video_planes_match_optional_independent_oracle_and_export_rgb_frames()
                     )
                     .unwrap();
                 }
-                if [0, 1, 15, 60, 120, 240, 300, 430].contains(&decoded) {
+                if sampled || original_hash.is_some() {
                     std::fs::write(
                         path.join(format!("native-movie-frame-{decoded:03}.png")),
                         yr_render::png::encode_rgba(800, 600, &composed),
@@ -134,6 +169,10 @@ fn retail_video_planes_match_optional_independent_oracle_and_export_rgb_frames()
         decoded += 1;
     }
     assert_eq!(decoded, meta.frames.len());
+    assert!(
+        original_mismatches.is_empty(),
+        "original movie mismatches: {original_mismatches:?}"
+    );
     if let Some(oracle) = &mut oracle {
         assert_eq!(oracle.read(&mut [0]).unwrap(), 0);
     }
