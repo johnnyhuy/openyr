@@ -14,6 +14,12 @@ _Static_assert(sizeof(DWORD) == 4 && sizeof(RECT) == 16 && sizeof(POINT) == 8, "
 #ifndef LAUNCH
 #define LAUNCH 0
 #endif
+#ifndef LAUNCH_IMAGE
+#define LAUNCH_IMAGE TARGET_IMAGE
+#endif
+#ifndef OBSERVATION_MS
+#define OBSERVATION_MS 60000
+#endif
 #ifndef TARGET_DIRECTORY
 #define TARGET_DIRECTORY "C:\\Westwood\\RA2"
 #endif
@@ -26,7 +32,7 @@ IMP DWORD CALL GetLastError(void);
 IMP HANDLE CALL OpenProcess(DWORD, BOOL, DWORD);
 IMP BOOL CALL CloseHandle(HANDLE);
 IMP BOOL CALL QueryFullProcessImageNameA(HANDLE, DWORD, char *, DWORD *);
-static HANDLE output, root, page;
+static HANDLE output, root, page, process_kernel;
 static DWORD total, matched, roots, pages, target_pid, launched_pid;
 static POINT origin;
 static BOOL (CALL *enumerate)(BOOL (CALL *)(HANDLE, LPARAM), LPARAM);
@@ -72,6 +78,31 @@ static BOOL equal(const char *a, const char *b) {
 static void rectangle(RECT r) {
     signed_number(r.left); put(","); signed_number(r.top); put(",");
     signed_number(r.right); put(","); signed_number(r.bottom);
+}
+typedef struct {
+    DWORD size, usage, pid, heap, module, threads, parent;
+    long priority;
+    DWORD flags;
+    char exe[260];
+} PROCESS_ENTRY;
+_Static_assert(sizeof(PROCESS_ENTRY) == 296, "PROCESSENTRY32 ABI");
+static DWORD parent_pid(DWORD wanted) {
+    HANDLE (CALL *snapshot_process)(DWORD, DWORD) =
+        (void *)GetProcAddress(process_kernel, "CreateToolhelp32Snapshot");
+    BOOL (CALL *first)(HANDLE, PROCESS_ENTRY *) =
+        (void *)GetProcAddress(process_kernel, "Process32First");
+    BOOL (CALL *next)(HANDLE, PROCESS_ENTRY *) =
+        (void *)GetProcAddress(process_kernel, "Process32Next");
+    if (!snapshot_process || !first || !next) ExitProcess(2);
+    HANDLE snap = snapshot_process(2, 0);
+    if (snap == (HANDLE)(__UINTPTR_TYPE__)-1) ExitProcess(5);
+    PROCESS_ENTRY entry; entry.size = sizeof(entry);
+    DWORD parent = 0;
+    for (BOOL ok = first(snap, &entry); ok; ok = next(snap, &entry)) {
+        if (entry.pid == wanted) { parent = entry.parent; break; }
+    }
+    CloseHandle(snap);
+    return parent;
 }
 static BOOL CALL find_root(HANDLE w, LPARAM unused) {
     (void)unused; total++;
@@ -123,18 +154,24 @@ static BOOL CALL inventory(HANDLE w, LPARAM unused) {
 }
 static BOOL snapshot(BOOL report) {
     total = matched = roots = pages = target_pid = 0; root = page = 0;
+    origin.x = origin.y = 0;
     if (!enumerate(find_root, 0)) { put("EnumWindows failed\n"); ExitProcess(5); }
     if (report) {
         put("total_windows="); number(total); put(" matched_image_windows="); number(matched);
         put(" eligible_roots="); number(roots); put("\n");
     }
-    if (roots != 1 || (launched_pid && target_pid != launched_pid)) return 0;
+    if (roots != 1 || (launched_pid && target_pid != launched_pid &&
+                      parent_pid(target_pid) != launched_pid)) return 0;
     if (!children(root, find_page, 0) || pages != 1 || !client_to_screen(page, &origin)) return 0;
     return 1;
 }
 static void report_page(void) {
     put("verified target="); put(TARGET_IMAGE); put(" pid="); number(target_pid);
     put(" page_client=800,600\n");
+    if (launched_pid) {
+        put("launcher_pid="); number(launched_pid); put(" target_parent_pid=");
+        number(parent_pid(target_pid)); put("\n");
+    }
     if (!children(root, inventory, 0)) { put("control inventory failed\n"); ExitProcess(5); }
 }
 typedef struct {
@@ -150,6 +187,7 @@ void mainCRTStartup(void) {
     put("OpenYR public UI observer; no input, game code or process memory reads\n");
     HANDLE user = LoadLibraryA("user32.dll"), kernel = LoadLibraryA("kernel32.dll");
     if (!user || !kernel) ExitProcess(2);
+    process_kernel = kernel;
 #define API(target, name) target = (void *)GetProcAddress(user, name); if (!target) ExitProcess(2)
     API(enumerate, "EnumWindows"); API(children, "EnumChildWindows");
     API(window_pid, "GetWindowThreadProcessId"); API(visible, "IsWindowVisible");
@@ -172,24 +210,31 @@ void mainCRTStartup(void) {
     void (CALL *sleep_ms)(DWORD) = (void *)GetProcAddress(kernel, "Sleep");
     if (!create || !exit_code || !wait || !ticks || !sleep_ms) ExitProcess(2);
     STARTUP startup = {0}; PROCESS child = {0}; startup.size = sizeof(startup);
-    char command[] = "\"" TARGET_IMAGE "\"";
-    if (!create(TARGET_IMAGE, command, 0, 0, 0, 0, 0, TARGET_DIRECTORY, &startup, &child)) {
+    char command[] = "\"" LAUNCH_IMAGE "\"";
+    if (!create(LAUNCH_IMAGE, command, 0, 0, 0, 0, 0, TARGET_DIRECTORY, &startup, &child)) {
         put("CreateProcess failed error="); number(GetLastError()); put("\n"); ExitProcess(6);
     }
-    launched_pid = child.pid; put("created target pid="); number(child.pid); put("\n");
-    DWORD start = ticks();
+    launched_pid = child.pid; put("created launcher="); put(LAUNCH_IMAGE);
+    put(" pid="); number(child.pid); put("\n");
+    DWORD start = ticks(); BOOL reported_exit = 0;
     for (;;) {
         if (snapshot(0)) { report_page(); CloseHandle(child.thread); CloseHandle(child.process); ExitProcess(0); }
         DWORD status = wait(child.process, 0);
         if (status == 0) {
             DWORD code = 0;
             if (!exit_code(child.process, &code)) { put("GetExitCodeProcess failed\n"); ExitProcess(5); }
-            put("target exited without verified page; child_exit_code="); number(code); put("\n");
-            CloseHandle(child.thread); CloseHandle(child.process); ExitProcess(4);
+            if (equal(LAUNCH_IMAGE, TARGET_IMAGE) || code != 0) {
+                put("target exited without verified page; child_exit_code="); number(code); put("\n");
+                CloseHandle(child.thread); CloseHandle(child.process); ExitProcess(4);
+            }
+            if (!reported_exit) {
+                put("launcher exited; launcher_exit_code=0; still observing target\n");
+                reported_exit = 1;
+            }
         }
-        if (status != 258) { put("process wait failed\n"); ExitProcess(5); }
-        if ((DWORD)(ticks() - start) >= 60000) {
-            put("observation deadline reached; child still running; no termination sent\n");
+        if (status != 0 && status != 258) { put("process wait failed\n"); ExitProcess(5); }
+        if ((DWORD)(ticks() - start) >= OBSERVATION_MS) {
+            put("observation deadline reached; no termination sent; inspect existing processes\n");
             CloseHandle(child.thread); CloseHandle(child.process); ExitProcess(7);
         }
         sleep_ms(200);

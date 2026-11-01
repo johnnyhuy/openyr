@@ -44,15 +44,19 @@ def build(out, prefix):
     subprocess.run([linker, "/lib", "/machine:x86", "/def:" + str(definition),
                     "/out:" + str(library)], check=True)
     fixture = {"TARGET_IMAGE": r"C:\openyr-oracle\fixture32.exe",
+               "LAUNCH_IMAGE": r"C:\openyr-oracle\fixture-launcher32.exe",
                "TARGET_DIRECTORY": r"C:\openyr-oracle"}
     no_window = {"TARGET_IMAGE": r"C:\openyr-oracle\no-window32.exe",
                  "TARGET_DIRECTORY": r"C:\openyr-oracle"}
     variants = [
         ("observe32", "observer.c", {}),
-        ("launch32", "observer.c", {"LAUNCH": 1}),
+        ("launch32", "observer.c", {"LAUNCH": 1,
+                                    "LAUNCH_IMAGE": r"C:\Westwood\RA2\RA2MD.exe",
+                                    "OBSERVATION_MS": 180000}),
         ("fixture-observe32", "observer.c", fixture),
         ("fixture-launch32", "observer.c", dict(fixture, LAUNCH=1)),
         ("fixture32", "fixture.c", {}),
+        ("fixture-launcher32", "fixture.c", {"BOOTSTRAP": 1}),
         ("no-window32", "fixture.c", {"NO_WINDOW": 1}),
         ("no-window-observe32", "observer.c", no_window),
         ("no-window-launch32", "observer.c", dict(no_window, LAUNCH=1)),
@@ -71,7 +75,12 @@ def build(out, prefix):
                    for name, size in IMPORTS.items()]
         subprocess.run([linker, "/entry:mainCRTStartup", "/subsystem:console", "/nodefaultlib",
                         "/machine:x86", "/out:" + str(exe), str(obj), str(library), *aliases], check=True)
-        shutil.copy2(exe, destination / exe.name)
+        staged = destination / ("." + exe.name + "." + str(os.getpid()) + ".tmp")
+        try:
+            shutil.copy2(exe, staged)
+            staged.replace(destination / exe.name)
+        finally:
+            staged.unlink(missing_ok=True)
         binaries[exe.name] = digest(exe)
         print("Built and staged " + exe.name, flush=True)
     receipt = {"sources": {p.name: digest(p) for p in [*SOURCE.glob("*.c"), SOURCE / "oracle.py"]},
@@ -108,6 +117,12 @@ def verify(args):
                 "class=Edit", "label_key=GUI:FixtureHeading"]
     if not all(value in text for value in expected):
         raise RuntimeError("Synthetic control geometry or metadata differs")
+    lineage = [line for line in text.splitlines() if line.startswith("launcher_pid=")]
+    if len(lineage) != 1:
+        raise RuntimeError("Synthetic launcher lineage was not recorded")
+    launcher, parent = [int(field.split("=")[1]) for field in lineage[0].split()]
+    if not launcher or launcher != parent:
+        raise RuntimeError("UI target did not belong to the launched bootstrap")
     if "PRIVATE_FIXTURE_VALUE_7d39" in text:
         raise RuntimeError("Observer disclosed an edit value")
     silent = run_helper("no-window-launch32", args, "fixture-silent-exit")
@@ -116,7 +131,7 @@ def verify(args):
     absent = run_helper("no-window-observe32", args, "fixture-absent")
     if absent.returncode != 4 or b"eligible_roots=0" not in absent.stdout:
         raise RuntimeError("Absent target was not rejected")
-    print("PASS: own UI geometry, private edit exclusion, silent-exit detection and absent-target guard", flush=True)
+    print("PASS: bootstrap lineage, own UI geometry, private edit exclusion, silent-exit detection and absent-target guard", flush=True)
 
 
 def main():

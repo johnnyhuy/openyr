@@ -53,13 +53,7 @@ pub fn draw(frame: &mut [u8], width: u32, height: u32, art: &Art, scene: Scene<'
     }
     if map_top {
         if let Some(map) = scene.preview {
-            picture(
-                &mut c,
-                (644, 40, 144, 140),
-                map.width,
-                map.height,
-                &map.rgba,
-            );
+            map_preview(&mut c, map);
         }
     } else if let Some(im) = art
         .warning
@@ -291,6 +285,47 @@ fn heading(c: &mut Canvas<'_>, x: i32, y: i32, w: i32, text: &str) {
     // Captured headings give their final glyph a packed blue component of 24.
     c.text((x + advance, y), &text[tail..], [255, 255, 24, 255], 1);
 }
+fn map_preview(c: &mut Canvas<'_>, map: &super::Preview) {
+    // Public UI measurements and renderer samples: formats/front-preview.md.
+    let (x, y, width, height) = (644, 37, 145, 113);
+    c.rect((x, y), (width, height), [0, 0, 0, 255]);
+    if map.width == 0
+        || map.height == 0
+        || (map.width as usize)
+            .checked_mul(map.height as usize)
+            .and_then(|n| n.checked_mul(4))
+            != Some(map.rgba.len())
+    {
+        return;
+    }
+    let (sw, sh) = (u64::from(map.width), u64::from(map.height));
+    let (cw, ch) = (width as u64, height as u64);
+    let (tw, th) = if sw * ch >= sh * cw {
+        (cw - 1, sh * cw / sw)
+    } else {
+        (sw * ch / sh, ch - 1)
+    };
+    if tw == 0 || th == 0 {
+        return;
+    }
+    let mut image = Image {
+        width: tw as u32,
+        height: th as u32,
+        pixels: Vec::with_capacity((tw * th * 4) as usize),
+    };
+    for dy in 0..th {
+        for dx in 0..tw {
+            let (sx, sy) = (dx * sw / tw, dy * sh / th);
+            let at = ((sy * sw + sx) * 4) as usize;
+            image.pixels.extend_from_slice(&map.rgba[at..at + 4]);
+        }
+    }
+    c.image(
+        (x + (width - tw as i32) / 2, y + (height - th as i32) / 2),
+        &image,
+    );
+}
+
 fn picture(c: &mut Canvas<'_>, rect: (i32, i32, i32, i32), w: u32, h: u32, rgba: &[u8]) {
     if w == 0
         || h == 0

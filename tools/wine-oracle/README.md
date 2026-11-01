@@ -31,21 +31,26 @@ python3 tools/wine-oracle/oracle.py observe
 python3 tools/wine-oracle/oracle.py launch
 ```
 
-`verify` launches only the tool's own synthetic fixtures. The positive fixture
-has a known dialog, heading, panel and private Edit value. Assertions check
-exact geometry and omission of the Edit value. A second fixture exits zero
+`verify` launches only the tool's own synthetic fixtures. A bootstrap starts
+the positive UI fixture, which has a known dialog, heading, panel and private
+Edit value. Assertions check actual parent PID, exact geometry and omission
+of the Edit value. A second fixture exits zero
 without creating a window; the observer must report failure with the actual
 child exit code. An absent-target probe must also fail.
 
-`observe` reads an already-running original. `launch` starts the exact original
-image with `CreateProcessA`, then polls public windows every 200 milliseconds
-until it observes the verified page, the child exits, or 60 seconds elapse.
+`observe` reads an already-running original. `launch` starts the installed
+`C:\Westwood\RA2\RA2MD.exe` with `CreateProcessA` and observes its
+`C:\Westwood\RA2\gamemd.exe` child. Public process snapshots verify the
+parent PID as well as the exact target image path. It polls every 200
+milliseconds until it observes the verified page or 180 seconds elapse.
+An intro window alone is not the menu page. A launcher that exits zero can
+leave its game child running, so that exit does not end observation.
 The deadline starts after process creation. Wine startup and individual API
 calls can add wall time. At a deadline the child is left running. Poll or
 observe the existing process before deciding whether another launch is needed.
 A successful snapshot does not prove the page remains open afterward.
 
-All commands rebuild and stage only these generated helpers in
+All commands rebuild and atomically stage the nine generated helpers in
 `C:\openyr-oracle`. `build` stops after that step. Defaults use
 `~/Games/RA2YR/prefix` and its bundled Wine. `--prefix`, `--wine` and `--out`
 override those paths. The prefix must already exist. Files, stdout/stderr,
@@ -70,7 +75,7 @@ synthetic fixture closes its own window after five seconds.
 | 4 | No verified page, existing target on launch, or child exited first |
 | 5 | Observation or process-status API failed |
 | 6 | Original process creation failed |
-| 7 | Observation deadline, child still running |
+| 7 | Observation deadline; existing processes left alone |
 
 Process status comes from
 [WaitForSingleObject](https://learn.microsoft.com/en-us/windows/win32/api/synchapi/nf-synchapi-waitforsingleobject)
@@ -78,20 +83,31 @@ and [GetExitCodeProcess](https://learn.microsoft.com/en-us/windows/win32/api/pro
 Window ownership uses
 [GetWindowThreadProcessId](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getwindowthreadprocessid)
 and [QueryFullProcessImageNameA](https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-queryfullprocessimagenamea).
+Launch lineage uses
+[Process32First](https://learn.microsoft.com/en-us/windows/win32/api/tlhelp32/nf-tlhelp32-process32first)
+and the public process snapshot's parent PID field.
 Geometry uses
 [GetClientRect](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getclientrect),
 [GetWindowRect](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getwindowrect)
 and [ClientToScreen](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-clienttoscreen).
 These are logical UI coordinates, not calibrated macOS display pixels.
 
-## Current reference failure
+## Original launcher observations
 
-On 2026-11-01 the supported game launcher and a public child-process launcher
-both failed to expose a usable front menu. The child launcher reported actual
-Windows exit code zero. Read-only probes found no eligible game root. A
-separate synthetic Win32 window could be created and destroyed successfully.
-Wine service-start timeouts appeared, but their causal role is unknown.
-The recovery work is [#148](https://github.com/johnnyhuy/openyr/issues/148).
+On 2026-11-01 direct gamemd.exe launches exited zero without a usable menu.
+Starting the installed RA2MD.exe instead produced a live gamemd.exe, followed
+by Main Menu after the intro. Its public parent PID matched the launcher.
+Single Player, Skirmish and the map chooser were reached through their
+observed controls. The internal reason for the different startup outcomes
+was not inspected or inferred. That session supplied fresh preview evidence.
+
+A later stopped-state run of this tool started the launcher and game but
+reached its 180-second observation deadline (exit 7). A separate observation
+of that same live process found zero windows (exit 4). Wine reported that
+its explorer window driver could not load. Both original configuration files
+still had their original SHA256 values. The processes were not restarted
+because of the deadline. Repeatable startup remains open in #148; the
+successful earlier session does not establish that every startup works.
 
 The installed third-party display wrapper accepted a per-process
 `CNC_DDRAW_CONFIG_FILE` path. A copied configuration selecting GDI/windowed
@@ -106,14 +122,16 @@ Its [setup guide](https://github.com/FunkyFr3sh/cnc-ddraw) requires the game to
 use fullscreen while the wrapper controls windowed output. An earlier `-win`
 experiment also failed; it is not a recommended recovery step.
 
-Existing original renderer images remain valid static evidence. Their eleven
-Skirmish preview-edge differences do not uniquely establish the entire client
-rectangle. #144 remains open. No rectangle or individual-pixel patch follows
-from this startup investigation. Normal warning cadence and movie/shell
-synchronization also remain uncalibrated. Earlier irregular PrintScreen
-exports cannot establish wall-clock timing.
+Fresh public UI measurements established Skirmish's 145x113 preview client
+at `(644,37)`. Original renderer crops then calibrated its black background,
+landscape/portrait fitting and sampling. See
+[front-preview.md](../../docs/formats/front-preview.md). Those measurements
+resolve #144 and #151; the earlier eleven pixels alone were insufficient.
+Numbered markers and modal heading colors remain in #152/#153. Normal warning
+cadence and movie/shell synchronization also remain uncalibrated. Earlier
+irregular PrintScreen exports cannot establish wall-clock timing.
 
 Previously permission-blocked `screencapture -x` and `screencapture -V` paths
 were skipped without retrying. This non-visual diagnostic uses terminal
-recordings and synthetic public UI observations. It provides no new original
-renderer pixel or animation-timing proof.
+recordings and synthetic public UI observations. Separate safe original
+renderer crops establish preview pixels, not animation timing.
