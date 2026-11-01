@@ -30,6 +30,14 @@ jobs:
       - name: Format
         run: cargo fmt --all -- --check
 
+      - name: Build public Win32 observation helpers
+        run: |
+          python3 -m py_compile tools/wine-oracle/oracle.py
+          mkdir -p "$RUNNER_TEMP/wine-oracle-prefix/drive_c"
+          python3 tools/wine-oracle/oracle.py build \
+            --prefix "$RUNNER_TEMP/wine-oracle-prefix" \
+            --out "$RUNNER_TEMP/wine-oracle-build"
+
       - name: Clippy (warnings denied)
         run: cargo clippy --workspace --all-targets -- -D warnings
 

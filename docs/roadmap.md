@@ -343,6 +343,14 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       heading regions match original exports (`docs/formats/front-headings.md`).
 - [ ] Calibrate the Skirmish preview client edge (#144). Eleven pixels on
       row 37 still show source art where the original control is opaque black.
+- [x] Preserve guarded public Win32 window/control observations and actual
+      child exit status in `tools/wine-oracle`, with synthetic geometry,
+      private Edit exclusion, silent-exit and absent-target checks. Publish
+      the complete fixture before it becomes visible (#150).
+- [ ] Restore a usable original-game reference front menu (#148). The
+      2026-11-01 session exits without a verified page, blocking new preview
+      bounds and animation timing observations. Existing static captures
+      remain valid; normal/GDI and temporary 800x600 attempts failed.
 - [ ] Native menu and match flow (#96): original-style main menu, skirmish
       setup/map preview, saved matches, pause/resume, save/load, restart,
       options and quit. Add Won/Lost screens, loading/error feedback and
