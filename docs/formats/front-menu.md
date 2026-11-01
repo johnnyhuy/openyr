@@ -70,7 +70,8 @@ RGB565 output: red and blue retain five high bits, green retains six.
 The compositor applies this truncation after drawing the front shell, movie
 and text. Asset decoding and world rendering retain their existing precision.
 Button labels match with a two-pixel left inset relative to the art's center
-and rounded-up horizontal and vertical centering. The title begins at y=9. Yellow button
+and rounded-up horizontal and vertical centering. The tall header title begins
+at y=9; the compact Skirmish map header uses y=3. Yellow button
 text presents as `(248,252,0)`. All five enabled button images compared across
 Main and Single Player match the captured original pixels exactly.
 
@@ -86,11 +87,16 @@ independent palette/SHP decode checks.
 The initial front page no longer paints a keyboard underline or idle help
 text. Explicit native keyboard navigation retains its provisional focus cue;
 pointer press and page changes hide it. A captured original Tab input did not
-establish a focus change, so it does not calibrate that cue. The aligned main
-title still differs on 29 pixels by a blue component of 24. Unsupported
-actions remain visibly disabled and the version strip identifies OpenYR.
-These deliberate differences, broader setup, animation timing and physical
-macOS interaction remain in #96 and #97.
+establish a focus change, so it does not calibrate that cue.
+
+The heading correction in #142/#143 matches Main Menu, Single Player and
+Skirmish Game, including the observed final glyph color. The native regression
+adds three complete heading regions to the thirteen static rectangles above.
+The [heading observations](front-headings.md) record the masks, source labels,
+coordinates and limits. Eleven preview-edge pixels remain different below
+the Skirmish heading (#144). Unsupported actions remain visibly disabled and
+the version strip identifies OpenYR. Broader setup, animation timing and
+physical macOS interaction remain in #96 and #97.
 
 The original capture path used
 [SendInput](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-sendinput)

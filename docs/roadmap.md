@@ -338,6 +338,11 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
 - [x] Keep retail menu-load test waits consistent (#138): the in-match test
       uses the front-menu test's bounded 180-second budget for reconstruction
       while retaining all save/load, cancellation and state assertions.
+- [x] Match captured front menu headings (#142, #143): final glyph color,
+      authored Skirmish Game caption and compact-header baseline. Three native
+      heading regions match original exports (`docs/formats/front-headings.md`).
+- [ ] Calibrate the Skirmish preview client edge (#144). Eleven pixels on
+      row 37 still show source art where the original control is opaque black.
 - [ ] Native menu and match flow (#96): original-style main menu, skirmish
       setup/map preview, saved matches, pause/resume, save/load, restart,
       options and quit. Add Won/Lost screens, loading/error feedback and
