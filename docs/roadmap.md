@@ -353,6 +353,11 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       Shared ground projection keeps targets at the world viewport center
       across supported scales/zooms and three layouts; click/box selection,
       sim/save invariance and retail before/after framing are checked.
+- [x] Unit team shortcuts (#146, #97): Ctrl+1-9 assignment, surviving owned
+      unit recall, Shift additive selection, double-press camera centering and
+      visible feedback. Repeat/modal/focus guards and match replacement keep
+      input isolated; grouping preserves match save bytes. Native policies and
+      physical-input limits are in `docs/control-groups.md`.
 - [ ] Complete world interaction and desktop UX (#97): consistent selection,
       supported control groups/hotkeys, hover/target/order feedback, bounded
       camera movement and configurable edge scrolling. Clear held input on

@@ -11,7 +11,7 @@ pub(crate) struct Image {
 
 #[derive(Default)]
 pub struct SidebarArt {
-    pub(super) font: Option<UnicodeFont>,
+    pub(crate) font: Option<UnicodeFont>,
     pub(super) credits: Option<Image>,
     pub(super) top: Option<Image>,
     pub(super) radar: Vec<Image>,

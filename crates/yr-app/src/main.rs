@@ -3,7 +3,8 @@
 //! Usage: `openyr <gamedir> <map> [scale]`
 //! Left-click / box-drag selects own units. With units selected, left-click
 //! moves or attacks; right-click cancels. `A` then left-click = attack-move, `S` stop,
-//! `H` harvest, right-drag / arrows pan, wheel or +/- zoom,
+//! `H` harvest, Ctrl+1-9 assigns teams, 1-9 recalls, two presses center,
+//! Shift+number adds a team; right-drag / arrows pan, wheel or +/- zoom,
 //! K toggles repair, L toggles sell, M toggles audio, F5 saves, F9 loads, Esc pauses. Sidebar tabs select a category.
 //! Left-click a cameo to queue it at the
 //! war factory/barracks/construction yard, right-click cancels (refund). A finished
@@ -11,6 +12,7 @@
 //! green ghost; right-click or Esc backs out of placement (issue #46). Orders go through
 //! `yr_sim::Command` only, the UI never mutates sim state directly (issue #15).
 
+mod control_groups;
 #[cfg(test)]
 mod death_tests;
 mod front_flow;
@@ -98,6 +100,7 @@ struct App {
     effects: yr_app::effects::EffectScene,
     view: View,
     selected: BTreeSet<u32>,
+    groups: control_groups::ControlGroups,
     pending: Vec<Command>,
     attack_move: bool,
     shift: bool,
@@ -176,6 +179,7 @@ impl App {
     }
 
     fn select_at(&mut self, pos: (f64, f64), additive: bool) {
+        self.groups.interrupt();
         let Some(cell) = self.window_to_cell(pos) else {
             return;
         };
@@ -201,6 +205,7 @@ impl App {
     }
 
     fn select_box(&mut self, a: (f64, f64), b: (f64, f64), additive: bool) {
+        self.groups.interrupt();
         if !additive {
             self.selected.clear();
         }
@@ -300,6 +305,7 @@ impl App {
     }
 
     fn cancel_mode_or_selection(&mut self) {
+        self.groups.interrupt();
         if self.placing.take().is_none()
             && self.service_mode == ServiceMode::None
             && !self.attack_move
@@ -314,6 +320,7 @@ impl App {
     fn focus_changed(&mut self, focused: bool) {
         self.pointer.focused = focused;
         if !focused {
+            self.groups.interrupt();
             self.pointer.inside = false;
             self.keys.clear();
             self.shift = false;
@@ -944,6 +951,9 @@ impl App {
             ];
             session.radar.draw_viewport(frame, fw, fh, corners);
             sidebar::draw_tooltip(frame, fw, fh, session, self.sidebar_category, self.cursor);
+            if let Some(message) = self.groups.message(Instant::now()) {
+                yr_app::interaction::draw_feedback(frame, fw, fh, session, message);
+            }
         }
         // Box-select rubber band.
         if let (Some(a), false) = (self.left_down, self.right_panning) {
@@ -1234,7 +1244,7 @@ impl ApplicationHandler for App {
                 return;
             }
         }
-        println!("OpenYR: left-click select/order, box select, right-click cancel, A=attack-move, S=stop, H=harvest, K=repair, L=sell, M=mute, F5=save, F9=load, Esc=pause, right-drag/arrows pan, wheel zoom; sidebar: left-click build or place a ready structure, right-click cancel");
+        println!("OpenYR: left-click select/order, box select, Ctrl+1-9=assign team, 1-9=recall (twice=center), Shift+number=add team, right-click cancel, A=attack-move, S=stop, H=harvest, K=repair, L=sell, M=mute, F5=save, F9=load, Esc=pause, right-drag/arrows pan, wheel zoom; sidebar: left-click build or place a ready structure, right-click cancel");
         window.request_redraw();
         self.window = Some(window);
         self.pixels = Some(pixels);
@@ -1419,8 +1429,12 @@ impl ApplicationHandler for App {
             }
             WindowEvent::KeyboardInput { event, .. } => {
                 if let PhysicalKey::Code(code) = event.physical_key {
+                    if self.group_key(code, event.state, event.repeat, Instant::now()) {
+                        return;
+                    }
                     match event.state {
                         ElementState::Pressed => {
+                            self.groups.interrupt();
                             self.keys.insert(code);
                             match code {
                                 KeyCode::Escape if !event.repeat => {
@@ -1555,6 +1569,7 @@ fn new_app(gamedir: String, map_name: String, scale: u32) -> App {
             dirty: true,
         },
         selected: BTreeSet::new(),
+        groups: Default::default(),
         pending: Vec::new(),
         attack_move: false,
         shift: false,

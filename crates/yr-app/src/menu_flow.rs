@@ -50,6 +50,7 @@ impl App {
         self.view.dirty = true;
     }
     pub(super) fn open_menu(&mut self, page: Page) {
+        self.groups.interrupt();
         if page != Page::Loading {
             if let Some(job) = &mut self.load_job {
                 job.cancelled = true;
@@ -350,6 +351,7 @@ impl App {
                 self.animations = Default::default();
                 self.effects = Default::default();
                 self.selected.clear();
+                self.groups = Default::default();
                 self.pending.clear();
                 self.keys.clear();
                 self.shift = false;
