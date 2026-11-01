@@ -84,6 +84,14 @@ pixel in all 17 captured images. This describes observed output,
 not the implementation of the original converter. The independent full-clip
 YUV and RGB comparisons remain separate checks in [bink.md](bink.md).
 
+The unmodified standard FFmpeg RGB oracle differs at sub-black inputs
+because it retains a negative luma contribution. At movie frame 0, (350,194),
+YUV `(4,122,148)` yields native raw RGB `(31,0,0)` and standard `(16,0,0)`.
+Full-clip Python and C traces agree on maximum raw error 15 and ordinary-luma
+maximum four. The RGB checker uses the BT.601 luma-clamp allowance only for
+Y<16, keeps the four-level separate-truncation allowance elsewhere, and checks
+alpha exactly. The source YUV and standard RGB reference files are unchanged.
+
 ## Timing and capture limits
 
 This sequence includes frozen repeated images, irregular exports and exports

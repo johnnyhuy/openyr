@@ -33,6 +33,8 @@ fn retail_video_planes_match_optional_independent_oracle_and_export_rgb_frames()
     let mut decoded = 0;
     let mut original_mismatches = Vec::new();
     let mut rgb_max = 0u8;
+    let mut rgb_normal_max = 0u8;
+    let mut rgb_below_black_pixels = 0u64;
     let mut rgb_error = 0u64;
     let proof = std::env::var_os("OPENYR_FRONT_PROOF").map(std::path::PathBuf::from);
     if let Some(path) = &proof {
@@ -61,10 +63,40 @@ fn retail_video_planes_match_optional_independent_oracle_and_export_rgb_frames()
         if let Some(oracle) = &mut rgb_oracle {
             let mut expected = vec![0; rgba.len()];
             oracle.read_exact(&mut expected).unwrap();
-            for (&a, b) in rgba.iter().zip(expected) {
-                let error = a.abs_diff(b);
-                rgb_max = rgb_max.max(error);
-                rgb_error += u64::from(error);
+            let luma = planes
+                .y
+                .data
+                .chunks(planes.y.stride)
+                .take(meta.height as usize)
+                .flat_map(|row| row[..meta.width as usize].iter());
+            for (pixel, ((actual, reference), &y)) in rgba
+                .as_chunks::<4>()
+                .0
+                .iter()
+                .zip(expected.as_chunks::<4>().0)
+                .zip(luma)
+                .enumerate()
+            {
+                // Separate term truncation has a four-level raw RGB bound.
+                // Sub-black luma adds the observed clamp's BT.601 contribution.
+                let lift = (u16::from(16u8.saturating_sub(y)) * 255).div_ceil(219);
+                if y < 16 {
+                    rgb_below_black_pixels += 1;
+                }
+                for channel in 0..3 {
+                    let delta = i16::from(actual[channel]) - i16::from(reference[channel]);
+                    assert!(
+                        (-4..=4 + lift as i16).contains(&delta),
+                        "RGB frame {decoded} pixel {pixel} channel {channel}, Y={y}, delta={delta}"
+                    );
+                    let error = actual[channel].abs_diff(reference[channel]);
+                    rgb_max = rgb_max.max(error);
+                    if y >= 16 {
+                        rgb_normal_max = rgb_normal_max.max(error);
+                    }
+                    rgb_error += u64::from(error);
+                }
+                assert_eq!(actual[3], reference[3], "RGB alpha frame {decoded}");
             }
         }
         if [0, 1, 15, 60, 120, 240, 300, 430].contains(&decoded) {
@@ -178,11 +210,14 @@ fn retail_video_planes_match_optional_independent_oracle_and_export_rgb_frames()
     }
     if let Some(oracle) = &mut rgb_oracle {
         assert_eq!(oracle.read(&mut [0]).unwrap(), 0);
-        assert!(rgb_max <= 3, "RGB error {rgb_max}");
+        assert!(
+            rgb_normal_max <= 4,
+            "Normal-range RGB error {rgb_normal_max}"
+        );
     }
-    println!("Bink decoded {decoded} frames; YUV FNV {hash:016x}; independent YUV={} RGB={} RGB max={} absolute error sum={rgb_error}",oracle.is_some(),rgb_oracle.is_some(),rgb_max);
+    println!("Bink decoded {decoded} frames; YUV FNV {hash:016x}; independent YUV={} RGB={} RGB max={} normal-range max={rgb_normal_max} sub-black pixels={rgb_below_black_pixels} absolute error sum={rgb_error}",oracle.is_some(),rgb_oracle.is_some(),rgb_max);
     if let Some(path) = &proof {
-        std::fs::write(path.join("decoder-check.txt"),format!("frames={decoded}\nYUV_FNV={hash:016x}\nindependent_YUV={}\nindependent_RGB={}\nRGB_max_error={rgb_max}\nRGB_absolute_error_sum={rgb_error}\n",oracle.is_some(),rgb_oracle.is_some())).unwrap();
+        std::fs::write(path.join("decoder-check.txt"),format!("frames={decoded}\nYUV_FNV={hash:016x}\nindependent_YUV={}\nindependent_RGB={}\nRGB_max_error={rgb_max}\nRGB_normal_range_max_error={rgb_normal_max}\nRGB_below_black_pixels={rgb_below_black_pixels}\nRGB_absolute_error_sum={rgb_error}\n",oracle.is_some(),rgb_oracle.is_some())).unwrap();
     }
     if let Some(path) = &proof {
         let mut full = BikStreamingDecoder::new(Cursor::new(&bytes), "RA2TS_L.BIK")

@@ -45,6 +45,13 @@ and compatible integer matrix are in the [oracle observations](front-animation-o
 The comparison against all 431 independently decoded YUV/RGB frames remains
 separate from this original display check. Captured-frame agreement does not
 calibrate original playback cadence or prove uncaptured original phases.
+The standard FFmpeg RGBA reference remains unmodified. Separate-term
+truncation differs by at most four raw channel levels for Y>=16. For Y<16,
+the observed luma clamp can add up to `ceil((16-Y)*255/219)` levels before
+channel clipping. The full-clip checker enforces that per-pixel signed bound
+with the four-level rounding allowance, and requires exact alpha. Two traces
+found a maximum raw difference of 15 at Y=4, while ordinary-luma maximum error
+is four. The original packed-frame fingerprints remain exact checks.
 Packed black/white and truncated-plane checks also run without retail data.
 
 Playback runs on a worker. The compressed clip is held once, the decoder keeps
