@@ -382,6 +382,13 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       modal and gesture guards prevent stale orders; complete match saves
       remain unchanged. Native policies and physical-input limits are in
       `docs/camera-input.md`; original bounds/cursor calibration remains open.
+- [x] Native tactical order acknowledgements (#97): shared-resolver move,
+      attack-move and attack destination markers; Stop/Harvest key feedback
+      with eligible unit counts, unavailable-action messages, fixed UI-pixel
+      geometry, target tracking and two-second expiry. Focus/modal/selection
+      cleanup and complete save-byte/sim-hash invariance are checked in
+      `docs/order-feedback.md`. Original appearance/timing, radar/service
+      acknowledgements and physical desktop input remain open.
 - [ ] Complete world interaction and desktop UX (#97): consistent selection,
       supported control groups/hotkeys, hover/target/order feedback, bounded
       camera movement and configurable edge scrolling. Clear held input on

@@ -32,6 +32,7 @@ impl App {
             .unwrap_or(std::path::Path::new("."))
     }
     pub(super) fn escape_command_or_pause(&mut self) {
+        self.order_feedback.clear();
         self.cancel_pointer_action();
         self.keys.clear();
         self.shift = false;
@@ -53,6 +54,7 @@ impl App {
     }
     pub(super) fn open_menu(&mut self, page: Page) {
         self.groups.interrupt();
+        self.order_feedback.clear();
         if page != Page::Loading {
             if let Some(job) = &mut self.load_job {
                 job.cancelled = true;
@@ -246,6 +248,7 @@ impl App {
         self.reset_menu_clock();
     }
     pub(super) fn save_menu_path(&mut self, path: PathBuf) {
+        self.order_feedback.clear();
         let Some(session) = &self.session else {
             return;
         };
@@ -359,6 +362,7 @@ impl App {
                 self.effects = Default::default();
                 self.selected.clear();
                 self.groups = Default::default();
+                self.order_feedback.clear();
                 self.pending.clear();
                 self.keys.clear();
                 self.shift = false;
