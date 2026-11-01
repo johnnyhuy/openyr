@@ -375,6 +375,13 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       visible feedback. Repeat/modal/focus guards and match replacement keep
       input isolated; grouping preserves match save bytes. Native policies and
       physical-input limits are in `docs/control-groups.md`.
+- [x] Bound camera movement and add optional edge scrolling (#155, #97).
+      Arrow/edge panning uses redraw time with equal diagonal speed; raster
+      bounds account for zoom and sidebar width and center oversized views.
+      Front/in-match Controls persist the toggle, defaulting off. Focus,
+      modal and gesture guards prevent stale orders; complete match saves
+      remain unchanged. Native policies and physical-input limits are in
+      `docs/camera-input.md`; original bounds/cursor calibration remains open.
 - [ ] Complete world interaction and desktop UX (#97): consistent selection,
       supported control groups/hotkeys, hover/target/order feedback, bounded
       camera movement and configurable edge scrolling. Clear held input on

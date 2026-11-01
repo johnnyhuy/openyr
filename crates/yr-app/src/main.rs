@@ -12,6 +12,7 @@
 //! green ghost; right-click or Esc backs out of placement (issue #46). Orders go through
 //! `yr_sim::Command` only, the UI never mutates sim state directly (issue #15).
 
+mod camera;
 mod control_groups;
 #[cfg(test)]
 mod death_tests;
@@ -99,6 +100,7 @@ struct App {
     animations: yr_app::animation::UnitAnimations,
     effects: yr_app::effects::EffectScene,
     view: View,
+    camera: camera::Input,
     selected: BTreeSet<u32>,
     groups: control_groups::ControlGroups,
     pending: Vec<Command>,
@@ -297,6 +299,7 @@ impl App {
     }
 
     fn cancel_pointer_action(&mut self) {
+        self.camera.edge_armed = false;
         self.menu.pressed = None;
         self.left_down = None;
         self.right_down = None;
@@ -1380,6 +1383,7 @@ impl ApplicationHandler for App {
                 };
                 self.cursor = (position.x, position.y);
                 self.pointer.inside = self.pointer.focused;
+                self.camera.edge_armed = self.pointer.focused && !self.menu.visible();
                 if self.menu.visible() {
                     self.view.dirty = true;
                     self.update_pointer_visibility();
@@ -1398,8 +1402,10 @@ impl ApplicationHandler for App {
                         self.right_panning = true;
                     }
                     if self.right_panning {
+                        self.left_down = None;
                         self.view.cam_x -= dx / self.view.zoom;
                         self.view.cam_y -= dy / self.view.zoom;
+                        self.bound_camera(self.camera_size());
                         self.view.dirty = true;
                     }
                 }
@@ -1421,7 +1427,7 @@ impl ApplicationHandler for App {
                     MouseScrollDelta::LineDelta(_, y) => y,
                     MouseScrollDelta::PixelDelta(p) => (p.y / 50.0) as f32,
                 };
-                self.view.zoom = (self.view.zoom * (1.0 + d * 0.1)).clamp(0.25, 4.0);
+                self.zoom_camera((self.view.zoom * (1.0 + d * 0.1)).clamp(0.25, 4.0));
                 self.view.dirty = true;
             }
             WindowEvent::KeyboardInput { event, .. } if self.menu.visible() => {
@@ -1440,8 +1446,10 @@ impl ApplicationHandler for App {
                                 KeyCode::Escape if !event.repeat => {
                                     self.escape_command_or_pause();
                                 }
-                                KeyCode::Equal => self.view.zoom = (self.view.zoom * 1.2).min(4.0),
-                                KeyCode::Minus => self.view.zoom = (self.view.zoom / 1.2).max(0.25),
+                                KeyCode::Equal => self.zoom_camera((self.view.zoom * 1.2).min(4.0)),
+                                KeyCode::Minus => {
+                                    self.zoom_camera((self.view.zoom / 1.2).max(0.25))
+                                }
                                 KeyCode::KeyA => {
                                     self.service_mode = ServiceMode::None;
                                     self.attack_move = true;
@@ -1499,20 +1507,7 @@ impl ApplicationHandler for App {
                             .is_some_and(|s| s.outcome == Outcome::Won),
                     ));
                 }
-                // Camera: arrows pan (A/S are order hotkeys, right-drag pans).
-                let step = 18.0 / self.view.zoom;
-                for (k, dx, dy) in [
-                    (KeyCode::ArrowLeft, -step, 0.0),
-                    (KeyCode::ArrowRight, step, 0.0),
-                    (KeyCode::ArrowUp, 0.0, -step),
-                    (KeyCode::ArrowDown, 0.0, step),
-                ] {
-                    if !self.menu.visible() && self.keys.contains(&k) {
-                        self.view.cam_x += dx;
-                        self.view.cam_y += dy;
-                        self.view.dirty = true;
-                    }
-                }
+                self.update_camera(Instant::now(), self.camera_size());
                 if self.view.dirty || stepped {
                     self.blit();
                 }
@@ -1568,6 +1563,7 @@ fn new_app(gamedir: String, map_name: String, scale: u32) -> App {
             zoom: 1.0,
             dirty: true,
         },
+        camera: Default::default(),
         selected: BTreeSet::new(),
         groups: Default::default(),
         pending: Vec::new(),

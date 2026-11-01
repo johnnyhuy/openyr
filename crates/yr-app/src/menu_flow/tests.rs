@@ -89,14 +89,24 @@ fn preferences_are_bounded_and_errors_remain_recoverable() {
     app.read_preferences_file(path.clone());
     app.view.zoom = 1.5;
     app.apply_menu_effect(Effect::Mute);
+    app.apply_menu_effect(Effect::EdgeScroll);
     let mut reopened = new_app(String::new(), String::new(), 1);
     reopened.read_preferences_file(path.clone());
     assert!(reopened.menu.muted);
     assert_eq!(reopened.view.zoom, 1.5);
+    assert!(reopened.menu.edge_scroll);
+    // Existing preferences predate the optional scrolling field.
+    std::fs::write(&path, br#"{"muted":false,"zoom":125}"#).unwrap();
+    reopened.read_preferences_file(path.clone());
+    assert!(!reopened.menu.edge_scroll);
+    assert_eq!(reopened.view.zoom, 1.25);
+    std::fs::write(&path, br#"{"muted":true,"zoom":150,"edge_scroll":true}"#).unwrap();
+    reopened.read_preferences_file(path.clone());
     for bytes in [
         br#"{"muted":false,"zoom":0}"#.to_vec(),
         vec![b' '; 16 * 1024 + 1],
         br#"{"muted":false,"zoom":100,"extra":1}"#.to_vec(),
+        br#"{"muted":false,"zoom":100,"edge_scroll":1}"#.to_vec(),
     ] {
         std::fs::write(&path, bytes).unwrap();
         reopened.read_preferences_file(path.clone());

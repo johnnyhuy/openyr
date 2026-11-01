@@ -187,6 +187,13 @@ pub fn draw(
                 }
             }
             Button::ZoomOut => "Zoom out",
+            Button::EdgeScroll => {
+                if state.edge_scroll {
+                    "Edge scroll off"
+                } else {
+                    "Edge scroll on"
+                }
+            }
             Button::ZoomIn => "Zoom in",
             Button::Accept => art.label("GUI:Yes", "Confirm"),
             Button::Decline => art.label("GUI:No", "Keep current"),

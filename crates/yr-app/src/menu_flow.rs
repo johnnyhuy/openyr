@@ -20,6 +20,8 @@ pub(super) struct LoadJob {
 struct Preferences {
     muted: bool,
     zoom: u16,
+    #[serde(default)]
+    edge_scroll: bool,
 }
 
 impl App {
@@ -222,7 +224,12 @@ impl App {
             Effect::Zoom(delta) => {
                 self.menu.zoom =
                     (i32::from(self.menu.zoom) + i32::from(delta)).clamp(25, 400) as u16;
-                self.view.zoom = f32::from(self.menu.zoom) / 100.0;
+                self.zoom_camera(f32::from(self.menu.zoom) / 100.0);
+                self.write_preferences();
+            }
+            Effect::EdgeScroll => {
+                self.menu.edge_scroll = !self.menu.edge_scroll;
+                self.camera.edge_armed = false;
                 self.write_preferences();
             }
             Effect::CancelLoad => {
@@ -419,6 +426,7 @@ impl App {
             Ok(Some(p)) => {
                 self.menu.muted = p.muted;
                 self.menu.zoom = p.zoom;
+                self.menu.edge_scroll = p.edge_scroll;
                 self.view.zoom = f32::from(p.zoom) / 100.0;
             }
             Ok(None) => {}
@@ -433,6 +441,7 @@ impl App {
             let bytes = serde_json::to_vec(&Preferences {
                 muted: self.menu.muted,
                 zoom: self.menu.zoom,
+                edge_scroll: self.menu.edge_scroll,
             })
             .map_err(|e| e.to_string())?;
             if let Some(parent) = path.parent() {
