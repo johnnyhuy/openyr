@@ -53,6 +53,204 @@ fn proof(app: &App, name: &str) {
         ),
     )
     .unwrap();
+    std::fs::write(
+        dir.join(format!("{name}.setup.txt")),
+        format!(
+            "menu_options={:?}\nsession={:?}\n",
+            app.menu.setup.options,
+            app.session.as_ref().map(|s| (
+                s.start_options,
+                s.sim.credits(),
+                s.sim.credits_of(yr_sim::OWNER_ENEMY),
+                s.sim
+                    .units()
+                    .iter()
+                    .filter(|u| u.owner == yr_sim::OWNER_PLAYER)
+                    .count(),
+                s.sim
+                    .units()
+                    .iter()
+                    .filter(|u| u.owner == yr_sim::OWNER_ENEMY)
+                    .count()
+            ))
+        ),
+    )
+    .unwrap();
+}
+
+#[test]
+fn retail_skirmish_settings_start_save_restore_and_restart_both_participants() {
+    use yr_app::{menu::setup::Field, session::StartOptions};
+    let directory = PathBuf::from(std::env::var("HOME").unwrap_or_default())
+        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    if !directory.is_dir() {
+        return;
+    }
+    let temp = std::env::temp_dir().join(format!("openyr-setup-options-{}", std::process::id()));
+    std::fs::create_dir_all(&temp).unwrap();
+    let mut app = new_app(directory.to_string_lossy().into(), "EB1.MMX".into(), 1);
+    app.save_path = temp.join("Settings.oyrsave");
+    app.preferences_path = Some(temp.join("interface.json"));
+    app.enter_front();
+    click(&mut app, Button::SinglePlayer);
+    click(&mut app, Button::Skirmish);
+    wait(&mut app);
+    app.menu_key_code(KeyCode::Tab, None, false);
+    assert_eq!(app.menu.setup.focus, Some(Field::Credits));
+    app.menu_key_code(KeyCode::Home, None, false);
+    app.menu_key_code(KeyCode::Tab, None, false);
+    assert_eq!(app.menu.setup.focus, Some(Field::Units));
+    app.menu_key_code(KeyCode::Home, None, false);
+    assert_eq!(
+        (
+            app.menu.setup.value(Field::Credits),
+            app.menu.setup.value(Field::Units)
+        ),
+        (5000, 0)
+    );
+    proof(&app, "setup-minimum-controls");
+    let layout = Layout::for_state(&app.menu, WIN_W, WIN_H);
+    // A real mouse press selects a value; grabbing its thumb preserves it.
+    app.cursor = (
+        layout.origin.0 + 450.0 * layout.scale,
+        layout.origin.1 + 350.0 * layout.scale,
+    );
+    app.menu_mouse(ElementState::Pressed, MouseButton::Left);
+    app.menu_mouse(ElementState::Released, MouseButton::Left);
+    assert_eq!(app.menu.setup.value(Field::Units), 6);
+    let options = StartOptions {
+        credits: Some(5000),
+        units: Some(6),
+        ..Default::default()
+    };
+    assert_eq!(app.menu.setup.options, options);
+    let thumb = app.menu.setup.thumb_x(Field::Units);
+    app.menu.setup.press(Field::Units, thumb + 6);
+    app.menu.setup.drag_to(thumb + 6);
+    assert_eq!(
+        app.menu.setup.value(Field::Units),
+        6,
+        "grabbing a thumb cannot change its value"
+    );
+    app.cancel_pointer_action();
+    assert!(app.menu.setup.drag.is_none());
+    proof(&app, "setup-configured-controls");
+    click(&mut app, Button::Start);
+    wait(&mut app);
+    let assert_setup = |app: &App| {
+        let s = app.session.as_ref().unwrap();
+        assert_eq!(s.start_options, options);
+        assert_eq!(s.sim.credits(), 5000);
+        assert_eq!(s.sim.credits_of(yr_sim::OWNER_ENEMY), 5000);
+        for owner in [yr_sim::OWNER_PLAYER, yr_sim::OWNER_ENEMY] {
+            assert_eq!(s.sim.units().iter().filter(|u| u.owner == owner).count(), 6);
+        }
+    };
+    assert_setup(&app);
+    let initial_hash = app.session.as_ref().unwrap().sim.state_hash();
+    proof(&app, "setup-configured-match-tick1");
+    app.escape_command_or_pause();
+    click(&mut app, Button::Save);
+    app.menu.name = "Settings".into();
+    click(&mut app, Button::Save);
+    let path = app.save_path.clone();
+    let bytes = std::fs::read(&path).unwrap();
+    assert_eq!(u32::from_le_bytes(bytes[8..12].try_into().unwrap()), 3);
+    app.menu_key_code(KeyCode::Escape, None, false);
+    click(&mut app, Button::Abort);
+    click(&mut app, Button::MainMenu);
+    click(&mut app, Button::SinglePlayer);
+    click(&mut app, Button::Load);
+    let index = app.menu.slots.iter().position(|s| s.path == path).unwrap();
+    app.menu.select_slot(index);
+    click(&mut app, Button::Load);
+    click(&mut app, Button::Accept);
+    wait(&mut app);
+    assert_setup(&app);
+    assert_eq!(app.session.as_ref().unwrap().sim.state_hash(), initial_hash);
+    proof(&app, "setup-restored-match-tick1");
+    let mut bad = bytes;
+    let length = usize::from(u16::from_le_bytes(bad[37..39].try_into().unwrap()));
+    bad[39 + length] = 4;
+    let bad_path = temp.join("Broken.oyrsave");
+    std::fs::write(&bad_path, bad).unwrap();
+    app.open_menu(Page::Load);
+    let index = app
+        .menu
+        .slots
+        .iter()
+        .position(|s| s.path == bad_path)
+        .unwrap();
+    app.menu.select_slot(index);
+    click(&mut app, Button::Load);
+    click(&mut app, Button::Accept);
+    wait(&mut app);
+    assert!(matches!(app.menu.page, Page::Message { .. }));
+    assert_setup(&app);
+    assert_eq!(app.session.as_ref().unwrap().sim.state_hash(), initial_hash);
+    proof(&app, "setup-invalid-save-preserves-match");
+    click(&mut app, Button::Back);
+    click(&mut app, Button::Abort);
+    click(&mut app, Button::Restart);
+    wait(&mut app);
+    assert_setup(&app);
+    assert_eq!(app.session.as_ref().unwrap().sim.state_hash(), initial_hash);
+    proof(&app, "setup-restarted-match-tick1");
+    app.enter_front();
+    click(&mut app, Button::SinglePlayer);
+    click(&mut app, Button::Skirmish);
+    wait(&mut app);
+    assert_eq!(app.menu.setup.options, options);
+    proof(&app, "setup-returned-controls");
+    let legacy_options = StartOptions {
+        shared_forces: false,
+        ..Default::default()
+    };
+    let old = yr_app::session::load_with_options(
+        directory.to_str().unwrap(),
+        "EB1.MMX",
+        42,
+        legacy_options,
+    )
+    .unwrap();
+    assert_eq!(
+        old.sim.state_hash(),
+        0x57dac47c915b074a,
+        "the prior shipped EB1 tick-1 state is retained"
+    );
+    let path = temp.join("Legacy.oyrsave");
+    yr_app::snapshot::save(&old, &path).unwrap();
+    let legacy = yr_app::snapshot::load_from_menu(directory.to_str().unwrap(), "EB1.MMX", &path)
+        .unwrap()
+        .0;
+    assert_eq!(legacy.sim.state_hash(), old.sim.state_hash());
+    assert_eq!(legacy.start_options, legacy_options);
+    assert_eq!(
+        legacy
+            .sim
+            .units()
+            .iter()
+            .filter(|u| u.owner == yr_sim::OWNER_ENEMY)
+            .count(),
+        3
+    );
+    if let Some(folder) = std::env::var_os("OPENYR_LEGACY_SETUP_PROOF") {
+        for name in ["EB1-v1.oyrsave", "EB1-v2.oyrsave"] {
+            let session = yr_app::snapshot::load_from_menu(
+                directory.to_str().unwrap(),
+                "EB1.MMX",
+                &PathBuf::from(&folder).join(name),
+            )
+            .unwrap()
+            .0;
+            assert_eq!(session.sim.state_hash(), 0x57dac47c915b074a);
+            assert!(!session.start_options.shared_forces);
+            println!("Prior-release {name} loaded with exact tick1 hash 57dac47c915b074a.");
+        }
+    }
+    println!("Configured credits=5000 units=6 for both owners; tick1 hash={initial_hash:016x}; legacy EB1 seed42 hash=57dac47c915b074a retained.");
+    drop(app);
+    std::fs::remove_dir_all(temp).unwrap();
 }
 
 #[test]
@@ -282,7 +480,24 @@ fn retail_front_menu_restores_the_saved_map_instead_of_the_default() {
     let expected_tick = saved.sim.tick();
     yr_app::snapshot::save(&saved, &path).unwrap();
     assert!(yr_app::snapshot::load(dir.to_str().unwrap(), "EB1.MMX", &path).is_err());
-    let named = yr_app::snapshot::encode(&saved).unwrap();
+    // Reconstruct an actual envelope-1/2 profile rather than stripping the
+    // new shared-force metadata from a different initial setup.
+    let mut old = yr_app::session::load_with_options(
+        dir.to_str().unwrap(),
+        "XMP29U2.MAP",
+        42,
+        yr_app::session::StartOptions {
+            shared_forces: false,
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    for _ in 0..3 {
+        old.step(&[]);
+    }
+    let old_hash = old.sim.state_hash();
+    let named = yr_app::snapshot::encode(&old).unwrap();
+    assert_eq!(u32::from_le_bytes(named[8..12].try_into().unwrap()), 2);
     let name_len = usize::from(u16::from_le_bytes(named[37..39].try_into().unwrap()));
     let mut legacy = named[..37].to_vec();
     legacy[8..12].copy_from_slice(&1u32.to_le_bytes());
@@ -293,7 +508,7 @@ fn retail_front_menu_restores_the_saved_map_instead_of_the_default() {
         yr_app::snapshot::load_from_menu(dir.to_str().unwrap(), "XMP29U2.MAP", &legacy_path)
             .unwrap();
     assert_eq!(legacy_map, "XMP29U2.MAP");
-    assert_eq!(legacy.sim.state_hash(), expected);
+    assert_eq!(legacy.sim.state_hash(), old_hash);
     let mut app = new_app(dir.to_string_lossy().into(), "EB1.MMX".into(), 1);
     app.save_path = path.clone();
     app.enter_front();

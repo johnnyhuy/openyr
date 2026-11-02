@@ -37,6 +37,8 @@ impl App {
         self.chooser_preview = None;
         self.chooser_epoch = self.chooser_epoch.wrapping_add(1);
         self.menu.map_name = self.map_name.clone();
+        self.menu.setup.options.shared_forces = true;
+        self.menu.setup.touched = [false; 2];
         self.menu.front = true;
         self.movie = None;
         self.front_art = Default::default();

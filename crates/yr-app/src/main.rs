@@ -309,6 +309,7 @@ impl App {
     fn cancel_pointer_action(&mut self) {
         self.camera.edge_armed = false;
         self.menu.maps.drag = None;
+        self.menu.setup.drag = None;
         self.menu.pressed = None;
         self.left_down = None;
         self.right_down = None;
@@ -1414,6 +1415,14 @@ impl ApplicationHandler for App {
                 self.pointer.inside = self.pointer.focused;
                 self.camera.edge_armed = self.pointer.focused && !self.menu.visible();
                 if self.menu.visible() {
+                    if self.menu.front && self.menu.page == yr_app::menu::Page::Skirmish {
+                        if let Some((x, _)) =
+                            yr_app::menu::Layout::for_state(&self.menu, WIN_W, WIN_H)
+                                .local(self.cursor)
+                        {
+                            self.menu.setup.drag_to(x);
+                        }
+                    }
                     if self.menu.page == yr_app::menu::Page::ChooseMap {
                         if let Some((_, y)) =
                             yr_app::menu::Layout::for_state(&self.menu, WIN_W, WIN_H)

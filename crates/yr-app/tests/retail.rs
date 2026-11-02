@@ -218,7 +218,7 @@ fn eb1_skirmish_setup_and_scripted_win() {
         .iter()
         .filter(|u| u.owner == yr_sim::OWNER_ENEMY)
         .count();
-    assert_eq!(enemy_units, 3, "enemy guards spawned");
+    assert_eq!(enemy_units, 10, "computer starting force matches UnitCount");
     assert!(player_bases >= 3, "player base placed: {player_bases}");
     assert!(enemy_bases >= 3, "enemy base placed: {enemy_bases}");
     assert_eq!(session.outcome, Outcome::Ongoing);
@@ -260,7 +260,16 @@ fn eb1_skirmish_setup_and_scripted_win() {
                 .count(),
             count as usize
         );
-        println!("Configured UnitCount={count}: exact generated force retained");
+        assert_eq!(
+            custom
+                .sim
+                .units()
+                .iter()
+                .filter(|u| u.owner == yr_sim::OWNER_ENEMY)
+                .count(),
+            count as usize
+        );
+        println!("Configured UnitCount={count}: both generated forces retained");
         let before = session2.sim.state_hash();
         assert!(yr_app::snapshot::restore(
             &mut session2,
@@ -1035,6 +1044,8 @@ fn eb1_saved_match_resumes_to_the_same_win() {
     };
     let mut resumed = eb1_session(42).unwrap();
     let plant = slot_of(&original, "GAPOWR");
+    let tank = slot_of(&original, "MTNK");
+    let infantry = slot_of(&original, "E1");
     let mut checkpoints = 0;
     for t in 2..=3000 {
         let mut commands = Vec::new();
@@ -1050,13 +1061,28 @@ fn eb1_saved_match_resumes_to_the_same_win() {
             commands.push(original.place(slot, spot).unwrap());
         }
         if t % 450 == 0 {
-            if let Some(b) = original
+            // Both owners now receive the configured starting force. Keep
+            // using the player's economy and pursue units after the base falls.
+            commands.extend(
+                [tank, infantry]
+                    .into_iter()
+                    .filter_map(|slot| original.produce(slot)),
+            );
+            let target = original
                 .sim
                 .buildings()
                 .iter()
                 .find(|b| b.owner == yr_sim::OWNER_ENEMY)
-            {
-                let (x, y) = b.centre();
+                .map(|b| b.centre())
+                .or_else(|| {
+                    original
+                        .sim
+                        .units()
+                        .iter()
+                        .find(|u| u.owner == yr_sim::OWNER_ENEMY)
+                        .map(|u| (u.x, u.y))
+                });
+            if let Some((x, y)) = target {
                 commands.extend(
                     original
                         .sim
@@ -1086,7 +1112,24 @@ fn eb1_saved_match_resumes_to_the_same_win() {
         assert_eq!(original.outcome, resumed.outcome, "tick {t}");
     }
     assert_eq!(checkpoints, 5);
-    assert_eq!(resumed.outcome, Outcome::Won);
+    assert_eq!(
+        resumed.outcome,
+        Outcome::Won,
+        "remaining enemy units {:?}; buildings {}",
+        resumed
+            .sim
+            .units()
+            .iter()
+            .filter(|u| u.owner == yr_sim::OWNER_ENEMY)
+            .map(|u| (&resumed.kinds[u.kind as usize], u.role, u.hp))
+            .collect::<Vec<_>>(),
+        resumed
+            .sim
+            .buildings()
+            .iter()
+            .filter(|b| b.owner == yr_sim::OWNER_ENEMY)
+            .count()
+    );
     println!("EB1 save/resume: five checkpoints, identical hashes through tick 3000, Won");
 
     let bytes = yr_app::snapshot::encode(&original).unwrap();

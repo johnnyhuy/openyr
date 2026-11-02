@@ -102,35 +102,7 @@ pub fn draw(frame: &mut [u8], width: u32, height: u32, art: &Art, scene: Scene<'
         title,
     );
     if s.page == Page::Skirmish {
-        centered(
-            &mut c,
-            0,
-            32,
-            632,
-            art.label("GUI:Skirmish", "Match setup"),
-            YELLOW,
-        );
-        c.text((32, 82), &s.map_name, WHITE, 80);
-        c.text(
-            (32, 114),
-            "Americans (Allied) and computer opponent",
-            WHITE,
-            64,
-        );
-        if let Some(map) = scene.preview {
-            c.text(
-                (32, 146),
-                &format!("Starting credits: {}", map.starting_credits),
-                WHITE,
-                48,
-            );
-        }
-        c.text(
-            (32, 210),
-            "Other game types and factions are unavailable.",
-            WHITE,
-            64,
-        );
+        super::setup::draw(&mut c, art, s, scene.preview);
     }
     if s.page == Page::ChooseMap {
         chooser(&mut c, art, s);
@@ -256,7 +228,11 @@ pub fn draw(frame: &mut [u8], width: u32, height: u32, art: &Art, scene: Scene<'
                 [128, 128, 128, 255]
             },
         );
-        if s.keyboard_focus && s.focus == index && enabled {
+        if s.keyboard_focus
+            && s.focus == index
+            && enabled
+            && (s.page != Page::Skirmish || s.setup.focus.is_none())
+        {
             c.rect((x + 12, y + h - 6), (w - 24, 1), YELLOW);
         }
     }
@@ -266,7 +242,9 @@ pub fn draw(frame: &mut [u8], width: u32, height: u32, art: &Art, scene: Scene<'
         Page::Main if hovered.is_some() => "Select a mode. Gray actions are unavailable.",
         Page::SinglePlayer if hovered.is_some() => "Saved matches or supported skirmish setup.",
         Page::Main | Page::SinglePlayer => "",
-        Page::Skirmish => "Start the supported EB1 skirmish.",
+        Page::Skirmish => {
+            "Set credits and units. Tab selects; arrows adjust. Choose a map or start."
+        }
         Page::Load => "Select a saved match. Arrows select; Escape returns.",
         Page::ChooseMap => "Select a Battle map. Enter uses it; Escape keeps the current map.",
         Page::Loading => "Escape cancels and returns.",
@@ -437,7 +415,7 @@ fn control_label(c: &mut Canvas<'_>, x: i32, y: i32, w: i32, text: &str, color: 
     );
 }
 
-fn fit(face: Typeface<'_>, text: &str, width: i32) -> String {
+pub(super) fn fit(face: Typeface<'_>, text: &str, width: i32) -> String {
     let mut out = String::new();
     for ch in text.chars().take(160) {
         out.push(ch);

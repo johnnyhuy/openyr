@@ -3,6 +3,7 @@
 mod art;
 mod draw;
 pub mod maps;
+pub mod setup;
 pub use art::Art;
 pub use draw::draw;
 use std::path::PathBuf;
@@ -108,6 +109,7 @@ pub struct State {
     pub edge_scroll: bool,
     pub map_name: String,
     pub maps: maps::MapList,
+    pub setup: setup::Setup,
 }
 
 impl Default for State {
@@ -128,6 +130,7 @@ impl Default for State {
             edge_scroll: false,
             map_name: "EB1.MMX".into(),
             maps: Default::default(),
+            setup: Default::default(),
         }
     }
 }
@@ -145,6 +148,8 @@ impl State {
             self.focus = 1;
         }
         self.pressed = None;
+        self.setup.focus = None;
+        self.setup.drag = None;
     }
     pub fn message(&mut self, text: String, back: Page) {
         self.set(Page::Message {
@@ -224,8 +229,40 @@ impl State {
         }
     }
     pub fn navigate(&mut self, delta: i32) {
+        let had_focus = self.keyboard_focus
+            || (self.front && self.page == Page::Skirmish && self.setup.focus.is_some());
         self.keyboard_focus = true;
         let buttons = self.buttons();
+        if self.front && self.page == Page::Skirmish {
+            let mut stops = vec![
+                (Some(setup::Field::Credits), 0),
+                (Some(setup::Field::Units), 0),
+            ];
+            stops.extend(
+                buttons
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(i, (_, on))| on.then_some((None, i))),
+            );
+            let current = (
+                self.setup.focus,
+                if self.setup.focus.is_some() {
+                    0
+                } else {
+                    self.focus
+                },
+            );
+            let at = stops.iter().position(|s| *s == current).unwrap_or(0);
+            let next = if had_focus {
+                (at as i64 + i64::from(delta)).rem_euclid(stops.len() as i64) as usize
+            } else if delta >= 0 {
+                0
+            } else {
+                stops.len() - 1
+            };
+            (self.setup.focus, self.focus) = stops[next];
+            return;
+        }
         if self.page == Page::ChooseMap {
             let mut stops = vec![None];
             stops.extend(
