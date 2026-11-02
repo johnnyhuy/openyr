@@ -18,6 +18,7 @@ pub struct Art {
     pub(super) start_markers: Vec<Image>,
     pub(super) scrollbar: Vec<Image>,
     pub(super) setup_widgets: Vec<Image>,
+    pub(super) setup_well: Option<Image>,
 }
 impl Art {
     pub fn load(fs: &AssetFs) -> Self {
@@ -126,26 +127,23 @@ impl Art {
             .read("LOCALMD.MIX")
             .and_then(|bytes| MixArchive::parse(bytes).ok())
             .and_then(|mix| {
-                [
-                    (0x5c26a605, 12, 22),
-                    (0x429d62c3, 18, 18),
-                    (0xb1a77caf, 48, 22),
-                ]
-                .into_iter()
-                .map(|(id, width, height)| {
-                    let image = PcxImage::parse(mix.get_by_id(id)?).ok()?;
-                    if (image.width, image.height) != (width, height) {
-                        return None;
-                    }
-                    Some(Image {
-                        width,
-                        height,
-                        pixels: image.to_rgba(),
+                [(0x5c26a605, 12, 22), (0x429d62c3, 18, 18)]
+                    .into_iter()
+                    .map(|(id, width, height)| {
+                        let image = PcxImage::parse(mix.get_by_id(id)?).ok()?;
+                        if (image.width, image.height) != (width, height) {
+                            return None;
+                        }
+                        Some(Image {
+                            width,
+                            height,
+                            pixels: image.to_rgba(),
+                        })
                     })
-                })
-                .collect::<Option<Vec<_>>>()
+                    .collect::<Option<Vec<_>>>()
             })
             .unwrap_or_default();
+        art.setup_well = setup_well(fs);
         art.top = read("SDTP.SHP", 168, 199, 2, &shell);
         art.warning = read("SDWRNANM.SHP", 92, 53, 91, &shell2);
         art.bottom = read("SDBTM.SHP", 168, 65, 1, &shell).pop();
@@ -163,6 +161,43 @@ impl Art {
             .and_then(|s| s.get(key))
             .unwrap_or(fallback)
     }
+}
+
+fn setup_well(fs: &AssetFs) -> Option<Image> {
+    // These classic skin pieces match the observed 50x24 value box.
+    // See formats/skirmish-setup.md for archive IDs and composition evidence.
+    let mix = MixArchive::parse(fs.read("LOCAL.MIX")?).ok()?;
+    let mut parts = Vec::new();
+    for (id, width) in [(0x4c8719b4, 8), (0x802d192a, 114), (0x25b63aad, 10)] {
+        let image = PcxImage::parse(mix.get_by_id(id)?).ok()?;
+        if (image.width, image.height) != (width, 24) {
+            return None;
+        }
+        parts.push(image.to_rgba());
+    }
+    let box_width = 50;
+    let center_origin = (box_width - 114) / 2;
+    let right_origin = box_width - 10;
+    let mut pixels = Vec::with_capacity(48 * 22 * 4);
+    // Preserve the separately drawn bevel by copying only the interior.
+    for y in 1..23 {
+        for x in 1..49 {
+            let (part, width, source_x) = if x < 8 {
+                (0, 8, x)
+            } else if x >= right_origin {
+                (2, 10, x - right_origin)
+            } else {
+                (1, 114, x - center_origin)
+            };
+            let at = ((y * width + source_x) * 4) as usize;
+            pixels.extend_from_slice(&parts[part][at..at + 4]);
+        }
+    }
+    Some(Image {
+        width: 48,
+        height: 22,
+        pixels,
+    })
 }
 
 fn backdrop(fs: &AssetFs, image_id: u32, palette_id: u32) -> Option<Image> {
