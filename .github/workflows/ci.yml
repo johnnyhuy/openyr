@@ -38,6 +38,9 @@ jobs:
             --prefix "$RUNNER_TEMP/wine-oracle-prefix" \
             --out "$RUNNER_TEMP/wine-oracle-build"
 
+      - name: Test renderer export observation
+        run: python3 -m unittest discover -s tools/wine-oracle -p 'test_*.py' -v
+
       - name: Clippy (warnings denied)
         run: cargo clippy --workspace --all-targets -- -D warnings
 

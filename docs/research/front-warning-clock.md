@@ -98,7 +98,15 @@ which input event caused each export or its exact presentation instant.
 modification times. Frozen earlier proof remains unchanged; the external
 release carries this correction as an additional evidence archive.
 
-Fix #176 before using capture rates to calibrate #174. The next experiment
+The repaired [export recorder](../../tools/wine-oracle/README.md#record-renderer-exports)
+now retains every observed complete PNG revision through helper exit and a
+bounded settling window (#176). Seventeen synthetic cases and a fresh original
+holdout validate the collector. That holdout produced twelve exports, all
+retained with matching source/copy hashes, including one observed after helper
+exit. Multiplicity is not fixed, and input ownership remains explicitly
+unresolved. The historical twenty-image associations remain invalid.
+
+Clock calibration #174 remains open. The next experiment
 must retain all exports through a settling window, distinguish actual
 presentation from export stalls and UI updates, and validate the initial
 epoch and a separate holdout. Do not close #174 or full menu issue #96 from
