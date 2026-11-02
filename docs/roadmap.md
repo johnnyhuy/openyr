@@ -345,9 +345,13 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       and five complete enabled buttons match. Timing and broader menus remain
       in #96; captures and limits are in `docs/formats/front-menu.md`.
 - [x] Match captured front animation pixels (#135, #136): warning anchor and
-      eleven warning phases, plus exact visible movie output at fourteen original
-      phases. Independent full-clip decoding remains checked. Warning cadence,
-      transitions and movie/shell synchronization still need calibration (#96).
+      26 warning phases, plus exact visible movie output at 32 original phases.
+      Independent full-clip decoding remains checked. Fresh paired captures
+      expose a warning-clock gap (#174); transitions and movie/shell
+      synchronization still need calibration (#96).
+- [ ] Calibrate the front-menu warning clock (#174). Two original capture
+      series reject the provisional 15 fps model but do not yet establish
+      its scheduling rule (`docs/research/front-warning-clock.md`).
 - [x] Keep retail menu-load test waits consistent (#138): the in-match test
       uses the front-menu test's bounded 180-second budget for reconstruction
       while retaining all save/load, cancellation and state assertions.

@@ -107,3 +107,19 @@ macOS `screencapture -x` and `screencapture -V` paths were skipped without
 retrying. Native proof images use the same compositor as the application.
 A sequence of matched captured phases demonstrates pixel output at those
 phases; it does not demonstrate live native desktop timing.
+
+## Fresh paired timing observations
+
+Twenty additional captures on 2026-11-02 pair exact movie and warning source
+phases with public input ticks and completed PNG receipts. They add eighteen
+unique movie phases and fifteen warning phases, bringing original pixel
+coverage to 32 movie and 26 warning phases. All 7,331,840 fresh RGBA samples
+match actual composition without masks.
+
+The five-second and thirteen-second request series measure warning rates of
+10.743586 and 10.789927 fps, while movie rates are 14.533350 and 14.610056 fps.
+Those are observed rates in this reference environment, not established
+nominal clocks. The native 15 fps warning model contradicts the observations;
+its replacement remains open in #174. The [clock investigation](../research/front-warning-clock.md)
+records sampling aliases, fits, input/capture limits and the next required
+observations. No timing constant was inferred from the pixel matches.
