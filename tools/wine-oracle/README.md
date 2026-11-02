@@ -135,3 +135,70 @@ Previously permission-blocked `screencapture -x` and `screencapture -V` paths
 were skipped without retrying. This non-visual diagnostic uses terminal
 recordings and synthetic public UI observations. Separate safe original
 renderer crops establish preview pixels, not animation timing.
+
+## Record renderer exports
+
+`record_exports.py` observes files produced by a separately authorized capture
+command. It keeps collecting after that command exits, through a quiet period
+bounded by a settling deadline. The command's stdout/stderr, exact exit status,
+PID, request metadata and each observed complete PNG revision are retained.
+Identical PNGs with different source names or revisions remain separate records.
+
+```sh
+python3 tools/wine-oracle/record_exports.py \
+  --directory "$HOME/Games/RA2YR/prefix/drive_c/Westwood/RA2/Screenshots" \
+  --out .tmp/renderer-exports \
+  --quiet-seconds 2 --settle-limit 10 --run-limit 90 \
+  -- /path/to/guarded-capture-producer
+```
+
+Choose a new output directory for each recording. The producer owns input
+permission and guards; this recorder only supervises the command and observes
+files. Original-game producers must verify the intended process, current page,
+foreground and released modifiers before each input. The existing nine
+observer/launcher helpers remain read-only diagnostics; a capture producer is
+supplied separately. The original holdout proof includes its public-API source
+and build hashes.
+
+The recorder checks PNG signature, bounded chunk lengths, CRCs, expected image
+dimensions and a complete IEND before copying a stable source snapshot. It does
+not decompress pixels. Byte and export limits produce explicit incomplete
+results. The output preserves SHA-256, source modification time, host observation
+times and copied bytes. Raw captures and producer stderr stay private; publish
+safe crops and metadata, and never commit game artwork or player-name fields.
+
+A producer can report one line after each guarded key pair:
+
+```text
+capture_index=0 capture_tick_before=1234 after=1234
+```
+
+Indices must start at zero and increase without gaps. Ticks are unsigned Win32
+GetTickCount values; a short wrap is accepted. The recorder preserves request
+multiplicity but marks every export's association unresolved. All reported
+requests remain candidates. File-observation order does not prove input-event
+ownership, a presentation timestamp or an original animation rate.
+
+`receipt.json` distinguishes producer exit from collection completion. A producer
+deadline returns its still-running PID and logs without killing or restarting
+it. Inspect that same process before further input. A settling deadline,
+unfinished PNG, invalid metadata or export limit remains explicit. The CLI
+succeeds only with a successful producer, settled complete file accounting,
+valid request metadata and at least one retained export. The bounded observation
+window cannot establish that no file appears later or that no intermediate file
+revision occurred between polls.
+
+Run the synthetic regressions without Wine or game data:
+
+```sh
+python3 -m unittest discover -s tools/wine-oracle -p 'test_*.py' -v
+```
+
+They cover late duplicates after producer exit, partial/corrupt PNGs, overwritten
+files, ambiguous request ownership, split/hostile metadata, failed/live producers,
+CLI status and bounds. They run in the required CI `test` job. An original
+holdout retained all twelve exports for twelve guarded requests, including one
+observed after producer exit. Independent source/copy SHA-256 reconciliation
+matched every file; the collector observed for another 2.182 seconds after exit.
+The earlier 24-export run demonstrates why multiplicity is not a fixed constant.
+No timing-rate correction is inferred from this repair (#174).

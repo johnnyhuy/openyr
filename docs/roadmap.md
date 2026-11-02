@@ -348,11 +348,15 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       26 warning phases, plus exact visible movie output at 32 original phases.
       Independent full-clip decoding remains checked. Fresh paired captures
       expose a clock-calibration gap (#174) and delayed-export defect (#176);
-      transitions and movie/shell
-      synchronization still need calibration (#96).
-- [ ] Calibrate the front-menu warning clock (#174). Retained-image fits
-      differ from 15 fps, but delayed exports invalidate the one-to-one
-      capture association (#176). Fix the observer before inferring a clock
+      transitions and movie/shell synchronization still need calibration (#96).
+- [x] Retain renderer exports through helper exit and bounded settling (#176).
+      Late/duplicate/partial files and live producers are explicit; seventeen
+      synthetic regressions and an original holdout reconcile every source
+      and copied hash. Request ownership remains unresolved.
+- [ ] Calibrate the front-menu warning clock (#174). Historical first-image
+      fits have invalid temporal associations. The repaired observer retains
+      multiplicity and uncertainty; presentation/export stalls, initial epoch
+      and the scheduling rule still need calibration
       (`docs/research/front-warning-clock.md`).
 - [x] Keep retail menu-load test waits consistent (#138): the in-match test
       uses the front-menu test's bounded 180-second budget for reconstruction
