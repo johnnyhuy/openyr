@@ -6,6 +6,7 @@ pub(super) enum Prepared {
     Match {
         session: Box<Session>,
         map: yr_render::RenderedMap,
+        map_name: String,
         save_path: Option<PathBuf>,
     },
     Preview(yr_app::frontend::Preview),
@@ -296,14 +297,15 @@ impl App {
             .name("openyr-match-load".into())
             .spawn(move || {
                 let result = (|| {
-                    let session = match &path {
-                        Some(path) => yr_app::snapshot::load(&directory, &map, path)?,
-                        None => yr_app::session::load(&directory, &map, seed)?,
+                    let (session, map_name) = match &path {
+                        Some(path) => yr_app::snapshot::load_from_menu(&directory, &map, path)?,
+                        None => (yr_app::session::load(&directory, &map, seed)?, map),
                     };
-                    let map = yr_render::render_map(&directory, &map, scale)?;
+                    let map = yr_render::render_map(&directory, &map_name, scale)?;
                     Ok(Prepared::Match {
                         session: Box::new(session),
                         map,
+                        map_name,
                         save_path: path,
                     })
                 })();
@@ -346,6 +348,7 @@ impl App {
             Ok(Prepared::Match {
                 session,
                 map,
+                map_name,
                 save_path,
             }) => {
                 self.menu.front = false;
@@ -357,6 +360,7 @@ impl App {
                 }
                 self.session = Some(*session);
                 self.map = Some(map);
+                self.map_name = map_name;
                 self.sprites = load_sprites(&self.gamedir, &self.map_name);
                 self.animations = Default::default();
                 self.effects = Default::default();

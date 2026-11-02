@@ -175,3 +175,16 @@ menu, disabled modes, single player, preview, start, save, abort/return, options
 front load, result/return, cancellation, load error, movie error and exit
 confirmation. A separate test compares every used shell sheet pixel and rendered
 button bevels to the scoped palette decode. Proof remains outside git.
+
+
+## Saved map selection
+
+Native front and pause loads follow the installed map reference in new match
+saves (#159). A save created on Alamo can be loaded from the default EB1 front
+menu. The asynchronous job rebuilds that map's session and terrain before
+replacing the map name, sprites and audio state. Failed or cancelled jobs retain
+the prior map and match. Version-1 files still use the current map because their
+envelope has no filename; explicit CLI loads retain their supplied-map check.
+The actual-handler regression checks front loading, pause loading across maps,
+cancellation, malformed files, absent map assets and mismatched setup hashes.
+The broader original chooser and setup layout remain in #96.

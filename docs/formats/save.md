@@ -12,12 +12,33 @@ All header integers are little-endian. A match file has this layout:
 | Offset | Bytes | Value |
 | --- | --- | --- |
 | 0 | 8 | ASCII `OYRMATCH` |
-| 8 | 4 | Match format version, currently 1 |
+| 8 | 4 | Match format version, 1 or 2 |
 | 12 | 8 | Original setup seed |
 | 20 | 8 | Setup compatibility fingerprint |
 | 28 | 8 | Saved sim state hash |
 | 36 | 1 | Outcome, 0 ongoing, 1 won, 2 lost |
-| 37 | remainder | Simulation snapshot |
+| 37 | remainder | Version 1: simulation snapshot |
+| 37 | 2 | Version 2: map-name byte length N, 1 through 255 |
+| 39 | N | Version 2: installed map filename |
+| 39+N | remainder | Version 2: simulation snapshot |
+
+Named maps loaded from the selected game-data install write version 2. The map
+reference is a bounded ASCII filename, with letters, digits, spaces, underscores,
+hyphens and dots. Empty names, leading dots, path separators, drive prefixes,
+control bytes and invalid encoding are rejected before loading. The reference
+must resolve in the selected install. It is presentation/loading metadata and
+does not change the setup fingerprint, sim payload, RNG or gameplay state hash.
+
+Native front and pause menus rebuild the referenced map, then commit its name,
+terrain, sprites and session together after the complete load succeeds. A failed
+or cancelled job keeps the old map and session. Explicit CLI loads continue to
+check the supplied map against the saved setup instead of following the reference.
+
+Version-1 saves remain readable with the currently supplied map. They contain no
+map identity, so a menu cannot discover a different saved map from that envelope.
+Direct setup construction and external-path maps without an installed filename
+continue to write version 1. Legacy saves can be continued with a matching map;
+re-saving a named installed session records that map in version 2.
 
 The simulation snapshot starts with `OYRSIM\0\0` (8 bytes), then a
 little-endian u32 version (currently 3), then UTF-8 JSON of `Sim`.
@@ -61,7 +82,7 @@ zero-speed instant path. Presentation observes the saved flight directly,
 so rebuilding its sprite cache cannot advance or restart it.
 
 Simulation version 2 adds optional weapon/shot provenance and `Impact` output
-events. The match wrapper remains version 1. Version-1 sim payloads are accepted
+events. That simulation change did not change the match wrapper. Version-1 sim payloads are accepted
 with unknown source metadata; their in-flight shots do not guess impact art.
 New shots and flights retain provenance in version-2 snapshots. Setup keys use
 the original version-1 projection without those visual fields, including unit,
@@ -89,7 +110,7 @@ that reads version 3.
 ## Loading and writing
 
 Readers reject unsupported versions before parsing the payload. The app
-reads at most 64 MiB plus the match header and one sentinel byte. JSON
+reads at most 64 MiB plus 294 bytes of match metadata and one sentinel byte. JSON
 vectors grow from actual elements, never header counts. After decoding,
 checked terrain dimensions must equal the actual cell count and fit the
 u16 coordinate domain. Entity ids must be ordered and unique with a valid

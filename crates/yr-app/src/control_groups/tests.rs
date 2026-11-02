@@ -329,6 +329,7 @@ fn retail_team_keys_preserve_match_state_and_drive_selection_orders_and_camera()
     // A completed replacement must clear groups even when unit IDs coincide.
     let (send, receive) = std::sync::mpsc::channel();
     send.send(Ok(menu_flow::Prepared::Match {
+        map_name: "EB1.MMX".into(),
         session: Box::new(app.session.take().unwrap()),
         map: app.map.take().unwrap(),
         save_path: None,

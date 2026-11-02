@@ -39,6 +39,8 @@ pub struct Session {
     prerequisite_groups: Vec<(String, Vec<String>)>,
     pub(crate) seed: u64,
     pub(crate) setup_hash: u64,
+    /// Named installed map for menu loads; absent for unlabelled setup or paths.
+    pub(crate) source_map: Option<String>,
 }
 
 /// One sidebar slot: a rules unit or structure the player can build.
@@ -470,7 +472,11 @@ pub fn load(gamedir: &str, map_name: &str, seed: u64) -> Result<Session, String>
     ));
     let rules = Rules::load(&rules_ini, &art_ini);
     let overlay_types = yr_render::type_list(&rules_ini, "OverlayTypes");
-    setup(&mut fs, &map, &rules, &overlay_types, seed)
+    let mut session = setup(&mut fs, &map, &rules, &overlay_types, seed)?;
+    if crate::snapshot::valid_map_reference(map_name) && fs.read(map_name).is_some() {
+        session.source_map = Some(map_name.to_owned());
+    }
+    Ok(session)
 }
 
 /// Build a session for `map` on the opened install.
@@ -711,6 +717,7 @@ pub fn setup(
         prerequisite_groups: rules.globals.prerequisite_groups.clone(),
         seed,
         setup_hash,
+        source_map: None,
     })
 }
 
@@ -1113,7 +1120,27 @@ mod save_tests {
             prerequisite_groups: Vec::new(),
             seed: 42,
             setup_hash,
+            source_map: None,
         }
+    }
+
+    #[test]
+    fn saved_map_metadata_preserves_legacy_payload_and_gameplay_hashes() {
+        let mut original = fresh("GI", 200, None);
+        let legacy = crate::snapshot::encode(&original).unwrap();
+        let state_hash = original.sim.state_hash();
+        let setup_hash = original.setup_hash;
+        original.source_map = Some("XMP29U2.MAP".into());
+        let named = crate::snapshot::encode(&original).unwrap();
+        assert_eq!(original.sim.state_hash(), state_hash);
+        assert_eq!(original.setup_hash, setup_hash);
+        assert_eq!(&legacy[12..37], &named[12..37]);
+        assert_eq!(&legacy[37..], &named[39 + "XMP29U2.MAP".len()..]);
+        let mut restored = fresh("GI", 200, None);
+        crate::snapshot::restore(&mut restored, &legacy).unwrap();
+        assert_eq!(crate::snapshot::encode(&restored).unwrap(), legacy);
+        crate::snapshot::restore(&mut restored, &named).unwrap();
+        assert_eq!(crate::snapshot::encode(&restored).unwrap(), named);
     }
 
     #[test]

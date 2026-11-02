@@ -297,6 +297,10 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       absolute `--ticks`/`--frames`. Retail EB1 round-trips at five
       checkpoints and matches uninterrupted hashes through tick 3000
       to Won (`docs/formats/save.md`). Presentation is rebuilt on load.
+- [x] Restore saved installed maps from native front/pause menus (#159).
+      The version-2 wrapper carries a bounded map filename; successful loads
+      commit the matching terrain, sprites and session together. Legacy
+      matching-map saves and explicit CLI compatibility checks remain supported.
 - [x] Basic AI skirmish opponent (#21): computer production in `yr-sim`,
       separate owner credits/queues/power, retail costs and build times,
       a refinery-gated income stipend, an infantry scout and periodic
@@ -350,6 +354,8 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       Seven original regions check two through eight starts, portrait and
       landscape rasters, letterbox composition and marker rounding. Generated
       terrain and chooser projection remain part of the full menu work (#96).
+- [ ] Match the original setup/chooser backdrop (#160). The current native
+      body uses the RA2 red map; the observed YR chooser uses portrait art.
 - [ ] Calibrate heading foreground after map selection (#153). Returning
       from the original chooser changes 25 final-glyph pixels; retain the
       separately verified default heading states.
