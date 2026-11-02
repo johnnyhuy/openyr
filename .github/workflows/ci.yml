@@ -15,7 +15,8 @@ concurrency:
 jobs:
   test:
     name: test
-    runs-on: macos-latest
+    # The arm64 pool failed runner acquisition in #184 before any steps ran.
+    runs-on: macos-15-intel
     steps:
       - uses: actions/checkout@v4
 

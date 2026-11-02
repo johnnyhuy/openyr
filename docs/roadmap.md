@@ -16,6 +16,10 @@ Johnny on 2026-10-31.
 - Precedent study: `docs/research/`
 - Repo, licence, method: `docs/legal.md`
 - Wine testbed retained as reference oracle at `~/Games/RA2YR`
+- [x] Keep the required macOS CI job on an explicit standard Intel runner
+      (#184), retaining all checks after hosted arm64 runner acquisition
+      failed before any steps ran. Local retail/window verification also
+      exercises Apple Silicon.
 
 ## M1: Asset layer (done 2026-10-17; open items carried forward)
 
