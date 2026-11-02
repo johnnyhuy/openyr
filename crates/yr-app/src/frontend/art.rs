@@ -1,6 +1,6 @@
 use crate::{cursor, sidebar::art::Image};
 use yr_assets::AssetFs;
-use yr_formats::{CsfFile, Palette, ShpFile, UnicodeFont};
+use yr_formats::{CsfFile, MixArchive, Palette, ShpFile, UnicodeFont};
 #[derive(Default)]
 pub struct Art {
     pub cursor: cursor::Art,
@@ -13,6 +13,7 @@ pub struct Art {
     pub(super) background: Option<Image>,
     pub(super) buttons: Vec<Image>,
     pub(super) button_back: Option<Image>,
+    pub(super) start_markers: Vec<Image>,
 }
 impl Art {
     pub fn load(fs: &AssetFs) -> Self {
@@ -57,6 +58,40 @@ impl Art {
                 .collect::<Option<Vec<_>>>()
                 .unwrap_or_default()
         };
+        // LOCALMD.MIX entry 3b7f5065 is the observed 18x18 marker background.
+        // Its filename is unresolved; formats/front-preview.md records the evidence.
+        let marker = fs
+            .read("LOCALMD.MIX")
+            .and_then(|bytes| MixArchive::parse(bytes).ok())
+            .and_then(|mix| mix.get_by_id(0x3b7f5065))
+            .and_then(|bytes| ShpFile::parse(bytes).ok())
+            .filter(|s| (s.width, s.height, s.frames.len()) == (18, 18, 1))
+            .and_then(|s| s.decode_frame_canvas(0).ok());
+        if let (Some(indices), Some(font)) = (marker, &art.font) {
+            art.start_markers = ('1'..='8')
+                .map(|ch| {
+                    let mut pixels: Vec<u8> = indices
+                        .iter()
+                        .flat_map(|&i| if i == 0 { [0; 4] } else { shell.rgba(i) })
+                        .collect();
+                    let glyph = font.glyph(ch)?;
+                    for y in 0..glyph.height.min(18) {
+                        for x in 0..u32::from(glyph.width).min(11) {
+                            if glyph.pixel(x, y) {
+                                let at = ((y * 18 + x + 7) * 4) as usize;
+                                pixels[at..at + 4].copy_from_slice(&[248, 236, 96, 255]);
+                            }
+                        }
+                    }
+                    Some(Image {
+                        width: 18,
+                        height: 18,
+                        pixels,
+                    })
+                })
+                .collect::<Option<Vec<_>>>()
+                .unwrap_or_default();
+        }
         art.top = read("SDTP.SHP", 168, 199, 2, &shell);
         art.warning = read("SDWRNANM.SHP", 92, 53, 91, &shell2);
         art.bottom = read("SDBTM.SHP", 168, 65, 1, &shell).pop();

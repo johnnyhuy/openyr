@@ -345,8 +345,11 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       145x113 black control, landscape/portrait image bounds and discrete
       nearest-neighbor sampling. Original crops check unoccluded pixels;
       numbered markers and modal heading state remain separate work.
-- [ ] Draw original numbered start-position markers in previews (#152),
-      using the map's actual waypoints and observed artwork/placement.
+- [x] Draw original numbered start-position markers in authored Skirmish
+      previews (#152), using actual waypoints and retail sprite/font art.
+      Seven original regions check two through eight starts, portrait and
+      landscape rasters, letterbox composition and marker rounding. Generated
+      terrain and chooser projection remain part of the full menu work (#96).
 - [ ] Calibrate heading foreground after map selection (#153). Returning
       from the original chooser changes 25 final-glyph pixels; retain the
       separately verified default heading states.

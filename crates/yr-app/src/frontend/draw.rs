@@ -53,7 +53,7 @@ pub fn draw(frame: &mut [u8], width: u32, height: u32, art: &Art, scene: Scene<'
     }
     if map_top {
         if let Some(map) = scene.preview {
-            map_preview(&mut c, map);
+            map_preview(&mut c, map, &art.start_markers);
         }
     } else if let Some(im) = art
         .warning
@@ -292,7 +292,7 @@ fn heading(c: &mut Canvas<'_>, x: i32, y: i32, w: i32, text: &str) {
     // Captured headings give their final glyph a packed blue component of 24.
     c.text((x + advance, y), &text[tail..], [255, 255, 24, 255], 1);
 }
-fn map_preview(c: &mut Canvas<'_>, map: &super::Preview) {
+fn map_preview(c: &mut Canvas<'_>, map: &super::Preview, markers: &[Image]) {
     // Public UI measurements and renderer samples: formats/front-preview.md.
     let (x, y, width, height) = (644, 37, 145, 113);
     c.rect((x, y), (width, height), [0, 0, 0, 255]);
@@ -327,10 +327,50 @@ fn map_preview(c: &mut Canvas<'_>, map: &super::Preview) {
             image.pixels.extend_from_slice(&map.rgba[at..at + 4]);
         }
     }
-    c.image(
-        (x + (width - tw as i32) / 2, y + (height - th as i32) / 2),
-        &image,
-    );
+    let image_x = x + (width - tw as i32) / 2;
+    let image_y = y + (height - th as i32) / 2;
+    c.image((image_x, image_y), &image);
+    // Generated terrain images have different bounds from authored thumbnails.
+    if !map.authored {
+        return;
+    }
+    let map_width = i64::from(map.map_rect.2);
+    let (local_x, local_y, local_width, local_height) = map.local_rect;
+    let header_width = i64::from(local_width) - 1;
+    let header_height = i64::from(local_height) + map_width.rem_euclid(2);
+    if map_width <= 0 || header_width <= 0 || header_height <= 0 {
+        return;
+    }
+    for (start, marker) in map.starts.iter().zip(markers).take(8) {
+        let Some((cell_x, cell_y)) = *start else {
+            continue;
+        };
+        if marker.width != 18 || marker.height != 18 || marker.pixels.len() != 18 * 18 * 4 {
+            continue;
+        }
+        let (cell_x, cell_y) = (i64::from(cell_x), i64::from(cell_y));
+        let relative_x = (cell_x - cell_y).div_euclid(2) + map_width / 2 - i64::from(local_x);
+        // Measured Skirmish placement, including the horizontal sampling bias.
+        let marker_x = i64::from(image_x)
+            + (8 * relative_x * tw as i64 - header_width).div_euclid(8 * header_width)
+            - 9;
+        // Round the scaled absolute coordinates before subtracting. The Heck
+        // capture distinguishes this from scaling their integer difference.
+        let scale_y = th as f64 / header_height as f64;
+        let point_y = (((cell_x + cell_y + 1) / 2) as f64 * scale_y) as f32;
+        let origin_y = ((map_width / 2 + i64::from(local_y) + 1) as f64 * scale_y) as f32;
+        let marker_y = i64::from(image_y) + (point_y - origin_y).floor() as i64 - 6;
+        for (index, color) in marker.pixels.as_chunks::<4>().0.iter().enumerate() {
+            let px = marker_x + (index % 18) as i64;
+            let py = marker_y + (index / 18) as i64;
+            if color[3] != 0
+                && (i64::from(x)..i64::from(x + width)).contains(&px)
+                && (i64::from(y)..i64::from(y + height)).contains(&py)
+            {
+                c.pixel(px as i32, py as i32, *color);
+            }
+        }
+    }
 }
 
 fn picture(c: &mut Canvas<'_>, rect: (i32, i32, i32, i32), w: u32, h: u32, rgba: &[u8]) {
