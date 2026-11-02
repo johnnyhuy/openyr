@@ -55,6 +55,108 @@ fn proof(app: &App, name: &str) {
     .unwrap();
 }
 #[test]
+fn retail_front_menu_restores_the_saved_map_instead_of_the_default() {
+    let dir = PathBuf::from(std::env::var("HOME").unwrap_or_default())
+        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    if !dir.is_dir() {
+        return;
+    }
+    let temp = std::env::temp_dir().join(format!("openyr-saved-map-{}", std::process::id()));
+    std::fs::create_dir_all(&temp).unwrap();
+    let path = temp.join("Alamo.oyrsave");
+    let mut saved = yr_app::session::load(dir.to_str().unwrap(), "XMP29U2.MAP", 91).unwrap();
+    for _ in 0..3 {
+        saved.step(&[]);
+    }
+    let expected = saved.sim.state_hash();
+    let expected_tick = saved.sim.tick();
+    yr_app::snapshot::save(&saved, &path).unwrap();
+    assert!(yr_app::snapshot::load(dir.to_str().unwrap(), "EB1.MMX", &path).is_err());
+    let named = yr_app::snapshot::encode(&saved).unwrap();
+    let name_len = usize::from(u16::from_le_bytes(named[37..39].try_into().unwrap()));
+    let mut legacy = named[..37].to_vec();
+    legacy[8..12].copy_from_slice(&1u32.to_le_bytes());
+    legacy.extend_from_slice(&named[39 + name_len..]);
+    let legacy_path = temp.join("Legacy.oyrsave");
+    std::fs::write(&legacy_path, legacy).unwrap();
+    let (legacy, legacy_map) =
+        yr_app::snapshot::load_from_menu(dir.to_str().unwrap(), "XMP29U2.MAP", &legacy_path)
+            .unwrap();
+    assert_eq!(legacy_map, "XMP29U2.MAP");
+    assert_eq!(legacy.sim.state_hash(), expected);
+    let mut app = new_app(dir.to_string_lossy().into(), "EB1.MMX".into(), 1);
+    app.save_path = path.clone();
+    app.enter_front();
+    click(&mut app, Button::SinglePlayer);
+    click(&mut app, Button::Load);
+    let index = app.menu.slots.iter().position(|s| s.path == path).unwrap();
+    app.menu.select_slot(index);
+    click(&mut app, Button::Load);
+    click(&mut app, Button::Accept);
+    wait(&mut app);
+    proof(&app, "saved-map-restored");
+    assert_eq!(app.menu.page, Page::Closed, "saved map should load");
+    assert_eq!(app.map_name, "XMP29U2.MAP");
+    assert_eq!(app.session.as_ref().unwrap().sim.state_hash(), expected);
+    assert_eq!(app.session.as_ref().unwrap().sim.tick(), expected_tick);
+    assert!(app.map.is_some() && app.sprites.is_some() && app.movie.is_none());
+
+    let second_path = temp.join("City.oyrsave");
+    let second = yr_app::session::load(dir.to_str().unwrap(), "EB1.MMX", 92).unwrap();
+    let second_hash = second.sim.state_hash();
+    yr_app::snapshot::save(&second, &second_path).unwrap();
+    let bad_path = temp.join("Broken.oyrsave");
+    std::fs::write(&bad_path, b"truncated").unwrap();
+    let changed_reference = |name: &str| {
+        let mut bytes = named[..37].to_vec();
+        bytes.extend((name.len() as u16).to_le_bytes());
+        bytes.extend(name.bytes());
+        bytes.extend_from_slice(&named[39 + name_len..]);
+        bytes
+    };
+    let missing_path = temp.join("Missing-map.oyrsave");
+    std::fs::write(&missing_path, changed_reference("OPENYR_MISSING_MAP.MAP")).unwrap();
+    let wrong_path = temp.join("Wrong-map.oyrsave");
+    std::fs::write(&wrong_path, changed_reference("EB1.MMX")).unwrap();
+    let request = |app: &mut App, path: &std::path::Path| {
+        app.open_menu(Page::Pause);
+        click(app, Button::Load);
+        let index = app.menu.slots.iter().position(|s| s.path == path).unwrap();
+        app.menu.select_slot(index);
+        click(app, Button::Load);
+        click(app, Button::Accept);
+    };
+    let before = yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap();
+    request(&mut app, &second_path);
+    assert_eq!(app.map_name, "XMP29U2.MAP");
+    click(&mut app, Button::Back);
+    wait(&mut app);
+    assert_eq!(app.menu.page, Page::Pause);
+    assert_eq!(app.map_name, "XMP29U2.MAP");
+    assert_eq!(
+        yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap(),
+        before
+    );
+    for path in [&bad_path, &missing_path, &wrong_path] {
+        request(&mut app, path);
+        wait(&mut app);
+        assert!(matches!(app.menu.page, Page::Message { .. }));
+        assert_eq!(app.map_name, "XMP29U2.MAP");
+        assert_eq!(
+            yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap(),
+            before
+        );
+    }
+    request(&mut app, &second_path);
+    wait(&mut app);
+    assert_eq!(app.menu.page, Page::Closed);
+    assert_eq!(app.map_name, "EB1.MMX");
+    assert_eq!(app.session.as_ref().unwrap().sim.state_hash(), second_hash);
+    proof(&app, "pause-saved-map-restored");
+    std::fs::remove_dir_all(temp).unwrap();
+}
+
+#[test]
 fn retail_front_art_reload_replaces_cached_pause_menu_art() {
     let dir = PathBuf::from(std::env::var("HOME").unwrap_or_default())
         .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
