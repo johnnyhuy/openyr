@@ -19,6 +19,7 @@ pub enum Page {
     Pause,
     Save,
     Load,
+    Delete,
     Controls,
     Abort,
     Confirm(Intent),
@@ -31,6 +32,7 @@ pub enum Page {
 pub enum Intent {
     Save(PathBuf),
     Load(PathBuf),
+    Delete(PathBuf),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -70,6 +72,7 @@ pub enum Effect {
     Resume,
     RequestSave,
     RequestLoad,
+    RequestDelete,
     Restart,
     Quit,
     Mute,
@@ -194,13 +197,18 @@ impl State {
                 (Controls, true),
                 (Load, true),
                 (Save, true),
-                (Delete, false),
+                (Delete, true),
                 (Abort, true),
                 (Resume, true),
             ],
             Page::Save => vec![(Save, save_name(&self.name).is_some()), (Back, true)],
             Page::Load => vec![
                 (Load, self.selected.is_some_and(|i| i < self.slots.len())),
+                (Delete, true),
+                (Back, true),
+            ],
+            Page::Delete => vec![
+                (Delete, self.selected.is_some_and(|i| i < self.slots.len())),
                 (Back, true),
             ],
             Page::Controls => {
@@ -353,12 +361,17 @@ impl State {
                 self.set(Page::Save);
                 Effect::None
             }
+            (Page::Pause | Page::Load, Delete) => {
+                self.set(Page::Delete);
+                Effect::None
+            }
             (Page::Pause, Abort) => {
                 self.set(Page::Abort);
                 Effect::None
             }
             (Page::Save, Save) => Effect::RequestSave,
             (Page::Load, Load) => Effect::RequestLoad,
+            (Page::Delete, Delete) => Effect::RequestDelete,
             (Page::Controls, Mute) => Effect::Mute,
             (Page::Controls, ZoomOut) => Effect::Zoom(-25),
             (Page::Controls, ZoomIn) => Effect::Zoom(25),
@@ -374,6 +387,7 @@ impl State {
                 let page = match intent {
                     Intent::Save(_) => Page::Save,
                     Intent::Load(_) => Page::Load,
+                    Intent::Delete(_) => Page::Delete,
                 };
                 self.set(page);
                 Effect::None
@@ -386,7 +400,9 @@ impl State {
             (Page::Loading, Back) => Effect::CancelLoad,
             (_, Back) => {
                 self.set(if self.front {
-                    if self.page == Page::Load {
+                    if self.page == Page::Delete {
+                        Page::Load
+                    } else if self.page == Page::Load {
                         Page::SinglePlayer
                     } else {
                         Page::Main
@@ -604,7 +620,7 @@ impl Layout {
             })
     }
     pub fn slot(self, state: &State, pos: (f64, f64)) -> Option<usize> {
-        if !matches!(state.page, Page::Save | Page::Load) {
+        if !matches!(state.page, Page::Save | Page::Load | Page::Delete) {
             return None;
         }
         let (x, y) = self.local(pos)?;

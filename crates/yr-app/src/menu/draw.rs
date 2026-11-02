@@ -76,6 +76,10 @@ pub fn draw(
             art.label("GUI:LoadMissionMenu", "Restore match"),
             String::new(),
         ),
+        Page::Delete => (
+            art.label("GUI:DeleteGame", "Delete saved match"),
+            String::new(),
+        ),
         Page::Controls => (
             art.label("GUI:GameControls", "Controls"),
             format!(
@@ -93,6 +97,15 @@ pub fn draw(
             String::new(),
         ),
         Page::Confirm(super::Intent::Load(_)) => ("Replace the current match?", String::new()),
+        Page::Confirm(super::Intent::Delete(path)) => (
+            "Delete this saved match permanently?",
+            path.file_stem()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .chars()
+                .take(48)
+                .collect(),
+        ),
         Page::Loading => ("Loading", "Preparing the match...".into()),
         Page::Result(true) => (art.label("TXT_VICTORIOUS", "Victory"), String::new()),
         Page::Result(false) => (art.label("TXT_SCENARIO_LOST", "Defeat"), String::new()),
@@ -118,7 +131,7 @@ pub fn draw(
         let line: String = line.iter().collect();
         c.text((40, 72 + i as i32 * 22), &line, WHITE, 50);
     }
-    if matches!(state.page, Page::Save | Page::Load) {
+    if matches!(state.page, Page::Save | Page::Load | Page::Delete) {
         c.rect((38, 142), (world - 76, 250), [0, 0, 0, 255]);
         for (row, slot) in state.slots.iter().enumerate().skip(state.scroll).take(10) {
             let y = 150 + (row - state.scroll) as i32 * 24;
@@ -228,6 +241,7 @@ pub fn draw(
             }
             Some(Button::Load) => art.label("STT:IGSingleOptButtonLoad", "Restore a saved match"),
             Some(Button::Save) => art.label("STT:IGSingleOptButtonSave", "Store this match"),
+            Some(Button::Delete) => "Delete a saved match",
             Some(Button::Abort) => art.label("STT:IGSingleOptButtonAbort", "Leave this match"),
             Some(Button::Resume) => art.label("STT:IDC_RESUME_MISSION", "Continue playing"),
             _ => "",
@@ -235,6 +249,7 @@ pub fn draw(
         Page::Abort => "Unsaved changes will be lost if you restart or quit.",
         Page::Save => "Type a name or select a slot. Escape returns.",
         Page::Load => "Select a saved match. Escape returns.",
+        Page::Delete => "Select a saved match to delete. The current match stays in memory.",
         Page::Loading => "Escape cancels this load and keeps the current match.",
         Page::Result(_) => "Choose restart or quit.",
         _ => "Escape returns. Tab and arrow keys select controls.",

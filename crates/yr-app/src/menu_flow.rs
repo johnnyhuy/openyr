@@ -69,7 +69,10 @@ impl App {
         self.placing = None;
         self.service_mode = ServiceMode::None;
         self.menu.zoom = (self.view.zoom * 100.0).round().clamp(25.0, 400.0) as u16;
-        if matches!(page, Page::Main | Page::Pause | Page::Save | Page::Load) {
+        if matches!(
+            page,
+            Page::Main | Page::Pause | Page::Save | Page::Load | Page::Delete
+        ) {
             match yr_app::menu::slots(self.save_directory()) {
                 Ok(slots) => {
                     self.menu.slots = slots;
@@ -250,8 +253,12 @@ impl App {
                 let effect = self.menu.activate(yr_app::menu::Button::UseMap);
                 self.apply_menu_effect(effect);
             }
-            KeyCode::ArrowDown if self.menu.page == Page::Load => self.menu.navigate_slot(1),
-            KeyCode::ArrowUp if self.menu.page == Page::Load => self.menu.navigate_slot(-1),
+            KeyCode::ArrowDown if matches!(self.menu.page, Page::Load | Page::Delete) => {
+                self.menu.navigate_slot(1)
+            }
+            KeyCode::ArrowUp if matches!(self.menu.page, Page::Load | Page::Delete) => {
+                self.menu.navigate_slot(-1)
+            }
             KeyCode::Tab => self.menu.navigate(if self.shift { -1 } else { 1 }),
             KeyCode::ArrowDown => self.menu.navigate(1),
             KeyCode::ArrowUp => self.menu.navigate(-1),
@@ -318,6 +325,16 @@ impl App {
             }
             Effect::Commit(Intent::Save(path)) => self.save_menu_path(path),
             Effect::Commit(Intent::Load(path)) => self.start_menu_load(Some(path)),
+            Effect::RequestDelete => {
+                if let Some(slot) = self.menu.selected.and_then(|i| self.menu.slots.get(i)) {
+                    self.menu
+                        .set(Page::Confirm(Intent::Delete(slot.path.clone())));
+                    // Deletion requires a deliberate confirmation instead of
+                    // accepting a second press of the slot's default action.
+                    self.menu.focus = 1;
+                }
+            }
+            Effect::Commit(Intent::Delete(path)) => self.delete_menu_path(path),
             Effect::Mute => {
                 self.menu.zoom = (self.view.zoom * 100.0).round().clamp(25.0, 400.0) as u16;
                 self.menu.muted = !self.menu.muted;
@@ -349,6 +366,48 @@ impl App {
             }
         }
         self.reset_menu_clock();
+    }
+    fn delete_menu_path(&mut self, path: PathBuf) {
+        let result = (|| {
+            if path.parent() != Some(self.save_directory())
+                || path.extension().is_none_or(|e| e != "oyrsave")
+                || !self.menu.slots.iter().any(|s| s.path == path)
+            {
+                return Err("Select a saved match in the current save folder".to_string());
+            }
+            let metadata = std::fs::symlink_metadata(&path).map_err(|e| e.to_string())?;
+            if !metadata.is_file() {
+                return Err("The selected save is no longer a regular file".to_string());
+            }
+            std::fs::remove_file(&path).map_err(|e| e.to_string())
+        })();
+        // Refresh even after failure: the selected file may have disappeared
+        // or become a directory/symlink while confirmation was open.
+        let refreshed = yr_app::menu::slots(self.save_directory());
+        self.menu.slots.clear();
+        let refresh_error = match refreshed {
+            Ok(slots) => {
+                self.menu.slots = slots;
+                None
+            }
+            Err(error) => Some(error),
+        };
+        self.menu.selected = self
+            .menu
+            .selected
+            .and_then(|i| (!self.menu.slots.is_empty()).then(|| i.min(self.menu.slots.len() - 1)));
+        self.menu.scroll = self
+            .menu
+            .scroll
+            .min(self.menu.slots.len().saturating_sub(10));
+        let message = match (result, refresh_error) {
+            (Ok(()), None) => "Saved match deleted".to_string(),
+            (Ok(()), Some(error)) => {
+                format!("Saved match deleted. Could not refresh saves: {error}")
+            }
+            (Err(error), _) => format!("Could not delete saved match: {error}"),
+        };
+        self.menu.message(message, Page::Delete);
     }
     pub(super) fn save_menu_path(&mut self, path: PathBuf) {
         self.order_feedback.clear();

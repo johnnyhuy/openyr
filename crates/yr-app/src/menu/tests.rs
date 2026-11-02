@@ -4,10 +4,13 @@ fn modal_navigation_skips_disabled_controls_and_confirms_discard() {
     let mut state = State::default();
     state.set(Page::Pause);
     assert_eq!(state.activate(Button::Delete), Effect::None);
+    assert_eq!(state.page, Page::Delete);
+    assert_eq!(state.activate(Button::Delete), Effect::None);
+    state.escape();
     assert_eq!(state.page, Page::Pause);
     state.focus = 2;
     state.navigate(1);
-    assert_eq!(state.focus, 4);
+    assert_eq!(state.focus, 3);
     state.activate(Button::Abort);
     assert_eq!(state.page, Page::Abort);
     assert_eq!(state.activate(Button::Restart), Effect::Restart);

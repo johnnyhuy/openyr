@@ -86,6 +86,7 @@ pub fn draw(frame: &mut [u8], width: u32, height: u32, art: &Art, scene: Scene<'
         Page::Skirmish => art.label("GUI:SkirmishGame", "Skirmish Game"),
         Page::ChooseMap => art.label("GUI:ChooseMap", "Choose Map"),
         Page::Load => art.label("GUI:LoadGame", "Saved matches"),
+        Page::Delete => art.label("GUI:DeleteGame", "Delete saved match"),
         Page::Controls => art.label("GUI:Options", "Controls"),
         _ => "OpenYR",
     };
@@ -107,7 +108,7 @@ pub fn draw(frame: &mut [u8], width: u32, height: u32, art: &Art, scene: Scene<'
     if s.page == Page::ChooseMap {
         chooser(&mut c, art, s);
     }
-    if s.page == Page::Load {
+    if matches!(s.page, Page::Load | Page::Delete) {
         c.rect((38, 142), (556, 250), [0, 0, 0, 255]);
         if s.slots.is_empty() {
             c.text((48, 154), "No saved matches", WHITE, 48);
@@ -136,7 +137,24 @@ pub fn draw(frame: &mut [u8], width: u32, height: u32, art: &Art, scene: Scene<'
                 64,
             );
         }
-        Page::Confirm(_) => centered(&mut c, 0, 80, 632, "Load this saved match?", YELLOW),
+        Page::Confirm(intent) => {
+            let text = match intent {
+                crate::menu::Intent::Delete(_) => "Delete this saved match permanently?",
+                crate::menu::Intent::Save(_) => "Replace this saved match?",
+                crate::menu::Intent::Load(_) => "Load this saved match?",
+            };
+            centered(&mut c, 0, 80, 632, text, YELLOW);
+            if let crate::menu::Intent::Delete(path) = intent {
+                centered(
+                    &mut c,
+                    0,
+                    112,
+                    632,
+                    &path.file_stem().unwrap_or_default().to_string_lossy(),
+                    WHITE,
+                );
+            }
+        }
         Page::Exit => centered(&mut c, 0, 380, 632, "Exit OpenYR?", YELLOW),
         Page::Loading => centered(&mut c, 0, 80, 632, "Preparing the match...", YELLOW),
         Page::Message { text, .. } => {
@@ -192,6 +210,7 @@ pub fn draw(frame: &mut [u8], width: u32, height: u32, art: &Art, scene: Scene<'
             Button::Folder => "Game data folder",
             Button::Controls => art.label("GUI:Options", "Controls"),
             Button::Load => art.label("GUI:LoadGame", "Restore"),
+            Button::Delete => art.label("GUI:DeleteGame", "Delete saved match"),
             Button::Quit => art.label("GUI:ExitGame", "Exit"),
             Button::Back if s.page == Page::ChooseMap => art.label("GUI:Cancel", "Cancel"),
             Button::Back => art.label("GUI:Back", "Return"),
@@ -246,6 +265,7 @@ pub fn draw(frame: &mut [u8], width: u32, height: u32, art: &Art, scene: Scene<'
             "Set credits and units. Tab selects; arrows adjust. Choose a map or start."
         }
         Page::Load => "Select a saved match. Arrows select; Escape returns.",
+        Page::Delete => "Select a saved match to delete. Arrows select; Escape returns.",
         Page::ChooseMap => "Select a Battle map. Enter uses it; Escape keeps the current map.",
         Page::Loading => "Escape cancels and returns.",
         Page::Message { text, .. } => {
