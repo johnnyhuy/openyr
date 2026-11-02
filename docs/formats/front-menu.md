@@ -188,3 +188,29 @@ envelope has no filename; explicit CLI loads retain their supplied-map check.
 The actual-handler regression checks front loading, pause loading across maps,
 cancellation, malformed files, absent map assets and mismatched setup hashes.
 The broader original chooser and setup layout remain in #96.
+
+## Recovery message layout
+
+Front recovery messages use a 568-pixel text width at `(32,72)` inside the
+632-pixel body (#161). Lines use the loaded GAME.FNT glyph widths and tracking,
+or the eight-pixel fallback advance. Newlines, blank paragraphs and CRLF input
+retain their line breaks. Wrapping prefers whitespace; an unbroken filename
+or token splits at a Unicode character boundary. Layout borrows the original
+string and never truncates the diagnostic to a character limit.
+
+The text viewport ends at y=544. Line spacing is at least 24 pixels and grows
+to cover taller optional fonts. Overflow scrolls with Up/Down, Page Up/Down,
+Home/End or the wheel. The footer shows the visible line range. Opening another
+page or message resets its scroll position. Back, Enter on Back and Escape
+retain their recovery routes; scrolling never reaches match input.
+
+`retail_recovery_messages_use_font_width_and_stay_inside_the_panel` checks
+proportional widths, Unicode token reconstruction, all reachable lines,
+composition bounds and scaled Back hit boxes. The actual-handler test
+`retail_front_recovery_messages_wrap_scroll_and_return_through_actual_handlers`
+exercises short, multiline, overflowing and unbroken diagnostics. Set
+`OPENYR_FRONT_PROOF=<external-dir>` while running that test to export shared
+native compositor frames at presentation phase 0, including both ends of
+overflowing messages. These frames contain retail art and stay outside git.
+This is a native recovery policy; original dialog geometry and behavior remain
+under #96. In-match message layout is unchanged by this slice.

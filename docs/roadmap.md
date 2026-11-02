@@ -301,6 +301,10 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       The version-2 wrapper carries a bounded map filename; successful loads
       commit the matching terrain, sprites and session together. Legacy
       matching-map saves and explicit CLI compatibility checks remain supported.
+- [x] Wrap front recovery messages by measured font width and word boundaries
+      (#161). Explicit paragraph breaks survive; long tokens split at Unicode
+      character boundaries. Scrollable overflow retains the full diagnostic
+      and keeps Back/Escape available (`docs/formats/front-menu.md`).
 - [x] Basic AI skirmish opponent (#21): computer production in `yr-sim`,
       separate owner credits/queues/power, retail costs and build times,
       a refinery-gated income stipend, an infantry scout and periodic

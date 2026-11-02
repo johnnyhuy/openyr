@@ -1,4 +1,4 @@
-use super::Art;
+use super::{message, Art};
 use crate::{
     menu::{Button, Layout, Page, State},
     movie::Frame,
@@ -150,18 +150,20 @@ pub fn draw(frame: &mut [u8], width: u32, height: u32, art: &Art, scene: Scene<'
         Page::Exit => centered(&mut c, 0, 380, 632, "Exit OpenYR?", YELLOW),
         Page::Loading => centered(&mut c, 0, 80, 632, "Preparing the match...", YELLOW),
         Page::Message { text, .. } => {
-            for (i, line) in text
-                .chars()
-                .take(360)
-                .collect::<Vec<_>>()
-                .chunks(48)
+            let (first, rows, _) = message::viewport(c.face, text, s.message_scroll);
+            for (i, line) in message::lines(c.face, text)
+                .skip(first)
+                .take(rows)
                 .enumerate()
             {
                 c.text(
-                    (32, 72 + i as i32 * 24),
-                    &line.iter().collect::<String>(),
+                    (
+                        message::LEFT,
+                        message::TOP + i as i32 * message::line_step(c.face),
+                    ),
+                    line,
                     WHITE,
-                    48,
+                    usize::MAX,
                 );
             }
         }
@@ -237,13 +239,27 @@ pub fn draw(frame: &mut [u8], width: u32, height: u32, art: &Art, scene: Scene<'
         }
     }
     centered(&mut c, 638, 581, 156, "OpenYR 0.1", YELLOW);
-    let status = match s.page {
+    let message_status;
+    let status = match &s.page {
         Page::Main if hovered.is_some() => "Select a mode. Gray actions are unavailable.",
         Page::SinglePlayer if hovered.is_some() => "Saved matches or supported skirmish setup.",
         Page::Main | Page::SinglePlayer => "",
         Page::Skirmish => "Start the supported EB1 skirmish.",
         Page::Load => "Select a saved match. Arrows select; Escape returns.",
         Page::Loading => "Escape cancels and returns.",
+        Page::Message { text, .. } => {
+            let (first, rows, count) = message::viewport(c.face, text, s.message_scroll);
+            if count > rows {
+                message_status = format!(
+                    "Lines {}-{} of {count}. Up/Down or wheel scroll; Escape returns.",
+                    first + 1,
+                    (first + rows).min(count)
+                );
+                &message_status
+            } else {
+                "Escape returns. Tab selects controls."
+            }
+        }
         _ => "Escape returns. Tab selects controls.",
     };
     c.text((8, 578), &fit(c.face, status, 610), YELLOW, 100);

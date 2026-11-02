@@ -1,8 +1,10 @@
 //! Retail front-menu shell. Observations and limits: formats/front-menu.md.
 mod art;
 mod draw;
+mod message;
 pub use art::Art;
 pub use draw::{draw, Scene};
+pub use message::scroll_message;
 #[cfg(test)]
 mod tests;
 #[cfg(test)]
