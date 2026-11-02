@@ -174,6 +174,55 @@ fn retail_electro_loop_frames_match_source_and_expire_after_the_tail() {
 }
 
 #[test]
+fn retail_head_pop_frames_match_source_and_expire() {
+    let dir = PathBuf::from(std::env::var("HOME").unwrap())
+        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    if !dir.is_dir() {
+        return;
+    }
+    let fs = AssetFs::open(&dir).unwrap();
+    let art = IniFile::parse(&String::from_utf8_lossy(fs.read("ARTMD.INI").unwrap()));
+    let palette = Palette::parse(fs.read("ANIM.PAL").unwrap()).unwrap();
+    let shp = ShpFile::parse(fs.read("YURIDIE.SHP").unwrap()).unwrap();
+    assert_eq!((shp.width, shp.height, shp.frames.len()), (230, 150, 30));
+    let mut effects = Effects::default();
+    let mut frames = std::collections::BTreeSet::new();
+    for tick in 0..=34 {
+        let frame = tick * 200 / 225;
+        let sprite = effects.get(&fs, &art, "YURIDIE", tick);
+        if frame >= 30 {
+            assert!(sprite.is_none());
+            continue;
+        }
+        frames.insert(frame);
+        let expected: Vec<_> = shp
+            .decode_frame_canvas(frame as usize)
+            .unwrap()
+            .into_iter()
+            .flat_map(|index| {
+                if index == 0 {
+                    [0; 4]
+                } else {
+                    palette.rgba(index)
+                }
+            })
+            .collect();
+        let sprite = sprite.unwrap();
+        assert_eq!(
+            (sprite.w, sprite.h, sprite.ax, sprite.ay),
+            (230, 150, 115, 75)
+        );
+        assert!(
+            sprite.rgba == expected,
+            "YURIDIE tick {tick}, frame {frame}"
+        );
+    }
+    assert_eq!(frames.len(), 30, "all source frames use body art");
+    assert_eq!(effects.frames.len(), 30);
+    assert!(!effects.alive(&fs, &art, "YURIDIE", u64::MAX));
+}
+
+#[test]
 fn retail_nuke_melt_frames_match_source_and_expire() {
     let dir = PathBuf::from(std::env::var("HOME").unwrap())
         .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");

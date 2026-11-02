@@ -97,6 +97,13 @@ Johnny on 2026-10-31.
       loss and unchanged sim/save bytes are checked. Original timing,
       lighting, scorch, animation reports and non-human exceptions remain
       unverified (`docs/formats/effects.md`).
+- [x] Human infantry Yuri head-pop deaths (#102, #185): lethal `InfDeath=6`
+      resolves `[General] InfantryHeadPop` to the 30-frame retail YURIDIE
+      clip in world painter order. All source frames, eligibility, expiry,
+      general-setting overrides, saved flights after shooter loss and unchanged
+      sim/save bytes are checked. Original timing, lighting, scorch and reports
+      remain unverified; Yuri deployment and area damage are separate simulation
+      work (`docs/formats/effects.md`).
 - [x] Map parsing: LZO/IsoMapPack5 + overlay packs, all 234 retail maps
       (`docs/formats/map.md`); tile-set index maps tile numbers to TMPs
 - [x] TMP terrain rendering from real maps as PNG (`mix-dump render-map`;

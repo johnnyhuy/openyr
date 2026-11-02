@@ -320,8 +320,8 @@ impl SpriteBank {
             .then_some(sequence)
     }
 
-    fn special_infantry_death(&self, kind: &str, sequence: u8) -> Option<&'static str> {
-        // Retail rules name selectors 5 and 7 as electro and Nuke Melt.
+    fn special_infantry_death(&self, kind: &str, sequence: u8) -> Option<&str> {
+        // Retail rules name selectors 5, 6 and 7 as electro, head pop and melt.
         // Non-human death behavior is separate.
         if self.rules.techno(kind)?.kind != TechnoKind::Infantry
             || self.rules_ini.section(kind)?.get_bool("NotHuman") == Some(true)
@@ -330,6 +330,7 @@ impl SpriteBank {
         }
         match sequence {
             5 => Some("ELECTRO"),
+            6 => self.rules_ini.section("General")?.get("InfantryHeadPop"),
             7 => Some("NUKEDIE"),
             _ => None,
         }
@@ -352,8 +353,11 @@ impl SpriteBank {
     }
 
     pub fn infantry_death_alive(&mut self, kind: &str, sequence: u8, age: u64) -> bool {
-        if let Some(name) = self.special_infantry_death(kind, sequence) {
-            self.effect_alive(name, age)
+        if let Some(name) = self
+            .special_infantry_death(kind, sequence)
+            .map(str::to_owned)
+        {
+            self.effect_alive(&name, age)
         } else {
             self.infantry_death_frame(kind, sequence, 0, age).is_some()
         }
@@ -368,8 +372,11 @@ impl SpriteBank {
         remap: [u8; 3],
         age: u64,
     ) -> Option<&Sprite> {
-        if let Some(name) = self.special_infantry_death(kind, sequence) {
-            return self.get_effect(name, age);
+        if let Some(name) = self
+            .special_infantry_death(kind, sequence)
+            .map(str::to_owned)
+        {
+            return self.get_effect(&name, age);
         }
         let frame = self.infantry_death_frame(kind, sequence, facing, age)?;
         self.cached_sprite(kind.to_ascii_uppercase(), SpriteFrame::Shp(frame), remap)
@@ -712,7 +719,7 @@ mod tests {
         assert!(!bank.infantry_death_alive("E1", 5, 31));
         assert!(!bank.infantry_death_alive("E1", 5, u64::MAX));
         assert_eq!(bank.infantry_death_sequence("E1", 0), None);
-        for selector in [0, 3, 4, 6, 8, 9, 10, u8::MAX] {
+        for selector in [0, 3, 4, 8, 9, 10, u8::MAX] {
             assert!(bank
                 .get_infantry_death("E1", selector, 0, [0; 3], 0)
                 .is_none());
@@ -724,6 +731,64 @@ mod tests {
         assert_eq!(bank.infantry_death_sequence("E1", source), None);
         assert!(bank.get_infantry_death("E1", 5, 0, [0; 3], 0).is_none());
         assert!(bank.get_infantry_death("E1", 1, 0, [0; 3], 0).is_some());
+    }
+
+    #[test]
+    fn retail_head_pop_uses_general_art_for_human_lethal_hits() {
+        let dir = std::path::PathBuf::from(std::env::var("HOME").unwrap())
+            .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+        if !dir.is_dir() {
+            return;
+        }
+        let mut bank = SpriteBank::open(dir.to_str().unwrap(), "EB1.MMX").unwrap();
+        for weapon in ["PsiWave", "SuperPsiWave", "CRSuperMindBlast"] {
+            let source = bank.rules.weapons.get(weapon).expect(weapon).source_id();
+            for kind in ["E1", "GGI", "SHK"] {
+                assert_eq!(bank.infantry_death_sequence(kind, source), Some(6));
+            }
+            for kind in ["DOG", "COW", "MTNK", "SHAD", "GAPOWR", "MISSING"] {
+                assert_eq!(bank.infantry_death_sequence(kind, source), None, "{kind}");
+                assert!(bank.get_infantry_death(kind, 6, 0, [0; 3], 0).is_none());
+            }
+        }
+        let first = bank
+            .get_infantry_death("E1", 6, 0, [255, 0, 0], 8)
+            .unwrap()
+            .rgba
+            .clone();
+        assert!(
+            first
+                == bank
+                    .get_infantry_death("GGI", 6, 128, [0, 0, 255], 8)
+                    .unwrap()
+                    .rgba,
+            "generic head pop ignores facing and remap"
+        );
+        assert!(bank.infantry_death_alive("E1", 6, 33));
+        assert!(!bank.infantry_death_alive("E1", 6, 34));
+        assert!(!bank.infantry_death_alive("E1", 6, u64::MAX));
+        let source = bank.rules.weapons.get("PsiWave").unwrap().source_id();
+        let original = bank.rules_ini.clone();
+        // The general setting is authoritative, including optional overrides.
+        bank.rules_ini
+            .merge_from(&IniFile::parse("[General]\nInfantryHeadPop=ELECTRO"));
+        let expected = bank.get_effect("ELECTRO", 8).unwrap().rgba.clone();
+        assert!(bank.get_infantry_death("E1", 6, 0, [0; 3], 8).unwrap().rgba == expected);
+        for invalid in ["", "MISSING", "../../unsafe"] {
+            bank.rules_ini = original.clone();
+            bank.rules_ini.merge_from(&IniFile::parse(&format!(
+                "[General]\nInfantryHeadPop={invalid}"
+            )));
+            assert_eq!(bank.infantry_death_sequence("E1", source), None);
+        }
+        bank.rules_ini = original;
+        for malformed in ["[YURIDIE]\nImage=../../unsafe", "[YURIDIE]\nRate=0"] {
+            bank.art_ini = IniFile::parse(malformed);
+            bank.effects = Default::default();
+            assert_eq!(bank.infantry_death_sequence("E1", source), None);
+            assert!(bank.get_infantry_death("E1", 6, 0, [0; 3], 0).is_none());
+            assert!(bank.get_infantry_death("E1", 1, 0, [0; 3], 0).is_some());
+        }
     }
 
     #[test]

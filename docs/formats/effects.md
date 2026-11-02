@@ -205,6 +205,43 @@ include simulation ticks and hashes, and composition preserves complete
 save bytes. Export with
 `OPENYR_INFANTRY_DEATH_PROOF=<external-dir> cargo test -p yr-app --bin openyr retail_infantry_death_composition_proof -- --nocapture`.
 
+## Yuri head-pop deaths
+
+Retail `RULESMD.INI` comments explicitly name `InfDeath=6` as Yuri head
+explode. `[General] InfantryHeadPop=YURIDIE` selects the generic art.
+`YURI` declares `Secondary=PsiWave`, which uses `PsiPulse` and selector 6.
+`SuperPsiWave` and `CRSuperMindBlast` use `SuperPsiPulse`, also selector 6.
+Both warheads declare `PsychicDamage=yes`; the death selector determines
+the clip independently of that flag. The current native combat model
+supports targeted lethal hits, not Yuri deployment or the declared area
+damage. The controlled proof equips Yuri with his retail secondary and
+orders a one-cell attack; it does not establish original deployment behavior.
+
+`ARTMD.INI` declares `[YURIDIE]` with `Scorch=yes`, `Layer=ground` and
+`Report=InfantryPsyCrush`. Its `AltPalette=yes` line is commented out.
+There is no active image, palette, transparency, rate, start, end or loop
+override. `RA2.MIX/CONQUER.MIX/YURIDIE.SHP` is 26,864 bytes, with 30 frames
+on a 230x150 canvas. Independent SHP decoding and `ANIM.PAL` comparison
+check every source frame; there is no shadow half. These are retail data
+observations without original engine source inspection.
+
+The shared special-death route now resolves the general setting for lethal
+selector 6 on registered infantry without `NotHuman=yes`. It retains the
+actual fatal pose and uses world painter order, ignoring facing and house
+remap. Missing, invalid or malformed optional art suppresses the clip without
+restoring the dead victim or hiding other objects. Other techno classes,
+animals and unknown sources receive no guessed generic death.
+
+The existing bounded effect cache and actor limit apply. At provisional
+default rate 200, frames occupy ages 0 through 33 and expire at age 34.
+Original timing, anchor, palette lighting, scorch, animation reports and
+non-human/per-type exceptions remain unverified in #102. Loading clears
+past transient deaths; saved-flight arrivals can create new ones even after
+the shooter disappears. Tests verify general-setting overrides, all source
+pixels, expiry, eligibility, optional-art failure, saved-flight provenance
+and unchanged hashes/save bytes. The shared compositor proof exports every
+age through expiry using the same command documented for Nuke Melt above.
+
 ## Cannon bodies and travel
 
 Retail `RULESMD.INI` resolves MTNK's `105mm` and HTNK's `120mm` to `Cannon`,

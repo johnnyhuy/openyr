@@ -22,6 +22,8 @@ fn retail_infantry_deaths_use_lethal_weapon_after_saved_flight_and_shooter_loss(
         ("M60", Some(1)),
         ("HoverMissile", Some(2)),
         ("ElectricBolt", Some(5)),
+        ("PsiWave", Some(6)),
+        ("SuperPsiWave", Some(6)),
         ("RadBeamWeapon", Some(7)),
         ("RadEruptionWeapon", Some(7)),
         ("105mm", None),
@@ -32,7 +34,9 @@ fn retail_infantry_deaths_use_lethal_weapon_after_saved_flight_and_shooter_loss(
             bank.infantry_death_sequence("E1", spec.source.unwrap()),
             expected
         );
-        spec.projectile_speed = Fix::from_raw(128);
+        // Keep the synthetic flight alive through restore, including the
+        // one-cell PsiWave range. Retail Psychic itself is invisible/instant.
+        spec.projectile_speed = Fix::from_raw(if expected == Some(6) { 64 } else { 128 });
         let spawn = |x, weapon| Command::Spawn {
             kind,
             x: Fix::from_int(x),
@@ -44,7 +48,7 @@ fn retail_infantry_deaths_use_lethal_weapon_after_saved_flight_and_shooter_loss(
             weapon,
         };
         session.sim.step(&[
-            spawn(1, Some(spec)),
+            spawn(if expected == Some(6) { 2 } else { 1 }, Some(spec)),
             spawn(3, None),
             Command::AssignOwner {
                 id: 2,
@@ -61,6 +65,7 @@ fn retail_infantry_deaths_use_lethal_weapon_after_saved_flight_and_shooter_loss(
             y: Fix::ONE,
         }]);
         session.sim.drain_events();
+        assert_eq!(session.sim.projectiles().len(), 1, "{weapon} in flight");
         let save = crate::snapshot::encode(&session).unwrap();
         crate::snapshot::restore(&mut session, &save).unwrap();
         let mut scene = EffectScene::default();
@@ -106,7 +111,7 @@ fn retail_infantry_deaths_use_lethal_weapon_after_saved_flight_and_shooter_loss(
                 break;
             }
         }
-        assert!(died);
+        assert!(died, "{weapon} must arrive after restore");
         // Sim updates expire the one-shot even if no frame was drawn.
         for _ in 0..80 {
             session.sim.step(&[]);
