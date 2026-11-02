@@ -301,6 +301,11 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       The version-2 wrapper carries a bounded map filename; successful loads
       commit the matching terrain, sprites and session together. Legacy
       matching-map saves and explicit CLI compatibility checks remain supported.
+- [x] Delete saved matches from front/pause menus (#171, #96): selected-slot
+      confirmation defaults to No; stale files and failed deletions refresh
+      the list with visible recovery. The last deletion disables the action.
+      Temporary-file handler checks and retail compositions preserve complete
+      live save bytes and the quicksave target (`docs/formats/menus.md`).
 - [x] Wrap front recovery messages by measured font width and word boundaries
       (#161). Explicit paragraph breaks survive; long tokens split at Unicode
       character boundaries. Scrollable overflow retains the full diagnostic

@@ -53,7 +53,7 @@ not scale menu art. Rendering and hit testing share the same transform.
 
 The right controls begin at local (world width + 23,228), with 25-pixel rows.
 Resume and Back occupy the row 65 pixels above the canvas bottom. The native
-keyboard focus underline, disabled delete control, save-slot list, confirmations,
+keyboard focus underline, save-slot list, deletion page, confirmations,
 controls, loading and result screens are provisional. Control frames currently
 use 0 for normal, 1 for pressed and 2 for hover. Exact frame semantics, tracking,
 widescreen layout, non-Allied skins and timing still need an original oracle.
@@ -85,6 +85,26 @@ cannot replace or resume it. Presentation is rebuilt after successful load;
 queued commands and selection are discarded. The loaded slot becomes the
 F5/F9 target. Restart rebuilds the same map with the same seed. Quit exits the
 app; Main Menu discards the match through the explicit abort choice.
+
+Delete Game opens a separate saved-match list from Pause or the Load page.
+Mouse selection, arrows and wheel scrolling use the same slot geometry as Load.
+Delete stays unavailable until a slot is selected. Confirmation names the save,
+asks whether to delete it permanently and defaults to No. Escape, right-click
+and No return to the list without removing the file. Confirmation and result
+pages use the current front or in-match skin; this is a native layout policy,
+not an observed original deletion-dialog layout (#171, #96).
+
+Only listed regular `.oyrsave` files in the active save folder can be deleted.
+The app checks the path, extension and file type again when confirming, without
+following a replacement symlink. It refreshes slots after success or failure,
+clamps selection and scrolling, and shows a result with a route back. Missing
+files and directory/symlink replacements produce recoverable errors. Deleting
+the last slot shows the empty list with Delete disabled. The running match and
+its save target stay in memory; saving again can recreate a deleted active slot.
+No simulation state or save schema changes. The handler tests use temporary
+files and compare complete encoded retail match bytes before and after deletion.
+`OPENYR_DELETE_PROOF=<directory>` exports front/pause selection, confirmation,
+success, stale-file error and empty-list frames through the shared compositor.
 
 Controls persist actual mute and world zoom in
 `~/Library/Application Support/OpenYR/interface.json`, through a sibling

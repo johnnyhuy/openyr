@@ -162,6 +162,274 @@ fn escape_cancels_commands_before_pause_and_modal_clicks_do_not_become_orders() 
 }
 
 #[test]
+fn delete_slots_requires_confirmation_and_refreshes_scrolling_in_both_flows() {
+    for front in [false, true] {
+        let temp = Scratch::new();
+        let mut app = new_app(String::new(), String::new(), 1);
+        app.save_path = temp.0.join("Match 11.oyrsave");
+        app.menu.front = front;
+        for i in 0..12 {
+            std::fs::write(temp.0.join(format!("Match {i:02}.oyrsave")), [i]).unwrap();
+        }
+        std::fs::write(temp.0.join("keep.txt"), b"keep").unwrap();
+        app.open_menu(if front {
+            Page::SinglePlayer
+        } else {
+            Page::Pause
+        });
+        // Single Player normally receives its refreshed slots from Main.
+        if front {
+            app.menu.slots = yr_app::menu::slots(&temp.0).unwrap();
+            click(&mut app, Button::Load);
+        }
+        click(&mut app, Button::Delete);
+        assert_eq!(app.menu.page, Page::Delete);
+        click(&mut app, Button::Delete);
+        assert_eq!(app.menu.page, Page::Delete, "no selection cannot delete");
+        for _ in 0..12 {
+            app.menu_key_code(KeyCode::ArrowDown, None, false);
+        }
+        assert_eq!(app.menu.selected, Some(11));
+        assert_eq!(app.menu.scroll, 2);
+        app.menu_key_code(KeyCode::Enter, None, false);
+        assert_eq!(
+            app.menu.page,
+            Page::Confirm(Intent::Delete(app.save_path.clone()))
+        );
+        assert_eq!(
+            app.menu.focus, 1,
+            "confirmation defaults to keeping the save"
+        );
+        app.menu_key_code(KeyCode::Enter, None, true);
+        assert!(matches!(app.menu.page, Page::Confirm(Intent::Delete(_))));
+        app.menu_key_code(KeyCode::Enter, None, false);
+        assert_eq!(app.menu.page, Page::Delete);
+        assert_eq!(std::fs::read(&app.save_path).unwrap(), [11]);
+        click(&mut app, Button::Delete);
+        app.menu_key_code(KeyCode::Escape, None, false);
+        assert_eq!(app.menu.page, Page::Delete);
+        assert!(app.save_path.is_file());
+        click(&mut app, Button::Delete);
+        click(&mut app, Button::Accept);
+        assert!(matches!(app.menu.page, Page::Message { .. }));
+        assert!(!app.save_path.exists());
+        assert_eq!(app.menu.selected, Some(10));
+        assert_eq!(app.menu.scroll, 1);
+        assert_eq!(app.menu.slots.len(), 11);
+        assert_eq!(
+            std::fs::read(temp.0.join("Match 10.oyrsave")).unwrap(),
+            [10]
+        );
+        assert_eq!(std::fs::read(temp.0.join("keep.txt")).unwrap(), b"keep");
+        click(&mut app, Button::Back);
+        // Mouse slot selection uses the same scaled list geometry in both shells.
+        let layout = Layout::for_state(&app.menu, WIN_W, WIN_H);
+        app.cursor = (
+            layout.origin.0 + 50.0 * layout.scale,
+            layout.origin.1 + 155.0 * layout.scale,
+        );
+        app.menu_mouse(ElementState::Pressed, MouseButton::Left);
+        app.menu_mouse(ElementState::Released, MouseButton::Left);
+        assert_eq!(app.menu.selected, Some(1));
+        while !app.menu.slots.is_empty() {
+            click(&mut app, Button::Delete);
+            click(&mut app, Button::Accept);
+            click(&mut app, Button::Back);
+        }
+        assert_eq!(app.menu.selected, None);
+        assert_eq!(app.menu.scroll, 0);
+        assert!(!app.menu.buttons()[0].1);
+        click(&mut app, Button::Delete);
+        assert_eq!(app.menu.page, Page::Delete);
+        click(&mut app, Button::Back);
+        assert_eq!(app.menu.page, if front { Page::Load } else { Page::Pause });
+        assert!(app.pending.is_empty());
+        assert!(app.load_job.is_none());
+        assert_eq!(app.save_path, temp.0.join("Match 11.oyrsave"));
+    }
+}
+
+#[test]
+fn delete_slots_rejects_stale_symlink_directory_and_outside_targets() {
+    let temp = Scratch::new();
+    let outside = Scratch::new();
+    let mut app = new_app(String::new(), String::new(), 1);
+    app.save_path = temp.0.join("active.oyrsave");
+    let path = temp.0.join("selected.oyrsave");
+    std::fs::write(&path, b"save").unwrap();
+    app.open_menu(Page::Delete);
+    app.menu.select_slot(0);
+    click(&mut app, Button::Delete);
+    std::fs::remove_file(&path).unwrap();
+    click(&mut app, Button::Accept);
+    assert!(
+        matches!(&app.menu.page, Page::Message { text, .. } if text.starts_with("Could not delete"))
+    );
+    assert!(app.menu.slots.is_empty());
+    click(&mut app, Button::Back);
+    assert_eq!(app.menu.page, Page::Delete);
+
+    let protected = outside.0.join("protected.oyrsave");
+    std::fs::write(&protected, b"protected").unwrap();
+    let unrelated = temp.0.join("keep.txt");
+    std::fs::write(&unrelated, b"unrelated").unwrap();
+    for invalid in [&protected, &unrelated] {
+        app.menu.slots = vec![yr_app::menu::Slot {
+            name: "invalid".into(),
+            path: invalid.clone(),
+        }];
+        app.delete_menu_path(invalid.clone());
+        assert!(
+            matches!(&app.menu.page, Page::Message { text, .. } if text.starts_with("Could not delete"))
+        );
+        assert!(invalid.is_file());
+    }
+    for directory in [true, false] {
+        std::fs::write(&path, b"save").unwrap();
+        app.open_menu(Page::Delete);
+        app.menu.select_slot(0);
+        click(&mut app, Button::Delete);
+        std::fs::remove_file(&path).unwrap();
+        if directory {
+            std::fs::create_dir(&path).unwrap();
+        } else {
+            #[cfg(unix)]
+            std::os::unix::fs::symlink(&protected, &path).unwrap();
+        }
+        click(&mut app, Button::Accept);
+        assert!(
+            matches!(&app.menu.page, Page::Message { text, .. } if text.starts_with("Could not delete"))
+        );
+        assert!(app.menu.slots.is_empty());
+        assert_eq!(std::fs::read(&protected).unwrap(), b"protected");
+        if directory {
+            std::fs::remove_dir(&path).unwrap();
+        } else {
+            #[cfg(unix)]
+            std::fs::remove_file(&path).unwrap();
+        }
+    }
+}
+
+#[test]
+fn retail_delete_saved_matches_keeps_live_state_and_supports_front_menus() {
+    let dir = PathBuf::from(std::env::var("HOME").unwrap_or_default())
+        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    if !dir.is_dir() {
+        eprintln!("skip: retail install not present");
+        return;
+    }
+    let capture = |app: &App, name: &str| {
+        if let Some(out) = std::env::var_os("OPENYR_DELETE_PROOF") {
+            let out = PathBuf::from(out);
+            std::fs::create_dir_all(&out).unwrap();
+            let mut frame = vec![0; (WIN_W * WIN_H * 4) as usize];
+            app.compose(&mut frame, WIN_W, WIN_H);
+            std::fs::write(
+                out.join(format!("{name}.png")),
+                yr_render::png::encode_rgba(WIN_W, WIN_H, &frame),
+            )
+            .unwrap();
+            std::fs::write(
+                out.join(format!("{name}.txt")),
+                format!(
+                    "page={:?}\nfront={}\nslots={}\nselected={:?}\ntick={:?}\nhash={:?}\n",
+                    app.menu.page,
+                    app.menu.front,
+                    app.menu.slots.len(),
+                    app.menu.selected,
+                    app.session.as_ref().map(|s| s.sim.tick()),
+                    app.session
+                        .as_ref()
+                        .map(|s| format!("{:016x}", s.sim.state_hash()))
+                ),
+            )
+            .unwrap();
+        }
+    };
+    let temp = Scratch::new();
+    let mut app = new_app(dir.to_string_lossy().into(), "EB1.MMX".into(), 1);
+    app.save_path = temp.0.join("Checkpoint 01.oyrsave");
+    app.session = Some(app.load_session().unwrap());
+    app.menu_art = yr_app::menu::Art::load(&yr_assets::AssetFs::open(&dir).unwrap());
+    let bytes = yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap();
+    let hash = app.session.as_ref().unwrap().sim.state_hash();
+    let active = app.save_path.clone();
+    let other = temp.0.join("Checkpoint 02.oyrsave");
+    std::fs::write(&active, &bytes).unwrap();
+    std::fs::write(&other, &bytes).unwrap();
+    app.open_menu(Page::Pause);
+    capture(&app, "01-pause-delete-enabled-t1");
+    click(&mut app, Button::Delete);
+    app.menu_key_code(KeyCode::ArrowDown, None, false);
+    capture(&app, "02-delete-slot-t1");
+    click(&mut app, Button::Delete);
+    capture(&app, "03-delete-confirm-t1");
+    app.menu_key_code(KeyCode::Escape, None, false);
+    assert_eq!(std::fs::read(&active).unwrap(), bytes);
+    click(&mut app, Button::Delete);
+    click(&mut app, Button::Accept);
+    capture(&app, "04-delete-success-t1");
+    assert!(!active.exists());
+    assert_eq!(std::fs::read(&other).unwrap(), bytes);
+    click(&mut app, Button::Back);
+    click(&mut app, Button::Delete);
+    std::fs::remove_file(&other).unwrap();
+    click(&mut app, Button::Accept);
+    capture(&app, "05-delete-error-t1");
+    click(&mut app, Button::Back);
+    capture(&app, "06-delete-empty-t1");
+    assert!(app.menu.slots.is_empty());
+    assert!(!app.advance_clock(app.last_tick + Duration::from_secs(3600)));
+    assert_eq!(
+        yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap(),
+        bytes
+    );
+    assert_eq!(app.session.as_ref().unwrap().sim.state_hash(), hash);
+    assert_eq!(
+        app.save_path, active,
+        "deleting a save keeps the future save target"
+    );
+    click(&mut app, Button::Back);
+    click(&mut app, Button::Resume);
+    assert_eq!(app.accum, Duration::ZERO);
+    app.save_menu_path(app.save_path.clone());
+    assert_eq!(
+        std::fs::read(&active).unwrap(),
+        bytes,
+        "the running match can recreate its save"
+    );
+
+    app.enter_front();
+    assert!(app.session.is_none());
+    click(&mut app, Button::SinglePlayer);
+    click(&mut app, Button::Load);
+    capture(&app, "07-front-saved-matches");
+    click(&mut app, Button::Delete);
+    app.menu_key_code(KeyCode::ArrowDown, None, false);
+    capture(&app, "08-front-delete-slot");
+    click(&mut app, Button::Delete);
+    capture(&app, "09-front-delete-confirm");
+    app.menu_key_code(KeyCode::Enter, None, false);
+    assert!(
+        active.is_file(),
+        "front confirmation defaults to keeping the save"
+    );
+    click(&mut app, Button::Delete);
+    click(&mut app, Button::Accept);
+    capture(&app, "10-front-delete-success");
+    click(&mut app, Button::Back);
+    capture(&app, "11-front-delete-empty");
+    click(&mut app, Button::Back);
+    assert_eq!(app.menu.page, Page::Load);
+    assert!(app.menu.slots.is_empty());
+    click(&mut app, Button::Back);
+    assert_eq!(app.menu.page, Page::SinglePlayer);
+    assert!(app.session.is_none() && app.pending.is_empty() && app.load_job.is_none());
+    println!("Deleted confirmed retail saves in pause and front menus; cancellation preserved bytes; stale-file recovery and empty lists passed; live tick 1 hash {hash:016x} and complete save bytes unchanged; recreated active save at the retained target.");
+}
+
+#[test]
 fn retail_menu_pause_save_overwrite_async_load_cancel_restart_and_results() {
     let dir = PathBuf::from(std::env::var("HOME").unwrap_or_default())
         .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
