@@ -15,23 +15,32 @@ pub struct Preview {
     pub height: u32,
     pub rgba: Vec<u8>,
     pub authored: bool,
+    pub starting_credits: i64,
     /// Raw player cells, indexed by start number rather than compacted.
     pub starts: [Option<(u16, u16)>; 8],
     pub map_rect: (i32, i32, i32, i32),
     pub local_rect: (i32, i32, i32, i32),
 }
 pub fn load_preview(directory: &str, map_name: &str, scale: u32) -> Result<Preview, String> {
-    let (image, starts, map_rect, local_rect) = {
+    let (image, starts, map_rect, local_rect, starting_credits) = {
         let fs =
             yr_assets::AssetFs::open(std::path::Path::new(directory)).map_err(|e| e.to_string())?;
         let bytes = fs.read(map_name).ok_or("Map is missing")?;
         let map = yr_formats::MapFile::parse(&String::from_utf8_lossy(bytes))
             .map_err(|e| e.to_string())?;
+        let mut rules = yr_formats::IniFile::parse(&String::from_utf8_lossy(
+            fs.read("RULESMD.INI").unwrap_or_default(),
+        ));
+        rules.merge_from(&map.ini);
         (
             map.preview().map_err(|e| e.to_string())?,
             start_points(&map.ini),
             map.size,
             map.local_size,
+            rules
+                .section("MultiplayerDialogSettings")
+                .and_then(|s| s.get_i64("Money"))
+                .unwrap_or(10_000),
         )
     };
     if let Some(image) = image {
@@ -46,6 +55,7 @@ pub fn load_preview(directory: &str, map_name: &str, scale: u32) -> Result<Previ
                 .flat_map(|p| [p[0], p[1], p[2], 255])
                 .collect(),
             authored: true,
+            starting_credits,
             starts,
             map_rect,
             local_rect,
@@ -57,6 +67,7 @@ pub fn load_preview(directory: &str, map_name: &str, scale: u32) -> Result<Previ
         height: map.height,
         rgba: map.rgba,
         authored: false,
+        starting_credits,
         starts,
         map_rect,
         local_rect,

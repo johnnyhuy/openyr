@@ -358,8 +358,19 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       Seven original regions check two through eight starts, portrait and
       landscape rasters, letterbox composition and marker rounding. Generated
       terrain and chooser projection remain part of the full menu work (#96).
-- [ ] Match the original setup/chooser backdrop (#160). The current native
-      body uses the RA2 red map; the observed YR chooser uses portrait art.
+- [x] Match the original setup/chooser backdrops (#160): separate retail
+      mountain and portrait canvases with their own palettes. Actual native
+      composition matches 106,176 lower Skirmish pixels and 351,566 chooser
+      body/control pixels outside the two unavailable game-mode rows
+      (`docs/formats/front-backdrop.md`).
+- [x] Native Battle map chooser (#96): the 91 active packet entries retain
+      authored order and localized titles. Mouse/keyboard selection, scrolling,
+      preview loading/errors, cancel, accept and selected-map match entry use
+      actual app handlers. Five complete original preview regions match;
+      Killer Instinct's second marker retains a one-pixel gap (#164).
+- [ ] Calibrate the chooser start projection without map-specific offsets
+      (#164), retaining all exact Skirmish comparisons. Free For All, Team
+      Alliance, random generation and the complete Skirmish form remain in #96.
 - [ ] Calibrate heading foreground after map selection (#153). Returning
       from the original chooser changes 25 final-glyph pixels; retain the
       separately verified default heading states.

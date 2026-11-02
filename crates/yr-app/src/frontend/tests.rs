@@ -2,6 +2,138 @@ use super::*;
 use crate::menu::{Button, Effect, Layout, Page, State};
 
 #[test]
+fn retail_chooser_backdrop_matches_original_unobstructed_pixels() {
+    let directory = std::path::PathBuf::from(std::env::var("HOME").unwrap_or_default())
+        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    if !directory.is_dir() {
+        return;
+    }
+    let fs = yr_assets::AssetFs::open(&directory).unwrap();
+    let art = Art::load(&fs);
+    let preview = load_preview(directory.to_str().unwrap(), "XMP29U2.MAP", 1).unwrap();
+    let mut state = State {
+        front: true,
+        ..State::default()
+    };
+    state.maps.entries = crate::menu::maps::catalog(&fs);
+    state.maps.ready = Some(0);
+    state.set(Page::ChooseMap);
+    let mut frame = vec![0; 800 * 600 * 4];
+    draw(
+        &mut frame,
+        800,
+        600,
+        &art,
+        Scene {
+            state: &state,
+            movie: None,
+            preview: Some(&preview),
+            phase: 0,
+            cursor: (-1.0, -1.0),
+        },
+    );
+    let exclusions = [
+        (120, 33, 388, 22),
+        (116, 98, 197, 18),
+        (338, 98, 197, 18),
+        (114, 125, 201, 349),
+        (336, 125, 201, 349),
+    ];
+    let mut hash = 0xcbf29ce484222325u64;
+    let mut samples = 0;
+    for y in 0..568 {
+        for x in 0..632 {
+            if exclusions
+                .iter()
+                .any(|&(rx, ry, w, h)| x >= rx && x < rx + w && y >= ry && y < ry + h)
+            {
+                continue;
+            }
+            samples += 1;
+            for byte in &frame[(y * 800 + x) * 4..(y * 800 + x + 1) * 4] {
+                hash = (hash ^ u64::from(*byte)).wrapping_mul(0x100000001b3);
+            }
+        }
+    }
+    if let Some(path) = std::env::var_os("OPENYR_BACKDROP_PROOF") {
+        let path = std::path::PathBuf::from(path);
+        std::fs::create_dir_all(&path).unwrap();
+        std::fs::write(
+            path.join("chooser.png"),
+            yr_render::png::encode_rgba(800, 600, &frame),
+        )
+        .unwrap();
+    }
+    assert_eq!(samples, 203050);
+    assert_eq!(hash, 0xff1d6ca05c26268d, "original chooser backdrop");
+    // The other two game modes remain unavailable and deliberately gray.
+    let mut body_hash = 0xcbf29ce484222325u64;
+    let mut body_samples = 0;
+    for y in 0..568 {
+        for x in 0..632 {
+            if (117..312).contains(&x) && (147..185).contains(&y) {
+                continue;
+            }
+            body_samples += 1;
+            for byte in &frame[(y * 800 + x) * 4..(y * 800 + x + 1) * 4] {
+                body_hash = (body_hash ^ u64::from(*byte)).wrapping_mul(0x100000001b3);
+            }
+        }
+    }
+    assert_eq!(body_samples, 351566);
+    assert_eq!(
+        body_hash, 0xd0f73ad2035e4de5,
+        "original chooser body and controls"
+    );
+}
+
+#[test]
+fn retail_skirmish_backdrop_matches_original_unobstructed_lower_body() {
+    let directory = std::path::PathBuf::from(std::env::var("HOME").unwrap_or_default())
+        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    if !directory.is_dir() {
+        return;
+    }
+    let fs = yr_assets::AssetFs::open(&directory).unwrap();
+    let art = Art::load(&fs);
+    let preview = load_preview(directory.to_str().unwrap(), "XMP29U2.MAP", 1).unwrap();
+    let mut state = State {
+        front: true,
+        ..State::default()
+    };
+    state.set(Page::Skirmish);
+    let mut frame = vec![0; 800 * 600 * 4];
+    draw(
+        &mut frame,
+        800,
+        600,
+        &art,
+        Scene {
+            state: &state,
+            movie: None,
+            preview: Some(&preview),
+            phase: 0,
+            cursor: (-1.0, -1.0),
+        },
+    );
+    if let Some(path) = std::env::var_os("OPENYR_BACKDROP_PROOF") {
+        let path = std::path::PathBuf::from(path);
+        std::fs::create_dir_all(&path).unwrap();
+        std::fs::write(
+            path.join("skirmish.png"),
+            yr_render::png::encode_rgba(800, 600, &frame),
+        )
+        .unwrap();
+    }
+    let hash = (400..568)
+        .flat_map(|y| frame[(y * 800) * 4..(y * 800 + 632) * 4].iter().copied())
+        .fold(0xcbf29ce484222325u64, |h, byte| {
+            (h ^ u64::from(byte)).wrapping_mul(0x100000001b3)
+        });
+    assert_eq!(hash, 0x63e66974d0db60a9, "original lower Skirmish body");
+}
+
+#[test]
 fn retail_front_headings_match_original_renderer_captures() {
     let dir = std::path::PathBuf::from(std::env::var("HOME").unwrap_or_default())
         .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
@@ -22,6 +154,7 @@ fn retail_front_headings_match_original_renderer_captures() {
         ("main", Page::Main, 40, 0xe789aaaf10a7f8d1u64),
         ("single-player", Page::SinglePlayer, 40, 0x29e7b0529ab9bf19),
         ("skirmish", Page::Skirmish, 40, 0x1091ed8ace62e049),
+        ("chooser", Page::ChooseMap, 40, 0x60d607f89aace19d),
     ] {
         let mut state = State {
             front: true,
@@ -188,6 +321,7 @@ fn preview_client_fits_both_axes_and_keeps_invalid_images_black() {
         height: 1,
         rgba: vec![255, 0, 0, 255, 0, 255, 0, 255],
         authored: true,
+        starting_credits: 10_000,
         starts: [None; 8],
         map_rect: (0, 0, 0, 0),
         local_rect: (0, 0, 0, 0),
@@ -468,6 +602,7 @@ fn preview_markers_clip_to_the_control_and_keep_sparse_start_numbers() {
         height: 1,
         rgba: [0, 0, 0, 255].repeat(2),
         authored: true,
+        starting_credits: 10_000,
         starts: [None; 8],
         map_rect: (0, 0, 2, 2),
         local_rect: (1, 1, 2, 12),
@@ -657,6 +792,102 @@ fn retail_marker_art_matches_original_sprite_and_digit_pixels() {
                 .filter(|p| p[3] != 0)
                 .count(),
             234
+        );
+    }
+}
+
+#[test]
+fn retail_chooser_previews_match_complete_original_regions() {
+    let directory = std::path::PathBuf::from(std::env::var("HOME").unwrap_or_default())
+        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    if !directory.is_dir() {
+        return;
+    }
+    let fs = yr_assets::AssetFs::open(&directory).unwrap();
+    let art = Art::load(&fs);
+    let mut mismatches = Vec::new();
+    for (name, asset, expected) in [
+        ("alamo", "XMP29U2.MAP", 0xbd6be85001f36221u64),
+        ("killer", "XKiller.MAP", 0x9e9165bc71bf17c9u64),
+        ("city", "XEB1.MAP", 0x31f36c5d27661ae1u64),
+        ("bering", "XMP26S6.MAP", 0x48d61eceda06bcc9u64),
+        ("heck", "XMP32S8.MAP", 0x6a53eb9b57f7b6bdu64),
+        ("death", "XDeath.MAP", 0xf150eef1077fff65u64),
+    ] {
+        let preview = load_preview(directory.to_str().unwrap(), asset, 1).unwrap();
+        let mut state = State {
+            front: true,
+            ..State::default()
+        };
+        state.set(Page::ChooseMap);
+        let mut frame = vec![0; 800 * 600 * 4];
+        draw(
+            &mut frame,
+            800,
+            600,
+            &art,
+            Scene {
+                state: &state,
+                movie: None,
+                preview: Some(&preview),
+                phase: 0,
+                cursor: (-1.0, -1.0),
+            },
+        );
+        // #164 retains the one-pixel gap at Killer Instinct's second marker.
+        // Check its complete remaining region; the other five crops are unmasked.
+        let mut hash = 0xcbf29ce484222325u64;
+        for y in 37..155 {
+            for x in 632..800 {
+                if name == "killer" && (709..728).contains(&x) && (80..98).contains(&y) {
+                    continue;
+                }
+                for byte in &frame[(y * 800 + x) * 4..(y * 800 + x + 1) * 4] {
+                    hash = (hash ^ u64::from(*byte)).wrapping_mul(0x100000001b3);
+                }
+            }
+        }
+        if hash != expected {
+            mismatches.push((name, hash, expected));
+        }
+        if let Some(path) = std::env::var_os("OPENYR_CHOOSER_PROOF") {
+            let path = std::path::PathBuf::from(path);
+            std::fs::create_dir_all(&path).unwrap();
+            std::fs::write(
+                path.join(format!("{name}.png")),
+                yr_render::png::encode_rgba(800, 600, &frame),
+            )
+            .unwrap();
+        }
+    }
+    assert!(
+        mismatches.is_empty(),
+        "original chooser previews: {mismatches:?}"
+    );
+}
+
+#[test]
+fn retail_battle_catalog_previews_every_available_map() {
+    let directory = std::path::PathBuf::from(std::env::var("HOME").unwrap_or_default())
+        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    if !directory.is_dir() {
+        return;
+    }
+    let fs = yr_assets::AssetFs::open(&directory).unwrap();
+    let entries = crate::menu::maps::catalog(&fs);
+    assert_eq!(entries.len(), 91);
+    for entry in entries {
+        let preview = load_preview(directory.to_str().unwrap(), &entry.asset, 1)
+            .unwrap_or_else(|error| panic!("{}: {error}", entry.asset));
+        assert!(preview.width > 0 && preview.height > 0, "{}", entry.asset);
+        assert_eq!(
+            preview.rgba.len(),
+            preview.width as usize * preview.height as usize * 4
+        );
+        assert!(
+            preview.starts.iter().filter(|s| s.is_some()).count() >= 2,
+            "{}",
+            entry.asset
         );
     }
 }

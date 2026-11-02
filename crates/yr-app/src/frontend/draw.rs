@@ -34,7 +34,15 @@ pub fn draw(frame: &mut [u8], width: u32, height: u32, art: &Art, scene: Scene<'
         face: Typeface(art.font.as_ref()),
     };
     c.rect((0, 0), (800, 600), [12, 12, 16, 255]);
-    if matches!(s.page, Page::Main | Page::SinglePlayer | Page::Exit) {
+    if s.page == Page::ChooseMap {
+        if let Some(im) = art.chooser_background.as_ref().or(art.background.as_ref()) {
+            c.image((0, 0), im);
+        }
+    } else if s.page == Page::Skirmish {
+        if let Some(im) = art.setup_background.as_ref().or(art.background.as_ref()) {
+            c.image((0, 0), im);
+        }
+    } else if matches!(s.page, Page::Main | Page::SinglePlayer | Page::Exit) {
         if let Some(v) = scene.movie {
             // The observed movie is 632x570, including its own frame border.
             picture(&mut c, (0, 0, 632, 570), v.width, v.height, &v.rgba);
@@ -47,13 +55,16 @@ pub fn draw(frame: &mut [u8], width: u32, height: u32, art: &Art, scene: Scene<'
     if let Some(im) = &art.status {
         c.image((0, 568), im);
     }
-    let map_top = s.page == Page::Skirmish && scene.preview.is_some();
+    let map_top =
+        s.page == Page::ChooseMap || (s.page == Page::Skirmish && scene.preview.is_some());
     if let Some(im) = art.top.get(usize::from(map_top)) {
         c.image((632, 0), im);
     }
     if map_top {
         if let Some(map) = scene.preview {
-            map_preview(&mut c, map, &art.start_markers);
+            map_preview(&mut c, map, &art.start_markers, s.page == Page::ChooseMap);
+        } else {
+            c.rect((643, 37), (146, 114), [0, 0, 0, 255]);
         }
     } else if let Some(im) = art
         .warning
@@ -73,11 +84,23 @@ pub fn draw(frame: &mut [u8], width: u32, height: u32, art: &Art, scene: Scene<'
         Page::Main => art.label("GUI:MainMenu", "Main menu"),
         Page::SinglePlayer => art.label("GUI:SinglePlayer", "Solo play"),
         Page::Skirmish => art.label("GUI:SkirmishGame", "Skirmish Game"),
+        Page::ChooseMap => art.label("GUI:ChooseMap", "Choose Map"),
         Page::Load => art.label("GUI:LoadGame", "Saved matches"),
         Page::Controls => art.label("GUI:Options", "Controls"),
         _ => "OpenYR",
     };
-    heading(&mut c, 632, if map_top { 3 } else { 9 }, 168, title);
+    let (title_x, title_width) = if s.page == Page::ChooseMap {
+        (634, 164)
+    } else {
+        (635, 163)
+    };
+    heading(
+        &mut c,
+        title_x,
+        if map_top { 3 } else { 9 },
+        title_width,
+        title,
+    );
     if s.page == Page::Skirmish {
         centered(
             &mut c,
@@ -87,35 +110,30 @@ pub fn draw(frame: &mut [u8], width: u32, height: u32, art: &Art, scene: Scene<'
             art.label("GUI:Skirmish", "Match setup"),
             YELLOW,
         );
-        c.text((32, 82), "EB1.MMX", WHITE, 48);
+        c.text((32, 82), &s.map_name, WHITE, 80);
         c.text(
             (32, 114),
             "Americans (Allied) and computer opponent",
             WHITE,
             64,
         );
-        c.text((32, 146), "Starting credits: 10000", WHITE, 48);
-        c.text(
-            (32, 178),
-            "Prototype AI; campaign rules are unavailable.",
-            WHITE,
-            64,
-        );
-        c.text(
-            (32, 210),
-            "Additional maps and factions are unavailable.",
-            WHITE,
-            64,
-        );
         if let Some(map) = scene.preview {
-            picture(
-                &mut c,
-                (32, 260, 568, 280),
-                map.width,
-                map.height,
-                &map.rgba,
+            c.text(
+                (32, 146),
+                &format!("Starting credits: {}", map.starting_credits),
+                WHITE,
+                48,
             );
         }
+        c.text(
+            (32, 210),
+            "Other game types and factions are unavailable.",
+            WHITE,
+            64,
+        );
+    }
+    if s.page == Page::ChooseMap {
+        chooser(&mut c, art, s);
     }
     if s.page == Page::Load {
         c.rect((38, 142), (556, 250), [0, 0, 0, 255]);
@@ -196,10 +214,14 @@ pub fn draw(frame: &mut [u8], width: u32, height: u32, art: &Art, scene: Scene<'
             Button::Skirmish => art.label("GUI:Skirmish", "Match setup"),
             Button::MainMenu => art.label("GUI:MainMenu", "Main menu"),
             Button::Start => art.label("GUI:StartGame", "Start match"),
+            Button::ChooseMap => art.label("GUI:ChooseMap", "Choose Map"),
+            Button::UseMap => art.label("GUI:UseMap", "Use Map"),
+            Button::GenerateMap => art.label("GUI:RandomMap", "Random Map"),
             Button::Folder => "Game data folder",
             Button::Controls => art.label("GUI:Options", "Controls"),
             Button::Load => art.label("GUI:LoadGame", "Restore"),
             Button::Quit => art.label("GUI:ExitGame", "Exit"),
+            Button::Back if s.page == Page::ChooseMap => art.label("GUI:Cancel", "Cancel"),
             Button::Back => art.label("GUI:Back", "Return"),
             Button::Mute => {
                 if s.muted {
@@ -246,6 +268,7 @@ pub fn draw(frame: &mut [u8], width: u32, height: u32, art: &Art, scene: Scene<'
         Page::Main | Page::SinglePlayer => "",
         Page::Skirmish => "Start the supported EB1 skirmish.",
         Page::Load => "Select a saved match. Arrows select; Escape returns.",
+        Page::ChooseMap => "Select a Battle map. Enter uses it; Escape keeps the current map.",
         Page::Loading => "Escape cancels and returns.",
         Page::Message { text, .. } => {
             let (first, rows, count) = message::viewport(c.face, text, s.message_scroll);
@@ -281,6 +304,139 @@ pub fn draw(frame: &mut [u8], width: u32, height: u32, art: &Art, scene: Scene<'
         }
     }
 }
+fn chooser(c: &mut Canvas<'_>, art: &Art, state: &State) {
+    control_label(
+        c,
+        120,
+        33,
+        388,
+        art.label("GUI:SelectEngagement", "Select Engagement"),
+        YELLOW,
+    );
+    control_label(
+        c,
+        116,
+        98,
+        197,
+        art.label("GUI:GameType", "Game Type"),
+        YELLOW,
+    );
+    control_label(
+        c,
+        338,
+        98,
+        197,
+        art.label("GUI:GameMap", "Game Map"),
+        YELLOW,
+    );
+    let edge = [160, 188, 192, 255];
+    let shadow = [104, 120, 128, 255];
+    for (x, w) in [(115, 199), (337, 199)] {
+        c.rect((x, 126), (w - 1, 1), edge);
+        c.rect((x, 126), (1, 346), edge);
+        c.rect((x + 1, 127), (w - 1, 1), shadow);
+        c.rect((x + 1, 127), (1, 346), shadow);
+        c.rect((x, 471), (w - 1, 1), edge);
+        c.rect((x + w - 2, 126), (1, 346), edge);
+        c.rect((x + 1, 472), (w - 1, 1), shadow);
+        c.rect((x + w - 1, 127), (1, 346), shadow);
+    }
+    // Observed list backing subtracts one saturated RGB565 quantum.
+    for (left, width) in [(117, 195), (339, 175)] {
+        for y in 128..471 {
+            for x in left..left + width {
+                let at = ((y * c.width + x) * 4) as usize;
+                for (channel, (mask, step)) in
+                    [(248, 8), (252, 4), (248, 8)].into_iter().enumerate()
+                {
+                    c.frame[at + channel] = (c.frame[at + channel] & mask).saturating_sub(step);
+                }
+            }
+        }
+    }
+    c.rect((514, 127), (1, 345), edge);
+    c.rect((117, 128), (195, 19), [255, 0, 0, 255]);
+    for (row, (key, label)) in [
+        ("GUI:Battle", "Battle"),
+        ("GUI:FreeForAll", "Free For All"),
+        ("GUI:TeamGame", "Team Alliance"),
+    ]
+    .iter()
+    .enumerate()
+    {
+        c.text(
+            (119, 128 + row as i32 * 19),
+            art.label(key, label),
+            if row == 0 {
+                YELLOW
+            } else {
+                [128, 128, 128, 255]
+            },
+            40,
+        );
+    }
+    for (index, entry) in state
+        .maps
+        .entries
+        .iter()
+        .enumerate()
+        .skip(state.maps.top)
+        .take(crate::menu::maps::VISIBLE)
+    {
+        let y = 128 + (index - state.maps.top) as i32 * 19;
+        if index == state.maps.selected {
+            c.rect((339, y), (175, 19), [255, 0, 0, 255]);
+        }
+        c.text((341, y), &fit(c.face, &entry.title, 171), YELLOW, 128);
+    }
+    // Leave the track transparent so the page backdrop shows through.
+    c.rect((515, 127), (1, 345), shadow);
+    c.rect((534, 127), (1, 345), edge);
+    c.rect((515, 127), (19, 1), shadow);
+    c.rect((515, 471), (20, 1), edge);
+    let corner = [128, 156, 160, 255];
+    for x in [115, 337] {
+        for point in [(x + 198, 126), (x + 197, 127), (x + 1, 471), (x, 472)] {
+            c.pixel(point.0, point.1, corner);
+        }
+    }
+    for point in [(515, 126), (514, 127), (515, 471)] {
+        c.pixel(point.0, point.1, corner);
+    }
+    if let [up, down, body, top, bottom] = art.scrollbar.as_slice() {
+        c.image((516, 128), up);
+        c.image((516, 449), down);
+        let (y, height) = state.maps.thumb();
+        for row in 0..height {
+            for x in 0..18 {
+                let at = (((row as u32 % body.height) * 18 + x) * 4) as usize;
+                c.pixel(
+                    516 + x as i32,
+                    y + row,
+                    body.pixels[at..at + 4].try_into().unwrap(),
+                );
+            }
+        }
+        c.image((516, y), top);
+        c.image((516, y + height - 2), bottom);
+    }
+    if let Some(error) = &state.maps.error {
+        c.text((116, 492), &fit(c.face, error, 419), YELLOW, 128);
+    } else if state.maps.ready != Some(state.maps.selected) {
+        c.text((116, 492), "Loading map preview...", YELLOW, 80);
+    }
+}
+
+fn control_label(c: &mut Canvas<'_>, x: i32, y: i32, w: i32, text: &str, color: [u8; 4]) {
+    let text = fit(c.face, text, w - 12);
+    c.text(
+        (x + (w - c.face.width(&text) - 1) / 2, y),
+        &text,
+        color,
+        160,
+    );
+}
+
 fn fit(face: Typeface<'_>, text: &str, width: i32) -> String {
     let mut out = String::new();
     for ch in text.chars().take(160) {
@@ -301,16 +457,20 @@ fn heading(c: &mut Canvas<'_>, x: i32, y: i32, w: i32, text: &str) {
     let Some((tail, _)) = text.char_indices().next_back() else {
         return;
     };
-    let x = x + w / 2 - c.face.width(&text) / 2;
+    let x = x + (w - c.face.width(&text)) / 2;
     let prefix = &text[..tail];
     c.text((x, y), prefix, YELLOW, 160);
     let advance: i32 = prefix.chars().map(|ch| c.face.advance(ch)).sum();
     // Captured headings give their final glyph a packed blue component of 24.
     c.text((x + advance, y), &text[tail..], [255, 255, 24, 255], 1);
 }
-fn map_preview(c: &mut Canvas<'_>, map: &super::Preview, markers: &[Image]) {
+fn map_preview(c: &mut Canvas<'_>, map: &super::Preview, markers: &[Image], chooser: bool) {
     // Public UI measurements and renderer samples: formats/front-preview.md.
-    let (x, y, width, height) = (644, 37, 145, 113);
+    let (x, y, width, height) = if chooser {
+        (643, 37, 146, 114)
+    } else {
+        (644, 37, 145, 113)
+    };
     c.rect((x, y), (width, height), [0, 0, 0, 255]);
     if map.width == 0
         || map.height == 0
@@ -343,8 +503,8 @@ fn map_preview(c: &mut Canvas<'_>, map: &super::Preview, markers: &[Image]) {
             image.pixels.extend_from_slice(&map.rgba[at..at + 4]);
         }
     }
-    let image_x = x + (width - tw as i32) / 2;
-    let image_y = y + (height - th as i32) / 2;
+    let image_x = x + (width - tw as i32 + i32::from(chooser)) / 2;
+    let image_y = y + (height - th as i32 + i32::from(chooser)) / 2;
     c.image((image_x, image_y), &image);
     // Generated terrain images have different bounds from authored thumbnails.
     if !map.authored {
@@ -366,9 +526,11 @@ fn map_preview(c: &mut Canvas<'_>, map: &super::Preview, markers: &[Image]) {
         }
         let (cell_x, cell_y) = (i64::from(cell_x), i64::from(cell_y));
         let relative_x = (cell_x - cell_y).div_euclid(2) + map_width / 2 - i64::from(local_x);
-        // Measured Skirmish placement, including the horizontal sampling bias.
+        // The chooser uses the projected x directly. Skirmish has the
+        // separately observed one-eighth-pixel sampling bias.
         let marker_x = i64::from(image_x)
-            + (8 * relative_x * tw as i64 - header_width).div_euclid(8 * header_width)
+            + (8 * relative_x * tw as i64 - if chooser { 0 } else { header_width })
+                .div_euclid(8 * header_width)
             - 9;
         // Round the scaled absolute coordinates before subtracting. The Heck
         // capture distinguishes this from scaling their integer difference.
