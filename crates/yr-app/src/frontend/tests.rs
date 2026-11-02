@@ -188,6 +188,9 @@ fn preview_client_fits_both_axes_and_keeps_invalid_images_black() {
         height: 1,
         rgba: vec![255, 0, 0, 255, 0, 255, 0, 255],
         authored: true,
+        starts: [None; 8],
+        map_rect: (0, 0, 0, 0),
+        local_rect: (0, 0, 0, 0),
     };
     let wide = render(Some(&map));
     assert_eq!(pixel(&wide, 644, 57), red);
@@ -435,5 +438,225 @@ fn retail_shell_uses_its_own_button_palette_and_preserves_source_pixels() {
                 );
             }
         }
+    }
+}
+
+#[test]
+fn preview_markers_clip_to_the_control_and_keep_sparse_start_numbers() {
+    use crate::sidebar::art::Image;
+    let render = |map: &Preview, art: &Art| {
+        let mut state = State::default();
+        state.set(Page::Skirmish);
+        let mut frame = vec![0; 800 * 600 * 4];
+        draw(
+            &mut frame,
+            800,
+            600,
+            art,
+            Scene {
+                state: &state,
+                movie: None,
+                preview: Some(map),
+                phase: 0,
+                cursor: (-1.0, -1.0),
+            },
+        );
+        frame
+    };
+    let mut map = Preview {
+        width: 2,
+        height: 1,
+        rgba: [0, 0, 0, 255].repeat(2),
+        authored: true,
+        starts: [None; 8],
+        map_rect: (0, 0, 2, 2),
+        local_rect: (1, 1, 2, 12),
+    };
+    map.starts[7] = Some((0, 0));
+    let mut art = Art {
+        start_markers: (0..8)
+            .map(|index| Image {
+                width: 18,
+                height: 18,
+                pixels: if index == 7 {
+                    [248, 0, 0, 255].repeat(18 * 18)
+                } else {
+                    [0, 252, 0, 255].repeat(18 * 18)
+                },
+            })
+            .collect(),
+        ..Art::default()
+    };
+    for (local_rect, expected_rect) in [
+        ((1, 1, 2, 12), (644..652, 37..51)),
+        ((-146, -95, 146, 72), (780..789, 144..150)),
+    ] {
+        map.local_rect = local_rect;
+        let baseline = render(&map, &Art::default());
+        let frame = render(&map, &art);
+        for (index, (actual, original)) in frame
+            .as_chunks::<4>()
+            .0
+            .iter()
+            .zip(baseline.as_chunks::<4>().0)
+            .enumerate()
+        {
+            let (x, y) = (index % 800, index / 800);
+            if expected_rect.0.contains(&x) && expected_rect.1.contains(&y) {
+                assert_eq!(actual, &[248, 0, 0, 255], "marker at {x},{y}");
+            } else {
+                assert_eq!(actual, original, "outside clipped marker at {x},{y}");
+            }
+        }
+    }
+    for (map_width, local_rect, start, authored) in [
+        (0, (1, 1, 2, 12), (0, 0), true),
+        (2, (1, 1, 1, 12), (0, 0), true),
+        (2, (1, 1, 2, 0), (0, 0), true),
+        (2, (1, 1, 2, 12), (u16::MAX, u16::MAX), true),
+        (
+            i32::MAX,
+            (i32::MIN, i32::MIN, i32::MAX, i32::MAX),
+            (0, 0),
+            true,
+        ),
+        (2, (1, 1, 2, 12), (0, 0), false),
+    ] {
+        map.map_rect.2 = map_width;
+        map.local_rect = local_rect;
+        map.starts[7] = Some(start);
+        map.authored = authored;
+        assert_eq!(render(&map, &art), render(&map, &Art::default()));
+    }
+    map.map_rect.2 = 2;
+    map.local_rect = (1, 1, 2, 12);
+    map.starts[7] = Some((0, 0));
+    map.authored = true;
+    art.start_markers[7].pixels.pop();
+    assert_eq!(render(&map, &art), render(&map, &Art::default()));
+}
+
+#[test]
+fn retail_preview_start_markers_match_complete_original_regions() {
+    let directory = std::path::PathBuf::from(std::env::var("HOME").unwrap_or_default())
+        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    if !directory.is_dir() {
+        return;
+    }
+    let fs = yr_assets::AssetFs::open(&directory).unwrap();
+    let art = Art::load(&fs);
+    let mut mismatches = Vec::new();
+    for (name, asset, top, expected) in [
+        ("alamo", "XMP29U2.MAP", 0, 0x2913314c62930011u64),
+        ("lake", "XMP08T2.MAP", 37, 0x060d22eec9926af9),
+        ("killer", "XKiller.MAP", 37, 0x562cd380ba327ba9),
+        ("city", "XEB1.MAP", 37, 0x1aded70f160d841d),
+        ("bering", "XMP26S6.MAP", 37, 0xdd2be7a2b9f0dcbd),
+        ("heck", "XMP32S8.MAP", 37, 0x753cab68b2aac751),
+        ("death", "XDeath.MAP", 37, 0xc93c6001335149b5),
+    ] {
+        let preview = load_preview(directory.to_str().unwrap(), asset, 1).unwrap();
+        let mut state = State {
+            front: true,
+            ..State::default()
+        };
+        state.set(Page::Skirmish);
+        let mut frame = vec![0; 800 * 600 * 4];
+        draw(
+            &mut frame,
+            800,
+            600,
+            &art,
+            Scene {
+                state: &state,
+                movie: None,
+                preview: Some(&preview),
+                phase: 0,
+                cursor: (-1.0, -1.0),
+            },
+        );
+        let hash = (top..155)
+            .flat_map(|y| {
+                let at = (y * 800 + 632) * 4;
+                frame[at..at + 168 * 4].iter().copied()
+            })
+            .fold(0xcbf29ce484222325u64, |h, byte| {
+                (h ^ u64::from(byte)).wrapping_mul(0x100000001b3)
+            });
+        if hash != expected {
+            mismatches.push((name, hash, expected));
+        }
+        if let Some(path) = std::env::var_os("OPENYR_MARKER_PROOF") {
+            let path = std::path::PathBuf::from(path);
+            std::fs::create_dir_all(&path).unwrap();
+            std::fs::write(
+                path.join(format!("{name}.png")),
+                yr_render::png::encode_rgba(800, 600, &frame),
+            )
+            .unwrap();
+        }
+    }
+    assert!(
+        mismatches.is_empty(),
+        "original start markers: {mismatches:?}"
+    );
+}
+
+#[test]
+fn start_point_indices_are_bounded_and_keep_authored_cells() {
+    let ini = yr_formats::IniFile::parse("[Waypoints]\n0=97052\n1=20065\n2=-1\n3=4294967295\n4=wrong\n5=65535999\n6=65536000\n7=50027\n8=87082\n98=60060\n");
+    assert_eq!(
+        start_points(&ini),
+        [
+            Some((52, 97)),
+            Some((65, 20)),
+            None,
+            None,
+            None,
+            Some((999, 65535)),
+            None,
+            Some((27, 50))
+        ]
+    );
+    assert_eq!(start_points(&yr_formats::IniFile::default()), [None; 8]);
+}
+
+#[test]
+fn retail_marker_art_matches_original_sprite_and_digit_pixels() {
+    let directory = std::path::PathBuf::from(std::env::var("HOME").unwrap_or_default())
+        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    if !directory.is_dir() {
+        return;
+    }
+    let fs = yr_assets::AssetFs::open(&directory).unwrap();
+    let art = Art::load(&fs);
+    assert_eq!(art.start_markers.len(), 8);
+    for (index, expected) in [(0, 0x49aba43fcef760a5u64), (1, 0xbc89e15fafcd7f89)] {
+        let hash = art.start_markers[index]
+            .pixels
+            .as_chunks::<4>()
+            .0
+            .iter()
+            .flat_map(|p| [p[0] & 248, p[1] & 252, p[2] & 248, p[3]])
+            .fold(0xcbf29ce484222325u64, |h, byte| {
+                (h ^ u64::from(byte)).wrapping_mul(0x100000001b3)
+            });
+        assert_eq!(hash, expected, "original marker {}", index + 1);
+    }
+    for image in &art.start_markers {
+        assert_eq!(
+            (image.width, image.height, image.pixels.len()),
+            (18, 18, 18 * 18 * 4)
+        );
+        assert_eq!(
+            image
+                .pixels
+                .as_chunks::<4>()
+                .0
+                .iter()
+                .filter(|p| p[3] != 0)
+                .count(),
+            234
+        );
     }
 }
