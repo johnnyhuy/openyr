@@ -97,9 +97,12 @@ pub fn draw(
         Page::Result(true) => (art.label("TXT_VICTORIOUS", "Victory"), String::new()),
         Page::Result(false) => (art.label("TXT_SCENARIO_LOST", "Defeat"), String::new()),
         Page::Message { text, .. } => ("OpenYR", text.clone()),
-        Page::Closed | Page::Main | Page::SinglePlayer | Page::Skirmish | Page::Exit => {
-            ("", String::new())
-        }
+        Page::Closed
+        | Page::Main
+        | Page::SinglePlayer
+        | Page::Skirmish
+        | Page::ChooseMap
+        | Page::Exit => ("", String::new()),
     };
     let title = fit(c.face, title, world - 48);
     let x = (world - c.face.width(&title)) / 2;
@@ -169,6 +172,9 @@ pub fn draw(
             | Button::Campaign
             | Button::Skirmish
             | Button::Start
+            | Button::ChooseMap
+            | Button::UseMap
+            | Button::GenerateMap
             | Button::Folder => "",
             Button::Controls => art.label("GUI:GameControls", "Controls"),
             Button::Load => art.label("GUI:LoadGame", "Restore"),

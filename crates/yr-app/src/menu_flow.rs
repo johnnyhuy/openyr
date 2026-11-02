@@ -124,11 +124,37 @@ impl App {
                 ElementState::Pressed => {
                     self.menu.keyboard_focus = false;
                     self.menu.pressed = layout.hit(&self.menu, self.cursor);
+                    if self.menu.page == Page::ChooseMap {
+                        if let Some(point) = layout.local(self.cursor) {
+                            if let Some(index) = self.menu.maps.row_at(point) {
+                                self.menu.maps.select(index);
+                                self.menu.maps.list_focus = true;
+                            } else if (515..535).contains(&point.0) && (127..472).contains(&point.1)
+                            {
+                                let (thumb_y, height) = self.menu.maps.thumb();
+                                if point.1 < 150 {
+                                    self.menu.maps.scroll(-1);
+                                } else if point.1 >= 449 {
+                                    self.menu.maps.scroll(1);
+                                } else if point.1 < thumb_y {
+                                    self.menu.maps.scroll(-18);
+                                } else if point.1 >= thumb_y + height {
+                                    self.menu.maps.scroll(18);
+                                } else {
+                                    self.menu.maps.drag = Some((point.1, self.menu.maps.top));
+                                }
+                            } else if self.menu.pressed.is_some() {
+                                self.menu.maps.list_focus = false;
+                            }
+                        }
+                        self.poll_map_chooser();
+                    }
                     if let Some(index) = layout.slot(&self.menu, self.cursor) {
                         self.menu.select_slot(index);
                     }
                 }
                 ElementState::Released => {
+                    self.menu.maps.drag = None;
                     let hit = layout.hit(&self.menu, self.cursor);
                     if let Some(button) = self.menu.pressed.take().filter(|b| Some(*b) == hit) {
                         let effect = self.menu.activate(button);
@@ -172,6 +198,31 @@ impl App {
                 let e = self.menu.escape();
                 self.apply_menu_effect(e);
             }
+            KeyCode::ArrowDown
+            | KeyCode::ArrowUp
+            | KeyCode::PageDown
+            | KeyCode::PageUp
+            | KeyCode::Home
+            | KeyCode::End
+                if self.menu.page == Page::ChooseMap && self.menu.maps.list_focus =>
+            {
+                let delta = match code {
+                    KeyCode::ArrowDown => 1,
+                    KeyCode::ArrowUp => -1,
+                    KeyCode::PageDown => 18,
+                    KeyCode::PageUp => -18,
+                    KeyCode::Home => -4096,
+                    _ => 4096,
+                };
+                self.menu.maps.move_selection(delta);
+                self.poll_map_chooser();
+            }
+            KeyCode::Enter | KeyCode::NumpadEnter
+                if !repeat && self.menu.page == Page::ChooseMap && self.menu.maps.list_focus =>
+            {
+                let effect = self.menu.activate(yr_app::menu::Button::UseMap);
+                self.apply_menu_effect(effect);
+            }
             KeyCode::ArrowDown if self.menu.page == Page::Load => self.menu.navigate_slot(1),
             KeyCode::ArrowUp if self.menu.page == Page::Load => self.menu.navigate_slot(-1),
             KeyCode::Tab => self.menu.navigate(if self.shift { -1 } else { 1 }),
@@ -207,6 +258,9 @@ impl App {
             Effect::PrepareSkirmish => self.start_front_preview(),
             Effect::StartMatch => self.start_menu_load(None),
             Effect::ChooseFolder => self.choose_front_directory(),
+            Effect::OpenMapChooser => self.open_map_chooser(),
+            Effect::UseMap => self.use_chosen_map(),
+            Effect::CancelMap => self.cancel_map_chooser(),
             Effect::Resume => {
                 self.cancel_pointer_action();
                 self.keys.clear();
@@ -381,6 +435,7 @@ impl App {
                 }
                 self.session = Some(*session);
                 self.map = Some(map);
+                self.menu.map_name = map_name.clone();
                 self.map_name = map_name;
                 self.sprites = load_sprites(&self.gamedir, &self.map_name);
                 self.animations = Default::default();

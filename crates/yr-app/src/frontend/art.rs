@@ -1,6 +1,6 @@
 use crate::{cursor, sidebar::art::Image};
 use yr_assets::AssetFs;
-use yr_formats::{CsfFile, MixArchive, Palette, ShpFile, UnicodeFont};
+use yr_formats::{CsfFile, MixArchive, Palette, PcxImage, ShpFile, UnicodeFont};
 #[derive(Default)]
 pub struct Art {
     pub cursor: cursor::Art,
@@ -11,9 +11,12 @@ pub struct Art {
     pub(super) bottom: Option<Image>,
     pub(super) status: Option<Image>,
     pub(super) background: Option<Image>,
+    pub(super) setup_background: Option<Image>,
+    pub(super) chooser_background: Option<Image>,
     pub(super) buttons: Vec<Image>,
     pub(super) button_back: Option<Image>,
     pub(super) start_markers: Vec<Image>,
+    pub(super) scrollbar: Vec<Image>,
 }
 impl Art {
     pub fn load(fs: &AssetFs) -> Self {
@@ -92,11 +95,39 @@ impl Art {
                 .collect::<Option<Vec<_>>>()
                 .unwrap_or_default();
         }
+        art.scrollbar = fs
+            .read("LOCALMD.MIX")
+            .and_then(|bytes| MixArchive::parse(bytes).ok())
+            .and_then(|mix| {
+                [
+                    (0xeec2554b, 22),
+                    (0x85ff1b15, 22),
+                    (0x145c99ef, 30),
+                    (0x3085cabc, 2),
+                    (0xe50a2b3a, 2),
+                ]
+                .into_iter()
+                .map(|(id, height)| {
+                    let image = PcxImage::parse(mix.get_by_id(id)?).ok()?;
+                    if (image.width, image.height) != (18, height) {
+                        return None;
+                    }
+                    Some(Image {
+                        width: 18,
+                        height,
+                        pixels: image.to_rgba(),
+                    })
+                })
+                .collect::<Option<Vec<_>>>()
+            })
+            .unwrap_or_default();
         art.top = read("SDTP.SHP", 168, 199, 2, &shell);
         art.warning = read("SDWRNANM.SHP", 92, 53, 91, &shell2);
         art.bottom = read("SDBTM.SHP", 168, 65, 1, &shell).pop();
         art.status = read("LWSCRNL.SHP", 632, 32, 1, &shell).pop();
         art.background = read("MNSCRNL.SHP", 632, 568, 1, &shell).pop();
+        art.setup_background = backdrop(fs, 0x1fb68421, 0xd833dd7e);
+        art.chooser_background = backdrop(fs, 0x2eec89db, 0x78a45e31);
         art.buttons = read("SDBTNANM.SHP", 156, 42, 17, &button);
         art.button_back = read("SDBTNBKGD.SHP", 168, 42, 1, &shell2).pop();
         art
@@ -107,4 +138,25 @@ impl Art {
             .and_then(|s| s.get(key))
             .unwrap_or(fallback)
     }
+}
+
+fn backdrop(fs: &AssetFs, image_id: u32, palette_id: u32) -> Option<Image> {
+    // The original setup/chooser pair is identified by pixels and archive IDs.
+    // Filenames remain unresolved; formats/front-backdrop.md records the evidence.
+    let mix = MixArchive::parse(fs.read("NTRLMD.MIX")?).ok()?;
+    let palette = Palette::parse(mix.get_by_id(palette_id)?)?;
+    let shape = ShpFile::parse(mix.get_by_id(image_id)?).ok()?;
+    if (shape.width, shape.height, shape.frames.len()) != (632, 568, 1) {
+        return None;
+    }
+    Some(Image {
+        width: 632,
+        height: 568,
+        pixels: shape
+            .decode_frame_canvas(0)
+            .ok()?
+            .into_iter()
+            .flat_map(|index| palette.rgba(index))
+            .collect(),
+    })
 }

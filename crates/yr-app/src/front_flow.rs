@@ -1,7 +1,9 @@
 use super::*;
 use yr_app::menu::Page;
+pub(super) mod chooser;
 impl App {
     pub(super) fn poll_front_presentation(&mut self) {
+        self.poll_map_chooser();
         if !self.menu.front {
             return;
         }
@@ -32,7 +34,9 @@ impl App {
         self.groups = Default::default();
         self.pending.clear();
         self.front_preview = None;
-        self.map_name = launcher::DEFAULT_MAP.into();
+        self.chooser_preview = None;
+        self.chooser_epoch = self.chooser_epoch.wrapping_add(1);
+        self.menu.map_name = self.map_name.clone();
         self.menu.front = true;
         self.movie = None;
         self.front_art = Default::default();
@@ -69,6 +73,12 @@ impl App {
             .map_err(|e| e.to_string())?;
         self.front_art = yr_app::frontend::Art::load(&fs);
         self.menu_art = yr_app::menu::Art::load(&fs);
+        self.menu.maps = yr_app::menu::maps::MapList {
+            entries: yr_app::menu::maps::catalog(&fs),
+            ..Default::default()
+        };
+        self.chooser_epoch = self.chooser_epoch.wrapping_add(1);
+        self.chooser_preview = None;
         let bytes = fs
             .read("RA2TS_L.BIK")
             .ok_or("Menu movie RA2TS_L.BIK is missing")?;

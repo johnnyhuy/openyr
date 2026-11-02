@@ -138,6 +138,9 @@ struct App {
     startup_menu: bool,
     front_art: yr_app::frontend::Art,
     front_preview: Option<yr_app::frontend::Preview>,
+    chooser_preview: Option<yr_app::frontend::Preview>,
+    chooser_job: Option<front_flow::chooser::Job>,
+    chooser_epoch: u64,
     movie: Option<yr_app::movie::Movie>,
     front_epoch: Instant,
     front_phase: u64,
@@ -305,6 +308,7 @@ impl App {
 
     fn cancel_pointer_action(&mut self) {
         self.camera.edge_armed = false;
+        self.menu.maps.drag = None;
         self.menu.pressed = None;
         self.left_down = None;
         self.right_down = None;
@@ -594,7 +598,13 @@ impl App {
                 yr_app::frontend::Scene {
                     state: &self.menu,
                     movie: self.movie.as_ref().and_then(|v| v.current.as_ref()),
-                    preview: self.front_preview.as_ref(),
+                    preview: if self.menu.page == yr_app::menu::Page::ChooseMap {
+                        self.chooser_preview
+                            .as_ref()
+                            .filter(|_| self.menu.maps.ready == Some(self.menu.maps.selected))
+                    } else {
+                        self.front_preview.as_ref()
+                    },
                     phase: self.front_phase,
                     cursor: self.cursor,
                 },
@@ -1404,6 +1414,14 @@ impl ApplicationHandler for App {
                 self.pointer.inside = self.pointer.focused;
                 self.camera.edge_armed = self.pointer.focused && !self.menu.visible();
                 if self.menu.visible() {
+                    if self.menu.page == yr_app::menu::Page::ChooseMap {
+                        if let Some((_, y)) =
+                            yr_app::menu::Layout::for_state(&self.menu, WIN_W, WIN_H)
+                                .local(self.cursor)
+                        {
+                            self.menu.maps.drag_to(y);
+                        }
+                    }
                     self.view.dirty = true;
                     self.update_pointer_visibility();
                     return;
@@ -1615,6 +1633,9 @@ fn new_app(gamedir: String, map_name: String, scale: u32) -> App {
         startup_menu: false,
         front_art: Default::default(),
         front_preview: None,
+        chooser_preview: None,
+        chooser_job: None,
+        chooser_epoch: 0,
         movie: None,
         front_epoch: Instant::now(),
         front_phase: 0,

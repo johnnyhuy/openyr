@@ -2,6 +2,7 @@
 
 mod art;
 mod draw;
+pub mod maps;
 pub use art::Art;
 pub use draw::draw;
 use std::path::PathBuf;
@@ -12,6 +13,7 @@ pub enum Page {
     Main,
     SinglePlayer,
     Skirmish,
+    ChooseMap,
     Exit,
     Pause,
     Save,
@@ -40,6 +42,9 @@ pub enum Button {
     Skirmish,
     MainMenu,
     Start,
+    ChooseMap,
+    UseMap,
+    GenerateMap,
     Folder,
     Controls,
     Load,
@@ -75,6 +80,9 @@ pub enum Effect {
     PrepareSkirmish,
     StartMatch,
     ChooseFolder,
+    OpenMapChooser,
+    UseMap,
+    CancelMap,
 }
 
 #[derive(Debug, Clone)]
@@ -98,6 +106,8 @@ pub struct State {
     pub muted: bool,
     pub zoom: u16,
     pub edge_scroll: bool,
+    pub map_name: String,
+    pub maps: maps::MapList,
 }
 
 impl Default for State {
@@ -116,6 +126,8 @@ impl Default for State {
             muted: false,
             zoom: 100,
             edge_scroll: false,
+            map_name: "EB1.MMX".into(),
+            maps: Default::default(),
         }
     }
 }
@@ -158,7 +170,20 @@ impl State {
                 (Skirmish, true),
                 (MainMenu, true),
             ],
-            Page::Skirmish => vec![(Start, true), (Back, true)],
+            Page::Skirmish => vec![
+                (Start, true),
+                (ChooseMap, !self.maps.entries.is_empty()),
+                (Back, true),
+            ],
+            Page::ChooseMap => vec![
+                (
+                    UseMap,
+                    self.maps.ready == Some(self.maps.selected)
+                        && self.maps.selected < self.maps.entries.len(),
+                ),
+                (GenerateMap, false),
+                (Back, true),
+            ],
             Page::Exit => vec![(Accept, true), (Decline, true)],
             Page::Pause => vec![
                 (Controls, true),
@@ -201,6 +226,27 @@ impl State {
     pub fn navigate(&mut self, delta: i32) {
         self.keyboard_focus = true;
         let buttons = self.buttons();
+        if self.page == Page::ChooseMap {
+            let mut stops = vec![None];
+            stops.extend(
+                buttons
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(i, (_, enabled))| enabled.then_some(Some(i))),
+            );
+            let current = if self.maps.list_focus {
+                None
+            } else {
+                Some(self.focus)
+            };
+            let at = stops.iter().position(|stop| *stop == current).unwrap_or(0);
+            let next = (at as i64 + i64::from(delta)).rem_euclid(stops.len() as i64) as usize;
+            self.maps.list_focus = stops[next].is_none();
+            if let Some(index) = stops[next] {
+                self.focus = index;
+            }
+            return;
+        }
         let n = buttons.len();
         if n == 0 {
             return;
@@ -249,6 +295,9 @@ impl State {
                 Effect::None
             }
             (Page::Skirmish, Start) => Effect::StartMatch,
+            (Page::Skirmish, ChooseMap) => Effect::OpenMapChooser,
+            (Page::ChooseMap, UseMap) => Effect::UseMap,
+            (Page::ChooseMap, Back) => Effect::CancelMap,
             (Page::Skirmish, Back) => {
                 self.set(Page::SinglePlayer);
                 Effect::None
@@ -365,6 +414,10 @@ impl State {
         }
     }
     pub fn scroll_by(&mut self, delta: i32) {
+        if self.page == Page::ChooseMap {
+            self.maps.scroll(delta);
+            return;
+        }
         self.scroll = (self.scroll as i32 + delta)
             .clamp(0, self.slots.len().saturating_sub(10) as i32) as usize;
     }
@@ -486,6 +539,10 @@ impl Layout {
         if self.front {
             let y = if matches!(button, Button::MainMenu | Button::Back | Button::Quit) {
                 535
+            } else if matches!(button, Button::Start | Button::GenerateMap) {
+                241
+            } else if button == Button::ChooseMap {
+                283
             } else {
                 199 + index as i32 * 42
             };

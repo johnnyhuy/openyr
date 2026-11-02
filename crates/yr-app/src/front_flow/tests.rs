@@ -119,6 +119,152 @@ fn retail_front_recovery_messages_wrap_scroll_and_return_through_actual_handlers
 }
 
 #[test]
+fn retail_battle_map_chooser_previews_cancels_and_commits_the_selected_map() {
+    let directory = PathBuf::from(std::env::var("HOME").unwrap_or_default())
+        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    if !directory.is_dir() {
+        return;
+    }
+    let mut app = new_app(directory.to_string_lossy().into(), "EB1.MMX".into(), 1);
+    app.enter_front();
+    click(&mut app, Button::SinglePlayer);
+    click(&mut app, Button::Skirmish);
+    wait(&mut app);
+    let accepted = app.front_preview.as_ref().unwrap().rgba.clone();
+    assert_eq!(app.menu.maps.entries.len(), 91);
+    for (index, asset) in [
+        (0, "XMP29U2.MAP"),
+        (12, "XMP08T2.MAP"),
+        (26, "XKiller.MAP"),
+        (32, "XEB1.MAP"),
+        (72, "XMP26S6.MAP"),
+        (83, "XMP32S8.MAP"),
+    ] {
+        assert_eq!(app.menu.maps.entries[index].asset, asset);
+    }
+    let settle = |app: &mut App| {
+        let deadline = Instant::now() + Duration::from_secs(180);
+        while app.chooser_job.is_some() || app.menu.maps.ready != Some(app.menu.maps.selected) {
+            app.poll_map_chooser();
+            assert!(app.menu.maps.error.is_none(), "{:?}", app.menu.maps.error);
+            assert!(Instant::now() < deadline, "chooser preview did not settle");
+            std::thread::sleep(Duration::from_millis(5));
+        }
+    };
+    click(&mut app, Button::ChooseMap);
+    assert_eq!(app.menu.page, Page::ChooseMap);
+    assert!(
+        !app.menu
+            .buttons()
+            .iter()
+            .find(|b| b.0 == Button::UseMap)
+            .unwrap()
+            .1
+    );
+    // Navigate while the initial preview is still pending.
+    app.menu_key_code(KeyCode::End, None, false);
+    app.menu_key_code(KeyCode::Home, None, false);
+    app.menu_key_code(KeyCode::PageDown, None, false);
+    for _ in 0..6 {
+        app.menu_key_code(KeyCode::ArrowUp, None, false);
+    }
+    settle(&mut app);
+    assert_eq!(app.menu.maps.selected, 12);
+    assert_eq!(
+        (
+            app.chooser_preview.as_ref().unwrap().width,
+            app.chooser_preview.as_ref().unwrap().height
+        ),
+        (70, 67)
+    );
+    assert_eq!(app.map_name, "EB1.MMX");
+    proof(&app, "chooser-lake");
+    app.menu_key_code(KeyCode::Escape, None, false);
+    assert_eq!(app.menu.page, Page::Skirmish);
+    assert_eq!(app.front_preview.as_ref().unwrap().rgba, accepted);
+    assert_eq!(app.map_name, "EB1.MMX");
+    click(&mut app, Button::ChooseMap);
+    app.menu_key_code(KeyCode::End, None, false);
+    app.menu_key_code(KeyCode::PageUp, None, false);
+    settle(&mut app);
+    assert_eq!(app.menu.maps.selected, 72);
+    proof(&app, "chooser-bering");
+    click(&mut app, Button::UseMap);
+    assert_eq!(app.menu.page, Page::Skirmish);
+    assert_eq!(app.map_name, "XMP26S6.MAP");
+    assert_eq!(app.menu.map_name, app.map_name);
+    assert_eq!(
+        (
+            app.front_preview.as_ref().unwrap().width,
+            app.front_preview.as_ref().unwrap().height
+        ),
+        (236, 86)
+    );
+    assert!(app.session.is_none());
+    proof(&app, "skirmish-selected-bering");
+    click(&mut app, Button::Start);
+    wait(&mut app);
+    assert_eq!(app.menu.page, Page::Closed);
+    assert_eq!(app.map_name, "XMP26S6.MAP");
+    assert!(app.session.is_some() && app.map.is_some() && app.sprites.is_some());
+    proof(&app, "chooser-bering-match-tick1");
+    app.enter_front();
+    assert_eq!(app.map_name, "XMP26S6.MAP");
+    click(&mut app, Button::SinglePlayer);
+    click(&mut app, Button::Skirmish);
+    wait(&mut app);
+    click(&mut app, Button::ChooseMap);
+    settle(&mut app);
+    assert_eq!(app.menu.maps.selected, 72);
+
+    // Cancel a pending different preview and drain its obsolete result.
+    app.menu_key_code(KeyCode::Home, None, false);
+    assert!(app.chooser_job.is_some());
+    app.menu_key_code(KeyCode::Escape, None, false);
+    let deadline = Instant::now() + Duration::from_secs(180);
+    while app.chooser_job.is_some() {
+        app.poll_map_chooser();
+        assert!(Instant::now() < deadline);
+        std::thread::sleep(Duration::from_millis(5));
+    }
+    assert_eq!(app.menu.page, Page::Skirmish);
+    assert_eq!(app.map_name, "XMP26S6.MAP");
+    assert!(app.chooser_preview.is_none());
+
+    // A failed map keeps the accepted map, disables Use Map and permits retry.
+    click(&mut app, Button::ChooseMap);
+    app.menu.maps.entries[0].asset = "OPENYR_MISSING_CHOOSER.MAP".into();
+    app.menu.maps.top = 0;
+    let layout = Layout::for_state(&app.menu, WIN_W, WIN_H);
+    app.cursor = (
+        layout.origin.0 + 345.0 * layout.scale,
+        layout.origin.1 + 132.0 * layout.scale,
+    );
+    app.menu_mouse(ElementState::Pressed, MouseButton::Left);
+    app.menu_mouse(ElementState::Released, MouseButton::Left);
+    assert_eq!(app.menu.maps.selected, 0);
+    while app.menu.maps.error.is_none() {
+        app.poll_map_chooser();
+        assert!(Instant::now() < deadline);
+        std::thread::sleep(Duration::from_millis(5));
+    }
+    assert!(!app.menu.buttons().contains(&(Button::UseMap, true)));
+    assert_eq!(app.map_name, "XMP26S6.MAP");
+    proof(&app, "chooser-preview-error");
+    app.menu_key_code(KeyCode::PageDown, None, false);
+    settle(&mut app);
+    assert_eq!(app.menu.maps.selected, 18);
+    app.menu.maps.drag = Some((200, 0));
+    app.cancel_pointer_action();
+    assert!(app.menu.maps.drag.is_none());
+    app.menu_key_code(KeyCode::Tab, None, false);
+    assert!(!app.menu.maps.list_focus && app.menu.keyboard_focus);
+    app.menu_key_code(KeyCode::Escape, None, false);
+    assert_eq!(app.menu.page, Page::Skirmish);
+    assert_eq!(app.map_name, "XMP26S6.MAP");
+}
+
+#[test]
 fn retail_front_menu_restores_the_saved_map_instead_of_the_default() {
     let dir = PathBuf::from(std::env::var("HOME").unwrap_or_default())
         .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
