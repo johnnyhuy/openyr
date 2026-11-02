@@ -16,6 +16,10 @@ Johnny on 2026-10-31.
 - Precedent study: `docs/research/`
 - Repo, licence, method: `docs/legal.md`
 - Wine testbed retained as reference oracle at `~/Games/RA2YR`
+- [x] Keep the required macOS CI job on an explicit standard Intel runner
+      (#184), retaining all checks after hosted arm64 runner acquisition
+      failed before any steps ran. Local retail/window verification also
+      exercises Apple Silicon.
 
 ## M1: Asset layer (done 2026-10-17; open items carried forward)
 
@@ -87,6 +91,12 @@ Johnny on 2026-10-31.
       sim/save bytes are checked. Original cadence/loop semantics, scorch,
       animation reports and other special deaths remain unverified
       (`docs/formats/effects.md`).
+- [x] Human infantry Nuke Melt deaths (#102, #182): lethal `InfDeath=7`
+      selects the 60-frame retail NUKEDIE clip in world painter order.
+      Every source frame, eligibility, expiry, saved flights after shooter
+      loss and unchanged sim/save bytes are checked. Original timing,
+      lighting, scorch, animation reports and non-human exceptions remain
+      unverified (`docs/formats/effects.md`).
 - [x] Map parsing: LZO/IsoMapPack5 + overlay packs, all 234 retail maps
       (`docs/formats/map.md`); tile-set index maps tile numbers to TMPs
 - [x] TMP terrain rendering from real maps as PNG (`mix-dump render-map`;
