@@ -136,7 +136,9 @@ impl App {
                     if self.menu.page == Page::ChooseMap {
                         if let Some(point) = layout.local(self.cursor) {
                             if let Some(index) = self.menu.maps.row_at(point) {
-                                self.menu.maps.select(index);
+                                if self.menu.maps.select(index) {
+                                    self.menu.refresh_heading();
+                                }
                                 self.menu.maps.list_focus = true;
                             } else if (515..535).contains(&point.0) && (127..472).contains(&point.1)
                             {
@@ -241,7 +243,9 @@ impl App {
                     KeyCode::Home => -4096,
                     _ => 4096,
                 };
-                self.menu.maps.move_selection(delta);
+                if self.menu.maps.move_selection(delta) {
+                    self.menu.refresh_heading();
+                }
                 self.poll_map_chooser();
             }
             KeyCode::Enter | KeyCode::NumpadEnter

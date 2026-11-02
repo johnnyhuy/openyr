@@ -105,10 +105,10 @@ Its regression explicitly excludes only `(709,80,19,18)`; all other pixels
 and markers are checked. No map-specific correction is used.
 
 The chooser heading uses its observed `(634,3,164,18)` label rectangle and
-matches the default original heading. Post-modal Skirmish heading color is
-still #153. Cancelling unchanged Alamo retains the changed color; leaving
-and re-entering Skirmish restores the original 25 final-glyph pixels in the
-2026-11-02 05:39:16 UTC capture. Focus/repaint behavior remains unverified.
+matches the default original heading. The [heading observations](front-headings.md)
+now cover refreshed Skirmish and chooser foregrounds (#153). Focus loss,
+selection changes and modal return refresh the final glyph; leaving and
+re-entering Skirmish restores its initial styling.
 
 Free For All, Team Alliance and random map generation are disabled. The
 Skirmish setup still uses the supported Allied sandbox profile. Complete

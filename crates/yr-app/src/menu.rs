@@ -110,6 +110,7 @@ pub struct State {
     pub map_name: String,
     pub maps: maps::MapList,
     pub setup: setup::Setup,
+    pub heading_refreshed: bool,
 }
 
 impl Default for State {
@@ -131,6 +132,7 @@ impl Default for State {
             map_name: "EB1.MMX".into(),
             maps: Default::default(),
             setup: Default::default(),
+            heading_refreshed: false,
         }
     }
 }
@@ -140,6 +142,7 @@ impl State {
         self.page != Page::Closed
     }
     pub fn set(&mut self, page: Page) {
+        self.heading_refreshed = self.page == Page::ChooseMap && page == Page::Skirmish;
         self.page = page;
         self.message_scroll = 0;
         self.focus = 0;
@@ -150,6 +153,11 @@ impl State {
         self.pressed = None;
         self.setup.focus = None;
         self.setup.drag = None;
+    }
+    pub fn refresh_heading(&mut self) {
+        if self.front && matches!(self.page, Page::Skirmish | Page::ChooseMap) {
+            self.heading_refreshed = true;
+        }
     }
     pub fn message(&mut self, text: String, back: Page) {
         self.set(Page::Message {

@@ -384,9 +384,10 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
 - [ ] Calibrate the chooser start projection without map-specific offsets
       (#164), retaining all exact Skirmish comparisons. Free For All, Team
       Alliance, random generation and the complete Skirmish form remain in #96.
-- [ ] Calibrate heading foreground after map selection (#153). Returning
-      from the original chooser changes 25 final-glyph pixels; retain the
-      separately verified default heading states.
+- [x] Calibrate heading foreground after dialog refresh (#153). Focus loss,
+      chooser selection and modal return match the original refreshed state;
+      re-entry restores initial styling. Twelve complete header comparisons
+      retain the separately verified Main/Single Player defaults.
 - [x] Preserve guarded public Win32 window/control observations and actual
       child exit status in `tools/wine-oracle`, with synthetic geometry,
       private Edit exclusion, silent-exit and absent-target checks. Publish

@@ -59,11 +59,60 @@ pixels. The native heading regression now checks all 40 rows for its wide
 preview fixture, with RGBA FNV-1a `1091ed8ace62e049`.
 The [preview observations](front-preview.md) cover its raster and limits.
 
-A fresh capture after returning from the map chooser paints Skirmish's final
-`e` blue 0 instead of blue 24. Its 25 ink pixels change while the prefix,
-mask and baseline stay fixed. This newly observed interaction state is #153;
-the default-state captures and their matches remain valid. The native helper
-still uses the default foreground rule, and full modal behavior remains open.
+## Dialog refreshes
+
+Fresh public UI observations on 2026-11-02 distinguish initial heading
+presentation from a refreshed control (#153). The same Alamo setup and text
+are used throughout the focus and repaint probes. Opening Skirmish paints the
+final `e` with blue 24. Each of the following changes those same 25 ink pixels
+to blue 0, without changing the prefix, glyph mask, position or frame:
+
+- A verified focus round trip through a temporary helper-owned window.
+- An isolated `RedrawWindow` request for the owned heading Static control.
+- Returning from Choose Map, both Cancel and Use Map with unchanged selection.
+- Accepting Little Big Lake, then restoring Alamo through the chooser.
+
+Back followed by fresh Skirmish entry restores blue 24. A second focus probe
+repeats the change. The final `e` in the chooser's `Customize Battle` heading also changes its 25 ink pixels
+from blue 24 to blue 0 when a different map row is selected. Returning selection
+to the original row retains blue 0. Merely opening the chooser retains blue 24.
+
+| Header at `(632,0,168,37)` | Initial RGBA FNV-1a | Refreshed RGBA FNV-1a |
+| --- | --- | --- |
+| Skirmish Game | `af5382b7a6dc6151` | `86ad3335e6790da9` |
+| Chooser (Customize Battle) | `03bbbbb008bd0f95` | `970ff46dc361ae9d` |
+
+The probes use public
+[RedrawWindow](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-redrawwindow)
+and [SetForegroundWindow](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setforegroundwindow)
+APIs. They verify the complete target image, owner PID, current page and
+control class. The first focus helper's immediate restore check returned false;
+a later guarded PrintScreen verified owned foreground and captured the changed
+heading. The corrected helper waits for observed foreground after destroying
+its own temporary window and verifies both sides of a second round trip.
+No original implementation, disassembly or process memory was inspected.
+
+One transition snapshot temporarily found no unique dialog. Fresh reads of
+the same process subsequently verified Skirmish. Choose Map's synchronous
+button message timed out while the chooser remained open; a separate read
+verified that actual page before continuation. No input was repeated because
+of a timeout, and the original was not restarted during these probes.
+
+The native model records heading refresh as presentation state. Opening a
+page resets it, except returning from the chooser refreshes Skirmish. Actual
+focus loss and a changed chooser row refresh the active supported heading.
+Mouse and keyboard selection share the change signal. Initial asynchronous
+preview loading and ordinary animation redraws do not change heading state.
+This models the observed transitions, not the original renderer's internals.
+Main Menu and Single Player retain their separately verified default styling;
+their refresh behavior and other dialogs are not established by these probes.
+
+`retail_skirmish_heading_tracks_dialog_refreshes` follows the actual app
+focus, mouse, keyboard, chooser Cancel/Use Map and re-entry handlers. It checks
+12 complete 168x37 headers, 74592 RGBA samples, without masks. The previous
+renderer failed all seven refreshed states in the initial regression; initial
+and re-entry states already matched. The proof includes that failing log,
+passing output, source receipts, complete safe crops and pixel differences.
 
 An earlier 08:25:09 export has an empty heading during a transition. It is
 retained as an observation and excluded from the stable heading assertions.
