@@ -124,6 +124,15 @@ impl App {
                 ElementState::Pressed => {
                     self.menu.keyboard_focus = false;
                     self.menu.pressed = layout.hit(&self.menu, self.cursor);
+                    if self.menu.front && self.menu.page == Page::Skirmish {
+                        self.menu.setup.focus = None;
+                        if let Some((x, y)) = layout.local(self.cursor) {
+                            if let Some(field) = yr_app::menu::setup::Setup::hit((x, y)) {
+                                self.menu.setup.focus = Some(field);
+                                self.menu.setup.press(field, x);
+                            }
+                        }
+                    }
                     if self.menu.page == Page::ChooseMap {
                         if let Some(point) = layout.local(self.cursor) {
                             if let Some(index) = self.menu.maps.row_at(point) {
@@ -155,6 +164,7 @@ impl App {
                 }
                 ElementState::Released => {
                     self.menu.maps.drag = None;
+                    self.menu.setup.drag = None;
                     let hit = layout.hit(&self.menu, self.cursor);
                     if let Some(button) = self.menu.pressed.take().filter(|b| Some(*b) == hit) {
                         let effect = self.menu.activate(button);
@@ -191,6 +201,23 @@ impl App {
             if let Some(delta) = delta {
                 self.menu_scroll(delta);
                 return;
+            }
+        }
+        if self.menu.front && self.menu.page == Page::Skirmish {
+            if let Some(field) = self.menu.setup.focus {
+                let delta = match code {
+                    KeyCode::ArrowLeft | KeyCode::ArrowDown => Some(-1),
+                    KeyCode::ArrowRight | KeyCode::ArrowUp => Some(1),
+                    KeyCode::Home => Some(i32::MIN),
+                    KeyCode::End => Some(i32::MAX),
+                    _ => None,
+                };
+                if let Some(delta) = delta {
+                    self.menu.keyboard_focus = true;
+                    self.menu.setup.adjust(field, delta);
+                    self.reset_menu_clock();
+                    return;
+                }
             }
         }
         match code {
@@ -358,6 +385,17 @@ impl App {
         let map = self.map_name.clone();
         let scale = self.scale;
         let seed = self.session.as_ref().map_or(42, Session::seed);
+        let options = if self.menu.front {
+            yr_app::session::StartOptions {
+                shared_forces: true,
+                credits: Some(self.menu.setup.value(yr_app::menu::setup::Field::Credits)),
+                units: Some(self.menu.setup.value(yr_app::menu::setup::Field::Units) as u16),
+            }
+        } else {
+            self.session
+                .as_ref()
+                .map_or(self.menu.setup.options, |s| s.start_options)
+        };
         let (sender, receiver) = std::sync::mpsc::channel();
         let back = if self.menu.front {
             if path.is_some() {
@@ -374,7 +412,10 @@ impl App {
                 let result = (|| {
                     let (session, map_name) = match &path {
                         Some(path) => yr_app::snapshot::load_from_menu(&directory, &map, path)?,
-                        None => (yr_app::session::load(&directory, &map, seed)?, map),
+                        None => (
+                            yr_app::session::load_with_options(&directory, &map, seed, options)?,
+                            map,
+                        ),
                     };
                     let map = yr_render::render_map(&directory, &map_name, scale)?;
                     Ok(Prepared::Match {
@@ -417,6 +458,7 @@ impl App {
         }
         match result {
             Ok(Prepared::Preview(preview)) => {
+                self.menu.setup.update_profile(preview.setup);
                 self.front_preview = Some(preview);
                 self.menu.set(Page::Skirmish);
             }
@@ -433,6 +475,7 @@ impl App {
                 if let Some(path) = save_path {
                     self.save_path = path;
                 }
+                self.menu.setup.options = session.start_options;
                 self.session = Some(*session);
                 self.map = Some(map);
                 self.menu.map_name = map_name.clone();

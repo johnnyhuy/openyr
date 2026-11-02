@@ -12,7 +12,7 @@ All header integers are little-endian. A match file has this layout:
 | Offset | Bytes | Value |
 | --- | --- | --- |
 | 0 | 8 | ASCII `OYRMATCH` |
-| 8 | 4 | Match format version, 1 or 2 |
+| 8 | 4 | Match format version, 1, 2 or 3 |
 | 12 | 8 | Original setup seed |
 | 20 | 8 | Setup compatibility fingerprint |
 | 28 | 8 | Saved sim state hash |
@@ -22,23 +22,52 @@ All header integers are little-endian. A match file has this layout:
 | 39 | N | Version 2: installed map filename |
 | 39+N | remainder | Version 2: simulation snapshot |
 
-Named maps loaded from the selected game-data install write version 2. The map
-reference is a bounded ASCII filename, with letters, digits, spaces, underscores,
-hyphens and dots. Empty names, leading dots, path separators, drive prefixes,
-control bytes and invalid encoding are rejected before loading. The reference
-must resolve in the selected install. It is presentation/loading metadata and
-does not change the setup fingerprint, sim payload, RNG or gameplay state hash.
+New sessions write version 3. It records the shared starting-force profile
+(#166), a bounded optional map filename, and explicit credits/unit overrides.
+After the common 37-byte header:
 
-Native front and pause menus rebuild the referenced map, then commit its name,
-terrain, sprites and session together after the complete load succeeds. A failed
-or cancelled job keeps the old map and session. Explicit CLI loads continue to
-check the supplied map against the saved setup instead of following the reference.
+| Offset | Bytes | Version-3 value |
+| --- | --- | --- |
+| 37 | 2 | Map-name byte length N, 0 through 255 |
+| 39 | N | Installed map filename, absent when N is zero |
+| 39+N | 1 | Option flags: bit 0 credits, bit 1 unit count |
+| 40+N | 8 | Starting credits, signed integer |
+| 48+N | 2 | Starting unit count, unsigned integer |
+| 50+N | remainder | Simulation snapshot |
 
-Version-1 saves remain readable with the currently supplied map. They contain no
-map identity, so a menu cannot discover a different saved map from that envelope.
-Direct setup construction and external-path maps without an installed filename
-continue to write version 1. Legacy saves can be continued with a matching map;
-re-saving a named installed session records that map in version 2.
+Zero flags select the rules defaults. An absent option must have a zero value
+in its slot. Reserved flags, truncated fields, credits outside 0 through
+1,000,000,000 and unit counts above 4096 are rejected before reconstruction.
+The fixed metadata adds 11 bytes; the simulation payload limit remains 64 MiB.
+The simulation schema is unchanged.
+
+The map reference is a bounded ASCII filename with letters, digits, spaces,
+underscores, hyphens and dots. Leading dots, path separators, drive prefixes,
+control bytes and invalid encoding are rejected before loading. A present
+reference must resolve in the selected install. Version 2 requires a nonempty
+name; version 3 uses zero length for direct setup or external-path sessions.
+A map reference is loading metadata and does not alter the sim payload or hash.
+
+Native front and pause menus rebuild the referenced map with the saved profile,
+seed and overrides, then commit its name, terrain, sprites and session together
+after the complete load succeeds. Failed or cancelled jobs retain the old match.
+Explicit CLI loads continue to check their supplied map against the saved setup.
+Restart retains the loaded profile and overrides. A new match from the front
+menu uses the shared-force profile and the displayed controls.
+
+Versions 1 and 2 remain readable. They reconstruct the prior Allied sandbox
+with three computer guards, retaining its starting fingerprint. Version 1 uses
+the supplied map; version 2 follows its recorded installed map in menus. Saving
+an ongoing legacy session keeps its profile and envelope version. This preserves
+the most recent three-guard profile; older incompatible engine configurations
+still fail their setup fingerprint checks as described below.
+
+The actual-handler regression checks 5000-credit, six-unit settings for both
+owners through Start, save/load, malformed metadata, restart and return to setup.
+A retained prior-release version-2 save and equivalent version-1 payload also
+load at EB1 tick 1, seed 42, hash `57dac47c915b074a`. Their producing command,
+binary hash and save hashes are recorded in external proof. Save files are not
+repository fixtures or distributed proof assets.
 
 The simulation snapshot starts with `OYRSIM\0\0` (8 bytes), then a
 little-endian u32 version (currently 3), then UTF-8 JSON of `Sim`.

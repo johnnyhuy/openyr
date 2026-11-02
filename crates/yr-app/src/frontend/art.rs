@@ -17,6 +17,7 @@ pub struct Art {
     pub(super) button_back: Option<Image>,
     pub(super) start_markers: Vec<Image>,
     pub(super) scrollbar: Vec<Image>,
+    pub(super) setup_widgets: Vec<Image>,
 }
 impl Art {
     pub fn load(fs: &AssetFs) -> Self {
@@ -114,6 +115,30 @@ impl Art {
                     }
                     Some(Image {
                         width: 18,
+                        height,
+                        pixels: image.to_rgba(),
+                    })
+                })
+                .collect::<Option<Vec<_>>>()
+            })
+            .unwrap_or_default();
+        art.setup_widgets = fs
+            .read("LOCALMD.MIX")
+            .and_then(|bytes| MixArchive::parse(bytes).ok())
+            .and_then(|mix| {
+                [
+                    (0x5c26a605, 12, 22),
+                    (0x429d62c3, 18, 18),
+                    (0xb1a77caf, 48, 22),
+                ]
+                .into_iter()
+                .map(|(id, width, height)| {
+                    let image = PcxImage::parse(mix.get_by_id(id)?).ok()?;
+                    if (image.width, image.height) != (width, height) {
+                        return None;
+                    }
+                    Some(Image {
+                        width,
                         height,
                         pixels: image.to_rgba(),
                     })

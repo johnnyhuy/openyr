@@ -4,9 +4,9 @@
 //! Contents: the sim terrain grid for the map, the map's own pre-placed
 //! structures/units as sim entities, a player starting force at the
 //! first start waypoint, a computer base at the second, and the
-//! rules' starting credits. Starting composition is the sandbox's
-//! documented Allied pick (an AMCV, one CMIN, four MTNKs,
-//! four infantry = the retail `UnitCount=10`); win/lose is judged on
+//! selected starting credits. Both owners use the sandbox's Allied
+//! starting composition (AMCV, CMIN, four MTNKs, four infantry at
+//! UnitCount=10). Legacy saves retain three computer guards. Win/lose is judged on
 //! owned entities with no buildings and no units left.
 
 use yr_assets::{AssetFs, Theater};
@@ -22,7 +22,39 @@ pub enum Outcome {
     Lost,
 }
 
+/// Explicit front-menu overrides, outside the deterministic simulation payload.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct StartOptions {
+    /// New sessions share the count; envelope-1/2 reconstruction keeps old guards.
+    pub shared_forces: bool,
+    pub credits: Option<i64>,
+    pub units: Option<u16>,
+}
+impl Default for StartOptions {
+    fn default() -> Self {
+        Self {
+            shared_forces: true,
+            credits: None,
+            units: None,
+        }
+    }
+}
+impl StartOptions {
+    pub fn validate(self) -> Result<(), String> {
+        if (!self.shared_forces && (self.credits.is_some() || self.units.is_some()))
+            || self
+                .credits
+                .is_some_and(|v| !(0..=1_000_000_000).contains(&v))
+            || self.units.is_some_and(|v| v > 4096)
+        {
+            return Err("Starting credits or unit count exceeds supported bounds".into());
+        }
+        Ok(())
+    }
+}
+
 pub struct Session {
+    pub start_options: StartOptions,
     pub sim: Sim,
     pub outcome: Outcome,
     had_enemy: bool,
@@ -457,6 +489,16 @@ fn place_base(
 /// Load a session straight from a game dir + map name (window entry point).
 /// Mirrors the retail test: map INI overrides merge into the rules.
 pub fn load(gamedir: &str, map_name: &str, seed: u64) -> Result<Session, String> {
+    load_with_options(gamedir, map_name, seed, StartOptions::default())
+}
+
+pub fn load_with_options(
+    gamedir: &str,
+    map_name: &str,
+    seed: u64,
+    options: StartOptions,
+) -> Result<Session, String> {
+    options.validate()?;
     let mut fs = AssetFs::open(std::path::Path::new(gamedir)).map_err(|e| e.to_string())?;
     let raw = match fs.read(map_name) {
         Some(d) => d.to_vec(),
@@ -470,9 +512,23 @@ pub fn load(gamedir: &str, map_name: &str, seed: u64) -> Result<Session, String>
     let art_ini = yr_formats::IniFile::parse(&String::from_utf8_lossy(
         fs.read("ARTMD.INI").ok_or("artmd.ini not found")?,
     ));
-    let rules = Rules::load(&rules_ini, &art_ini);
+    let mut rules = Rules::load(&rules_ini, &art_ini);
+    if let Some(credits) = options.credits {
+        rules.skirmish.money = Some(credits);
+    }
+    if let Some(units) = options.units {
+        rules.skirmish.unit_count = Some(i64::from(units));
+    }
     let overlay_types = yr_render::type_list(&rules_ini, "OverlayTypes");
-    let mut session = setup(&mut fs, &map, &rules, &overlay_types, seed)?;
+    let mut session = setup_profile(
+        &mut fs,
+        &map,
+        &rules,
+        &overlay_types,
+        seed,
+        options.shared_forces,
+    )?;
+    session.start_options = options;
     if crate::snapshot::valid_map_reference(map_name) && fs.read(map_name).is_some() {
         session.source_map = Some(map_name.to_owned());
     }
@@ -486,6 +542,17 @@ pub fn setup(
     rules: &Rules,
     overlay_types: &[String],
     seed: u64,
+) -> Result<Session, String> {
+    setup_profile(fs, map, rules, overlay_types, seed, true)
+}
+
+fn setup_profile(
+    fs: &mut AssetFs,
+    map: &MapFile,
+    rules: &Rules,
+    overlay_types: &[String],
+    seed: u64,
+    shared_forces: bool,
 ) -> Result<Session, String> {
     let theater = Theater::from_map_name(&map.theater).ok_or("unknown theater")?;
     fs.set_theater(theater);
@@ -628,22 +695,33 @@ pub fn setup(
             );
         }
         {
-            for _ in 0..3 {
-                let Some(cell) = free_cell(&grid, Loco::Track, enemy_at, &sim, &taken_cells) else {
-                    break;
+            let count = if shared_forces { target_count } else { 3 };
+            for index in 0..count {
+                let id = if shared_forces {
+                    starting_kind(index)
+                } else {
+                    "MTNK"
+                };
+                let loco = rules
+                    .techno(id)
+                    .map(|t| techno_loco(t.kind))
+                    .unwrap_or(Loco::Track);
+                let Some(cell) = free_cell(&grid, loco, enemy_at, &sim, &taken_cells) else {
+                    if !shared_forces {
+                        break;
+                    }
+                    return Err(format!("Allied setup cannot place all {count} computer starting units near waypoint 1"));
                 };
                 taken_cells.push(cell);
                 let mut extra = Vec::new();
-                place_unit(
-                    &mut kinds,
-                    &mut next_id,
-                    rules,
-                    "MTNK",
-                    cell,
-                    ENEMY,
-                    &mut extra,
-                );
+                let uid = place_unit(&mut kinds, &mut next_id, rules, id, cell, ENEMY, &mut extra);
                 cmds.extend(extra);
+                if let Some(id) = uid.filter(|_| id == "CMIN") {
+                    cmds.push(Command::AssignRole {
+                        id,
+                        role: Role::Harvester,
+                    });
+                }
             }
         }
     }
@@ -705,6 +783,7 @@ pub fn setup(
     let mut radar = crate::sidebar::radar::Radar::load(fs, map, rules);
     radar.reset(&sim, &kinds);
     Ok(Session {
+        start_options: StartOptions::default(),
         radar,
         services: crate::service::Services::load(rules),
         sim,
@@ -1108,6 +1187,7 @@ mod save_tests {
         let kinds = vec!["E1".into()];
         let setup_hash = setup_fingerprint(&sim, &buildables, &kinds, &[]).unwrap();
         Session {
+            start_options: StartOptions::default(),
             sim,
             outcome: Outcome::Ongoing,
             had_enemy: false,
@@ -1127,6 +1207,7 @@ mod save_tests {
     #[test]
     fn saved_map_metadata_preserves_legacy_payload_and_gameplay_hashes() {
         let mut original = fresh("GI", 200, None);
+        original.start_options.shared_forces = false;
         let legacy = crate::snapshot::encode(&original).unwrap();
         let state_hash = original.sim.state_hash();
         let setup_hash = original.setup_hash;

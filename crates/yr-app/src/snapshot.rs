@@ -1,13 +1,14 @@
 //! Match save envelope and app-side disk I/O. Presentation is rebuilt on load.
 
-use crate::session::{Outcome, Session};
+use crate::session::{Outcome, Session, StartOptions};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 
 const MAGIC: &[u8; 8] = b"OYRMATCH";
 const HEADER: usize = 37;
 const MAP_LIMIT: usize = 255;
-const LIMIT: usize = yr_sim::save::MAX_SAVE_BYTES + HEADER + 2 + MAP_LIMIT;
+const OPTIONS_BYTES: usize = 11;
+const LIMIT: usize = yr_sim::save::MAX_SAVE_BYTES + HEADER + 2 + MAP_LIMIT + OPTIONS_BYTES;
 
 pub(crate) fn valid_map_reference(name: &str) -> bool {
     !name.is_empty()
@@ -30,7 +31,19 @@ pub fn encode(session: &Session) -> Result<Vec<u8>, String> {
     if map.is_some_and(|name| !valid_map_reference(name)) {
         return Err("invalid saved map reference".into());
     }
-    out.extend(if map.is_some() { 2u32 } else { 1u32 }.to_le_bytes());
+    session.start_options.validate()?;
+    let options = session.start_options;
+    let configured = options.shared_forces;
+    out.extend(
+        (if configured {
+            3u32
+        } else if map.is_some() {
+            2u32
+        } else {
+            1u32
+        })
+        .to_le_bytes(),
+    );
     out.extend(session.seed.to_le_bytes());
     out.extend(session.setup_hash.to_le_bytes());
     out.extend(session.sim.state_hash().to_le_bytes());
@@ -39,9 +52,15 @@ pub fn encode(session: &Session) -> Result<Vec<u8>, String> {
         Outcome::Won => 1,
         Outcome::Lost => 2,
     });
-    if let Some(name) = map {
+    if configured || map.is_some() {
+        let name = map.unwrap_or("");
         out.extend((name.len() as u16).to_le_bytes());
         out.extend(name.bytes());
+    }
+    if configured {
+        out.push(u8::from(options.credits.is_some()) | (u8::from(options.units.is_some()) << 1));
+        out.extend(options.credits.unwrap_or(0).to_le_bytes());
+        out.extend(options.units.unwrap_or(0).to_le_bytes());
     }
     out.extend(session.sim.save_bytes().map_err(|e| e.to_string())?);
     Ok(out)
@@ -53,6 +72,7 @@ struct Header<'a> {
     state_hash: u64,
     outcome: Outcome,
     map: Option<&'a str>,
+    options: StartOptions,
     payload_at: usize,
 }
 
@@ -61,17 +81,17 @@ fn header(bytes: &[u8]) -> Result<Header<'_>, String> {
         return Err("invalid or truncated OpenYR match save (limit 64 MiB)".into());
     }
     let version = u32::from_le_bytes(bytes[8..12].try_into().unwrap());
-    if !matches!(version, 1 | 2) {
+    if !matches!(version, 1..=3) {
         return Err(format!(
-            "unsupported match save version {version}; expected 1 or 2"
+            "unsupported match save version {version}; expected 1, 2 or 3"
         ));
     }
-    let (map, payload_at) = if version == 2 {
+    let (map, mut payload_at) = if version >= 2 {
         let length = bytes
             .get(HEADER..HEADER + 2)
             .ok_or("truncated saved map length")?;
         let length = usize::from(u16::from_le_bytes(length.try_into().unwrap()));
-        if length == 0 || length > MAP_LIMIT {
+        if (length == 0 && version == 2) || length > MAP_LIMIT {
             return Err("invalid saved map length".into());
         }
         let end = HEADER + 2 + length;
@@ -81,13 +101,32 @@ fn header(bytes: &[u8]) -> Result<Header<'_>, String> {
                 .ok_or("truncated saved map reference")?,
         )
         .map_err(|_| "invalid saved map encoding")?;
-        if !valid_map_reference(name) {
+        if !name.is_empty() && !valid_map_reference(name) {
             return Err("invalid saved map reference".into());
         }
-        (Some(name), end)
+        ((!name.is_empty()).then_some(name), end)
     } else {
         (None, HEADER)
     };
+    let mut options = StartOptions {
+        shared_forces: version >= 3,
+        ..StartOptions::default()
+    };
+    if version == 3 {
+        let data = bytes
+            .get(payload_at..payload_at + OPTIONS_BYTES)
+            .ok_or("truncated saved start options")?;
+        let flags = data[0];
+        let credits = i64::from_le_bytes(data[1..9].try_into().unwrap());
+        let units = u16::from_le_bytes(data[9..11].try_into().unwrap());
+        if flags > 3 || (flags & 1 == 0 && credits != 0) || (flags & 2 == 0 && units != 0) {
+            return Err("invalid saved start option flags or values".into());
+        }
+        options.credits = (flags & 1 != 0).then_some(credits);
+        options.units = (flags & 2 != 0).then_some(units);
+        options.validate()?;
+        payload_at += OPTIONS_BYTES;
+    }
     if bytes.len() - payload_at > yr_sim::save::MAX_SAVE_BYTES {
         return Err("OpenYR simulation payload exceeds 64 MiB".into());
     }
@@ -103,6 +142,7 @@ fn header(bytes: &[u8]) -> Result<Header<'_>, String> {
             _ => return Err("invalid match outcome in save".into()),
         },
         map,
+        options,
         payload_at,
     })
 }
@@ -121,6 +161,7 @@ pub fn restore(session: &mut Session, bytes: &[u8]) -> Result<(), String> {
     session.sim = sim;
     session.radar.reset(&session.sim, &session.kinds);
     session.outcome = h.outcome;
+    session.start_options = h.options;
     if session.source_map.is_none() {
         session.source_map = h.map.map(str::to_owned);
     }
@@ -167,7 +208,8 @@ pub fn load_from_menu(
 }
 
 fn load_bytes(gamedir: &str, map_name: &str, path: &Path, bytes: &[u8]) -> Result<Session, String> {
-    let mut session = crate::session::load(gamedir, map_name, header(bytes)?.seed)?;
+    let h = header(bytes)?;
+    let mut session = crate::session::load_with_options(gamedir, map_name, h.seed, h.options)?;
     restore(&mut session, bytes)?;
     println!(
         "OpenYR: loaded {} at tick {}, hash {:016x}, {:?}",
@@ -259,5 +301,48 @@ mod tests {
             assert_eq!(h.map, Some(name));
             assert_eq!(h.payload_at, bytes.len());
         }
+    }
+}
+
+#[cfg(test)]
+mod options_tests {
+    use super::*;
+    fn configured(flags: u8, credits: i64, units: u16) -> Vec<u8> {
+        let mut bytes = MAGIC.to_vec();
+        bytes.extend(3u32.to_le_bytes());
+        bytes.resize(HEADER, 0);
+        bytes.extend(0u16.to_le_bytes());
+        bytes.push(flags);
+        bytes.extend(credits.to_le_bytes());
+        bytes.extend(units.to_le_bytes());
+        bytes
+    }
+    #[test]
+    fn configured_header_rejects_hostile_and_truncated_options() {
+        for bytes in [
+            configured(4, 0, 0),
+            configured(1, -1, 0),
+            configured(1, 1_000_000_001, 0),
+            configured(1, 5000, 1),
+            configured(2, 1, 5),
+            configured(2, 0, 4097),
+        ] {
+            assert!(header(&bytes).is_err());
+        }
+        let bytes = configured(3, 5000, 0);
+        for end in HEADER..bytes.len() {
+            assert!(header(&bytes[..end]).is_err(), "{end}");
+        }
+        let h = header(&bytes).unwrap();
+        assert_eq!(
+            h.options,
+            StartOptions {
+                credits: Some(5000),
+                units: Some(0),
+                ..StartOptions::default()
+            }
+        );
+        assert_eq!(h.map, None);
+        assert_eq!(h.payload_at, HEADER + 2 + OPTIONS_BYTES);
     }
 }

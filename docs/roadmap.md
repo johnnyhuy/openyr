@@ -368,6 +368,17 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       preview loading/errors, cancel, accept and selected-map match entry use
       actual app handlers. Five complete original preview regions match;
       Killer Instinct's second marker retains a one-pixel gap (#164).
+- [x] Credits and starting-unit controls in the native Skirmish form (#96):
+      bounded rule-derived limits, mouse dragging and keyboard navigation feed
+      both participants' match setup (#166). Four original control regions
+      match outside the numeric wells; digit masks also match. Save/load and
+      restart retain choices, with explicit legacy setup reconstruction.
+- [x] Use real computer harvester income when one is alive (#167), retaining
+      the economy-lite fallback without a harvester. Ownership, reload and
+      fallback are checked without a simulation schema change.
+- [ ] Calibrate numeric slider value-well backgrounds (#168). Complete player,
+      faction, color/team and game-rule controls, original starting-force
+      composition, speed and timing remain part of #96.
 - [ ] Calibrate the chooser start projection without map-specific offsets
       (#164), retaining all exact Skirmish comparisons. Free For All, Team
       Alliance, random generation and the complete Skirmish form remain in #96.

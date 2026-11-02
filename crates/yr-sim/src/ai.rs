@@ -101,9 +101,13 @@ impl SkirmishAi {
             return;
         }
         let base_alive = sim.buildings.iter().any(|b| b.owner == self.owner);
-        // Economy-lite: a refinery earns $150 every ten seconds. Losing it
-        // stops income immediately. Production always pays the retail cost.
+        // Economy-lite is a fallback for a refinery without a real harvester.
+        // A live owned harvester supplies the resource loop instead.
         if sim.tick.is_multiple_of(150)
+            && !sim
+                .units
+                .iter()
+                .any(|u| u.owner == self.owner && u.role == Role::Harvester && u.hp > 0)
             && sim
                 .buildings
                 .iter()
@@ -332,6 +336,68 @@ mod tests {
             base_normal: true,
             free_unit: None,
         })
+    }
+
+    #[test]
+    fn a_real_computer_harvester_prevents_duplicate_economy_lite_income() {
+        let mut sim = scenario();
+        sim.set_ai(None);
+        let id = sim.next_id_peek();
+        sim.step(&[
+            Command::Spawn {
+                kind: 90,
+                x: Fix::from_int(40),
+                y: Fix::from_int(8),
+                loco: Loco::Track,
+                speed: Fix::ZERO,
+                hp: 100,
+                armor: 0,
+                weapon: None,
+            },
+            Command::AssignOwner { id, owner: E },
+            Command::AssignRole {
+                id,
+                role: Role::Harvester,
+            },
+        ]);
+        sim.tick = 150;
+        let mut ai = SkirmishAi::new(E, P, Vec::new());
+        let credits = sim.credits_of(E);
+        ai.step(&mut sim);
+        assert_eq!(
+            sim.credits_of(E),
+            credits,
+            "the real harvester supplies income"
+        );
+        let mut restored = Sim::from_save_bytes(&sim.save_bytes().unwrap()).unwrap();
+        restored.tick = 300;
+        ai.step(&mut restored);
+        assert_eq!(
+            restored.credits_of(E),
+            credits,
+            "the income condition survives save/load"
+        );
+        restored
+            .units
+            .iter_mut()
+            .find(|u| u.id == id)
+            .unwrap()
+            .owner = P;
+        restored.tick = 450;
+        ai.step(&mut restored);
+        assert_eq!(
+            restored.credits_of(E),
+            credits + 150,
+            "another owner's harvester cannot suppress this owner's fallback"
+        );
+        sim.units.retain(|u| u.id != id);
+        sim.tick = 300;
+        ai.step(&mut sim);
+        assert_eq!(
+            sim.credits_of(E),
+            credits + 150,
+            "legacy economy-lite remains available without a harvester"
+        );
     }
 
     fn scenario() -> Sim {

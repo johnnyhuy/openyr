@@ -321,7 +321,7 @@ fn preview_client_fits_both_axes_and_keeps_invalid_images_black() {
         height: 1,
         rgba: vec![255, 0, 0, 255, 0, 255, 0, 255],
         authored: true,
-        starting_credits: 10_000,
+        setup: Default::default(),
         starts: [None; 8],
         map_rect: (0, 0, 0, 0),
         local_rect: (0, 0, 0, 0),
@@ -602,7 +602,7 @@ fn preview_markers_clip_to_the_control_and_keep_sparse_start_numbers() {
         height: 1,
         rgba: [0, 0, 0, 255].repeat(2),
         authored: true,
-        starting_credits: 10_000,
+        setup: Default::default(),
         starts: [None; 8],
         map_rect: (0, 0, 2, 2),
         local_rect: (1, 1, 2, 12),
@@ -890,4 +890,104 @@ fn retail_battle_catalog_previews_every_available_map() {
             entry.asset
         );
     }
+}
+
+#[test]
+fn retail_setup_slider_tracks_and_digits_match_original_captures() {
+    let directory = std::path::PathBuf::from(std::env::var("HOME").unwrap_or_default())
+        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    if !directory.is_dir() {
+        return;
+    }
+    let fs = yr_assets::AssetFs::open(&directory).unwrap();
+    let art = Art::load(&fs);
+    let preview = load_preview(directory.to_str().unwrap(), "XMP29U2.MAP", 1).unwrap();
+    let mut mismatches = Vec::new();
+    for (name, money, units, expected_track, expected_digits) in [
+        (
+            "setup-both-max",
+            10000,
+            10,
+            0x430f64424fb48bbdu64,
+            0x667e3cef32aa4f16u64,
+        ),
+        (
+            "setup-credits-min",
+            5000,
+            10,
+            0x9669bc9c9a1eedb1u64,
+            0xae720785d509e312u64,
+        ),
+        (
+            "setup-both-min",
+            5000,
+            0,
+            0x33764e2b6c8edae5u64,
+            0xc07d63202be30bc4u64,
+        ),
+        (
+            "setup-both-mid",
+            7400,
+            5,
+            0x4d935eecd08ed9f5u64,
+            0xab875ec9bc4668f9u64,
+        ),
+    ] {
+        let mut state = State {
+            front: true,
+            ..State::default()
+        };
+        state.set(Page::Skirmish);
+        state.map_name = "XMP29U2.MAP".into();
+        state.setup.update_profile(preview.setup);
+        state.setup.set(crate::menu::setup::Field::Credits, money);
+        if name != "setup-credits-min" {
+            state.setup.set(crate::menu::setup::Field::Units, units);
+        }
+        let mut frame = vec![0; 800 * 600 * 4];
+        draw(
+            &mut frame,
+            800,
+            600,
+            &art,
+            Scene {
+                state: &state,
+                movie: None,
+                preview: Some(&preview),
+                phase: 0,
+                cursor: (-1.0, -1.0),
+            },
+        );
+        let mut track = 0xcbf29ce484222325u64;
+        let mut digits = track;
+        for y in 310..364 {
+            for x in 300..536 {
+                let c = &frame[(y * 800 + x) * 4..(y * 800 + x + 1) * 4];
+                digits = (digits ^ u64::from(c == [248, 252, 0, 255])).wrapping_mul(0x100000001b3);
+                // The value-well background remains a separate calibration gap.
+                if (485..533).contains(&x) && ((314..336).contains(&y) || (340..362).contains(&y)) {
+                    continue;
+                }
+                for b in c {
+                    track = (track ^ u64::from(*b)).wrapping_mul(0x100000001b3);
+                }
+            }
+        }
+        if track != expected_track || digits != expected_digits {
+            mismatches.push((name, track, expected_track, digits, expected_digits));
+        }
+        if let Some(path) = std::env::var_os("OPENYR_SETUP_PROOF") {
+            let path = std::path::PathBuf::from(path);
+            std::fs::create_dir_all(&path).unwrap();
+            std::fs::write(
+                path.join(format!("{name}.png")),
+                yr_render::png::encode_rgba(800, 600, &frame),
+            )
+            .unwrap();
+        }
+    }
+    assert!(
+        mismatches.is_empty(),
+        "Original slider tracks/digits: {mismatches:?}"
+    );
 }
