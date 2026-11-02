@@ -196,7 +196,11 @@ python3 -m unittest discover -s tools/wine-oracle -p 'test_*.py' -v
 
 They cover late duplicates after producer exit, partial/corrupt PNGs, overwritten
 files, ambiguous request ownership, split/hostile metadata, failed/live producers,
-CLI status and bounds. They run in the required CI `test` job. An original
+CLI status and bounds. Quiet/deadline, partial-write and validation-cost tests use
+a controlled clock and ordered filesystem events. Actual subprocess tests cover
+exports written after exit and producers held alive by explicit release files.
+These synthetic times are test inputs, not original-game measurements (#178).
+The tests run in the required CI `test` job. An original
 holdout retained all twelve exports for twelve guarded requests, including one
 observed after producer exit. Independent source/copy SHA-256 reconciliation
 matched every file; the collector observed for another 2.182 seconds after exit.

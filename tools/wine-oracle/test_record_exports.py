@@ -1,13 +1,12 @@
 import base64
 import hashlib
 import json
+import os
 from pathlib import Path
 import struct
 import subprocess
 import sys
 import tempfile
-import threading
-import time
 import unittest
 from unittest.mock import patch
 import zlib
@@ -25,6 +24,34 @@ def png(width=2, height=2, color=0):
             + chunk(b"IEND", b""))
 
 
+class ControlledClock:
+    """Order synthetic filesystem events without relying on host scheduling."""
+    def __init__(self, events):
+        self.now = 1_000_000_000
+        self.events = [(self.now + round(seconds * 1e9), action)
+                       for seconds, action in sorted(events, key=lambda event: event[0])]
+
+    def monotonic_ns(self):
+        return self.now
+
+    def sleep(self, seconds):
+        target = self.now + round(seconds * 1e9)
+        while self.events and self.events[0][0] <= target:
+            self.now, action = self.events.pop(0)
+            action()
+        self.now = target
+
+
+class ControlledProducer:
+    pid = 12345
+
+    def __init__(self, clock, exit_at):
+        self.clock, self.exit_at = clock, clock.now + round(exit_at * 1e9)
+
+    def poll(self):
+        return 0 if self.clock.now >= self.exit_at else None
+
+
 class ExportTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
@@ -34,10 +61,12 @@ class ExportTests(unittest.TestCase):
         self.image = png()
         self.encoded = base64.b64encode(self.image).decode()
         self.producers = []
+        self.release = self.root / "release-producer"
 
     def tearDown(self):
+        self.release.touch()
         for producer in self.producers:
-            producer.wait(timeout=3)
+            producer.wait(timeout=10)
         self.temp.cleanup()
 
     def run_producer(self, code, **options):
@@ -46,36 +75,46 @@ class ExportTests(unittest.TestCase):
                  f"image=base64.b64decode({self.encoded!r})\n")
         result = record(self.directory, self.root / "recording",
                         [sys.executable, "-c", setup + code], expected=(2, 2),
-                        quiet=options.pop("quiet", .18), settle_limit=options.pop("settle_limit", .6),
-                        run_limit=options.pop("run_limit", 2), poll=.005, **options)
+                        quiet=options.pop("quiet", .18), settle_limit=options.pop("settle_limit", 5),
+                        run_limit=options.pop("run_limit", 10), poll=.005, **options)
         self.producers.append(result.producer)
         return result.receipt
 
-    def test_late_duplicate_after_producer_exit_is_retained(self):
+    def run_controlled(self, events, *, exit_at=.01, validation_seconds=0, **options):
+        clock = ControlledClock(events)
+
+        def validate(data, expected):
+            clock.sleep(validation_seconds)
+            return png_size(data, expected)
+
+        def start(*args, **kwargs):
+            kwargs["stdout"].write(b"capture_index=0 capture_tick_before=40 after=40\n")
+            kwargs["stdout"].flush()
+            producer = ControlledProducer(clock, exit_at)
+            clock.sleep(0)
+            return producer
+
+        with patch("record_exports.subprocess.Popen", side_effect=start), \
+                patch("record_exports.png_size", side_effect=validate):
+            return record(self.directory, self.root / "recording", ["synthetic-producer"],
+                          expected=(2, 2), quiet=options.pop("quiet", .07),
+                          settle_limit=options.pop("settle_limit", .15),
+                          run_limit=1, poll=.005, clock=clock, **options).receipt
+
+    def test_real_producer_export_after_exit_is_retained(self):
         original_popen = subprocess.Popen
-        threads, observed_codes = [], []
+        observed_codes = []
 
         def start(*args, **kwargs):
             producer = original_popen(*args, **kwargs)
-
-            def late_renderer():
-                observed_codes.append(producer.wait())
-                time.sleep(.04)
-                (self.directory / "late.png").write_bytes(self.image)
-
-            thread = threading.Thread(target=late_renderer)
-            thread.start()
-            threads.append(thread)
+            observed_codes.append(producer.wait(timeout=10))
+            (self.directory / "late.png").write_bytes(self.image)
             return producer
 
-        try:
-            with patch("record_exports.subprocess.Popen", side_effect=start):
-                receipt = self.run_producer(
-                    "print('capture_index=0 capture_tick_before=40 after=40',flush=True)\n"
-                    "(root/'first.png').write_bytes(image)\n", quiet=.5)
-        finally:
-            for thread in threads:
-                thread.join(timeout=3)
+        with patch("record_exports.subprocess.Popen", side_effect=start):
+            receipt = self.run_producer(
+                "print('capture_index=0 capture_tick_before=40 after=40',flush=True)\n"
+                "(root/'first.png').write_bytes(image)\n")
         self.assertEqual(observed_codes, [0])
         self.assertEqual(receipt["producer_exit_code"], 0)
         self.assertEqual(len(receipt["exports"]), 2)
@@ -87,13 +126,41 @@ class ExportTests(unittest.TestCase):
             self.assertEqual(export["association"], "unresolved")
         self.assertFalse(receipt["temporal_association_validated"])
 
+    def test_late_duplicate_after_observed_producer_exit_is_retained(self):
+        receipt = self.run_controlled([
+            (0, lambda: (self.directory / "first.png").write_bytes(self.image)),
+            (.05, lambda: (self.directory / "late.png").write_bytes(self.image)),
+        ])
+        self.assertEqual(receipt["producer_exit_seen_ns"], 1_010_000_000)
+        self.assertEqual(len(receipt["exports"]), 2)
+        self.assertEqual(receipt["exports"][1]["complete_seen_ns"], 1_050_000_000)
+        self.assertEqual(receipt["observed_until_ns"], 1_120_000_000)
+        self.assertEqual(receipt["collector_status"], "settled")
+        self.assertTrue(receipt["export_accounting_complete"])
+
+    def test_validation_cost_can_exhaust_settling_budget_with_both_exports_retained(self):
+        receipt = self.run_controlled([
+            (0, lambda: (self.directory / "first.png").write_bytes(self.image)),
+            (.12, lambda: (self.directory / "late.png").write_bytes(self.image)),
+        ], validation_seconds=.1)
+        self.assertEqual(len(receipt["exports"]), 2)
+        self.assertEqual(receipt["producer_exit_seen_ns"], 1_100_000_000)
+        self.assertEqual(receipt["observed_until_ns"], 1_250_000_000)
+        self.assertEqual(receipt["collector_status"], "settling_deadline")
+        self.assertFalse(receipt["export_accounting_complete"])
+        self.assertEqual(receipt["pending_exports"], [])
+        self.assertEqual(receipt["problems"], [])
+
     def test_partial_png_is_not_accepted_until_complete(self):
-        receipt = self.run_producer(
-            "print('capture_index=0 capture_tick_before=4 after=4',flush=True)\n"
-            "p=root/'partial.png';p.write_bytes(image[:30]);time.sleep(.08);p.write_bytes(image)\n")
+        path = self.directory / "partial.png"
+        receipt = self.run_controlled([
+            (0, lambda: path.write_bytes(self.image[:30])),
+            (.04, lambda: path.write_bytes(self.image)),
+        ], exit_at=.05)
         self.assertEqual(len(receipt["exports"]), 1)
         export = receipt["exports"][0]
-        self.assertGreater(export["complete_seen_ns"], export["first_seen_ns"] + 20_000_000)
+        self.assertEqual(export["first_seen_ns"], 1_000_000_000)
+        self.assertEqual(export["complete_seen_ns"], 1_040_000_000)
         self.assertTrue(receipt["export_accounting_complete"])
 
     def test_unfinished_or_corrupt_export_is_explicitly_incomplete(self):
@@ -119,13 +186,20 @@ class ExportTests(unittest.TestCase):
         self.assertEqual(receipt["exports"][0]["association"], "unresolved")
 
     def test_split_metadata_line_is_reassembled_without_guessing(self):
-        receipt = self.run_producer(
-            "print('capture_index=0 capture_tick_before=',end='',flush=True)\n"
-            "(root/'early.png').write_bytes(image);time.sleep(.04)\n"
-            "print('4294967290 after=3',flush=True)\n")
-        self.assertEqual(len(receipt["requests"]), 1)
-        self.assertEqual(receipt["request_errors"], [])
-        self.assertFalse(receipt["temporal_association_validated"])
+        path = self.root / "stdout"
+        path.write_bytes(b"capture_index=0 capture_tick_before=")
+        clock = ControlledClock([])
+        requests = Requests(clock)
+        requests.scan(path, clock.now)
+        self.assertEqual(requests.events, [])
+        self.assertEqual(requests.errors, [])
+        with path.open("ab") as output:
+            output.write(b"4294967290 after=3\n")
+        clock.sleep(.04)
+        requests.scan(path, clock.now)
+        self.assertEqual(requests.events, [dict(index=0, tick_before=4294967290,
+                                              tick_after=3, host_seen_ns=1_040_000_000)])
+        self.assertEqual(requests.errors, [])
 
     def test_malformed_request_log_is_retained_as_error(self):
         receipt = self.run_producer(
@@ -142,7 +216,7 @@ class ExportTests(unittest.TestCase):
         self.assertTrue(receipt["export_accounting_complete"])
 
     def test_deadline_reports_the_same_producer_still_running(self):
-        receipt = self.run_producer("time.sleep(.2)\n", run_limit=.04)
+        receipt = self.run_producer(self.wait_for_release(), run_limit=.04)
         producer = self.producers[-1]
         self.assertEqual(receipt["producer_pid"], producer.pid)
         self.assertIsNone(producer.poll())
@@ -152,12 +226,20 @@ class ExportTests(unittest.TestCase):
 
     def test_export_bound_is_explicit_and_does_not_kill_producer(self):
         receipt = self.run_producer(
-            "(root/'a.png').write_bytes(image);(root/'b.png').write_bytes(image);time.sleep(.2)\n",
+            "(root/'a.png').write_bytes(image);(root/'b.png').write_bytes(image)\n"
+            + self.wait_for_release(),
             limit=1)
         self.assertEqual(receipt["collector_status"], "export_limit")
         self.assertFalse(receipt["export_accounting_complete"])
         self.assertIsNone(self.producers[-1].poll())
         self.assertEqual(len(receipt["exports"]), 1)
+
+    def wait_for_release(self):
+        return (f"release=Path({str(self.release)!r})\n"
+                "deadline=time.monotonic()+20\n"
+                "while not release.exists():\n"
+                "    if time.monotonic() >= deadline: raise SystemExit(9)\n"
+                "    time.sleep(.01)\n")
 
     def test_new_png_revisions_are_preserved(self):
         out = self.root / "snapshots"
@@ -173,36 +255,21 @@ class ExportTests(unittest.TestCase):
         self.assertNotEqual(watch.exports[0]["sha256"], watch.exports[1]["sha256"])
 
     def test_continuing_exports_reach_a_bounded_settling_deadline(self):
-        original_popen = subprocess.Popen
-        threads = []
+        path = self.directory / "changing.png"
 
-        def start(*args, **kwargs):
-            producer = original_popen(*args, **kwargs)
+        def write_revision(index):
+            path.write_bytes(png(color=index))
+            os.utime(path, ns=(1_000_000_000 + index, 1_000_000_000 + index))
 
-            def renderer():
-                producer.wait()
-                until = time.monotonic() + .4
-                index = 0
-                while time.monotonic() < until:
-                    (self.directory / "changing.png").write_bytes(png(color=index))
-                    index += 1
-                    time.sleep(.02)
-
-            thread = threading.Thread(target=renderer)
-            thread.start()
-            threads.append(thread)
-            return producer
-
-        try:
-            with patch("record_exports.subprocess.Popen", side_effect=start):
-                receipt = self.run_producer("pass\n", quiet=.07, settle_limit=.15)
-        finally:
-            for thread in threads:
-                thread.join(timeout=3)
+        receipt = self.run_controlled([
+            (index * .02, lambda revision=index: write_revision(revision))
+            for index in range(12)
+        ])
         self.assertEqual(receipt["producer_exit_code"], 0)
         self.assertEqual(receipt["collector_status"], "settling_deadline")
         self.assertFalse(receipt["export_accounting_complete"])
-        self.assertTrue(receipt["exports"])
+        self.assertEqual(len(receipt["exports"]), 9)
+        self.assertEqual(receipt["observed_until_ns"], 1_160_000_000)
 
     def test_hostile_png_headers_and_crc_are_rejected(self):
         for bad in [self.image[:-1], self.image + b"extra",
@@ -226,7 +293,7 @@ class ExportTests(unittest.TestCase):
             sys.executable, str(Path(__file__).with_name("record_exports.py")),
             "--directory", str(self.directory), "--out", str(self.root / "cli"),
             "--width", "2", "--height", "2", "--quiet-seconds", ".04",
-            "--settle-limit", ".2", "--run-limit", "2", "--",
+            "--settle-limit", "5", "--run-limit", "10", "--",
             sys.executable, "-c", producer_code,
         ], capture_output=True, text=True)
 

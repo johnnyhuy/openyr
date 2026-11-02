@@ -62,9 +62,10 @@ def signature(info):
 
 
 class ExportWatch:
-    def __init__(self, directory, out, expected=(800, 600), limit=128):
+    def __init__(self, directory, out, expected=(800, 600), limit=128, clock=time):
         self.directory, self.out = Path(directory), Path(out)
         self.expected, self.limit = expected, limit
+        self.clock = clock
         self.baseline = {p.name: signature(p.lstat()) for p in self.paths()}
         self.states, self.exports, self.problems = {}, [], []
         self.last_activity_ns = 0
@@ -105,7 +106,7 @@ class ExportWatch:
                 digest = hashlib.sha256(data).hexdigest()
                 record = dict(source_name=path.name, source_size=len(data),
                               source_mtime_ns=info.st_mtime_ns, first_seen_ns=first,
-                              complete_seen_ns=time.monotonic_ns(), sha256=digest,
+                              complete_seen_ns=self.clock.monotonic_ns(), sha256=digest,
                               width=dimensions[0], height=dimensions[1],
                               source_revision=len(self.exports), stored=False,
                               association="unresolved")
@@ -135,9 +136,10 @@ class ExportWatch:
 
 
 class Requests:
-    def __init__(self):
+    def __init__(self, clock=time):
         self.offset, self.tail = 0, b""
         self.events, self.errors = [], []
+        self.clock = clock
 
     def error(self, message):
         if message not in self.errors:
@@ -175,7 +177,7 @@ class Requests:
                 self.error("capture request ticks moved backward")
                 continue
             self.events.append(dict(index=index, tick_before=before, tick_after=after,
-                                    host_seen_ns=time.monotonic_ns()))
+                                    host_seen_ns=self.clock.monotonic_ns()))
 
 
 @dataclass
@@ -185,7 +187,7 @@ class Recording:
 
 
 def record(directory, out, command, *, expected=(800, 600), quiet=2.0,
-           settle_limit=10.0, run_limit=120.0, poll=0.02, limit=128):
+           settle_limit=10.0, run_limit=120.0, poll=0.02, limit=128, clock=time):
     directory, out = Path(directory).resolve(), Path(out).resolve()
     if (not directory.is_dir() or out == directory or directory in out.parents
             or out in directory.parents):
@@ -196,18 +198,19 @@ def record(directory, out, command, *, expected=(800, 600), quiet=2.0,
             or max(expected) > 8192 or expected[0] * expected[1] > 16_777_216):
         raise ValueError("invalid observer bounds")
     out.mkdir(parents=True, exist_ok=False)
-    watch, requests = ExportWatch(directory, out, expected, limit), Requests()
-    started = time.monotonic_ns()
+    watch = ExportWatch(directory, out, expected, limit, clock)
+    requests = Requests(clock)
+    started = clock.monotonic_ns()
     utc = datetime.datetime.now(datetime.timezone.utc).isoformat()
     exit_seen, status, last_checkpoint = None, "running", 0
     stdout_path, stderr_path = out / "producer.stdout", out / "producer.stderr"
     with stdout_path.open("wb") as stdout, stderr_path.open("wb") as stderr:
         producer = subprocess.Popen(command, stdout=stdout, stderr=stderr)
         while True:
-            now = time.monotonic_ns()
+            now = clock.monotonic_ns()
             requests.scan(stdout_path, now)
             watch.scan(now)
-            now = time.monotonic_ns()
+            now = clock.monotonic_ns()
             code = producer.poll()
             if code is not None and exit_seen is None:
                 exit_seen = now
@@ -243,7 +246,7 @@ def record(directory, out, command, *, expected=(800, 600), quiet=2.0,
                 last_checkpoint = now
             if status != "running":
                 break
-            time.sleep(poll)
+            clock.sleep(poll)
     return Recording(receipt, producer)
 
 

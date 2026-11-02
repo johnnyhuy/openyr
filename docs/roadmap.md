@@ -350,9 +350,12 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       expose a clock-calibration gap (#174) and delayed-export defect (#176);
       transitions and movie/shell synchronization still need calibration (#96).
 - [x] Retain renderer exports through helper exit and bounded settling (#176).
-      Late/duplicate/partial files and live producers are explicit; seventeen
+      Late/duplicate/partial files and live producers are explicit; nineteen
       synthetic regressions and an original holdout reconcile every source
       and copied hash. Request ownership remains unresolved.
+- [x] Remove host scheduling races from export-observer tests (#178). Ordered
+      synthetic events cover quiet/deadline and partial-write boundaries;
+      real subprocess checks retain after-exit output and use release gates.
 - [ ] Calibrate the front-menu warning clock (#174). Historical first-image
       fits have invalid temporal associations. The repaired observer retains
       multiplicity and uncertainty; presentation/export stalls, initial epoch
