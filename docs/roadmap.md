@@ -80,6 +80,13 @@ Johnny on 2026-10-31.
       spawn or reassignment. One-shot expiry, source pixels and redraw/save
       invariance are checked. Original cadence, corpses and
       special death selectors remain in #102 (`docs/formats/shp.md`).
+- [x] Human infantry electrocution (#102, #180): lethal `InfDeath=5` routes
+      actual fatal-hit provenance to retail ELECTRO art, including its bounded
+      finite loop and tail in world painter order. All 15 source frames,
+      eligibility, expiry, saved flights after shooter loss and unchanged
+      sim/save bytes are checked. Original cadence/loop semantics, scorch,
+      animation reports and other special deaths remain unverified
+      (`docs/formats/effects.md`).
 - [x] Map parsing: LZO/IsoMapPack5 + overlay packs, all 234 retail maps
       (`docs/formats/map.md`); tile-set index maps tile numbers to TMPs
 - [x] TMP terrain rendering from real maps as PNG (`mix-dump render-map`;

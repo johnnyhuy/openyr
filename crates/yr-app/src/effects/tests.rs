@@ -18,7 +18,12 @@ fn retail_infantry_deaths_use_lethal_weapon_after_saved_flight_and_shooter_loss(
     let mut session = crate::session::load(dir, "EB1.MMX", 42).unwrap();
     let kind = session.kinds.iter().position(|k| k == "E1").unwrap() as u16;
     let mut bank = SpriteBank::open(dir, "EB1.MMX").unwrap();
-    for (weapon, expected) in [("M60", Some(1)), ("HoverMissile", Some(2)), ("105mm", None)] {
+    for (weapon, expected) in [
+        ("M60", Some(1)),
+        ("HoverMissile", Some(2)),
+        ("ElectricBolt", Some(5)),
+        ("105mm", None),
+    ] {
         session.sim = yr_sim::Sim::new(42);
         let mut spec = yr_sim::WeaponSpec::from_rules(&rules, weapon).unwrap();
         assert_eq!(
@@ -101,7 +106,7 @@ fn retail_infantry_deaths_use_lethal_weapon_after_saved_flight_and_shooter_loss(
         }
         assert!(died);
         // Sim updates expire the one-shot even if no frame was drawn.
-        for _ in 0..30 {
+        for _ in 0..40 {
             session.sim.step(&[]);
         }
         scene.update(&session, &[], &mut bank);

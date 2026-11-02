@@ -313,12 +313,20 @@ impl SpriteBank {
         self.rules_ini.section(warhead)
     }
 
-    /// Ordinary infantry deaths use the lethal weapon's explicit InfDeath.
-    /// Special deaths and unknown sources have no guessed sequence.
-    pub fn infantry_death_sequence(&self, kind: &str, source: u64) -> Option<u8> {
+    /// Resolve supported death selectors from the actual lethal weapon.
+    pub fn infantry_death_sequence(&mut self, kind: &str, source: u64) -> Option<u8> {
         let sequence = self.fired_warhead(source)?.get("InfDeath")?.parse().ok()?;
-        self.infantry_death_frame(kind, sequence, 0, 0)?;
-        Some(sequence)
+        self.infantry_death_alive(kind, sequence, 0)
+            .then_some(sequence)
+    }
+
+    fn special_infantry_death(&self, kind: &str, sequence: u8) -> Option<&'static str> {
+        // Retail rules name selector 5 as electro; art labels ELECTRO as
+        // the infantry Tesla zap. Non-human death behavior is separate.
+        (sequence == 5
+            && self.rules.techno(kind)?.kind == TechnoKind::Infantry
+            && self.rules_ini.section(kind)?.get_bool("NotHuman") != Some(true))
+        .then_some("ELECTRO")
     }
 
     fn infantry_death_frame(
@@ -337,11 +345,15 @@ impl SpriteBank {
         )
     }
 
-    pub fn infantry_death_alive(&self, kind: &str, sequence: u8, age: u64) -> bool {
-        self.infantry_death_frame(kind, sequence, 0, age).is_some()
+    pub fn infantry_death_alive(&mut self, kind: &str, sequence: u8, age: u64) -> bool {
+        if let Some(name) = self.special_infantry_death(kind, sequence) {
+            self.effect_alive(name, age)
+        } else {
+            self.infantry_death_frame(kind, sequence, 0, age).is_some()
+        }
     }
 
-    /// One-shot body and matching ground shadow, with the unit's house color.
+    /// Ordinary body/shadow art uses house color; special art uses ANIM.PAL.
     pub fn get_infantry_death(
         &mut self,
         kind: &str,
@@ -350,6 +362,9 @@ impl SpriteBank {
         remap: [u8; 3],
         age: u64,
     ) -> Option<&Sprite> {
+        if let Some(name) = self.special_infantry_death(kind, sequence) {
+            return self.get_effect(name, age);
+        }
         let frame = self.infantry_death_frame(kind, sequence, facing, age)?;
         self.cached_sprite(kind.to_ascii_uppercase(), SpriteFrame::Shp(frame), remap)
     }
@@ -656,6 +671,54 @@ fn voxel_facing(octant: u8) -> u16 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn retail_electrocution_requires_a_human_victim_and_explicit_lethal_selector() {
+        let dir = std::path::PathBuf::from(std::env::var("HOME").unwrap())
+            .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+        if !dir.is_dir() {
+            return;
+        }
+        let mut bank = SpriteBank::open(dir.to_str().unwrap(), "EB1.MMX").unwrap();
+        let source = bank.rules.weapons.get("ElectricBolt").unwrap().source_id();
+        for kind in ["E1", "GGI", "SHK"] {
+            assert_eq!(bank.infantry_death_sequence(kind, source), Some(5));
+        }
+        for kind in ["DOG", "COW", "MTNK", "SHAD", "GAPOWR", "MISSING"] {
+            assert_eq!(bank.infantry_death_sequence(kind, source), None, "{kind}");
+            assert!(bank
+                .get_infantry_death(kind, 5, 0, [255, 0, 0], 0)
+                .is_none());
+        }
+        let first = bank
+            .get_infantry_death("E1", 5, 0, [255, 0, 0], 0)
+            .unwrap()
+            .rgba
+            .clone();
+        let other = bank
+            .get_infantry_death("GGI", 5, 128, [0, 0, 255], 0)
+            .unwrap();
+        assert!(
+            first == other.rgba,
+            "generic death ignores facing and house remap"
+        );
+        assert!(bank.infantry_death_alive("E1", 5, 30));
+        assert!(!bank.infantry_death_alive("E1", 5, 31));
+        assert!(!bank.infantry_death_alive("E1", 5, u64::MAX));
+        assert_eq!(bank.infantry_death_sequence("E1", 0), None);
+        for selector in [0, 3, 4, 6, 7, 8, 9, 10, u8::MAX] {
+            assert!(bank
+                .get_infantry_death("E1", selector, 0, [0; 3], 0)
+                .is_none());
+        }
+        // Optional art failure suppresses only the special death, even if
+        // its source is known. It never substitutes a standing infantry.
+        bank.art_ini = IniFile::parse("[ELECTRO]\nImage=../../unsafe");
+        bank.effects = Default::default();
+        assert_eq!(bank.infantry_death_sequence("E1", source), None);
+        assert!(bank.get_infantry_death("E1", 5, 0, [0; 3], 0).is_none());
+        assert!(bank.get_infantry_death("E1", 1, 0, [0; 3], 0).is_some());
+    }
 
     #[test]
     fn retail_voxel_cache_uses_resolved_poses_and_stays_bounded() {

@@ -50,6 +50,17 @@ fn hostile_optional_effects_are_rejected_before_canvas_decoding() {
         (2, 2, u16::MAX, "[SAFE]", false),
         (2, 2, 1, "[SAFE]\nRate=0", false),
         (2, 2, 1, "[SAFE]\nEnd=2", false),
+        (2, 2, 1, "[SAFE]\nLoopEnd=2", false),
+        (2, 2, 1, "[SAFE]\nLoopStart=1", false),
+        (2, 2, 1, "[SAFE]\nLoopEnd=0", false),
+        (2, 2, 1, "[SAFE]\nLoopCount=0", false),
+        (2, 2, 1, "[SAFE]\nLoopCount=1024", true),
+        (2, 2, 1, "[SAFE]\nLoopCount=-1", false),
+        (2, 2, 1, "[SAFE]\nLoopCount=invalid", false),
+        (2, 2, 1, "[SAFE]\nLoopCount=1025", false),
+        (2, 2, 1, "[SAFE]\nLoopCount=18446744073709551615", false),
+        (2, 2, 1, "[SAFE]\nLoopStart=18446744073709551615", false),
+        (2, 2, 1, "[SAFE]\nLoopEnd=18446744073709551615", false),
         (2, 2, 1, "[SAFE]\nStart=18446744073709551615", false),
         (2, 2, 1, "[SAFE]\nTranslucency=101", false),
         (2, 2, 1, "[SAFE]\nImage=../../secret", false),
@@ -66,6 +77,9 @@ fn hostile_optional_effects_are_rejected_before_canvas_decoding() {
         file: String::new(),
         start: 3,
         end: 7,
+        loop_start: 3,
+        loop_end: 7,
+        loop_count: 1,
         rate: 225,
         alpha: 255,
     };
@@ -73,6 +87,90 @@ fn hostile_optional_effects_are_rejected_before_canvas_decoding() {
     assert_eq!(clip.frame(3), Some(6));
     assert_eq!(clip.frame(4), None);
     assert_eq!(clip.frame(u64::MAX), None);
+}
+
+#[test]
+fn finite_effect_loops_preserve_prefix_tail_and_total_traversals() {
+    let mut clip = Clip {
+        file: String::new(),
+        start: 2,
+        end: 10,
+        loop_start: 4,
+        loop_end: 7,
+        loop_count: 3,
+        rate: 225,
+        alpha: 255,
+    };
+    let expected = [2, 3, 4, 5, 6, 4, 5, 6, 4, 5, 6, 7, 8, 9];
+    for (tick, frame) in expected.into_iter().enumerate() {
+        assert_eq!(clip.frame(tick as u64), Some(frame));
+    }
+    assert_eq!(clip.frame(expected.len() as u64), None);
+    assert_eq!(clip.frame(u64::MAX), None);
+    clip.loop_count = 1;
+    for tick in 0..8 {
+        assert_eq!(clip.frame(tick), Some(2 + tick as usize));
+    }
+    assert_eq!(clip.frame(8), None);
+    clip.loop_count = 1024;
+    clip.rate = u64::MAX;
+    assert_eq!(clip.frame(u64::MAX), None);
+}
+
+#[test]
+fn retail_electro_loop_frames_match_source_and_expire_after_the_tail() {
+    let dir = PathBuf::from(std::env::var("HOME").unwrap())
+        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    if !dir.is_dir() {
+        return;
+    }
+    let fs = AssetFs::open(&dir).unwrap();
+    let art = IniFile::parse(&String::from_utf8_lossy(fs.read("ARTMD.INI").unwrap()));
+    let palette = Palette::parse(fs.read("ANIM.PAL").unwrap()).unwrap();
+    let shp = ShpFile::parse(fs.read("ELECTRO.SHP").unwrap()).unwrap();
+    assert_eq!((shp.width, shp.height, shp.frames.len()), (60, 56, 15));
+    let mut effects = Effects::default();
+    let mut phases = Vec::new();
+    for tick in 0..=31 {
+        let phase = tick * 200 / 225;
+        let sprite = effects.get(&fs, &art, "ELECTRO", tick);
+        if phase >= 27 {
+            assert!(sprite.is_none());
+            continue;
+        }
+        // LoopEnd=3, LoopCount=5: five native traversals of [0, 3),
+        // followed by the twelve-frame tail [3, 15).
+        let frame = if phase < 15 { phase % 3 } else { phase - 12 };
+        phases.push(frame);
+        let expected: Vec<_> = shp
+            .decode_frame_canvas(frame as usize)
+            .unwrap()
+            .into_iter()
+            .flat_map(|index| {
+                if index == 0 {
+                    [0; 4]
+                } else {
+                    palette.rgba(index)
+                }
+            })
+            .collect();
+        let sprite = sprite.unwrap();
+        assert_eq!((sprite.w, sprite.h, sprite.ax, sprite.ay), (60, 56, 30, 28));
+        assert!(
+            sprite.rgba == expected,
+            "ELECTRO tick {tick}, frame {frame}"
+        );
+    }
+    assert_eq!(
+        phases
+            .iter()
+            .copied()
+            .collect::<std::collections::BTreeSet<_>>()
+            .len(),
+        15
+    );
+    assert_eq!(effects.frames.len(), 15, "loops share cached source frames");
+    assert!(!effects.alive(&fs, &art, "ELECTRO", u64::MAX));
 }
 
 #[test]
