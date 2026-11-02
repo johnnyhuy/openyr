@@ -46,6 +46,11 @@ fn retail_infantry_death_composition_proof() {
         .collect();
     session.step(&remove);
     session.sim.drain_events();
+    // The Allied sandbox does not offer Tesla Troopers. Register the
+    // retail type only for this controlled ElectricBolt fatal-shot fixture.
+    if !session.kinds.iter().any(|kind| kind == "SHK") {
+        session.kinds.push("SHK".into());
+    }
     app.session = Some(session);
     app.view.zoom = 4.0;
     app.center_world_at(
@@ -56,7 +61,11 @@ fn retail_infantry_death_composition_proof() {
     if let Some(out) = &output {
         std::fs::create_dir_all(out).unwrap();
     }
-    for (weapon, shooter_type, sequence) in [("M60", "E1", 1), ("HoverMissile", "FV", 2)] {
+    for (weapon, shooter_type, sequence) in [
+        ("M60", "E1", 1),
+        ("HoverMissile", "FV", 2),
+        ("ElectricBolt", "SHK", 5),
+    ] {
         let shooter_kind = app
             .session
             .as_ref()
@@ -117,11 +126,11 @@ fn retail_infantry_death_composition_proof() {
             .units()
             .iter()
             .any(|u| u.id == target));
-        for age in 0..=30 {
+        for age in 0..=36 {
             if age > 0 {
                 app.tick_session();
             }
-            if age % 2 != 0 {
+            if sequence != 5 && age % 2 != 0 {
                 continue;
             }
             let tick = app.session.as_ref().unwrap().sim.tick();
@@ -129,7 +138,7 @@ fn retail_infantry_death_composition_proof() {
             let save = yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap();
             let mut frame = vec![0; (WIN_W * WIN_H * 4) as usize];
             app.compose(&mut frame, WIN_W, WIN_H);
-            let comparison = if age == 8 || age == 30 {
+            let comparison = if age == 8 || age == 36 {
                 let deaths = std::mem::take(&mut app.effects.deaths);
                 let mut before = vec![0; frame.len()];
                 app.compose(&mut before, WIN_W, WIN_H);

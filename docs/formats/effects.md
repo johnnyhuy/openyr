@@ -30,6 +30,7 @@ Local rules and art resolve the following authored effects:
 | Vehicle destruction | First entry of type Explosion | TWLT070.SHP | 186x196 | 26 |
 | AP shell impact | Fired 105mm/120mm to AP AnimList | S_CLSN16/S_CLSN22.SHP | 148x158 | 13 each |
 | Small-arms impact | Fired M60 to SA AnimList | PIFFPIFF.SHP | 28x28 | 12 |
+| Human infantry electrocution | Lethal warhead InfDeath=5 | ELECTRO.SHP | 60x56 | 15 |
 
 `105mm` and `120mm` both declare `Anim=GUNFIRE`. M60 declares eight
 machine-gun names in screen compass order. Existing facing projection
@@ -56,8 +57,13 @@ and per-effect depth still need original-game observation; the first pass
 paints effects after world bodies and before health bars and UI.
 
 Clips play from `Start` (default 0) to exclusive `End` (default actual frame
-count), once. Positive `Rate` uses the existing provisional presentation
-interpretation `floor(ticks * Rate / 225)`, default 200 at 15 simulation
+count). Finite `LoopCount` defaults to 1 and allows 1 through 1024 total
+traversals of `[LoopStart, LoopEnd)`, defaulting to the full clip. Any prefix
+plays once before the loop and any tail once afterwards. Every endpoint
+must lie within the actual sheet and clip. Zero, negative/infinite, malformed
+and oversized counts are unsupported optional art. No frame copies or timers
+are allocated from loop counts. Positive `Rate` uses the existing provisional
+presentation interpretation `floor(ticks * Rate / 225)`, default 200 at 15 simulation
 ticks/second. Drawing never advances a clock. `Translucent=yes` defaults to
 50 percent transparency, and a valid `Translucency` percentage overrides it.
 Straight-alpha blending uses widened integer channels. These timings,
@@ -115,9 +121,48 @@ later same-phase impacts cannot change its cause. Past death clips reset
 on load, while newly arriving saved shots can start them.
 
 Projectile trails and other projectile classes, smoke/fire, debris,
-environmental animations, special infantry deaths and special weapon effects
-remain in #102. Exact destruction
-selection and original compositing remain there too.
+environmental animations, other special infantry deaths and special weapon
+effects remain in #102. Exact destruction selection and original compositing
+remain there too.
+
+## Electrocution deaths
+
+Retail `RULESMD.INI` comments define `InfDeath=5` as electro. Both
+`ElectricBolt`/`Shock` and `TankBolt`/`Electric` declare that selector.
+`ARTMD.INI` labels `[ELECTRO]` as the infantry Tesla zap animation, with
+`Layer=ground`, `LoopEnd=3`, `LoopCount=5`, `Scorch=yes` and
+`Report=InfantryZap`. It declares no palette override, shadow, transparency,
+start, end or rate. `RA2.MIX/CONQUER.MIX/ELECTRO.SHP` has 15 frames on a
+60x56 canvas; every frame decodes with `ANIM.PAL`. There is no shadow half.
+These are local retail data observations, without engine source inspection.
+
+The actual lethal weapon now selects this generic clip for registered
+infantry without `NotHuman=yes`. Animals, vehicles, aircraft, buildings,
+unknown weapon sources and unsupported selectors receive no guessed generic
+death. The clip ignores victim facing and house remap. Missing or invalid
+optional art suppresses the clip without restoring a standing victim.
+Non-human special deaths and per-type death overrides remain unverified.
+
+Electrocution uses the same retained fatal pose and world painter order as
+ordinary infantry deaths, rather than the transient overlay pass above all
+objects. It has no selectable entity, health bar, occupancy or sim timer.
+The native loop policy repeats frames 0..3 five times, then plays 3..15.
+At default rate 200, its 27 phases occupy ages 0 through 30 and expire at
+age 31. Exclusive LoopEnd, total rather than additional loop count, default
+rate, anchor and palette lighting are provisional native policies pending
+an original-game observation. Source comparisons do not calibrate playback.
+The declared scorch and animation report are not applied by this slice;
+existing unit death audio remains unchanged.
+
+The existing 256-actor death bound and 64-frame effect cache also bound
+electrocution. Repeated phases share the 15 decoded source frames. Updates
+expire clips without redraws; loading resets past deaths while retained
+in-flight weapons can cause new ones after restore. Tests check all source
+frames, loop boundaries, the tail, extreme ages/rates/counts, eligibility,
+missing art, saved flights after shooter loss and unchanged sim/save bytes.
+The controlled compositor proof adds a retail Tesla Trooper to the test's
+type registry because the Allied sandbox does not offer that unit. It fires
+its actual ElectricBolt at a GI; ordinary GI/IFV proofs remain alongside it.
 
 ## Cannon bodies and travel
 

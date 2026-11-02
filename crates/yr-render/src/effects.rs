@@ -33,6 +33,9 @@ struct Clip {
     file: String,
     start: usize,
     end: usize,
+    loop_start: usize,
+    loop_end: usize,
+    loop_count: u64,
     rate: u64,
     alpha: u8,
 }
@@ -73,18 +76,32 @@ impl Clip {
         };
         let start = usize::try_from(number("Start", 0)?).ok()?;
         let end = usize::try_from(number("End", shp.frames.len() as u64)?).ok()?;
+        let loop_start = usize::try_from(number("LoopStart", start as u64)?).ok()?;
+        let loop_end = usize::try_from(number("LoopEnd", end as u64)?).ok()?;
+        let loop_count = number("LoopCount", 1)?;
         let rate = number("Rate", 200)?;
         let translucent = section
             .and_then(|s| s.get_bool("Translucent"))
             .unwrap_or(false);
         let transparency = number("Translucency", if translucent { 50 } else { 0 })?;
-        if start >= end || end > shp.frames.len() || rate == 0 || transparency > 100 {
+        if start >= end
+            || end > shp.frames.len()
+            || loop_start < start
+            || loop_start >= loop_end
+            || loop_end > end
+            || !(1..=1024).contains(&loop_count)
+            || rate == 0
+            || transparency > 100
+        {
             return None;
         }
         Some(Self {
             file,
             start,
             end,
+            loop_start,
+            loop_end,
+            loop_count,
             rate,
             alpha: (255 * (100 - transparency) / 100) as u8,
         })
@@ -92,7 +109,18 @@ impl Clip {
 
     fn frame(&self, ticks: u64) -> Option<usize> {
         let phase = u128::from(ticks) * u128::from(self.rate) / 225;
-        (phase < (self.end - self.start) as u128).then(|| self.start + phase as usize)
+        let prefix = (self.loop_start - self.start) as u128;
+        if phase < prefix {
+            return Some(self.start + phase as usize);
+        }
+        let phase = phase - prefix;
+        let span = (self.loop_end - self.loop_start) as u128;
+        let repeated = span * u128::from(self.loop_count);
+        if phase < repeated {
+            return Some(self.loop_start + (phase % span) as usize);
+        }
+        let tail = phase - repeated;
+        (tail < (self.end - self.loop_end) as u128).then(|| self.loop_end + tail as usize)
     }
 }
 

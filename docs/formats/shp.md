@@ -122,14 +122,15 @@ These are non-directional body ranges with corresponding shadow frames
 at the normal half-sheet offset. AP uses 3, whose flying-death behavior
 is separate; the placeholder `Die3=0,1,1` is not a supported death clip.
 
-Only explicit selectors 1 and 2 play in this slice. The fatal positive
-health transition emits `FatalHit` with the actual shot origin and victim
+Explicit selectors 1 and 2 use these unit-sheet clips. Selector 5 now uses
+the separate generic ELECTRO sheet, documented in `docs/formats/effects.md`.
+The fatal positive health transition emits `FatalHit` with the actual shot origin and victim
 type, position, facing and owner at that hit. The app associates it with
 the later `Died` event, including victims spawned or reassigned during
 the tick. A later arrival against the already dead
 target cannot replace the lethal weapon. Saved in-flight shots keep their
 source even after the shooter dies. Unknown/legacy origins, direct destroy
-commands and other selectors omit this optional animation.
+commands and unsupported selectors omit this optional animation.
 
 The clip uses the theater unit palette and the victim's house remap,
 with the matching half-alpha shadow in the shared ground coverage mask.
@@ -156,7 +157,7 @@ EB1 GI/IFV sequence from the shared compositor.
 
 This establishes retail frame layout and native routing, not original
 playback parity. Original cadence, corpse persistence, death/corpse layering,
-special death selectors, death overrides and prone/deployed deaths remain
+other special death selectors, death overrides and prone/deployed deaths remain
 in #102. No original implementation code was consulted.
 
 ## Building layers
