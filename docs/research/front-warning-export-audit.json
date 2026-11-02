@@ -1,0 +1,189 @@
+[
+  {
+    "series": "fast",
+    "kept": 12,
+    "all_exports": 15,
+    "extra_exports": [
+      {
+        "name": "yuri's_revenge_2026-11-02_18-14-04.png",
+        "mtime_ns": 1793610844196004636,
+        "sha256": "0630f1a23e0937572ad7c430e47308acb769370cd5d6d3b28115f28879e18c40"
+      },
+      {
+        "name": "yuri's_revenge_2026-11-02_18-14-19.png",
+        "mtime_ns": 1793610859167758999,
+        "sha256": "37dde25c0ab07c6fc0040327bc34274c3ae703ee65002528abb365ac6a95f099"
+      },
+      {
+        "name": "yuri's_revenge_2026-11-02_18-14-44.png",
+        "mtime_ns": 1793610884288996470,
+        "sha256": "20437ac25b1bf0d9952e127612cc6c3c9ec705c038ae468c855a3f7875b3df5f"
+      }
+    ]
+  },
+  {
+    "series": "slow",
+    "kept": 8,
+    "all_exports": 14,
+    "extra_exports": [
+      {
+        "name": "yuri's_revenge_2026-11-02_18-16-07.png",
+        "mtime_ns": 1793610967302131446,
+        "sha256": "b634f6f431a9fd525dd402fdab2c2e1055fa827868a89147840ba3fe61e9ccb8"
+      },
+      {
+        "name": "yuri's_revenge_2026-11-02_18-16-20.png",
+        "mtime_ns": 1793610980261263438,
+        "sha256": "45c59d6277519e97ca124f349e85cb00d17309bd114af324923123b42c72357d"
+      },
+      {
+        "name": "yuri's_revenge_2026-11-02_18-16-33.png",
+        "mtime_ns": 1793610993255396365,
+        "sha256": "a841cb289b29bf9ed3cc1a46b5b27088de2222d35aca8bb240c9555ee66eebc9"
+      },
+      {
+        "name": "yuri's_revenge_2026-11-02_18-16-46.png",
+        "mtime_ns": 1793611006265422970,
+        "sha256": "9c0c3184a6d0bd75db919fbd42c75a76261697d1b51423ff845f3538fefe48e0"
+      },
+      {
+        "name": "yuri's_revenge_2026-11-02_18-16-59.png",
+        "mtime_ns": 1793611019277517155,
+        "sha256": "d92be3a075651b7e469d2c3d560154e69fd561a9c509bd1d977643d656de3b43"
+      },
+      {
+        "name": "yuri's_revenge_2026-11-02_18-17-12.png",
+        "mtime_ns": 1793611032284705808,
+        "sha256": "d2ff304e9f552391c3bcf65fa52d5a5c5d02327abb2f9fb4eb18f53d210a9b95"
+      }
+    ]
+  },
+  {
+    "series": "persistent-helper",
+    "helper_exit_code": 0,
+    "requests": 12,
+    "all_exports": 24,
+    "exports": [
+      {
+        "name": "yuri's_revenge_2026-11-02_18-41-02.png",
+        "mtime_ns": 1793612463047123683,
+        "sha256": "0a59b36e32901fe5c628110daa89070b134bccd1b1e1ed482be26ff3c98138e9"
+      },
+      {
+        "name": "yuri's_revenge_2026-11-02_18-41-03.png",
+        "mtime_ns": 1793612463212420083,
+        "sha256": "0a59b36e32901fe5c628110daa89070b134bccd1b1e1ed482be26ff3c98138e9"
+      },
+      {
+        "name": "yuri's_revenge_2026-11-02_18-41-07.png",
+        "mtime_ns": 1793612468017268619,
+        "sha256": "5ca17a76d100d52ea1bd55e29dfdbe71df461f13f9872476a71d826c0b98ae24"
+      },
+      {
+        "name": "yuri's_revenge_2026-11-02_18-41-08.png",
+        "mtime_ns": 1793612468150866204,
+        "sha256": "5ca17a76d100d52ea1bd55e29dfdbe71df461f13f9872476a71d826c0b98ae24"
+      },
+      {
+        "name": "yuri's_revenge_2026-11-02_18-41-12.png",
+        "mtime_ns": 1793612473043156452,
+        "sha256": "ba5b4417af7b4f9820e42741bd049cca1e89b9a029c02244fba02d08898d07b6"
+      },
+      {
+        "name": "yuri's_revenge_2026-11-02_18-41-13.png",
+        "mtime_ns": 1793612473205255608,
+        "sha256": "ba5b4417af7b4f9820e42741bd049cca1e89b9a029c02244fba02d08898d07b6"
+      },
+      {
+        "name": "yuri's_revenge_2026-11-02_18-41-17.png",
+        "mtime_ns": 1793612478045756787,
+        "sha256": "d4d9d64d240a9033ac51cc3220d18e7b575e877f77664bdcbba1d25601cb416c"
+      },
+      {
+        "name": "yuri's_revenge_2026-11-02_18-41-18.png",
+        "mtime_ns": 1793612478207114236,
+        "sha256": "d4d9d64d240a9033ac51cc3220d18e7b575e877f77664bdcbba1d25601cb416c"
+      },
+      {
+        "name": "yuri's_revenge_2026-11-02_18-41-22.png",
+        "mtime_ns": 1793612483040898385,
+        "sha256": "c4c921e5c3fe4fe5a9adea8c57aea76206723979037dcd9fab60ee8434e65fcf"
+      },
+      {
+        "name": "yuri's_revenge_2026-11-02_18-41-23.png",
+        "mtime_ns": 1793612483195894804,
+        "sha256": "c4c921e5c3fe4fe5a9adea8c57aea76206723979037dcd9fab60ee8434e65fcf"
+      },
+      {
+        "name": "yuri's_revenge_2026-11-02_18-41-27.png",
+        "mtime_ns": 1793612488050776581,
+        "sha256": "be8846e8f516fcd0bcaf97b29e365dd8b67b87d550bcaa83c24cc0fc215e3648"
+      },
+      {
+        "name": "yuri's_revenge_2026-11-02_18-41-28.png",
+        "mtime_ns": 1793612488216296564,
+        "sha256": "be8846e8f516fcd0bcaf97b29e365dd8b67b87d550bcaa83c24cc0fc215e3648"
+      },
+      {
+        "name": "yuri's_revenge_2026-11-02_18-41-32.png",
+        "mtime_ns": 1793612493044111808,
+        "sha256": "8bea5683b6bf3ea1124397950ff385f25b893ea2e5597c5298b5e69f62c1df8e"
+      },
+      {
+        "name": "yuri's_revenge_2026-11-02_18-41-33.png",
+        "mtime_ns": 1793612493205162383,
+        "sha256": "8bea5683b6bf3ea1124397950ff385f25b893ea2e5597c5298b5e69f62c1df8e"
+      },
+      {
+        "name": "yuri's_revenge_2026-11-02_18-41-37.png",
+        "mtime_ns": 1793612498042948525,
+        "sha256": "3d45b45f3cd8ec40b163ceef65b11c04b9bc84f47361292f9079ceb53fd35a57"
+      },
+      {
+        "name": "yuri's_revenge_2026-11-02_18-41-38.png",
+        "mtime_ns": 1793612498203261726,
+        "sha256": "3d45b45f3cd8ec40b163ceef65b11c04b9bc84f47361292f9079ceb53fd35a57"
+      },
+      {
+        "name": "yuri's_revenge_2026-11-02_18-41-42.png",
+        "mtime_ns": 1793612503045785817,
+        "sha256": "e1aced9a2c0aa93d7780cda95454aee146e70c6515a30e0f3b8b076ccfc003da"
+      },
+      {
+        "name": "yuri's_revenge_2026-11-02_18-41-43.png",
+        "mtime_ns": 1793612503208332930,
+        "sha256": "e1aced9a2c0aa93d7780cda95454aee146e70c6515a30e0f3b8b076ccfc003da"
+      },
+      {
+        "name": "yuri's_revenge_2026-11-02_18-41-47.png",
+        "mtime_ns": 1793612508040255583,
+        "sha256": "4325ab28c86f7ec650f973b630b5dad2b49cf67f75dc9916ca22ed94a7731567"
+      },
+      {
+        "name": "yuri's_revenge_2026-11-02_18-41-48.png",
+        "mtime_ns": 1793612508198221372,
+        "sha256": "4325ab28c86f7ec650f973b630b5dad2b49cf67f75dc9916ca22ed94a7731567"
+      },
+      {
+        "name": "yuri's_revenge_2026-11-02_18-41-52.png",
+        "mtime_ns": 1793612513037233053,
+        "sha256": "d5a960c0e0c7fb11a9de0f5cebd7dbab638c567cd2d1c93a5c9f5196f4ba5f68"
+      },
+      {
+        "name": "yuri's_revenge_2026-11-02_18-41-53.png",
+        "mtime_ns": 1793612513195250259,
+        "sha256": "d5a960c0e0c7fb11a9de0f5cebd7dbab638c567cd2d1c93a5c9f5196f4ba5f68"
+      },
+      {
+        "name": "yuri's_revenge_2026-11-02_18-41-57.png",
+        "mtime_ns": 1793612518044648004,
+        "sha256": "d5a5ec89b2eb5d1fe2a6a35afcb204892d4bb207b91c704bb10592634a523fff"
+      },
+      {
+        "name": "yuri's_revenge_2026-11-02_18-41-58.png",
+        "mtime_ns": 1793612518208859031,
+        "sha256": "d5a5ec89b2eb5d1fe2a6a35afcb204892d4bb207b91c704bb10592634a523fff"
+      }
+    ]
+  }
+]

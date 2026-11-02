@@ -472,6 +472,12 @@
   "notes": [
     "Per-run fits describe observed rates only, not an original nominal clock.",
     "Slow lap counts use the joint two-interval clock search; rates outside1..60fps and nonlinear schedules are not excluded.",
-    "PrintScreen export stalls and UI presentation workload remain unmeasured."
-  ]
+    "PrintScreen export stalls and UI presentation workload remain unmeasured.",
+    "A later audit found 15/14 exports for 12/8 requests and 24 exports for 12 persistent-helper requests.",
+    "Temporal association is not validated; do not use these fitted rates to change runtime timing."
+  ],
+  "temporal_association_validated": false,
+  "capture_pairing_defect": 176,
+  "retained_image_rates_only": true,
+  "export_audit": "front-warning-export-audit.json"
 }

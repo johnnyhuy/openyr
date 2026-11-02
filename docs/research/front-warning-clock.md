@@ -1,18 +1,20 @@
 # Front-menu warning clock observations
 
 Twenty original Main Menu captures on 2026-11-02 identify the movie and
-warning source frames with zero pixel differences. They expose a timing gap
-in the native provisional 15 fps warning clock (#174). They do not establish
+warning source frames with zero pixel differences. Their retained-image fits differ
+from the native provisional 15 fps warning clock (#174). A later export audit
+found invalid temporal associations (#176), so these fits do not establish
 the original scheduling rule or a replacement nominal frame rate.
 
 The original was already running. Every request verified the complete game
 image path, owned process, unique enabled 800x600 Main Menu, foreground window
 and released modifier/PrintScreen keys. The public [SendInput](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-sendinput)
 call records [GetTickCount](https://learn.microsoft.com/en-us/windows/win32/api/sysinfoapi/nf-sysinfoapi-gettickcount)
-immediately before and after the key pair. A host watcher pairs
-one completed PNG with each request, checking dimensions and retaining source
-SHA-256, file modification time and monotonic completion time. A missing,
-ambiguous or refused capture stops the series without repeating input.
+immediately before and after the key pair. A host watcher retained the first completed PNG after each request, checking
+dimensions and retaining source SHA-256, file modification time and monotonic
+completion time. It stopped on missing, immediately ambiguous or refused
+captures, but failed to detect later exports before the next request. Its
+one-request/one-export association was therefore not validated.
 GetTickCount has finite timer resolution and wraps after about 49.7 days;
 these recorded tick spans do not cross a wrap. Input delivery and completed
 PNG times do not identify the exact presentation instant. No original
@@ -33,8 +35,9 @@ phases have identical fingerprints.
 | Five-second requests | 12 | 54.915 s | 14.533350 fps | 10.743586 fps |
 | Thirteen-second requests | 8 | 91.495 s | 14.610056 fps | 10.789927 fps |
 
-The first warning sequence advances 589 frames during its span; a fixed
-15 fps clock would advance about 824. Its fitted warning residuals run from
+The first retained warning sequence advances 589 frames across its input-tick
+span; a fixed 15 fps counter would advance about 824. The input span is not
+a validated presentation-time span because of the export-pairing defect. Its fitted warning residuals run from
 -0.755 to 1.408 frames. The second fitted warning residuals run from -0.569
 to 1.089 frames. These fits describe this reference run, including any
 presentation or capture overhead. The movie header declares 15 fps, which is
@@ -72,6 +75,31 @@ assets are committed. Previously permission-blocked `screencapture -x` and
 PrintScreen output and native shared composition, with no desktop recording
 or normal-cadence claim.
 
-The next experiment must distinguish an absolute timer from UI-update-driven
-advancement and validate the initial epoch and a separate holdout sequence.
-Do not close #174 or full menu issue #96 from these pixel checks alone.
+## Delayed-export correction
+
+A persistent-helper holdout exposed the observer defect. It sent twelve
+verified PrintScreen key pairs at five-second intervals and exited zero after
+56.594 seconds. The game produced 24 PNGs. The host watcher stopped when its
+twelve-image assumption failed at about 27 seconds, while the existing helper
+continued to its recorded successful exit. No input was repeated and no
+original process was restarted.
+
+An audit of the earlier screenshot intervals found 15 exports for the twelve
+five-second requests and 14 exports for the eight thirteen-second requests.
+The earlier watcher could miss a second export arriving after it had accepted
+the first image. All retained image hashes and pixel comparisons remain valid;
+the one-to-one temporal association does not.
+
+The 24 persistent-helper exports form twelve relative-time clusters with two
+images each. Every cluster identifies the same movie and warning phase in its
+two exports, with zero decoded pixel differences. This does not establish
+which input event caused each export or its exact presentation instant.
+[The export audit](front-warning-export-audit.json) retains source hashes and
+modification times. Frozen earlier proof remains unchanged; the external
+release carries this correction as an additional evidence archive.
+
+Fix #176 before using capture rates to calibrate #174. The next experiment
+must retain all exports through a settling window, distinguish actual
+presentation from export stalls and UI updates, and validate the initial
+epoch and a separate holdout. Do not close #174 or full menu issue #96 from
+these pixel checks or retained-image fits alone.

@@ -119,7 +119,8 @@ match actual composition without masks.
 The five-second and thirteen-second request series measure warning rates of
 10.743586 and 10.789927 fps, while movie rates are 14.533350 and 14.610056 fps.
 Those are observed rates in this reference environment, not established
-nominal clocks. The native 15 fps warning model contradicts the observations;
-its replacement remains open in #174. The [clock investigation](../research/front-warning-clock.md)
+nominal clocks. A later audit found delayed duplicate exports that invalidate the
+one-request/one-export timing association (#176). These retained-image fits
+do not calibrate a runtime clock; its correction remains open in #174. The [clock investigation](../research/front-warning-clock.md)
 records sampling aliases, fits, input/capture limits and the next required
 observations. No timing constant was inferred from the pixel matches.
