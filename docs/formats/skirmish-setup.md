@@ -49,28 +49,49 @@ at (436,314) and the unit thumb at (438,340). Values use GAME.FNT at the
 observed baseline and center. Bevels and track backing use the measured RGB565
 composition already verified for the chooser.
 
-Four safe original crops at `(300,310,236,54)` cover both controls. Their UTC
+Five safe original crops at `(300,310,236,54)` cover both controls. Their UTC
 receipts and source PNG hashes are in the proof bundle:
 
 | State | Credits | Units | Receipt finished UTC on 2026-11-02 |
 | --- | --- | --- | --- |
+| Initial untouched | 10000 | 10 | 05:39:16 |
 | Both maximum | 10000 | 10 | 06:18:11 |
 | Minimum credits | 5000 | 10 | 06:17:05 |
 | Both minimum | 5000 | 0 | 06:17:34 |
 | Midpoint | 7400 | 5 | 06:55:07 |
 
-`retail_setup_slider_tracks_and_digits_match_original_captures` checks 10632
-RGBA pixels per state outside the two value-well interiors: 42528 samples
-with zero differences. It separately checks the yellow digit/label mask over
-all 12744 pixels per state. All four masks match, including the value digits.
-The regression skips when the retail install is absent; no images are fixtures.
+`retail_setup_sliders_match_complete_original_captures` checks all 12744
+RGBA pixels per state, including both value wells: 63720 samples with zero
+differences. Initial untouched thumbs, interacted endpoints and midpoint all
+match. The regression skips when the retail install is absent; no images
+are fixtures.
 
-The value-well texture still differs (#168), with 1898 through 1973 different
-pixels per complete crop. The provisional native fill is LOCALMD.MIX PCX entry
-`b1a77caf`. Failed direct, scaled and cropped candidates remain in the research
-receipts. The two interiors are explicit exclusions from the RGBA comparison,
-not a claim of complete control parity. The full side-by-side/difference images
-retain those gaps.
+The numeric well uses three classic PCX pieces from LOCAL.MIX, nested in
+RA2.MIX as entry `a8548fd9`. The corresponding replacement skin in LOCALMD.MIX
+does not match these controls. Each PCX uses its embedded palette:
+
+| Piece | Entry ID | Dimensions | Raw PCX SHA-256 |
+| --- | --- | --- | --- |
+| Left cap | `4c8719b4` | 8x24 | `73e1505ad0cabef8f61aa1bf50c1383ac46c75ac0c2f7c4d94760397f481d446` |
+| Center | `802d192a` | 114x24 | `38736874bee0c1461519d243ae1159ffe8ef4b9c6416a782b2e61319baf4f78c` |
+| Right cap | `25b63aad` | 10x24 | `289788a3bafa7b56373875ae52ccc890d5fe84075ef7769cb46e02172fd66f59` |
+
+The measured control is 50x24. Place the caps at x=0 and x=40; center the
+114-pixel strip across the full control at x=-32, clipping it between the
+caps. This exposes center columns 40 through 71. Do not scale the strip.
+Copy only the interior `(1,1,48,22)` so the already verified bevel remains.
+Filenames are unresolved; the loader scopes these IDs to LOCAL.MIX and
+requires the measured dimensions.
+
+The independent search compared every possible contiguous 32-pixel center
+crop and nearest, bilinear, bicubic and Lanczos resizing against the exposed
+background pixels in eight original Credits/Unit Count wells. Only source
+column 40 matched every sample. The untouched Game Speed well was a separate
+holdout: 1030 background pixels matched in each of four captures, with only
+the yellow digit excluded from that texture-only check. Game Speed remains
+unavailable in the native form. This evidence establishes this 50x24 skin
+composition; other control sizes and game-speed behavior remain uncalibrated.
+Failed models and the original pre-fix differences remain in the proof bundle.
 
 ## Session behavior
 

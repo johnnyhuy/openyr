@@ -893,7 +893,7 @@ fn retail_battle_catalog_previews_every_available_map() {
 }
 
 #[test]
-fn retail_setup_slider_tracks_and_digits_match_original_captures() {
+fn retail_setup_sliders_match_complete_original_captures() {
     let directory = std::path::PathBuf::from(std::env::var("HOME").unwrap_or_default())
         .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
     if !directory.is_dir() {
@@ -903,35 +903,12 @@ fn retail_setup_slider_tracks_and_digits_match_original_captures() {
     let art = Art::load(&fs);
     let preview = load_preview(directory.to_str().unwrap(), "XMP29U2.MAP", 1).unwrap();
     let mut mismatches = Vec::new();
-    for (name, money, units, expected_track, expected_digits) in [
-        (
-            "setup-both-max",
-            10000,
-            10,
-            0x430f64424fb48bbdu64,
-            0x667e3cef32aa4f16u64,
-        ),
-        (
-            "setup-credits-min",
-            5000,
-            10,
-            0x9669bc9c9a1eedb1u64,
-            0xae720785d509e312u64,
-        ),
-        (
-            "setup-both-min",
-            5000,
-            0,
-            0x33764e2b6c8edae5u64,
-            0xc07d63202be30bc4u64,
-        ),
-        (
-            "setup-both-mid",
-            7400,
-            5,
-            0x4d935eecd08ed9f5u64,
-            0xab875ec9bc4668f9u64,
-        ),
+    for (name, money, units, expected) in [
+        ("setup-initial", 10000, 10, 0xbe2e10c6611e7645u64),
+        ("setup-both-max", 10000, 10, 0xe682f6cc82481545u64),
+        ("setup-credits-min", 5000, 10, 0xc544bd7e870b18d9u64),
+        ("setup-both-min", 5000, 0, 0x82e5b625daaeaa25u64),
+        ("setup-both-mid", 7400, 5, 0xa545223260222399u64),
     ] {
         let mut state = State {
             front: true,
@@ -940,9 +917,11 @@ fn retail_setup_slider_tracks_and_digits_match_original_captures() {
         state.set(Page::Skirmish);
         state.map_name = "XMP29U2.MAP".into();
         state.setup.update_profile(preview.setup);
-        state.setup.set(crate::menu::setup::Field::Credits, money);
-        if name != "setup-credits-min" {
-            state.setup.set(crate::menu::setup::Field::Units, units);
+        if name != "setup-initial" {
+            state.setup.set(crate::menu::setup::Field::Credits, money);
+            if name != "setup-credits-min" {
+                state.setup.set(crate::menu::setup::Field::Units, units);
+            }
         }
         let mut frame = vec![0; 800 * 600 * 4];
         draw(
@@ -958,23 +937,17 @@ fn retail_setup_slider_tracks_and_digits_match_original_captures() {
                 cursor: (-1.0, -1.0),
             },
         );
-        let mut track = 0xcbf29ce484222325u64;
-        let mut digits = track;
-        for y in 310..364 {
-            for x in 300..536 {
-                let c = &frame[(y * 800 + x) * 4..(y * 800 + x + 1) * 4];
-                digits = (digits ^ u64::from(c == [248, 252, 0, 255])).wrapping_mul(0x100000001b3);
-                // The value-well background remains a separate calibration gap.
-                if (485..533).contains(&x) && ((314..336).contains(&y) || (340..362).contains(&y)) {
-                    continue;
-                }
-                for b in c {
-                    track = (track ^ u64::from(*b)).wrapping_mul(0x100000001b3);
-                }
-            }
-        }
-        if track != expected_track || digits != expected_digits {
-            mismatches.push((name, track, expected_track, digits, expected_digits));
+        let hash = (310..364)
+            .flat_map(|y| {
+                frame[(y * 800 + 300) * 4..(y * 800 + 536) * 4]
+                    .iter()
+                    .copied()
+            })
+            .fold(0xcbf29ce484222325u64, |h, b| {
+                (h ^ u64::from(b)).wrapping_mul(0x100000001b3)
+            });
+        if hash != expected {
+            mismatches.push((name, hash, expected));
         }
         if let Some(path) = std::env::var_os("OPENYR_SETUP_PROOF") {
             let path = std::path::PathBuf::from(path);
@@ -988,6 +961,6 @@ fn retail_setup_slider_tracks_and_digits_match_original_captures() {
     }
     assert!(
         mismatches.is_empty(),
-        "Original slider tracks/digits: {mismatches:?}"
+        "Complete original sliders: {mismatches:?}"
     );
 }

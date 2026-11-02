@@ -126,7 +126,7 @@ pub(super) fn draw(c: &mut Canvas<'_>, art: &Art, state: &State, preview: Option
         c.rect((484, y - 1), (1, 24), [104, 120, 128, 255]);
         c.pixel(484, y + 22, [128, 156, 160, 255]);
         c.pixel(483, y + 23, [128, 156, 160, 255]);
-        if let Some(image) = art.setup_widgets.get(2) {
+        if let Some(image) = &art.setup_well {
             c.image((485, y), image);
         }
         if let Some(image) = art.setup_widgets.first() {
