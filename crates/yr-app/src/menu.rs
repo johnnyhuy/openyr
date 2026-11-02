@@ -93,6 +93,7 @@ pub struct State {
     pub focus: usize,
     pub keyboard_focus: bool,
     pub scroll: usize,
+    pub message_scroll: usize,
     pub pressed: Option<Button>,
     pub muted: bool,
     pub zoom: u16,
@@ -110,6 +111,7 @@ impl Default for State {
             focus: 0,
             keyboard_focus: false,
             scroll: 0,
+            message_scroll: 0,
             pressed: None,
             muted: false,
             zoom: 100,
@@ -124,6 +126,7 @@ impl State {
     }
     pub fn set(&mut self, page: Page) {
         self.page = page;
+        self.message_scroll = 0;
         self.focus = 0;
         self.keyboard_focus = false;
         if self.page == Page::SinglePlayer {

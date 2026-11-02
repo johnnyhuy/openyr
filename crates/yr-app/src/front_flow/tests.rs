@@ -54,6 +54,70 @@ fn proof(app: &App, name: &str) {
     )
     .unwrap();
 }
+
+#[test]
+fn retail_front_recovery_messages_wrap_scroll_and_return_through_actual_handlers() {
+    let dir = PathBuf::from(std::env::var("HOME").unwrap_or_default())
+        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    if !dir.is_dir() {
+        return;
+    }
+    let mut app = new_app(dir.to_string_lossy().into(), "EB1.MMX".into(), 1);
+    app.enter_front();
+    for (name, text) in [
+        ("recovery-short", "Unable to load this match.".into()),
+        (
+            "recovery-multiline",
+            "The saved match is incompatible.\n\nReturn to setup and try another saved match in OpenYR.".into(),
+        ),
+        (
+            "recovery-long",
+            format!(
+                "{}\nThe current match is safe. Return to setup to continue in OpenYR.",
+                "This saved match uses a different map or rules setup. OpenYR could not load it. ".repeat(35)
+            ),
+        ),
+        ("recovery-token", format!("Missing asset:\n{}\nReturn to setup.", "W界é".repeat(400))),
+    ] {
+        app.menu.message(text.clone(), Page::Load);
+        proof(&app, name);
+        app.menu_key_code(KeyCode::End, None, false);
+        let end = app.menu.message_scroll;
+        if name == "recovery-long" || name == "recovery-token" {
+            assert!(end > 0);
+            proof(&app, &format!("{name}-end"));
+            app.menu_key_code(KeyCode::ArrowUp, None, false);
+            assert_eq!(app.menu.message_scroll, end - 1);
+            app.menu_scroll(1);
+            assert_eq!(app.menu.message_scroll, end);
+            app.menu_key_code(KeyCode::PageUp, None, true);
+            assert_eq!(app.menu.message_scroll, end.saturating_sub(10));
+            app.menu_key_code(KeyCode::PageDown, None, true);
+            assert_eq!(app.menu.message_scroll, end);
+        } else {
+            assert_eq!(end, 0);
+        }
+        app.menu_key_code(KeyCode::Home, None, false);
+        assert_eq!(app.menu.message_scroll, 0);
+        app.menu_key_code(KeyCode::ArrowDown, None, true);
+        assert_eq!(app.menu.message_scroll, end.min(1));
+        app.menu_key_code(KeyCode::Tab, None, false);
+        assert!(app.menu.keyboard_focus);
+        assert!(matches!(&app.menu.page, Page::Message { text: actual, .. } if actual == &text));
+        assert!(app.session.is_none() && app.pending.is_empty());
+        assert!(!app.advance_clock(app.last_tick + Duration::from_secs(3600)));
+        if name == "recovery-long" {
+            app.menu_key_code(KeyCode::Escape, None, false);
+        } else if name == "recovery-multiline" {
+            app.menu_key_code(KeyCode::Enter, None, false);
+        } else {
+            click(&mut app, Button::Back);
+        }
+        assert_eq!(app.menu.page, Page::Load);
+        assert_eq!(app.menu.message_scroll, 0);
+    }
+}
+
 #[test]
 fn retail_front_menu_restores_the_saved_map_instead_of_the_default() {
     let dir = PathBuf::from(std::env::var("HOME").unwrap_or_default())

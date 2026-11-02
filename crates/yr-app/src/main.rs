@@ -1438,7 +1438,7 @@ impl ApplicationHandler for App {
                     MouseScrollDelta::LineDelta(_, y) => y < 0.0,
                     MouseScrollDelta::PixelDelta(p) => p.y < 0.0,
                 };
-                self.menu.scroll_by(if down { 1 } else { -1 });
+                self.menu_scroll(if down { 1 } else { -1 });
                 self.view.dirty = true;
             }
             WindowEvent::MouseWheel { delta, .. } => {
