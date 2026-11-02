@@ -101,6 +101,7 @@ pub fn draw(frame: &mut [u8], width: u32, height: u32, art: &Art, scene: Scene<'
         if map_top { 3 } else { 9 },
         title_width,
         title,
+        s.heading_refreshed,
     );
     if s.page == Page::Skirmish {
         super::setup::draw(&mut c, art, s, scene.preview);
@@ -450,7 +451,7 @@ fn centered(c: &mut Canvas<'_>, x: i32, y: i32, w: i32, text: &str, color: [u8; 
     let text = fit(c.face, text, w - 12);
     c.text((x + w / 2 - c.face.width(&text) / 2, y), &text, color, 160);
 }
-fn heading(c: &mut Canvas<'_>, x: i32, y: i32, w: i32, text: &str) {
+fn heading(c: &mut Canvas<'_>, x: i32, y: i32, w: i32, text: &str, refreshed: bool) {
     let text = fit(c.face, text, w - 12);
     let Some((tail, _)) = text.char_indices().next_back() else {
         return;
@@ -459,8 +460,9 @@ fn heading(c: &mut Canvas<'_>, x: i32, y: i32, w: i32, text: &str) {
     let prefix = &text[..tail];
     c.text((x, y), prefix, YELLOW, 160);
     let advance: i32 = prefix.chars().map(|ch| c.face.advance(ch)).sum();
-    // Captured headings give their final glyph a packed blue component of 24.
-    c.text((x + advance, y), &text[tail..], [255, 255, 24, 255], 1);
+    // Initial and refreshed dialog captures differ only in this foreground.
+    let blue = if refreshed { 0 } else { 24 };
+    c.text((x + advance, y), &text[tail..], [255, 255, blue, 255], 1);
 }
 fn map_preview(c: &mut Canvas<'_>, map: &super::Preview, markers: &[Image], chooser: bool) {
     // Public UI measurements and renderer samples: formats/front-preview.md.

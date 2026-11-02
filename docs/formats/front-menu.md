@@ -96,8 +96,9 @@ The [heading observations](front-headings.md) record the masks, source labels,
 coordinates and limits. Public control measurements and original raster
 comparisons now calibrate the Skirmish preview background, image bounds and
 independent-axis sampling (#144, #151). The [preview observations](front-preview.md)
-record exact landscape/portrait checks and the remaining numbered markers
-and modal heading state (#152, #153). Unsupported actions remain visibly disabled and
+record exact landscape/portrait checks and numbered markers (#152). Heading
+lifecycle checks cover focus and chooser return (#153). Unsupported actions
+remain visibly disabled and
 the version strip identifies OpenYR. Broader setup, animation timing and
 physical macOS interaction remain in #96 and #97.
 

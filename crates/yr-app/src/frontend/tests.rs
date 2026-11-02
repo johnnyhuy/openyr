@@ -260,8 +260,8 @@ fn retail_skirmish_preview_matches_original_unoccluded_pixels() {
         }
         let mut hash = 0xcbf29ce484222325u64;
         let mut samples = 0;
-        // Start markers are separate work in #152. Modal heading color is #153,
-        // so the Lake observation checks the preview and surrounding rim only.
+        // Marker and heading lifecycle checks are separate (#152, #153).
+        // This earlier Lake observation checks the preview and surrounding rim.
         for y in top..155 {
             for x in 632..800 {
                 if markers

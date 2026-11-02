@@ -79,10 +79,11 @@ impl MapList {
         self.list_focus = true;
         self.drag = None;
     }
-    pub fn select(&mut self, index: usize) {
+    pub fn select(&mut self, index: usize) -> bool {
         if index >= self.entries.len() {
-            return;
+            return false;
         }
+        let changed = index != self.selected;
         if index != self.selected || self.error.is_some() {
             self.ready = None;
             self.error = None;
@@ -93,11 +94,12 @@ impl MapList {
         } else if index >= self.top + VISIBLE {
             self.top = index + 1 - VISIBLE;
         }
+        changed
     }
-    pub fn move_selection(&mut self, delta: i32) {
+    pub fn move_selection(&mut self, delta: i32) -> bool {
         let index = (self.selected as i64 + i64::from(delta))
             .clamp(0, self.entries.len().saturating_sub(1) as i64);
-        self.select(index as usize);
+        self.select(index as usize)
     }
     pub fn scroll(&mut self, delta: i32) {
         self.top = (self.top as i64 + i64::from(delta))

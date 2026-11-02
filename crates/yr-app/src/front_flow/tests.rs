@@ -790,3 +790,114 @@ fn initial_camera_center_excludes_the_sidebar_and_accounts_for_zoom() {
         assert!((view.cam_y + WIN_H as f32 / (2.0 * zoom) - 1057.5).abs() < 0.01);
     }
 }
+
+#[test]
+fn retail_skirmish_heading_tracks_dialog_refreshes() {
+    let directory = PathBuf::from(std::env::var("HOME").unwrap_or_default())
+        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    if !directory.is_dir() {
+        return;
+    }
+    let mut app = new_app(directory.to_string_lossy().into(), "XMP29U2.MAP".into(), 1);
+    app.enter_front();
+    click(&mut app, Button::SinglePlayer);
+    click(&mut app, Button::Skirmish);
+    wait(&mut app);
+    let mut mismatches = Vec::new();
+    let mut check = |app: &App, name: &str, expected: u64| {
+        let mut frame = vec![0; 800 * 600 * 4];
+        app.compose(&mut frame, 800, 600);
+        let hash = (0..37)
+            .flat_map(|y| {
+                frame[(y * 800 + 632) * 4..(y * 800 + 800) * 4]
+                    .iter()
+                    .copied()
+            })
+            .fold(0xcbf29ce484222325u64, |h, b| {
+                (h ^ u64::from(b)).wrapping_mul(0x100000001b3)
+            });
+        if hash != expected {
+            mismatches.push((name.to_owned(), hash, expected));
+        }
+        if let Some(path) = std::env::var_os("OPENYR_FRONT_PROOF") {
+            let path = PathBuf::from(path);
+            std::fs::create_dir_all(&path).unwrap();
+            std::fs::write(
+                path.join(format!("{name}.png")),
+                yr_render::png::encode_rgba(800, 600, &frame),
+            )
+            .unwrap();
+            std::fs::write(
+                path.join(format!("{name}.txt")),
+                format!(
+                    "page={:?}\nfront={}\nphase={}\n",
+                    app.menu.page, app.menu.front, app.front_phase
+                ),
+            )
+            .unwrap();
+        }
+    };
+    let settle = |app: &mut App| {
+        let deadline = Instant::now() + Duration::from_secs(180);
+        while app.chooser_job.is_some() || app.menu.maps.ready != Some(app.menu.maps.selected) {
+            app.poll_map_chooser();
+            assert!(app.menu.maps.error.is_none(), "{:?}", app.menu.maps.error);
+            assert!(Instant::now() < deadline, "chooser preview did not settle");
+            std::thread::sleep(Duration::from_millis(5));
+        }
+    };
+    const INITIAL: u64 = 0xaf5382b7a6dc6151;
+    const REFRESHED: u64 = 0x86ad3335e6790da9;
+    check(&app, "heading-initial", INITIAL);
+    // Exercise the actual window focus handler without changing the map.
+    app.focus_changed(false);
+    app.focus_changed(true);
+    check(&app, "heading-after-focus", REFRESHED);
+    click(&mut app, Button::Back);
+    click(&mut app, Button::Skirmish);
+    wait(&mut app);
+    check(&app, "heading-reentry", INITIAL);
+    click(&mut app, Button::ChooseMap);
+    settle(&mut app);
+    check(&app, "heading-chooser-entry", 0x03bbbbb008bd0f95);
+    click(&mut app, Button::Back);
+    check(&app, "heading-after-cancel", REFRESHED);
+    assert_eq!(app.map_name, "XMP29U2.MAP");
+    click(&mut app, Button::ChooseMap);
+    settle(&mut app);
+    click(&mut app, Button::UseMap);
+    check(&app, "heading-after-same-map", REFRESHED);
+    assert_eq!(app.map_name, "XMP29U2.MAP");
+    click(&mut app, Button::ChooseMap);
+    let layout = Layout::for_state(&app.menu, WIN_W, WIN_H);
+    app.cursor = (
+        layout.origin.0 + 350.0 * layout.scale,
+        layout.origin.1 + 361.0 * layout.scale,
+    );
+    app.menu_mouse(ElementState::Pressed, MouseButton::Left);
+    app.menu_mouse(ElementState::Released, MouseButton::Left);
+    settle(&mut app);
+    assert_eq!(app.menu.maps.selected, 12);
+    check(&app, "heading-chooser-lake", 0x970ff46dc361ae9d);
+    click(&mut app, Button::UseMap);
+    check(&app, "heading-after-map-change", REFRESHED);
+    assert_eq!(app.map_name, "XMP08T2.MAP");
+    click(&mut app, Button::ChooseMap);
+    app.menu_key_code(KeyCode::Home, None, false);
+    settle(&mut app);
+    check(&app, "heading-chooser-reset", 0x970ff46dc361ae9d);
+    click(&mut app, Button::UseMap);
+    check(&app, "heading-after-map-restore", REFRESHED);
+    assert_eq!(app.map_name, "XMP29U2.MAP");
+    click(&mut app, Button::Back);
+    click(&mut app, Button::Skirmish);
+    wait(&mut app);
+    check(&app, "heading-reentry-after-map", INITIAL);
+    app.focus_changed(false);
+    app.focus_changed(true);
+    check(&app, "heading-focus-verified", REFRESHED);
+    assert!(
+        mismatches.is_empty(),
+        "original heading lifecycle: {mismatches:?}"
+    );
+}

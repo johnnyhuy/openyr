@@ -59,8 +59,9 @@ The Lake crop checks `(632,37,168,118)`. Its marker boxes are
 `(668,49)-(686,67)` and `(698,126)-(716,144)`. The other 19,176 pixels have
 RGBA FNV-1a `22dd8120185cff9d`. Returning from the map chooser also changed
 25 final-heading-glyph pixels from blue 24 to blue 0. That newly observed state
-is tracked in #153 and is excluded by starting this check below the heading.
-It does not change the default-state heading evidence.
+is covered separately by the [heading lifecycle checks](front-headings.md)
+(#153). This earlier preview check starts below the heading and retains its
+default-state evidence.
 
 `retail_skirmish_preview_matches_original_unoccluded_pixels` uses the actual
 frontend compositor, retail art and each map's authored preview. It stores
@@ -79,8 +80,9 @@ comparison scripts and source/crop hashes belong in the external proof bundle.
 The original renderer's PrintScreen export supplied these static frames.
 The public GDI BitBlt experiment returned false and produced no frame; it is
 not timing evidence. Previously permission-blocked `screencapture -x` and
-`screencapture -V` paths were skipped without retrying. Modal heading colors, complete
-form/map-selection behavior and animation timing remain in #153 and #96.
+`screencapture -V` paths were skipped without retrying. Refreshed heading colors
+are now calibrated separately (#153). Complete form behavior and animation
+timing remain in #96.
 These checks do not establish full form parity.
 
 ## Numbered marker artwork
@@ -164,7 +166,7 @@ the Skirmish presentation of authored thumbnails.
 | Death Trap | XDeath.MAP | 8 | 644,57,144,73 | c93c6001335149b5 |
 
 The Alamo hash covers `(632,0,168,155)`. The other hashes cover
-`(632,37,168,118)`, explicitly excluding the modal heading change in #153.
+`(632,37,168,118)`. Heading lifecycle comparisons are separate (#153).
 The complete actual frontend composition, including every marker pixel and
 transparent corner, matches each original region. Native frames are exported
 at phase 0 with `OPENYR_MARKER_PROOF`; only safe crops are published.

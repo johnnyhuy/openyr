@@ -334,6 +334,7 @@ impl App {
     fn focus_changed(&mut self, focused: bool) {
         self.pointer.focused = focused;
         if !focused {
+            self.menu.refresh_heading();
             self.groups.interrupt();
             self.order_feedback.clear();
             self.pointer.inside = false;
