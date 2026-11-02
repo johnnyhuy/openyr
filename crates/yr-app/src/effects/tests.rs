@@ -22,6 +22,8 @@ fn retail_infantry_deaths_use_lethal_weapon_after_saved_flight_and_shooter_loss(
         ("M60", Some(1)),
         ("HoverMissile", Some(2)),
         ("ElectricBolt", Some(5)),
+        ("RadBeamWeapon", Some(7)),
+        ("RadEruptionWeapon", Some(7)),
         ("105mm", None),
     ] {
         session.sim = yr_sim::Sim::new(42);
@@ -106,7 +108,7 @@ fn retail_infantry_deaths_use_lethal_weapon_after_saved_flight_and_shooter_loss(
         }
         assert!(died);
         // Sim updates expire the one-shot even if no frame was drawn.
-        for _ in 0..40 {
+        for _ in 0..80 {
             session.sim.step(&[]);
         }
         scene.update(&session, &[], &mut bank);

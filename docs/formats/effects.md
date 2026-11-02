@@ -31,6 +31,7 @@ Local rules and art resolve the following authored effects:
 | AP shell impact | Fired 105mm/120mm to AP AnimList | S_CLSN16/S_CLSN22.SHP | 148x158 | 13 each |
 | Small-arms impact | Fired M60 to SA AnimList | PIFFPIFF.SHP | 28x28 | 12 |
 | Human infantry electrocution | Lethal warhead InfDeath=5 | ELECTRO.SHP | 60x56 | 15 |
+| Human infantry Nuke Melt | Lethal warhead InfDeath=7 | NUKEDIE.SHP | 60x60 | 60 |
 
 `105mm` and `120mm` both declare `Anim=GUNFIRE`. M60 declares eight
 machine-gun names in screen compass order. Existing facing projection
@@ -163,6 +164,46 @@ missing art, saved flights after shooter loss and unchanged sim/save bytes.
 The controlled compositor proof adds a retail Tesla Trooper to the test's
 type registry because the Allied sandbox does not offer that unit. It fires
 its actual ElectricBolt at a GI; ordinary GI/IFV proofs remain alongside it.
+
+## Nuke Melt deaths
+
+Retail `RULESMD.INI` comments explicitly name `InfDeath=7` as Nuke Melt.
+`DESO` declares `Primary=RadBeamWeapon`, whose `RadBeamWarhead` uses that
+selector with `Radiation=yes`. `RadEruptionWarhead`, `RadSite`, `NUKE`,
+`DiskWH` and `AntiPerson` also declare selector 7. The death selector, not
+the radiation flag or the shooter's current type, determines the clip.
+This slice renders fatal weapon hits; it adds no radiation-field damage.
+
+`ARTMD.INI` has `[NUKEDIE]` with `Scorch=yes`, `Layer=ground` and
+`Report=InfantryMelt`. There is no image, palette, transparency, rate, start,
+end or loop override. `RA2.MIX/CONQUER.MIX/NUKEDIE.SHP` is 26,584 bytes,
+60x60 pixels with 60 frames. Independently decoded `ANIM.PAL` canvases show
+a green figure collapsing into a puddle, then disappearing. All 60 frames
+are body art, without a shadow half. These are observations from the local
+retail data, without original engine source inspection.
+
+The shared special-death route accepts explicit lethal selector 7 for
+registered infantry without `NotHuman=yes`. It retains the actual fatal
+pose and joins the world painter order, sharing the existing actor/frame
+bounds and ignoring house remap and facing. Animals, other techno classes,
+unknown sources and missing or malformed optional art get no guessed melt.
+The saved lethal weapon still resolves after its shooter disappears; the
+victim remains absent from occupancy, selection and simulation state.
+
+The existing default rate 200 plays each source frame once, occupying ages
+0 through 67 and expiring at age 68. Repeated redraws do not advance it.
+Original timing, palette lighting, scorch, animation reports, per-type
+overrides and non-human exceptions remain unverified in #102. Loading
+resets past death clips; later saved-flight arrivals can create new ones.
+Source comparisons do not establish original-engine parity.
+
+Tests compare all 60 source canvases and anchors, then check eligibility,
+optional-art failure, expiry at normal/extreme ages and saved flights after
+shooter loss. The controlled EB1 compositor fixture registers a retail
+Desolator and fires its actual RadBeamWeapon at a GI. Per-frame exports
+include simulation ticks and hashes, and composition preserves complete
+save bytes. Export with
+`OPENYR_INFANTRY_DEATH_PROOF=<external-dir> cargo test -p yr-app --bin openyr retail_infantry_death_composition_proof -- --nocapture`.
 
 ## Cannon bodies and travel
 

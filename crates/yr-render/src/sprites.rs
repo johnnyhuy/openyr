@@ -321,12 +321,18 @@ impl SpriteBank {
     }
 
     fn special_infantry_death(&self, kind: &str, sequence: u8) -> Option<&'static str> {
-        // Retail rules name selector 5 as electro; art labels ELECTRO as
-        // the infantry Tesla zap. Non-human death behavior is separate.
-        (sequence == 5
-            && self.rules.techno(kind)?.kind == TechnoKind::Infantry
-            && self.rules_ini.section(kind)?.get_bool("NotHuman") != Some(true))
-        .then_some("ELECTRO")
+        // Retail rules name selectors 5 and 7 as electro and Nuke Melt.
+        // Non-human death behavior is separate.
+        if self.rules.techno(kind)?.kind != TechnoKind::Infantry
+            || self.rules_ini.section(kind)?.get_bool("NotHuman") == Some(true)
+        {
+            return None;
+        }
+        match sequence {
+            5 => Some("ELECTRO"),
+            7 => Some("NUKEDIE"),
+            _ => None,
+        }
     }
 
     fn infantry_death_frame(
@@ -706,7 +712,7 @@ mod tests {
         assert!(!bank.infantry_death_alive("E1", 5, 31));
         assert!(!bank.infantry_death_alive("E1", 5, u64::MAX));
         assert_eq!(bank.infantry_death_sequence("E1", 0), None);
-        for selector in [0, 3, 4, 6, 7, 8, 9, 10, u8::MAX] {
+        for selector in [0, 3, 4, 6, 8, 9, 10, u8::MAX] {
             assert!(bank
                 .get_infantry_death("E1", selector, 0, [0; 3], 0)
                 .is_none());
@@ -718,6 +724,46 @@ mod tests {
         assert_eq!(bank.infantry_death_sequence("E1", source), None);
         assert!(bank.get_infantry_death("E1", 5, 0, [0; 3], 0).is_none());
         assert!(bank.get_infantry_death("E1", 1, 0, [0; 3], 0).is_some());
+    }
+
+    #[test]
+    fn retail_nuke_melt_requires_a_human_victim_and_explicit_lethal_selector() {
+        let dir = std::path::PathBuf::from(std::env::var("HOME").unwrap())
+            .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+        if !dir.is_dir() {
+            return;
+        }
+        let mut bank = SpriteBank::open(dir.to_str().unwrap(), "EB1.MMX").unwrap();
+        for weapon in ["RadBeamWeapon", "RadEruptionWeapon", "DiskLaser"] {
+            let source = bank.rules.weapons.get(weapon).expect(weapon).source_id();
+            for kind in ["E1", "GGI", "SHK"] {
+                assert_eq!(bank.infantry_death_sequence(kind, source), Some(7));
+            }
+            for kind in ["DOG", "COW", "MTNK", "SHAD", "GAPOWR", "MISSING"] {
+                assert_eq!(bank.infantry_death_sequence(kind, source), None, "{kind}");
+                assert!(bank.get_infantry_death(kind, 7, 0, [0; 3], 0).is_none());
+            }
+        }
+        let first = bank
+            .get_infantry_death("E1", 7, 0, [255, 0, 0], 0)
+            .unwrap()
+            .rgba
+            .clone();
+        let other = bank
+            .get_infantry_death("GGI", 7, 128, [0, 0, 255], 0)
+            .unwrap();
+        assert!(first == other.rgba, "generic melt ignores facing and remap");
+        assert!(bank.infantry_death_alive("E1", 7, 67));
+        assert!(!bank.infantry_death_alive("E1", 7, 68));
+        assert!(!bank.infantry_death_alive("E1", 7, u64::MAX));
+        let source = bank.rules.weapons.get("RadBeamWeapon").unwrap().source_id();
+        for malformed in ["[NUKEDIE]\nImage=../../unsafe", "[NUKEDIE]\nRate=0"] {
+            bank.art_ini = IniFile::parse(malformed);
+            bank.effects = Default::default();
+            assert_eq!(bank.infantry_death_sequence("E1", source), None);
+            assert!(bank.get_infantry_death("E1", 7, 0, [0; 3], 0).is_none());
+            assert!(bank.get_infantry_death("E1", 1, 0, [0; 3], 0).is_some());
+        }
     }
 
     #[test]
