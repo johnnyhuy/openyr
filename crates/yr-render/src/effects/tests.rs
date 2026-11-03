@@ -323,6 +323,63 @@ fn retail_nuke_melt_frames_match_source_and_expire() {
 }
 
 #[test]
+fn retail_brute_smash_frames_match_source_and_expire() {
+    let dir = PathBuf::from(std::env::var("HOME").unwrap())
+        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    if !dir.is_dir() {
+        return;
+    }
+    let fs = AssetFs::open(&dir).unwrap();
+    let art = IniFile::parse(&String::from_utf8_lossy(fs.read("ARTMD.INI").unwrap()));
+    let palette = Palette::parse(fs.read("ANIM.PAL").unwrap()).unwrap();
+    let shp = ShpFile::parse(fs.read("BRUTDIE.SHP").unwrap()).unwrap();
+    assert_eq!((shp.width, shp.height, shp.frames.len()), (102, 118, 60));
+    let mut effects = Effects::default();
+    let mut frames = std::collections::BTreeSet::new();
+    for tick in 0..=68 {
+        let frame = tick * 200 / 225;
+        let sprite = effects.get(&fs, &art, "BRUTDIE", tick);
+        if frame >= 60 {
+            assert!(sprite.is_none());
+            continue;
+        }
+        frames.insert(frame);
+        let expected: Vec<_> = shp
+            .decode_frame_canvas(frame as usize)
+            .unwrap()
+            .into_iter()
+            .flat_map(|index| {
+                if index == 0 {
+                    [0; 4]
+                } else {
+                    palette.rgba(index)
+                }
+            })
+            .collect();
+        let sprite = sprite.unwrap();
+        assert_eq!(
+            (sprite.w, sprite.h, sprite.ax, sprite.ay),
+            (102, 118, 51, 59)
+        );
+        assert!(
+            sprite.rgba == expected,
+            "BRUTDIE tick {tick}, frame {frame}"
+        );
+    }
+    assert_eq!(
+        frames.len(),
+        60,
+        "all body frames, no shadow-half assumption"
+    );
+    assert_eq!(
+        effects.frames.len(),
+        60,
+        "repeated phases share source frames"
+    );
+    assert!(!effects.alive(&fs, &art, "BRUTDIE", u64::MAX));
+}
+
+#[test]
 fn retail_effect_frames_match_anim_palette_and_cache_stays_bounded() {
     let dir = PathBuf::from(std::env::var("HOME").unwrap())
         .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");

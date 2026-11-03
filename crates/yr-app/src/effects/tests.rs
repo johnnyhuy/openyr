@@ -28,6 +28,8 @@ fn retail_infantry_deaths_use_lethal_weapon_after_saved_flight_and_shooter_loss(
         ("RadEruptionWeapon", Some(7)),
         ("Virusgun", Some(8)),
         ("VirusgunE", Some(8)),
+        ("Punch", Some(10)),
+        ("PunchE", Some(10)),
         ("105mm", None),
     ] {
         session.sim = yr_sim::Sim::new(42);
@@ -37,8 +39,12 @@ fn retail_infantry_deaths_use_lethal_weapon_after_saved_flight_and_shooter_loss(
             expected
         );
         // Keep the synthetic flight alive through restore, including the
-        // one-cell PsiWave range. Retail Psychic itself is invisible/instant.
-        spec.projectile_speed = Fix::from_raw(if expected == Some(6) { 64 } else { 128 });
+        // short PsiWave/Punch ranges. Their retail projectiles are instant.
+        spec.projectile_speed = Fix::from_raw(if matches!(expected, Some(6 | 10)) {
+            64
+        } else {
+            128
+        });
         let spawn = |x, weapon| Command::Spawn {
             kind,
             x: Fix::from_int(x),
@@ -50,7 +56,14 @@ fn retail_infantry_deaths_use_lethal_weapon_after_saved_flight_and_shooter_loss(
             weapon,
         };
         session.sim.step(&[
-            spawn(if expected == Some(6) { 2 } else { 1 }, Some(spec)),
+            spawn(
+                if matches!(expected, Some(6 | 10)) {
+                    2
+                } else {
+                    1
+                },
+                Some(spec),
+            ),
             spawn(3, None),
             Command::AssignOwner {
                 id: 2,

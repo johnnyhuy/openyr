@@ -48,7 +48,7 @@ fn retail_infantry_death_composition_proof() {
     session.sim.drain_events();
     // The Allied sandbox does not offer these infantry. Register the retail
     // types only for the controlled special-death fatal-shot fixtures.
-    for kind in ["SHK", "DESO", "YURI", "VIRUS"] {
+    for kind in ["SHK", "DESO", "YURI", "VIRUS", "BRUTE"] {
         if !session.kinds.iter().any(|registered| registered == kind) {
             session.kinds.push(kind.into());
         }
@@ -70,6 +70,7 @@ fn retail_infantry_death_composition_proof() {
         ("RadBeamWeapon", "DESO", 7, 72),
         ("PsiWave", "YURI", 6, 36),
         ("Virusgun", "VIRUS", 8, 44),
+        ("Punch", "BRUTE", 10, 72),
     ] {
         let shooter_kind = app
             .session
@@ -92,7 +93,7 @@ fn retail_infantry_death_composition_proof() {
         };
         // PsiWave has a one-cell range. This checks its lethal-hit art;
         // deployment and area damage are not simulated by this fixture.
-        let distance = if sequence == 6 { 1 } else { 2 };
+        let distance = if matches!(sequence, 6 | 10) { 1 } else { 2 };
         app.pending.push(spawn(
             shooter_kind,
             i32::from(cx) - distance,
