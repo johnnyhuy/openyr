@@ -116,6 +116,13 @@ Johnny on 2026-10-31.
       general-setting overrides, saved flights after shooter loss and unchanged
       sim/save bytes are checked. Original timing, lighting, scorch and reports
       remain unverified (`docs/formats/effects.md`).
+- [x] Initial human infantry explosion deaths (#102, #191): lethal
+      `InfDeath=3` resolves `[General] InfantryExplode` to retail S_BANG34
+      with its declared translucency in world painter order. All 13 source
+      frames, eligibility, expiry, overrides, saved flights after shooter loss
+      and unchanged sim/save bytes are checked. Flying fragments, original
+      timing/lighting, crater/scorch and reports remain unverified
+      (`docs/formats/effects.md`).
 - [x] Map parsing: LZO/IsoMapPack5 + overlay packs, all 234 retail maps
       (`docs/formats/map.md`); tile-set index maps tile numbers to TMPs
 - [x] TMP terrain rendering from real maps as PNG (`mix-dump render-map`;

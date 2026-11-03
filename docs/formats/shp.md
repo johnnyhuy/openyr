@@ -119,10 +119,11 @@ Retail `RULESMD.INI` documents `InfDeath` as the warhead's infantry death
 selector. SA and HollowPoint use 1; HE uses 2. GISequence and
 GuardianGISequence both declare `Die1=134,15,0` and `Die2=149,15,0`.
 These are non-directional body ranges with corresponding shadow frames
-at the normal half-sheet offset. AP uses 3, whose flying-death behavior
-is separate; the placeholder `Die3=0,1,1` is not a supported death clip.
+at the normal half-sheet offset. AP uses 3; its initial generic explosion is documented in
+`docs/formats/effects.md`. Flying fragments remain separate work, and the
+placeholder `Die3=0,1,1` is not a supported unit-sheet death clip.
 
-Explicit selectors 1 and 2 use these unit-sheet clips. Selectors 5, 6, 7, 8
+Explicit selectors 1 and 2 use these unit-sheet clips. Selectors 3, 5, 6, 7, 8
 and 10 use separate generic death sheets, documented in `docs/formats/effects.md`.
 The fatal positive health transition emits `FatalHit` with the actual shot origin and victim
 type, position, facing and owner at that hit. The app associates it with

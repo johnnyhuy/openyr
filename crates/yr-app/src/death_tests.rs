@@ -66,6 +66,7 @@ fn retail_infantry_death_composition_proof() {
     for (weapon, shooter_type, sequence, last_age) in [
         ("M60", "E1", 1, 36),
         ("HoverMissile", "FV", 2, 36),
+        ("105mm", "MTNK", 3, 18),
         ("ElectricBolt", "SHK", 5, 36),
         ("RadBeamWeapon", "DESO", 7, 72),
         ("PsiWave", "YURI", 6, 36),
