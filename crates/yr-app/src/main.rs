@@ -816,6 +816,10 @@ impl App {
         // Overlapping base/overlay shadows darken a pixel only once.
         let mut shadowed = vec![false; (fw * fh) as usize];
         for m in &markers {
+            // Generic death sheets contain effect pixels, not unit shadows.
+            if m.death.is_some_and(|(sequence, _)| sequence > 2) {
+                continue;
+            }
             if let (Some((id, facing, owner)), Some(bank)) = (&m.art, bank.as_mut()) {
                 let remap = owner_remap(bank, *owner);
                 if let Some(animation) = m.building {
@@ -874,7 +878,12 @@ impl App {
                             None => bank.get_animated_at(id, *facing, remap, m.animation, tick),
                         };
                         if let Some(s) = sprite {
-                            blit_sprite(frame, fw, fh, s, m.ax, m.ay, k, SpritePass::Body);
+                            let pass = if m.death.is_some_and(|(sequence, _)| sequence > 2) {
+                                SpritePass::Effect
+                            } else {
+                                SpritePass::Body
+                            };
+                            blit_sprite(frame, fw, fh, s, m.ax, m.ay, k, pass);
                             true
                         } else {
                             false

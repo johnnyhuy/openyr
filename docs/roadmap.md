@@ -116,9 +116,10 @@ Johnny on 2026-10-31.
       general-setting overrides, saved flights after shooter loss and unchanged
       sim/save bytes are checked. Original timing, lighting, scorch and reports
       remain unverified (`docs/formats/effects.md`).
-- [x] Initial human infantry explosion deaths (#102, #191): lethal
+- [x] Initial human infantry explosion deaths (#102, #191, #192): lethal
       `InfDeath=3` resolves `[General] InfantryExplode` to retail S_BANG34
-      with its declared translucency in world painter order. All 13 source
+      with its declared translucency in world painter order. Generic deaths
+      use effect blending and bypass unit shadows. All 13 source
       frames, eligibility, expiry, overrides, saved flights after shooter loss
       and unchanged sim/save bytes are checked. Flying fragments, original
       timing/lighting, crater/scorch and reports remain unverified

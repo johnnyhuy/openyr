@@ -335,6 +335,11 @@ There is no active image, rate, start, end or loop override.
 `ANIM.PAL`, transparent index zero and the existing 50-percent translucency
 policy (alpha 127). The canvas anchor is (74,79); no shadow half is assumed.
 
+Generic death sheets use straight-alpha effect blending at their world
+painter position and bypass the unit shadow union (#192). This preserves
+translucent color instead of discarding it in the opaque unit body pass.
+Ordinary Die1/Die2 retain their body and shadow passes.
+
 The initial native presentation resolves the general setting for explicit
 lethal selector 3 on registered human infantry. It uses the actual fatal-hit
 position in world painter order and ignores facing and house remap. The
