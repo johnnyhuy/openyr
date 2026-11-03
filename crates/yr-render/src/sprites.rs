@@ -321,7 +321,7 @@ impl SpriteBank {
     }
 
     fn special_infantry_death(&self, kind: &str, sequence: u8) -> Option<&str> {
-        // Retail rules name selectors 5, 6 and 7 as electro, head pop and melt.
+        // Explicit retail selectors choose generic human death art.
         // Non-human death behavior is separate.
         if self.rules.techno(kind)?.kind != TechnoKind::Infantry
             || self.rules_ini.section(kind)?.get_bool("NotHuman") == Some(true)
@@ -332,6 +332,7 @@ impl SpriteBank {
             5 => Some("ELECTRO"),
             6 => self.rules_ini.section("General")?.get("InfantryHeadPop"),
             7 => Some("NUKEDIE"),
+            8 => self.rules_ini.section("General")?.get("InfantryVirus"),
             _ => None,
         }
     }
@@ -719,7 +720,7 @@ mod tests {
         assert!(!bank.infantry_death_alive("E1", 5, 31));
         assert!(!bank.infantry_death_alive("E1", 5, u64::MAX));
         assert_eq!(bank.infantry_death_sequence("E1", 0), None);
-        for selector in [0, 3, 4, 8, 9, 10, u8::MAX] {
+        for selector in [0, 3, 4, 9, 10, u8::MAX] {
             assert!(bank
                 .get_infantry_death("E1", selector, 0, [0; 3], 0)
                 .is_none());
@@ -731,6 +732,64 @@ mod tests {
         assert_eq!(bank.infantry_death_sequence("E1", source), None);
         assert!(bank.get_infantry_death("E1", 5, 0, [0; 3], 0).is_none());
         assert!(bank.get_infantry_death("E1", 1, 0, [0; 3], 0).is_some());
+    }
+
+    #[test]
+    fn retail_virus_deaths_use_general_art_for_human_lethal_hits() {
+        let dir = std::path::PathBuf::from(std::env::var("HOME").unwrap())
+            .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+        if !dir.is_dir() {
+            return;
+        }
+        let mut bank = SpriteBank::open(dir.to_str().unwrap(), "EB1.MMX").unwrap();
+        for weapon in ["Virusgun", "VirusgunE"] {
+            let source = bank.rules.weapons.get(weapon).unwrap().source_id();
+            for kind in ["E1", "GGI", "SHK"] {
+                assert_eq!(bank.infantry_death_sequence(kind, source), Some(8));
+            }
+            for kind in ["DOG", "COW", "MTNK", "SHAD", "GAPOWR", "MISSING"] {
+                assert_eq!(bank.infantry_death_sequence(kind, source), None, "{kind}");
+                assert!(bank.get_infantry_death(kind, 8, 0, [0; 3], 0).is_none());
+            }
+        }
+        let first = bank
+            .get_infantry_death("E1", 8, 0, [255, 0, 0], 8)
+            .unwrap()
+            .rgba
+            .clone();
+        assert!(
+            first
+                == bank
+                    .get_infantry_death("GGI", 8, 128, [0, 0, 255], 8)
+                    .unwrap()
+                    .rgba,
+            "generic Virus death ignores facing and house remap"
+        );
+        assert!(bank.infantry_death_alive("E1", 8, 39));
+        assert!(!bank.infantry_death_alive("E1", 8, 40));
+        assert!(!bank.infantry_death_alive("E1", 8, u64::MAX));
+        assert_eq!(bank.infantry_death_sequence("E1", 0), None);
+        let source = bank.rules.weapons.get("Virusgun").unwrap().source_id();
+        let original = bank.rules_ini.clone();
+        bank.rules_ini
+            .merge_from(&IniFile::parse("[General]\nInfantryVirus=ELECTRO"));
+        let expected = bank.get_effect("ELECTRO", 8).unwrap().rgba.clone();
+        assert!(bank.get_infantry_death("E1", 8, 0, [0; 3], 8).unwrap().rgba == expected);
+        for invalid in ["", "MISSING", "../../unsafe"] {
+            bank.rules_ini = original.clone();
+            bank.rules_ini.merge_from(&IniFile::parse(&format!(
+                "[General]\nInfantryVirus={invalid}"
+            )));
+            assert_eq!(bank.infantry_death_sequence("E1", source), None);
+        }
+        bank.rules_ini = original;
+        for malformed in ["[VIRUSD]\nImage=../../unsafe", "[VIRUSD]\nRate=0"] {
+            bank.art_ini = IniFile::parse(malformed);
+            bank.effects = Default::default();
+            assert_eq!(bank.infantry_death_sequence("E1", source), None);
+            assert!(bank.get_infantry_death("E1", 8, 0, [0; 3], 0).is_none());
+            assert!(bank.get_infantry_death("E1", 1, 0, [0; 3], 0).is_some());
+        }
     }
 
     #[test]

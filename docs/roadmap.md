@@ -104,6 +104,12 @@ Johnny on 2026-10-31.
       sim/save bytes are checked. Original timing, lighting, scorch and reports
       remain unverified; Yuri deployment and area damage are separate simulation
       work (`docs/formats/effects.md`).
+- [x] Human infantry Virus deaths (#102, #187): lethal `InfDeath=8`
+      resolves `[General] InfantryVirus` to the 35-frame retail VIRUSD clip
+      in world painter order. All source frames, eligibility, expiry,
+      general-setting overrides, saved flights after shooter loss and unchanged
+      sim/save bytes are checked. Original timing, lighting, gas particles,
+      scorch and reports remain unverified (`docs/formats/effects.md`).
 - [x] Map parsing: LZO/IsoMapPack5 + overlay packs, all 234 retail maps
       (`docs/formats/map.md`); tile-set index maps tile numbers to TMPs
 - [x] TMP terrain rendering from real maps as PNG (`mix-dump render-map`;

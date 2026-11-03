@@ -31,6 +31,7 @@ Local rules and art resolve the following authored effects:
 | AP shell impact | Fired 105mm/120mm to AP AnimList | S_CLSN16/S_CLSN22.SHP | 148x158 | 13 each |
 | Small-arms impact | Fired M60 to SA AnimList | PIFFPIFF.SHP | 28x28 | 12 |
 | Human infantry electrocution | Lethal warhead InfDeath=5 | ELECTRO.SHP | 60x56 | 15 |
+| Human infantry Virus death | Lethal warhead InfDeath=8 | VIRUSD.SHP | 186x190 | 35 |
 | Human infantry Nuke Melt | Lethal warhead InfDeath=7 | NUKEDIE.SHP | 60x60 | 60 |
 
 `105mm` and `120mm` both declare `Anim=GUNFIRE`. M60 declares eight
@@ -241,6 +242,41 @@ the shooter disappears. Tests verify general-setting overrides, all source
 pixels, expiry, eligibility, optional-art failure, saved-flight provenance
 and unchanged hashes/save bytes. The shared compositor proof exports every
 age through expiry using the same command documented for Nuke Melt above.
+
+## Virus deaths
+
+Retail `RULESMD.INI` comments name `InfDeath=8` as Virus explosion.
+`VIRUS` declares `Primary=Virusgun` and `ElitePrimary=VirusgunE`; both
+weapons use the `Virus` warhead and selector 8. `[General] InfantryVirus=VIRUSD`
+selects the generic clip. The general setting remains authoritative when
+map rules override it.
+
+`ARTMD.INI` declares `[VIRUSD]` with `Scorch=yes`, `Layer=ground`,
+`Report=VirusVictimSwell`, `SpawnsParticle=VirusCloud1` and `NumParticles=3`.
+There is no image, palette, transparency, rate, start, end or loop override.
+`RA2MD.MIX/CONQMD.MIX/VIRUSD.SHP` is 60,728 bytes, with 35 frames
+on a 186x190 canvas. All frames are body art, without a shadow half.
+Source comparisons use
+`ANIM.PAL`, expanded from six-bit channels with transparent index zero.
+These are observations from retail data, without original code inspection.
+
+Explicit lethal selector 8 now uses the shared bounded special-death path
+for registered infantry without `NotHuman=yes`. It retains the actual fatal
+pose, joins world painter order and ignores house remap and facing.
+Missing, unsafe or malformed optional art suppresses the clip without
+restoring the dead victim. Other techno classes, animals and unknown
+sources receive no guessed Virus death.
+
+The existing provisional rate 200 plays all 35 frames over ages 0 through
+39 and expires at age 40. Drawing never advances the clock. Tests compare
+all source canvases, check general-setting overrides and optional-art failure,
+and retain the lethal weapon through saved flights after shooter loss.
+The controlled EB1 fixture registers the retail Virus and fires its actual
+Virusgun at a GI. Composition preserves simulation hashes and complete
+save bytes; the shared proof command above exports every age through expiry.
+Original timing, anchor, lighting, gas particles, scorch, animation reports
+and non-human/per-type exceptions remain in #102. Source agreement does
+not establish original-engine playback parity.
 
 ## Cannon bodies and travel
 
