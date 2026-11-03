@@ -30,6 +30,7 @@ Local rules and art resolve the following authored effects:
 | Vehicle destruction | First entry of type Explosion | TWLT070.SHP | 186x196 | 26 |
 | AP shell impact | Fired 105mm/120mm to AP AnimList | S_CLSN16/S_CLSN22.SHP | 148x158 | 13 each |
 | Small-arms impact | Fired M60 to SA AnimList | PIFFPIFF.SHP | 28x28 | 12 |
+| Human infantry explosion | Lethal warhead InfDeath=3 to General InfantryExplode | S_BANG34.SHP | 148x158 | 13 |
 | Human infantry electrocution | Lethal warhead InfDeath=5 | ELECTRO.SHP | 60x56 | 15 |
 | Human infantry Virus death | Lethal warhead InfDeath=8 | VIRUSD.SHP | 186x190 | 35 |
 | Human infantry Nuke Melt | Lethal warhead InfDeath=7 | NUKEDIE.SHP | 60x60 | 60 |
@@ -316,6 +317,51 @@ saved lethal provenance after shooter loss and unchanged hashes/save bytes.
 The shared controlled compositor fixture registers a retail Brute and fires
 its actual Punch at a GI one cell away. Per-age exports include ticks and
 state hashes, using `OPENYR_INFANTRY_DEATH_PROOF` as documented above.
+
+## Infantry explosion deaths
+
+Retail `RULESMD.INI` names `InfDeath=3` as flying death and declares
+`[General] InfantryExplode=S_BANG34`, described as the animation when infantry
+explodes. Tank weapons `105mm` and `120mm` use `AP`, which explicitly selects
+3; `120mmx` uses `ApocAP` with the same selector. `SonicZap` also selects 3.
+These observations come from installed rules, including the EXPANDMD01
+rules override, without original engine source inspection.
+
+`ARTMD.INI` declares `[S_BANG34]` with `Normalized=yes`, `Translucent=yes`,
+`Report=Explosion10`, `UseNormalLight=yes`, `Crater=yes` and `Scorch=yes`.
+There is no active image, rate, start, end or loop override.
+`RA2.MIX/CONQUER.MIX/S_BANG34.SHP` is 7,008 bytes, with 13 frames on a
+148x158 canvas. Every independently decoded source canvas is compared with
+`ANIM.PAL`, transparent index zero and the existing 50-percent translucency
+policy (alpha 127). The canvas anchor is (74,79); no shadow half is assumed.
+
+Generic death sheets use straight-alpha effect blending at their world
+painter position and bypass the unit shadow union (#192). This preserves
+translucent color instead of discarding it in the opaque unit body pass.
+Ordinary Die1/Die2 retain their body and shadow passes.
+
+The initial native presentation resolves the general setting for explicit
+lethal selector 3 on registered human infantry. It uses the actual fatal-hit
+position in world painter order and ignores facing and house remap. The
+route does not infer eligibility from the shooter's type. Invalid or missing
+settings, unknown sources, non-human victims and malformed optional art
+receive no guessed clip. Existing bounded actor and frame caches apply.
+
+At the provisional default rate 200, ages 0 through 14 cover all 13 frames;
+the clip expires at age 15. This is the configured explosion only. Original
+flying fragments, movement, cadence, anchors, palette lighting, normalization,
+crater/scorch and animation reports remain unverified in #102. Presentation
+never changes simulation state or restores a dead actor. Past transients reset
+on load; later saved-flight arrivals retain the lethal weapon and can create
+new clips after shooter loss.
+
+Tests check all source pixels and alpha, human eligibility, general-setting
+replacement/removal, optional-art failure, expiry including extreme ages,
+saved-flight provenance and unchanged simulation hashes/complete save bytes.
+The shared compositor fixture fires a real retail MTNK `105mm` shell at a GI
+two cells away and exports per-age ticks/hashes with
+`OPENYR_INFANTRY_DEATH_PROOF`, as documented above. The ordinary impact effect
+remains independent; removing the death layer provides a same-tick comparison.
 
 ## Cannon bodies and travel
 
