@@ -33,6 +33,7 @@ Local rules and art resolve the following authored effects:
 | Human infantry electrocution | Lethal warhead InfDeath=5 | ELECTRO.SHP | 60x56 | 15 |
 | Human infantry Virus death | Lethal warhead InfDeath=8 | VIRUSD.SHP | 186x190 | 35 |
 | Human infantry Nuke Melt | Lethal warhead InfDeath=7 | NUKEDIE.SHP | 60x60 | 60 |
+| Human infantry Brute smash | Lethal warhead InfDeath=10 to General InfantryBrute | BRUTDIE.SHP | 102x118 | 60 |
 
 `105mm` and `120mm` both declare `Anim=GUNFIRE`. M60 declares eight
 machine-gun names in screen compass order. Existing facing projection
@@ -277,6 +278,44 @@ save bytes; the shared proof command above exports every age through expiry.
 Original timing, anchor, lighting, gas particles, scorch, animation reports
 and non-human/per-type exceptions remain in #102. Source agreement does
 not establish original-engine playback parity.
+
+## Brute smash deaths
+
+Retail `RULESMD.INI` names `InfDeath=10` as getting smashed into pieces by
+a Brute. `[General] InfantryBrute=BRUTDIE` selects the generic death art.
+`BRUTE` declares `Primary=Punch`, which uses `Battering` and selector 10.
+`PunchE`, `Smash`, `SmashE`, `TRexBite` and `TRexInfBite` also resolve to
+selector 10. The route follows the actual lethal weapon, independently of
+its shooter's type or the victim's current owner. Mutation uses selector 9
+and remains separate simulation and rendering work.
+
+`ARTMD.INI` declares `[BRUTDIE]` with `Scorch=yes`, `Layer=ground` and
+`Report=InfantryPsyCrush`. Its `AltPalette=yes` line is commented out. There
+is no active image, palette, transparency, rate, start, end or loop override.
+`RA2MD.MIX/CONQMD.MIX/BRUTDIE.SHP` is 13,336 bytes, with 60 frames on a
+102x118 canvas. Independent SHP decoding compares every source canvas
+against `ANIM.PAL`; there is no assumed shadow half. These are retail data
+observations without original engine source inspection.
+
+Registered infantry without `NotHuman=yes` receive the configured clip
+at their actual fatal-hit position and facing in world painter order.
+The generic art ignores facing and house remap. Missing general settings,
+invalid names, malformed optional art, unknown sources and non-human victims
+receive no guessed replacement. The existing actor and cache limits apply.
+Rendering never restores occupancy or selection for a dead victim.
+
+At the provisional default rate 200, the clip occupies ages 0 through 67
+and expires at age 68. Redraws do not advance it. Original timing, anchor,
+palette lighting, scorch, animation reports and non-human/per-type exceptions
+remain unverified in #102. Past transients reset on load; saved-flight arrivals
+can still create deaths after the shooter disappears.
+
+Tests cover every source frame and anchor, eligibility, general-setting
+replacement/removal, optional-art failure, expiry at normal/extreme ages,
+saved lethal provenance after shooter loss and unchanged hashes/save bytes.
+The shared controlled compositor fixture registers a retail Brute and fires
+its actual Punch at a GI one cell away. Per-age exports include ticks and
+state hashes, using `OPENYR_INFANTRY_DEATH_PROOF` as documented above.
 
 ## Cannon bodies and travel
 

@@ -316,7 +316,7 @@ fn infantry_deaths_match_retail_body_shadow_and_house_pixels() {
     }
     assert!(bank.infantry_death_sequence("MTNK", 0).is_none());
     assert!(bank.infantry_death_sequence("E1", u64::MAX).is_none());
-    for sequence in [0, 3, 4, 9, 10, 255] {
+    for sequence in [0, 3, 4, 9, 255] {
         assert!(bank
             .get_infantry_death("E1", sequence, 0, [0; 3], 0)
             .is_none());

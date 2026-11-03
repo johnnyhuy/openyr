@@ -110,6 +110,12 @@ Johnny on 2026-10-31.
       general-setting overrides, saved flights after shooter loss and unchanged
       sim/save bytes are checked. Original timing, lighting, gas particles,
       scorch and reports remain unverified (`docs/formats/effects.md`).
+- [x] Human infantry Brute smash deaths (#102, #188): lethal `InfDeath=10`
+      resolves `[General] InfantryBrute` to the 60-frame retail BRUTDIE
+      clip in world painter order. Every source frame, eligibility, expiry,
+      general-setting overrides, saved flights after shooter loss and unchanged
+      sim/save bytes are checked. Original timing, lighting, scorch and reports
+      remain unverified (`docs/formats/effects.md`).
 - [x] Map parsing: LZO/IsoMapPack5 + overlay packs, all 234 retail maps
       (`docs/formats/map.md`); tile-set index maps tile numbers to TMPs
 - [x] TMP terrain rendering from real maps as PNG (`mix-dump render-map`;
