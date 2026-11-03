@@ -174,6 +174,52 @@ fn retail_electro_loop_frames_match_source_and_expire_after_the_tail() {
 }
 
 #[test]
+fn retail_virus_death_frames_match_source_and_expire() {
+    let dir = PathBuf::from(std::env::var("HOME").unwrap())
+        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    if !dir.is_dir() {
+        return;
+    }
+    let fs = AssetFs::open(&dir).unwrap();
+    let art = IniFile::parse(&String::from_utf8_lossy(fs.read("ARTMD.INI").unwrap()));
+    let palette = Palette::parse(fs.read("ANIM.PAL").unwrap()).unwrap();
+    let shp = ShpFile::parse(fs.read("VIRUSD.SHP").unwrap()).unwrap();
+    assert_eq!((shp.width, shp.height, shp.frames.len()), (186, 190, 35));
+    let mut effects = Effects::default();
+    let mut frames = std::collections::BTreeSet::new();
+    for tick in 0..=40 {
+        let frame = tick * 200 / 225;
+        let sprite = effects.get(&fs, &art, "VIRUSD", tick);
+        if frame >= 35 {
+            assert!(sprite.is_none());
+            continue;
+        }
+        frames.insert(frame);
+        let expected: Vec<_> = shp
+            .decode_frame_canvas(frame as usize)
+            .unwrap()
+            .into_iter()
+            .flat_map(|index| {
+                if index == 0 {
+                    [0; 4]
+                } else {
+                    palette.rgba(index)
+                }
+            })
+            .collect();
+        let sprite = sprite.unwrap();
+        assert_eq!(
+            (sprite.w, sprite.h, sprite.ax, sprite.ay),
+            (186, 190, 93, 95)
+        );
+        assert!(sprite.rgba == expected, "VIRUSD tick {tick}, frame {frame}");
+    }
+    assert_eq!(frames.len(), 35);
+    assert_eq!(effects.frames.len(), 35);
+    assert!(!effects.alive(&fs, &art, "VIRUSD", u64::MAX));
+}
+
+#[test]
 fn retail_head_pop_frames_match_source_and_expire() {
     let dir = PathBuf::from(std::env::var("HOME").unwrap())
         .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");

@@ -122,9 +122,9 @@ These are non-directional body ranges with corresponding shadow frames
 at the normal half-sheet offset. AP uses 3, whose flying-death behavior
 is separate; the placeholder `Die3=0,1,1` is not a supported death clip.
 
-Explicit selectors 1 and 2 use these unit-sheet clips. Selectors 5 and 7 use
-the separate generic ELECTRO and NUKEDIE sheets, documented in
-`docs/formats/effects.md`.
+Explicit selectors 1 and 2 use these unit-sheet clips. Selectors 5, 6, 7 and 8
+use the separate generic ELECTRO, YURIDIE, NUKEDIE and VIRUSD sheets,
+documented in `docs/formats/effects.md`.
 The fatal positive health transition emits `FatalHit` with the actual shot origin and victim
 type, position, facing and owner at that hit. The app associates it with
 the later `Died` event, including victims spawned or reassigned during

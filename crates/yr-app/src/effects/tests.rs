@@ -26,6 +26,8 @@ fn retail_infantry_deaths_use_lethal_weapon_after_saved_flight_and_shooter_loss(
         ("SuperPsiWave", Some(6)),
         ("RadBeamWeapon", Some(7)),
         ("RadEruptionWeapon", Some(7)),
+        ("Virusgun", Some(8)),
+        ("VirusgunE", Some(8)),
         ("105mm", None),
     ] {
         session.sim = yr_sim::Sim::new(42);
