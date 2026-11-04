@@ -1050,7 +1050,61 @@ impl Session {
         })
     }
 
-    /// Cancel the newest queued build of sidebar slot `slot`.
+    /// The current factory head for this slot, if any.
+    pub fn slot_head(&self, slot: usize) -> Option<&yr_sim::BuildOrder> {
+        let b = self.buildables.get(slot)?;
+        self.sim
+            .production()
+            .iter()
+            .find(|o| o.factory == b.factory)
+            .filter(|o| usize::from(o.kind) == slot)
+    }
+
+    /// Manual production controls: left resumes held work before queuing;
+    /// right suspends the unfinished head, then cancels on a second click.
+    /// Waiting types and ready structures can be cancelled immediately.
+    pub fn production_click(
+        &self,
+        slot: usize,
+        right: bool,
+        pending: &[Command],
+    ) -> Option<Command> {
+        let b = self.buildables.get(slot)?;
+        let queue = self.sim.production_with_pending(pending);
+        if let Some(head) = queue
+            .iter()
+            .find(|o| o.factory == b.factory)
+            .filter(|o| usize::from(o.kind) == slot && !o.done())
+        {
+            if head.held != right {
+                return Some(Command::HoldProduce {
+                    factory: head.factory,
+                    kind: head.kind,
+                    held: right,
+                });
+            }
+        }
+        if right {
+            self.cancel(slot)
+        } else {
+            if b.factory == Factory::Building && queue.iter().any(|o| o.factory == b.factory) {
+                return None;
+            }
+            // The pending preview already checked construction occupancy.
+            if !self.prerequisites_met(slot) {
+                return None;
+            }
+            Some(Command::Produce {
+                factory: b.factory,
+                kind: u16::try_from(slot).ok()?,
+                product: b.product,
+                cost: b.cost,
+                ticks: b.ticks,
+            })
+        }
+    }
+
+    /// Cancel a held head, otherwise the newest matching queued build.
     pub fn cancel(&self, slot: usize) -> Option<Command> {
         let b = self.buildables.get(slot)?;
         Some(Command::CancelProduce {

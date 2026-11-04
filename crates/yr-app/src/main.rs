@@ -7,7 +7,7 @@
 //! Shift+number adds a team; right-drag / arrows pan, wheel or +/- zoom,
 //! K toggles repair, L toggles sell, M toggles audio, F5 saves, F9 loads, Esc pauses. Sidebar tabs select a category.
 //! Left-click a cameo to queue it at the
-//! war factory/barracks/construction yard, right-click cancels (refund). A finished
+//! war factory/barracks/construction yard, right-click holds, then cancels (refund). A finished
 //! structure (green outline) is placed by clicking its cameo, then a map cell under a
 //! green ghost; right-click or Esc backs out of placement (issue #46). Orders go through
 //! `yr_sim::Command` only, the UI never mutates sim state directly (issue #15).
@@ -20,6 +20,8 @@ mod front_flow;
 mod launcher;
 mod menu_flow;
 mod order_feedback;
+#[cfg(test)]
+mod production_tests;
 
 use pixels::{Pixels, SurfaceTexture};
 use std::collections::BTreeSet;
@@ -501,7 +503,7 @@ impl App {
     }
 
     /// Left-click on a cameo: start placing a finished structure, else
-    /// queue the slot.
+    /// resume held work or queue the slot.
     fn sidebar_click(&mut self, slot: usize) {
         self.order_feedback.clear();
         self.service_mode = ServiceMode::None;
@@ -510,9 +512,25 @@ impl App {
         };
         if session.ready_structure() == Some(slot) {
             self.placing = Some(slot);
-        } else if let Some(cmd) = session.produce(slot) {
+        } else if let Some(cmd) = session.production_click(slot, false, &self.pending) {
             self.pending.push(cmd);
         }
+    }
+
+    fn sidebar_right_click(&mut self, slot: usize) {
+        self.order_feedback.clear();
+        self.service_mode = ServiceMode::None;
+        if self.placing == Some(slot) {
+            self.placing = None;
+        }
+        if let Some(cmd) = self
+            .session
+            .as_ref()
+            .and_then(|s| s.production_click(slot, true, &self.pending))
+        {
+            self.pending.push(cmd);
+        }
+        self.view.dirty = true;
     }
 
     /// Sidebar slot under a frame-space position.
@@ -1308,7 +1326,7 @@ impl ApplicationHandler for App {
                 return;
             }
         }
-        println!("OpenYR: left-click select/order, box select, Ctrl+1-9=assign team, 1-9=recall (twice=center), Shift+number=add team, right-click cancel, A=attack-move, S=stop, H=harvest, K=repair, L=sell, M=mute, F5=save, F9=load, Esc=pause, right-drag/arrows pan, wheel zoom; sidebar: left-click build or place a ready structure, right-click cancel");
+        println!("OpenYR: left-click select/order, box select, Ctrl+1-9=assign team, 1-9=recall (twice=center), Shift+number=add team, right-click cancel, A=attack-move, S=stop, H=harvest, K=repair, L=sell, M=mute, F5=save, F9=load, Esc=pause, right-drag/arrows pan, wheel zoom; sidebar: left-click build or place a ready structure, right-click hold/cancel");
         window.request_redraw();
         self.window = Some(window);
         self.pixels = Some(pixels);
@@ -1396,12 +1414,7 @@ impl ApplicationHandler for App {
                         self.view.dirty = true;
                     }
                     if let Some(slot) = self.sidebar_slot_at(self.cursor) {
-                        if self.placing == Some(slot) {
-                            self.placing = None;
-                        }
-                        if let Some(cmd) = self.session.as_ref().and_then(|s| s.cancel(slot)) {
-                            self.pending.push(cmd);
-                        }
+                        self.sidebar_right_click(slot);
                     }
                 }
                 (MouseButton::Right, ElementState::Pressed)

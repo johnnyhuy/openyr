@@ -210,6 +210,20 @@ pub(crate) fn state(sim: &crate::Sim) -> u64 {
             h.write_i64(job.remainder);
         }
     }
+    // Preserve historical hashes when no queue is explicitly suspended.
+    if sim
+        .economies
+        .values()
+        .any(|e| e.production.iter().any(|o| o.held))
+    {
+        h.write_u64(0x484f4c44);
+        for (&owner, e) in &sim.economies {
+            for (index, _) in e.production.iter().enumerate().filter(|(_, o)| o.held) {
+                h.write_u64(u64::from(owner));
+                h.write_u64(index as u64);
+            }
+        }
+    }
     h.finish()
 }
 

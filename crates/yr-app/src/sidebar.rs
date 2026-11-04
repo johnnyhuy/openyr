@@ -233,6 +233,17 @@ pub fn draw(
             };
             canvas.text((sx + 2, y), &count.to_string(), TEXT, 6);
         }
+        if session.slot_head(slot).is_some_and(|o| o.held) {
+            canvas.rect((sx + 2, sy + 17), (56, 15), [0, 0, 0, 255]);
+            let label = "ON HOLD";
+            let x = sx + (SLOT_W - canvas.face.width(label)) / 2;
+            let y = if canvas.face.0.is_some() {
+                sy + 16
+            } else {
+                sy + 20
+            };
+            canvas.text((x, y), label, GOLD, 7);
+        }
         if ready == Some(slot) {
             canvas.rect((sx + 6, sy + 17), (48, 13), [0, 0, 0, 255]);
             let x = sx + (SLOT_W - canvas.face.width("READY")) / 2;
@@ -268,6 +279,14 @@ pub fn draw_tooltip(
         let buildable = &session.buildables[slot];
         let mut lines = face.name_lines(&buildable.name);
         lines.push(format!("${} {}", buildable.cost, duration(buildable.ticks)));
+        if let Some(head) = session.slot_head(slot).filter(|o| !o.done()) {
+            if head.held {
+                lines.push("Left-click to resume".into());
+                lines.push("Right-click to cancel".into());
+            } else {
+                lines.push("Right-click to hold".into());
+            }
+        }
         lines
     } else {
         return;

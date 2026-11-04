@@ -49,6 +49,7 @@ impl SkirmishAi {
                 ticks: b.ticks,
                 progress: 0,
                 paid: 0,
+                held: false,
             })?;
         }
         Ok(())

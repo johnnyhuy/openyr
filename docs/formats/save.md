@@ -174,3 +174,17 @@ private path/attack/harvest state, RNG continuation, queued events,
 hostile terrain dimensions and truncated headers.
 
 Saves and proof captures contain derived retail data. Do not commit them.
+
+## Held production
+
+Simulation version 4 adds optional `held: true` on a suspended build order.
+False flags are omitted, preserving the legacy setup fingerprint bytes.
+Versions 1-3 load absent flags as false. The flag is a JSON boolean;
+non-boolean values and held completed orders fail validation. The match
+wrapper version and setup compatibility key are unchanged.
+
+A held order retains paid credits and fixed-point progress. Saving/loading
+cannot resume it; explicit resume or cancellation is required. Hashing adds
+a tagged owner/queue-index suffix only when a held order exists, preserving
+historical hashes for matches that never hold production. Simulation tests
+compare uninterrupted and reloaded ticks, events, refunds and rollout.
