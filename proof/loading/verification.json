@@ -1,0 +1,34 @@
+{
+  "commit": "714930589b001be7b5e0d0dd1b860febbb21489f",
+  "base": "a796e700180ea89a1c9673f8cbb8bb1536adf2ba",
+  "test_totals": {
+    "passed": 386,
+    "failed": 0,
+    "ignored": 1
+  },
+  "archive_count": 16,
+  "archive_parser_errors": 0,
+  "headless_match": {
+    "outcome": "Lost",
+    "first_result_tick": 5767,
+    "final_tick": 6000,
+    "hash": "752f3f10fc2821e5"
+  },
+  "live_capture": {
+    "seconds": 8,
+    "fps": 60,
+    "display": "Xorg dummy 1280x800",
+    "actions": [
+      "Single Player",
+      "Skirmish",
+      "Start"
+    ],
+    "result": "native match entered"
+  },
+  "limits": [
+    "Original game did not produce a usable Wine window.",
+    "Original text and bar geometry/timing remain uncalibrated.",
+    "macOS/Retina and live audio output not tested."
+  ],
+  "tested_tree": "73421c68413bf24abccc2ecf5e519d383d8f4ae9"
+}
