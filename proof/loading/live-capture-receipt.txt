@@ -1,6 +1,0 @@
-live-01-main.png colors 6265
-live-02-single-player.png colors 6496
-live-03-skirmish.png colors 757
-live-04-after-start.png colors 388
-live-05-match.png colors 1483
-Live X11 screenshot and 60 fps start-flow capture succeeded.

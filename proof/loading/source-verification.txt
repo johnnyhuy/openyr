@@ -1,4 +1,0 @@
-Country panel: 98908 pixels, FNV-1a 97061e52e7661e85
-SHP SHA256: d1f01f393ae5abc1840093899c2353e3aca4b221678c213004adc7d0a6eb5b6c
-PAL SHA256: a9e530e442a886cc8a82c978b0a97a58991508a16e9ecb979f25bb55e6cd9d47
-Source art comparison only. Original runtime layout and timing are not established.
