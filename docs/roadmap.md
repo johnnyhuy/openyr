@@ -124,6 +124,13 @@ Johnny on 2026-10-31.
       and unchanged sim/save bytes are checked. Flying fragments, original
       timing/lighting, crater/scorch and reports remain unverified
       (`docs/formats/effects.md`).
+- [x] Initial stationary human infantry burn collapse (#102, #194): lethal
+      `InfDeath=4` resolves `[General] FlamingInfantry` to retail FLAMEGUY.
+      Bounded layout validation separates eight running groups and the
+      trailing half from the 60-frame collapse. Source canvases, eligibility,
+      expiry, overrides, saved lethal provenance and unchanged sim/save bytes
+      are checked. Running motion, original timing, palette lighting, shadows
+      and reports remain unverified (`docs/formats/effects.md`).
 - [x] Map parsing: LZO/IsoMapPack5 + overlay packs, all 234 retail maps
       (`docs/formats/map.md`); tile-set index maps tile numbers to TMPs
 - [x] TMP terrain rendering from real maps as PNG (`mix-dump render-map`;

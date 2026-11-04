@@ -323,6 +323,95 @@ fn retail_nuke_melt_frames_match_source_and_expire() {
 }
 
 #[test]
+fn flaming_collapse_layout_rejects_invalid_or_overflowing_ranges() {
+    let dir = std::env::temp_dir().join(format!("openyr-flaming-bounds-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    for count in [19u16, 20] {
+        // Complete empty-frame tables keep this independent of pixel decoding.
+        let mut bytes = Vec::new();
+        for n in [0u16, 2, 2, count] {
+            bytes.extend(n.to_le_bytes());
+        }
+        bytes.resize(8 + usize::from(count) * 24, 0);
+        std::fs::write(dir.join("SAFE.SHP"), bytes).unwrap();
+        let fs = AssetFs::open(&dir).unwrap();
+        for (options, valid) in [
+            ("RunningFrames=1", true),
+            ("RunningFrames=1\nStart=9\nEnd=10", true),
+            ("", false),
+            ("RunningFrames=0", false),
+            ("RunningFrames=2", false),
+            ("RunningFrames=-1", false),
+            ("RunningFrames=invalid", false),
+            ("RunningFrames=18446744073709551615", false),
+            ("RunningFrames=1\nStart=7", false),
+            ("RunningFrames=1\nEnd=11", false),
+            ("RunningFrames=1\nLoopStart=7", false),
+            ("RunningFrames=1\nLoopEnd=11", false),
+        ] {
+            let art = IniFile::parse(&format!("[SAFE]\nIsFlamingGuy=true\n{options}"));
+            assert_eq!(
+                Clip::load(&fs, &art, "SAFE").is_some(),
+                valid && count == 20,
+                "count {count}, {options}"
+            );
+        }
+    }
+    std::fs::remove_dir_all(dir).unwrap();
+}
+
+#[test]
+fn retail_flaming_collapse_matches_every_source_frame_and_excludes_running_groups() {
+    let dir = PathBuf::from(std::env::var("HOME").unwrap())
+        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    if !dir.is_dir() {
+        return;
+    }
+    let fs = AssetFs::open(&dir).unwrap();
+    let mut art = IniFile::parse(&String::from_utf8_lossy(fs.read("ARTMD.INI").unwrap()));
+    let palette = Palette::parse(fs.read("ANIM.PAL").unwrap()).unwrap();
+    let shp = ShpFile::parse(fs.read("FLAMEGUY.SHP").unwrap()).unwrap();
+    assert_eq!((shp.width, shp.height, shp.frames.len()), (52, 102, 216));
+    assert_eq!(art.value("FLAMEGUY", "RunningFrames"), Some("6"));
+    assert!(shp.frames[108..].iter().all(|frame| frame.is_empty()));
+    let clip = Clip::load(&fs, &art, "FLAMEGUY").unwrap();
+    let mut effects = Effects::default();
+    for age in 0..=27 {
+        let frame = 48 + age * 500 / 225;
+        assert_eq!(clip.frame(age), (frame < 108).then_some(frame as usize));
+        assert_eq!(effects.alive(&fs, &art, "FLAMEGUY", age), age < 27);
+    }
+    assert!(!effects.alive(&fs, &art, "FLAMEGUY", u64::MAX));
+    // Slow only the test clock to visit every source canvas, including the
+    // frames skipped by Rate=500 at the native 15 Hz simulation cadence.
+    art.merge_from(&IniFile::parse("[FLAMEGUY]\nRate=225"));
+    let mut effects = Effects::default();
+    for frame in 48..108 {
+        let sprite = effects
+            .get(&fs, &art, "FLAMEGUY", (frame - 48) as u64)
+            .unwrap();
+        let expected: Vec<_> = shp
+            .decode_frame_canvas(frame)
+            .unwrap()
+            .into_iter()
+            .flat_map(|index| {
+                if index == 0 {
+                    [0; 4]
+                } else {
+                    palette.rgba(index)
+                }
+            })
+            .collect();
+        assert_eq!(
+            (sprite.w, sprite.h, sprite.ax, sprite.ay),
+            (52, 102, 26, 51)
+        );
+        assert!(sprite.rgba == expected, "FLAMEGUY source frame {frame}");
+    }
+    assert!(effects.get(&fs, &art, "FLAMEGUY", 60).is_none());
+}
+
+#[test]
 fn retail_infantry_explosion_frames_match_source_alpha_and_expire() {
     let dir = PathBuf::from(std::env::var("HOME").unwrap())
         .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");

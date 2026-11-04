@@ -123,7 +123,7 @@ at the normal half-sheet offset. AP uses 3; its initial generic explosion is doc
 `docs/formats/effects.md`. Flying fragments remain separate work, and the
 placeholder `Die3=0,1,1` is not a supported unit-sheet death clip.
 
-Explicit selectors 1 and 2 use these unit-sheet clips. Selectors 3, 5, 6, 7, 8
+Explicit selectors 1 and 2 use these unit-sheet clips. Selectors 3, 4, 5, 6, 7, 8
 and 10 use separate generic death sheets, documented in `docs/formats/effects.md`.
 The fatal positive health transition emits `FatalHit` with the actual shot origin and victim
 type, position, facing and owner at that hit. The app associates it with

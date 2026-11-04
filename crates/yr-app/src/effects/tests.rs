@@ -32,6 +32,8 @@ fn retail_infantry_deaths_use_lethal_weapon_after_saved_flight_and_shooter_loss(
         ("PunchE", Some(10)),
         ("105mm", Some(3)),
         ("120mm", Some(3)),
+        ("PsychicJab", Some(4)),
+        ("MirageGun", Some(4)),
     ] {
         session.sim = yr_sim::Sim::new(42);
         let mut spec = yr_sim::WeaponSpec::from_rules(&rules, weapon).unwrap();

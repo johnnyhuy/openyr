@@ -330,6 +330,7 @@ impl SpriteBank {
         }
         match sequence {
             3 => self.rules_ini.section("General")?.get("InfantryExplode"),
+            4 => self.rules_ini.section("General")?.get("FlamingInfantry"),
             5 => Some("ELECTRO"),
             6 => self.rules_ini.section("General")?.get("InfantryHeadPop"),
             7 => Some("NUKEDIE"),
@@ -722,7 +723,7 @@ mod tests {
         assert!(!bank.infantry_death_alive("E1", 5, 31));
         assert!(!bank.infantry_death_alive("E1", 5, u64::MAX));
         assert_eq!(bank.infantry_death_sequence("E1", 0), None);
-        for selector in [0, 4, 9, u8::MAX] {
+        for selector in [0, 9, u8::MAX] {
             assert!(bank
                 .get_infantry_death("E1", selector, 0, [0; 3], 0)
                 .is_none());
@@ -916,6 +917,74 @@ mod tests {
             bank.effects = Default::default();
             assert_eq!(bank.infantry_death_sequence("E1", source), None);
             assert!(bank.get_infantry_death("E1", 3, 0, [0; 3], 0).is_none());
+            assert!(bank.get_infantry_death("E1", 1, 0, [0; 3], 0).is_some());
+        }
+    }
+
+    #[test]
+    fn retail_burn_deaths_use_general_art_for_human_lethal_hits() {
+        let dir = std::path::PathBuf::from(std::env::var("HOME").unwrap())
+            .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+        if !dir.is_dir() {
+            return;
+        }
+        let mut bank = SpriteBank::open(dir.to_str().unwrap(), "EB1.MMX").unwrap();
+        for weapon in ["PsychicJab", "PsychicJabE", "MirageGun", "MirageGunE"] {
+            let source = bank.rules.weapons.get(weapon).expect(weapon).source_id();
+            for kind in ["E1", "GGI", "SHK"] {
+                assert_eq!(bank.infantry_death_sequence(kind, source), Some(4));
+            }
+            for kind in ["DOG", "COW", "MTNK", "SHAD", "GAPOWR", "MISSING"] {
+                assert_eq!(bank.infantry_death_sequence(kind, source), None, "{kind}");
+                assert!(bank.get_infantry_death(kind, 4, 0, [0; 3], 0).is_none());
+            }
+        }
+        let first = bank
+            .get_infantry_death("E1", 4, 0, [255, 0, 0], 8)
+            .unwrap()
+            .rgba
+            .clone();
+        assert!(
+            first
+                == bank
+                    .get_infantry_death("GGI", 4, 128, [0, 0, 255], 8)
+                    .unwrap()
+                    .rgba,
+            "generic burn collapse ignores facing and remap"
+        );
+        assert!(bank.infantry_death_alive("E1", 4, 26));
+        assert!(!bank.infantry_death_alive("E1", 4, 27));
+        assert!(!bank.infantry_death_alive("E1", 4, u64::MAX));
+        let source = bank.rules.weapons.get("PsychicJab").unwrap().source_id();
+        let original = bank.rules_ini.clone();
+        // The general setting is authoritative, including optional overrides.
+        bank.rules_ini
+            .merge_from(&IniFile::parse("[General]\nFlamingInfantry=ELECTRO"));
+        let expected = bank.get_effect("ELECTRO", 8).unwrap().rgba.clone();
+        assert!(bank.get_infantry_death("E1", 4, 0, [0; 3], 8).unwrap().rgba == expected);
+        for invalid in ["", "MISSING", "../../unsafe"] {
+            bank.rules_ini = original.clone();
+            bank.rules_ini.merge_from(&IniFile::parse(&format!(
+                "[General]\nFlamingInfantry={invalid}"
+            )));
+            assert_eq!(bank.infantry_death_sequence("E1", source), None);
+        }
+        bank.rules_ini = original.clone();
+        bank.rules_ini
+            .sections
+            .iter_mut()
+            .find(|section| section.name.eq_ignore_ascii_case("General"))
+            .unwrap()
+            .entries
+            .retain(|(key, _)| !key.eq_ignore_ascii_case("FlamingInfantry"));
+        assert_eq!(bank.infantry_death_sequence("E1", source), None);
+        assert!(bank.get_infantry_death("E1", 4, 0, [0; 3], 0).is_none());
+        bank.rules_ini = original;
+        for malformed in ["[FLAMEGUY]\nImage=../../unsafe", "[FLAMEGUY]\nRate=0"] {
+            bank.art_ini = IniFile::parse(malformed);
+            bank.effects = Default::default();
+            assert_eq!(bank.infantry_death_sequence("E1", source), None);
+            assert!(bank.get_infantry_death("E1", 4, 0, [0; 3], 0).is_none());
             assert!(bank.get_infantry_death("E1", 1, 0, [0; 3], 0).is_some());
         }
     }

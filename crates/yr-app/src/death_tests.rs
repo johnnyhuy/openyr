@@ -48,7 +48,7 @@ fn retail_infantry_death_composition_proof() {
     session.sim.drain_events();
     // The Allied sandbox does not offer these infantry. Register the retail
     // types only for the controlled special-death fatal-shot fixtures.
-    for kind in ["SHK", "DESO", "YURI", "VIRUS", "BRUTE"] {
+    for kind in ["SHK", "DESO", "YURI", "VIRUS", "BRUTE", "INIT"] {
         if !session.kinds.iter().any(|registered| registered == kind) {
             session.kinds.push(kind.into());
         }
@@ -67,6 +67,7 @@ fn retail_infantry_death_composition_proof() {
         ("M60", "E1", 1, 36),
         ("HoverMissile", "FV", 2, 36),
         ("105mm", "MTNK", 3, 18),
+        ("PsychicJab", "INIT", 4, 32),
         ("ElectricBolt", "SHK", 5, 36),
         ("RadBeamWeapon", "DESO", 7, 72),
         ("PsiWave", "YURI", 6, 36),
