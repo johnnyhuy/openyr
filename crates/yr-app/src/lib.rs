@@ -6,6 +6,7 @@ pub mod audio;
 pub mod cursor;
 pub mod effects;
 pub mod interaction;
+pub mod loading;
 mod localization;
 pub mod menu;
 mod service;

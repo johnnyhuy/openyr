@@ -486,6 +486,20 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       confirmation before discarding a match. Pausing stops sim ticks without
       catch-up on resume; modal input never reaches map commands. Preserve
       explicit CLI/headless launches and prove each menu state on its PR.
+- [x] Improve native start-flow loading within #96: prepare the sprite bank
+      on the worker, show map/save names and actual loading stages, and queue
+      an immediate retry behind cancelled work. Cancel removes queued retries;
+      stale updates cannot replace the active page. First Tab on Main Menu
+      reaches Single Player. Retail handler captures and controlled worker
+      regressions cover these native behaviors; physical desktop checks remain.
+- [x] Use retail American country loading artwork and the selected map preview
+      for initial match and saved-match loading (#199). Saved-map preview updates
+      follow the active worker and cannot reuse a different map's thumbnail.
+      Country-map source pixels, scaled cancel controls, missing-art recovery
+      and stage captures are checked on Linux and macOS. Retail EB1 reaches
+      the same tick-6000 hash on both platforms. macOS display capture remains
+      permission-blocked. Exact original text, bar geometry and timing remain
+      uncalibrated within #96.
 - [x] Account for terrain lift when centering world/radar camera targets (#129).
       Shared ground projection keeps targets at the world viewport center
       across supported scales/zooms and three layouts; click/box selection,

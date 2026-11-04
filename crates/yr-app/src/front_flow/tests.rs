@@ -1,5 +1,14 @@
 use super::*;
 use yr_app::menu::{Button, Layout};
+fn retail_directory() -> PathBuf {
+    std::env::var_os("OPENYR_GAMEDIR").map_or_else(
+        || {
+            PathBuf::from(std::env::var("HOME").unwrap_or_default())
+                .join("Games/RA2YR/prefix/drive_c/Westwood/RA2")
+        },
+        PathBuf::from,
+    )
+}
 fn click(app: &mut App, button: Button) {
     let i = app
         .menu
@@ -79,10 +88,66 @@ fn proof(app: &App, name: &str) {
 }
 
 #[test]
+fn retail_main_menu_cancel_and_immediate_retry_enters_the_requested_match() {
+    use yr_app::menu::LoadStage;
+    let directory = retail_directory();
+    if !directory.is_dir() {
+        return;
+    }
+    let mut app = new_app(directory.to_string_lossy().into(), "EB1.MMX".into(), 1);
+    app.enter_front();
+    app.menu_key_code(KeyCode::Tab, None, false);
+    assert_eq!(app.menu.buttons()[app.menu.focus].0, Button::SinglePlayer);
+    proof(&app, "retry-00-main-keyboard-focus");
+    app.menu_key_code(KeyCode::Enter, None, false);
+    assert_eq!(app.menu.page, Page::SinglePlayer);
+    click(&mut app, Button::Skirmish);
+    assert_eq!(app.menu.loading.stage, LoadStage::Preview);
+    proof(&app, "retry-01-preview-loading");
+    click(&mut app, Button::Back);
+    click(&mut app, Button::Skirmish);
+    assert_eq!(app.menu.page, Page::Loading);
+    assert_eq!(app.menu.loading.stage, LoadStage::Waiting);
+    proof(&app, "retry-02-preview-waiting");
+    wait(&mut app);
+    assert_eq!(app.menu.page, Page::Skirmish);
+    assert!(app.session.is_none());
+    proof(&app, "retry-03-skirmish");
+    click(&mut app, Button::Start);
+    click(&mut app, Button::Back);
+    assert_eq!(app.menu.page, Page::Skirmish);
+    app.menu
+        .setup
+        .set(yr_app::menu::setup::Field::Credits, 7000);
+    click(&mut app, Button::Start);
+    assert_eq!(app.menu.loading.stage, LoadStage::Waiting);
+    proof(&app, "retry-04-match-waiting");
+    let deadline = Instant::now() + Duration::from_secs(180);
+    let mut last_stage = None;
+    while app.load_job.is_some() {
+        app.poll_menu_load();
+        if app.menu.page == Page::Loading && last_stage != Some(app.menu.loading.stage) {
+            last_stage = Some(app.menu.loading.stage);
+            proof(&app, &format!("retry-05-{:?}", app.menu.loading.stage));
+            // Loading still accepts keyboard navigation and cancel input.
+            app.menu_key_code(KeyCode::Tab, None, false);
+            assert!(app.session.is_none());
+        }
+        assert!(Instant::now() < deadline);
+        std::thread::sleep(Duration::from_millis(5));
+    }
+    assert_eq!(app.menu.page, Page::Closed);
+    assert!(!app.menu.front && app.sprites.is_some());
+    let session = app.session.as_ref().unwrap();
+    assert_eq!(session.sim.credits(), 7000);
+    assert_eq!(session.sim.tick(), 1);
+    proof(&app, "retry-06-started-match");
+}
+
+#[test]
 fn retail_skirmish_settings_start_save_restore_and_restart_both_participants() {
     use yr_app::{menu::setup::Field, session::StartOptions};
-    let directory = PathBuf::from(std::env::var("HOME").unwrap_or_default())
-        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    let directory = retail_directory();
     if !directory.is_dir() {
         return;
     }
@@ -255,8 +320,7 @@ fn retail_skirmish_settings_start_save_restore_and_restart_both_participants() {
 
 #[test]
 fn retail_front_recovery_messages_wrap_scroll_and_return_through_actual_handlers() {
-    let dir = PathBuf::from(std::env::var("HOME").unwrap_or_default())
-        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    let dir = retail_directory();
     if !dir.is_dir() {
         return;
     }
@@ -318,8 +382,7 @@ fn retail_front_recovery_messages_wrap_scroll_and_return_through_actual_handlers
 
 #[test]
 fn retail_battle_map_chooser_previews_cancels_and_commits_the_selected_map() {
-    let directory = PathBuf::from(std::env::var("HOME").unwrap_or_default())
-        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    let directory = retail_directory();
     if !directory.is_dir() {
         return;
     }
@@ -464,8 +527,7 @@ fn retail_battle_map_chooser_previews_cancels_and_commits_the_selected_map() {
 
 #[test]
 fn retail_front_menu_restores_the_saved_map_instead_of_the_default() {
-    let dir = PathBuf::from(std::env::var("HOME").unwrap_or_default())
-        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    let dir = retail_directory();
     if !dir.is_dir() {
         return;
     }
@@ -583,8 +645,7 @@ fn retail_front_menu_restores_the_saved_map_instead_of_the_default() {
 
 #[test]
 fn retail_front_art_reload_replaces_cached_pause_menu_art() {
-    let dir = PathBuf::from(std::env::var("HOME").unwrap_or_default())
-        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    let dir = retail_directory();
     if !dir.is_dir() {
         eprintln!("skip: retail install not present");
         return;
@@ -614,8 +675,7 @@ fn retail_front_art_reload_replaces_cached_pause_menu_art() {
 }
 #[test]
 fn retail_front_menu_preview_start_save_return_load_cancel_options_and_exit() {
-    let dir = PathBuf::from(std::env::var("HOME").unwrap_or_default())
-        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    let dir = retail_directory();
     if !dir.is_dir() {
         eprintln!("skip: retail install not present");
         return;
@@ -793,8 +853,7 @@ fn initial_camera_center_excludes_the_sidebar_and_accounts_for_zoom() {
 
 #[test]
 fn retail_skirmish_heading_tracks_dialog_refreshes() {
-    let directory = PathBuf::from(std::env::var("HOME").unwrap_or_default())
-        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    let directory = retail_directory();
     if !directory.is_dir() {
         return;
     }

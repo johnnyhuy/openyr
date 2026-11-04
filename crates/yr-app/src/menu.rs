@@ -35,6 +35,36 @@ pub enum Intent {
     Delete(PathBuf),
 }
 
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum LoadStage {
+    Waiting,
+    Preview,
+    #[default]
+    Session,
+    Terrain,
+    Artwork,
+}
+
+impl LoadStage {
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Waiting => "Finishing the cancelled load...",
+            Self::Preview => "Loading map preview...",
+            Self::Session => "Preparing the match...",
+            Self::Terrain => "Loading terrain...",
+            Self::Artwork => "Loading unit and building artwork...",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct LoadStatus {
+    pub name: String,
+    pub stage: LoadStage,
+    pub map_name: String,
+    pub battle: bool,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Button {
     SinglePlayer,
@@ -114,6 +144,7 @@ pub struct State {
     pub maps: maps::MapList,
     pub setup: setup::Setup,
     pub heading_refreshed: bool,
+    pub loading: LoadStatus,
 }
 
 impl Default for State {
@@ -136,6 +167,7 @@ impl Default for State {
             maps: Default::default(),
             setup: Default::default(),
             heading_refreshed: false,
+            loading: LoadStatus::default(),
         }
     }
 }
@@ -302,6 +334,17 @@ impl State {
         }
         let n = buttons.len();
         if n == 0 {
+            return;
+        }
+        if self.front && matches!(self.page, Page::Main | Page::SinglePlayer) && !had_focus {
+            let first = if delta >= 0 {
+                buttons.iter().position(|button| button.1)
+            } else {
+                buttons.iter().rposition(|button| button.1)
+            };
+            if let Some(index) = first {
+                self.focus = index;
+            }
             return;
         }
         for _ in 0..n {
@@ -543,6 +586,7 @@ pub struct Layout {
     pub scale: f64,
     pub origin: (f64, f64),
     pub front: bool,
+    battle_loading: bool,
 }
 impl Layout {
     pub fn new(width: u32, height: u32) -> Self {
@@ -558,6 +602,7 @@ impl Layout {
             .min(1.0);
         Self {
             front: false,
+            battle_loading: false,
             width: w,
             height: h,
             scale,
@@ -568,7 +613,8 @@ impl Layout {
         }
     }
     pub fn for_state(state: &State, width: u32, height: u32) -> Self {
-        if !state.front {
+        let battle_loading = state.page == Page::Loading && state.loading.battle;
+        if !state.front && !battle_loading {
             return Self::new(width, height);
         }
         let scale = (f64::from(width) / 800.0)
@@ -583,6 +629,7 @@ impl Layout {
                 (f64::from(height) - 600.0 * scale) / 2.0,
             ),
             front: true,
+            battle_loading,
         }
     }
     pub fn local(self, pos: (f64, f64)) -> Option<(i32, i32)> {
@@ -597,6 +644,9 @@ impl Layout {
             .then_some((p.0.floor() as i32, p.1.floor() as i32))
     }
     pub fn button(self, index: usize, button: Button) -> (i32, i32, i32, i32) {
+        if self.battle_loading {
+            return (16, 568, 160, 25);
+        }
         if self.front {
             let y = if matches!(button, Button::MainMenu | Button::Back | Button::Quit) {
                 535

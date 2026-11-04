@@ -145,13 +145,37 @@ and unloading loop; its presence does not imply those abilities work.
 
 One loader handles preview and replacement-match jobs. It keeps the current
 page's return route, shows loading, retains the old match until successful
-replacement, and ignores cancelled results. Starting a match drops the movie,
+replacement, and ignores cancelled results. Its worker prepares the session,
+terrain and sprite bank before committing the replacement. Preview loading
+shows the selected map and current stage. Match loading uses the retail
+American country screen, the selected map thumbnail and preparation bars;
+see [loading-screen.md](loading-screen.md) for asset evidence and calibration
+limits. The bars represent completed stages, not elapsed time or network peers.
+Back/Escape requests cancellation; the
+worker checks that request before each stage. An immediate retry captures its
+map and setup and waits for that worker to stop. Cancelling again removes the
+queued retry. Stale progress and results cannot replace the active screen.
+Starting a match drops the movie,
 preview and front art, and clears held modifiers (#115). Return-to-menu drops
 the match, queued input and old
 presentation. Abort requires an explicit discard choice. Won/Lost screens
 also offer Main Menu. Front loading failures keep the front context and a
 usable route back. A movie failure can be dismissed while the other controls
 remain usable.
+
+The first Tab on Main Menu selects Single Player, and the first Shift+Tab
+selects Exit. Further navigation skips disabled actions. Single Player uses
+the same first-focus rule. These are native keyboard navigation choices.
+
+Front-flow tests accept `OPENYR_GAMEDIR` for a supplied retail install, falling
+back to the standard macOS folder. Set `OPENYR_FRONT_PROOF` to an external
+directory to capture the menu, preview, loading stages and resulting match.
+The cancel/retry regression drives the shared mouse and keyboard handlers,
+checks the requested credits after start, and verifies that the sprite bank
+is ready when loading ends. Synthetic worker tests hold completion so queued
+cancellation, captured setup, stale progress and recovery routes are checked
+without timing assumptions. Physical window input and live audio output are
+not covered by these compositor captures.
 
 Native startup and
 load center the world viewport using its actual zoom, excluding the sidebar
