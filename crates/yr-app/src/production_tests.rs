@@ -42,7 +42,7 @@ fn retail_sidebar_holds_resumes_cancels_and_restores_paid_work() {
         (cx.raw() as f32 / 256.0, cy.raw() as f32 / 256.0),
         (WIN_W - SIDEBAR_W, WIN_H),
     );
-    app.sidebar_category = sidebar::Category::Vehicles;
+    app.sidebar_view.select(sidebar::Category::Vehicles);
     app.sidebar_click(tank);
     app.tick_session();
     for _ in 0..100 {
@@ -139,7 +139,7 @@ fn retail_sidebar_holds_resumes_cancels_and_restores_paid_work() {
     app.sidebar_right_click(tank);
     app.tick_session();
     // Construction uses the same hold/resume route before READY placement.
-    app.sidebar_category = sidebar::Category::Structures;
+    app.sidebar_view.select(sidebar::Category::Structures);
     app.sidebar_click(plant);
     app.sidebar_click(plant);
     assert_eq!(

@@ -22,6 +22,8 @@ mod menu_flow;
 mod order_feedback;
 #[cfg(test)]
 mod production_tests;
+#[cfg(test)]
+mod scrolling_tests;
 
 use pixels::{Pixels, SurfaceTexture};
 use std::collections::BTreeSet;
@@ -126,7 +128,7 @@ struct App {
     announced: bool,
     /// Sidebar slot of the finished structure being placed.
     placing: Option<usize>,
-    sidebar_category: Category,
+    sidebar_view: sidebar::View,
     service_mode: ServiceMode,
     load_path: Option<PathBuf>,
     save_path: PathBuf,
@@ -325,6 +327,7 @@ impl App {
     }
 
     fn cancel_pointer_action(&mut self) {
+        self.sidebar_view.clear_wheel();
         self.camera.edge_armed = false;
         self.menu.maps.drag = None;
         self.menu.setup.drag = None;
@@ -536,21 +539,100 @@ impl App {
     }
 
     /// Sidebar slot under a frame-space position.
-    fn sidebar_slot_at(&self, pos: (f64, f64)) -> Option<usize> {
-        let session = self.session.as_ref()?;
-        let fw = self.pixels.as_ref()?.texture().width();
+    fn sidebar_slot_at(&self, pos: (f64, f64), size: (u32, u32)) -> Option<usize> {
         sidebar::slot_at(
-            fw,
-            self.pixels.as_ref()?.texture().height(),
-            session,
-            self.sidebar_category,
+            size.0,
+            size.1,
+            self.session.as_ref()?,
+            self.sidebar_view,
             pos,
         )
+    }
+
+    fn sidebar_left_press(&mut self, size: (u32, u32)) {
+        if self.sidebar_scroll_click(size) {
+            return;
+        }
+        if let Some(mode) = self
+            .session
+            .as_ref()
+            .and_then(|s| sidebar::control_at(size.0, s, self.cursor))
+        {
+            self.toggle_service(mode);
+            return;
+        }
+        if let Some(cell) = self.radar_target(self.cursor) {
+            self.radar_click(cell);
+            return;
+        }
+        if let Some(category) = sidebar::tab_at(size.0, self.cursor) {
+            self.sidebar_view.select(category);
+            self.service_mode = ServiceMode::None;
+            self.placing = None;
+            self.view.dirty = true;
+        } else if let Some(slot) = self.sidebar_slot_at(self.cursor, size) {
+            self.sidebar_click(slot);
+        }
+    }
+
+    fn sidebar_right_press(&mut self, size: (u32, u32)) {
+        self.service_mode = ServiceMode::None;
+        if self.radar_target(self.cursor).is_some() {
+            self.selected.clear();
+            self.attack_move = false;
+            self.placing = None;
+            self.view.dirty = true;
+        }
+        if let Some(slot) = self.sidebar_slot_at(self.cursor, size) {
+            self.sidebar_right_click(slot);
+        }
     }
 
     fn in_sidebar(&self, pos: (f64, f64)) -> bool {
         let width = self.pixels.as_ref().map_or(WIN_W, |p| p.texture().width());
         pos.0 >= f64::from(width.saturating_sub(SIDEBAR_W))
+    }
+
+    fn sidebar_scroll_click(&mut self, size: (u32, u32)) -> bool {
+        let Some(session) = &self.session else {
+            return false;
+        };
+        let Some(rows) = self
+            .sidebar_view
+            .scroll_at(session, size.0, size.1, self.cursor)
+        else {
+            return false;
+        };
+        self.sidebar_view.scroll(session, size.1, rows);
+        self.view.dirty = true;
+        true
+    }
+
+    fn match_wheel(&mut self, delta: MouseScrollDelta, size: (u32, u32)) {
+        if !self.pointer.focused
+            || !self.pointer.inside
+            || self.menu.visible()
+            || self.left_down.is_some()
+            || self.right_down.is_some()
+            || self.radar_drag
+        {
+            return;
+        }
+        let rows = match delta {
+            MouseScrollDelta::LineDelta(_, y) => f64::from(y),
+            MouseScrollDelta::PixelDelta(p) => p.y / 50.0,
+        };
+        if !rows.is_finite() || rows == 0.0 {
+            return;
+        }
+        if self.cursor.0 >= f64::from(size.0.saturating_sub(SIDEBAR_W)) {
+            if let Some(session) = &self.session {
+                self.sidebar_view.wheel(session, size.1, -rows);
+            }
+        } else {
+            self.zoom_camera((self.view.zoom * (1.0 + rows as f32 * 0.1)).clamp(0.25, 4.0));
+        }
+        self.view.dirty = true;
     }
 
     fn tick_session(&mut self) {
@@ -1040,7 +1122,7 @@ impl App {
         }
         self.draw_order_marker(frame, (fw, fh), now);
         if let Some(session) = &self.session {
-            sidebar::draw(frame, fw, fh, session, self.sidebar_category, self.placing);
+            sidebar::draw(frame, fw, fh, session, self.sidebar_view, self.placing);
             sidebar::draw_controls(frame, fw, fh, session, self.service_mode);
             let corners = [
                 map.px_to_cell(self.view.cam_x, self.view.cam_y),
@@ -1050,7 +1132,7 @@ impl App {
                 ),
             ];
             session.radar.draw_viewport(frame, fw, fh, corners);
-            sidebar::draw_tooltip(frame, fw, fh, session, self.sidebar_category, self.cursor);
+            sidebar::draw_tooltip(frame, fw, fh, session, self.sidebar_view, self.cursor);
             if let Some(message) = self
                 .order_feedback
                 .message(now)
@@ -1404,45 +1486,10 @@ impl ApplicationHandler for App {
             }
             WindowEvent::MouseInput { state, button, .. } => match (button, state) {
                 (MouseButton::Left, ElementState::Pressed) if self.in_sidebar(self.cursor) => {
-                    let control =
-                        self.pixels
-                            .as_ref()
-                            .zip(self.session.as_ref())
-                            .and_then(|(p, s)| {
-                                sidebar::control_at(p.texture().width(), s, self.cursor)
-                            });
-                    if let Some(mode) = control {
-                        self.toggle_service(mode);
-                        return;
-                    }
-                    if let Some(cell) = self.radar_target(self.cursor) {
-                        self.radar_click(cell);
-                        return;
-                    }
-                    let tab = self
-                        .pixels
-                        .as_ref()
-                        .and_then(|p| sidebar::tab_at(p.texture().width(), self.cursor));
-                    if let Some(category) = tab {
-                        self.sidebar_category = category;
-                        self.service_mode = ServiceMode::None;
-                        self.placing = None;
-                        self.view.dirty = true;
-                    } else if let Some(slot) = self.sidebar_slot_at(self.cursor) {
-                        self.sidebar_click(slot);
-                    }
+                    self.sidebar_left_press(self.camera_size());
                 }
                 (MouseButton::Right, ElementState::Pressed) if self.in_sidebar(self.cursor) => {
-                    self.service_mode = ServiceMode::None;
-                    if self.radar_target(self.cursor).is_some() {
-                        self.selected.clear();
-                        self.attack_move = false;
-                        self.placing = None;
-                        self.view.dirty = true;
-                    }
-                    if let Some(slot) = self.sidebar_slot_at(self.cursor) {
-                        self.sidebar_right_click(slot);
-                    }
+                    self.sidebar_right_press(self.camera_size());
                 }
                 (MouseButton::Right, ElementState::Pressed)
                     if self.service_mode != ServiceMode::None =>
@@ -1532,12 +1579,7 @@ impl ApplicationHandler for App {
                 self.view.dirty = true;
             }
             WindowEvent::MouseWheel { delta, .. } => {
-                let d = match delta {
-                    MouseScrollDelta::LineDelta(_, y) => y,
-                    MouseScrollDelta::PixelDelta(p) => (p.y / 50.0) as f32,
-                };
-                self.zoom_camera((self.view.zoom * (1.0 + d * 0.1)).clamp(0.25, 4.0));
-                self.view.dirty = true;
+                self.match_wheel(delta, self.camera_size());
             }
             WindowEvent::KeyboardInput { event, .. } if self.menu.visible() => {
                 self.menu_key(&event)
@@ -1691,7 +1733,7 @@ fn new_app(gamedir: String, map_name: String, scale: u32) -> App {
         title: String::new(),
         announced: false,
         placing: None,
-        sidebar_category: Category::default(),
+        sidebar_view: Default::default(),
         service_mode: ServiceMode::None,
         load_path: None,
         save_path: yr_app::snapshot::quicksave_path(),
@@ -1900,7 +1942,7 @@ fn headless_frames(
             // Structures view keeps the existing proof filename.
             let out = format!("{dir}/frame-{t:05}.png");
             for category in Category::ALL {
-                app.sidebar_category = category;
+                app.sidebar_view.select(category);
                 app.compose(&mut frame, fw, fh);
                 let path = if category == Category::default() {
                     out.clone()
