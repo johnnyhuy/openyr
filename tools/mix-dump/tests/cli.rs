@@ -62,9 +62,10 @@ impl Drop for Fixture {
 }
 
 fn closed_stdout() -> Stdio {
-    let (reader, writer) = UnixStream::pair().unwrap();
+    // A closed pipe makes BrokenPipe independent of socket teardown timing.
+    let (reader, writer) = io::pipe().unwrap();
     drop(reader);
-    Stdio::from(OwnedFd::from(writer))
+    Stdio::from(writer)
 }
 
 fn assert_success(output: &Output) {
