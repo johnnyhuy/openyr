@@ -6,6 +6,50 @@ use yr_formats::{Palette, ShpFile};
 const WIDTH: usize = 55;
 const HEIGHT: usize = 43;
 
+/// Screen directions in the clockwise order of retail scroll canvases.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(u8)]
+pub enum Direction {
+    North,
+    NorthEast,
+    East,
+    SouthEast,
+    South,
+    SouthWest,
+    West,
+    NorthWest,
+}
+
+impl Direction {
+    pub const ALL: [Self; 8] = [
+        Self::North,
+        Self::NorthEast,
+        Self::East,
+        Self::SouthEast,
+        Self::South,
+        Self::SouthWest,
+        Self::West,
+        Self::NorthWest,
+    ];
+
+    pub fn axes(self) -> (i8, i8) {
+        match self {
+            Self::North => (0, -1),
+            Self::NorthEast => (1, -1),
+            Self::East => (1, 0),
+            Self::SouthEast => (1, 1),
+            Self::South => (0, 1),
+            Self::SouthWest => (-1, 1),
+            Self::West => (-1, 0),
+            Self::NorthWest => (-1, -1),
+        }
+    }
+
+    pub fn from_axes(x: i8, y: i8) -> Option<Self> {
+        Self::ALL.into_iter().find(|d| d.axes() == (x, y))
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Kind {
     Pointer,
@@ -18,10 +62,12 @@ pub enum Kind {
     NoRepair,
     Sell,
     NoSell,
+    /// True when both requested camera axes are blocked.
+    Scroll(Direction, bool),
 }
 
 impl Kind {
-    pub const ALL: [Self; 10] = [
+    pub const ALL: [Self; 26] = [
         Self::Pointer,
         Self::Select,
         Self::Move,
@@ -32,6 +78,22 @@ impl Kind {
         Self::NoRepair,
         Self::Sell,
         Self::NoSell,
+        Self::Scroll(Direction::North, false),
+        Self::Scroll(Direction::NorthEast, false),
+        Self::Scroll(Direction::East, false),
+        Self::Scroll(Direction::SouthEast, false),
+        Self::Scroll(Direction::South, false),
+        Self::Scroll(Direction::SouthWest, false),
+        Self::Scroll(Direction::West, false),
+        Self::Scroll(Direction::NorthWest, false),
+        Self::Scroll(Direction::North, true),
+        Self::Scroll(Direction::NorthEast, true),
+        Self::Scroll(Direction::East, true),
+        Self::Scroll(Direction::SouthEast, true),
+        Self::Scroll(Direction::South, true),
+        Self::Scroll(Direction::SouthWest, true),
+        Self::Scroll(Direction::West, true),
+        Self::Scroll(Direction::NorthWest, true),
     ];
 
     pub fn frames(self) -> (usize, usize) {
@@ -46,6 +108,9 @@ impl Kind {
             Self::NoRepair => (190, 1),
             Self::Sell => (129, 10),
             Self::NoSell => (149, 1),
+            Self::Scroll(direction, blocked) => {
+                (2 + direction as usize + usize::from(blocked) * 8, 1)
+            }
         }
     }
 
@@ -55,7 +120,12 @@ impl Kind {
     }
 
     pub fn hotspot(self) -> (i32, i32) {
-        if self == Self::Pointer {
+        if let Self::Scroll(direction, _) = self {
+            // Native inward placement keeps the whole canvas visible at an
+            // edge. Original scroll hotspots still require observation.
+            let (x, y) = direction.axes();
+            (27 + i32::from(x) * 27, 21 + i32::from(y) * 21)
+        } else if self == Self::Pointer {
             (0, 0)
         } else {
             (27, 21)

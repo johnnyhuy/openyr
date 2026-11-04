@@ -229,6 +229,177 @@ fn proof(app: &App, name: &str) {
     std::fs::write(dir.join(format!("{name}.json")), serde_json::to_vec_pretty(&serde_json::json!({
         "tick":app.session.as_ref().unwrap().sim.tick(), "hash":format!("{:016x}",app.session.as_ref().unwrap().sim.state_hash()),
         "camera":[app.view.cam_x,app.view.cam_y], "zoom":app.view.zoom, "edge_scroll":app.menu.edge_scroll,
-        "map_size":[app.map.as_ref().unwrap().width,app.map.as_ref().unwrap().height], "viewport":[WIN_W-SIDEBAR_W,WIN_H]
+        "map_size":[app.map.as_ref().unwrap().width,app.map.as_ref().unwrap().height], "viewport":[WIN_W-SIDEBAR_W,WIN_H],
+        "cursor_position":[app.cursor.0,app.cursor.1], "cursor_kind":format!("{:?}",app.cursor_kind((WIN_W, WIN_H)))
     })).unwrap()).unwrap();
+}
+
+#[test]
+fn scroll_directions_follow_bounds_for_every_zoom_and_viewport() {
+    let map = map(1600, 900);
+    for zoom in [0.25, 1.0, 1.25, 4.0] {
+        for viewport in [(1112, 800), (632, 600), (1592, 1000)] {
+            let mut view = View {
+                cam_x: 400.0,
+                cam_y: 300.0,
+                zoom,
+                dirty: false,
+            };
+            view.constrain(&map, viewport);
+            for requested in Direction::ALL {
+                let available = view.available_scroll(requested, &map, viewport);
+                let before = (view.cam_x, view.cam_y);
+                let mut moved = View { ..view };
+                if let Some(direction) = available {
+                    let (x, y) = direction.axes();
+                    moved.pan((f32::from(x), f32::from(y)), MAX_FRAME);
+                }
+                moved.constrain(&map, viewport);
+                let delta = (moved.cam_x - before.0, moved.cam_y - before.1);
+                let sign = |value: f32| match value.partial_cmp(&0.0).unwrap() {
+                    std::cmp::Ordering::Less => -1,
+                    std::cmp::Ordering::Equal => 0,
+                    std::cmp::Ordering::Greater => 1,
+                };
+                let actual = Direction::from_axes(sign(delta.0), sign(delta.1));
+                assert_eq!(available, actual, "{zoom} {viewport:?} {requested:?}");
+            }
+            view.cam_x = 0.0;
+            view.cam_y = 0.0;
+            view.constrain(&map, viewport);
+            assert_eq!(
+                view.available_scroll(Direction::NorthWest, &map, viewport),
+                None
+            );
+            assert_eq!(
+                view.available_scroll(Direction::NorthEast, &map, viewport),
+                ((viewport.0 as f32 / zoom) < map.width as f32).then_some(Direction::East)
+            );
+        }
+    }
+}
+
+#[test]
+fn retail_edge_cursors_share_motion_guards_and_preserve_match_bytes() {
+    let dir = PathBuf::from(std::env::var("HOME").unwrap_or_default())
+        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    if !dir.is_dir() {
+        return;
+    }
+    let mut app = new_app(dir.to_string_lossy().into(), "EB1.MMX".into(), 1);
+    app.session = Some(app.load_session().unwrap());
+    app.map = Some(yr_render::render_map(&app.gamedir, &app.map_name, 1).unwrap());
+    app.sprites = load_sprites(&app.gamedir, &app.map_name);
+    app.menu.edge_scroll = true;
+    app.pointer.inside = true;
+    app.camera.edge_armed = true;
+    let saved = yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap();
+    let size = (WIN_W, WIN_H);
+    let viewport = (size.0 - SIDEBAR_W, size.1);
+    let edge_point = |direction: Direction| {
+        let (x, y) = direction.axes();
+        let axis = |a: i8, extent: u32| match a {
+            -1 => 0.0,
+            1 => f64::from(extent - 1),
+            _ => f64::from(extent / 2),
+        };
+        (axis(x, viewport.0), axis(y, viewport.1))
+    };
+    for blocked in [false, true] {
+        for direction in Direction::ALL {
+            app.view.center_map(app.map.as_ref().unwrap(), viewport);
+            app.cursor = edge_point(direction);
+            if blocked {
+                let (x, y) = direction.axes();
+                app.view.cam_x = f32::from(x) * 100_000.0;
+                app.view.cam_y = f32::from(y) * 100_000.0;
+                app.bound_camera(size);
+            }
+            assert_eq!(app.cursor_kind(size), Kind::Scroll(direction, blocked));
+            // The actual live press/release handler cannot issue an edge order,
+            // place a structure or act on a repair/sale target under the arrow.
+            for mode in [ServiceMode::None, ServiceMode::Repair, ServiceMode::Sell] {
+                app.service_mode = mode;
+                app.placing = Some(0);
+                app.left_press();
+                app.left_release();
+                assert!(app.left_down.is_none() && app.pending.is_empty());
+                assert_eq!(app.placing, Some(0));
+            }
+            app.placing = None;
+            app.service_mode = ServiceMode::None;
+            app.menu.edge_scroll = false;
+            proof(
+                &app,
+                &format!("before-{direction:?}-blocked-{blocked}-tick1"),
+            );
+            app.menu.edge_scroll = true;
+            proof(
+                &app,
+                &format!("scroll-{direction:?}-blocked-{blocked}-tick1"),
+            );
+            let before = (app.view.cam_x, app.view.cam_y);
+            app.camera.frame_at = None;
+            let now = Instant::now();
+            app.update_camera(now, size);
+            app.update_camera(now + MAX_FRAME, size);
+            assert_eq!(before == (app.view.cam_x, app.view.cam_y), blocked);
+        }
+    }
+    app.view.cam_x = 100.0;
+    app.view.cam_y = 0.0;
+    app.cursor = edge_point(Direction::NorthEast);
+    assert_eq!(app.cursor_kind(size), Kind::Scroll(Direction::East, false));
+    proof(&app, "scroll-partial-corner-East-tick1");
+    let now = Instant::now();
+    app.camera.frame_at = None;
+    app.update_camera(now, size);
+    app.update_camera(now + MAX_FRAME, size);
+    assert!((app.view.cam_x - 160.0).abs() < 0.001);
+    assert_eq!(app.view.cam_y, 0.0);
+    // Once the pointer leaves the edge zone, ordinary press/selection resumes.
+    app.cursor = (400.0, 300.0);
+    assert!(app.edge_cursor(size).is_none());
+    app.left_press();
+    assert_eq!(app.left_down, Some(app.cursor));
+    app.cancel_pointer_action();
+    app.camera.edge_armed = true;
+    app.view.center_map(app.map.as_ref().unwrap(), viewport);
+    app.cursor = edge_point(Direction::East);
+    for guard in 0..13 {
+        app.left_down = (guard == 0).then_some(app.cursor);
+        app.right_down = (guard == 1).then_some(app.cursor);
+        app.right_panning = guard == 2;
+        app.radar_drag = guard == 3;
+        app.pointer.inside = guard != 4;
+        app.pointer.focused = guard != 5;
+        app.menu.set(if guard == 6 {
+            yr_app::menu::Page::Pause
+        } else {
+            yr_app::menu::Page::Closed
+        });
+        app.camera.edge_armed = guard != 7;
+        app.menu.edge_scroll = guard != 8;
+        app.keys.clear();
+        if guard == 9 {
+            app.keys.insert(KeyCode::ArrowUp);
+        }
+        app.session.as_mut().unwrap().outcome = if guard == 10 {
+            Outcome::Won
+        } else {
+            Outcome::Ongoing
+        };
+        app.cursor = match guard {
+            11 => (f64::from(WIN_W - 1), 400.0),
+            12 => (f64::NAN, 400.0),
+            _ => edge_point(Direction::East),
+        };
+        assert_eq!(app.edge_cursor(size), None, "guard {guard}");
+    }
+    app.session.as_mut().unwrap().outcome = Outcome::Ongoing;
+    assert_eq!(
+        yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap(),
+        saved
+    );
+    println!("EB1: all 16 scroll cursor states, matching movement, guarded clicks, focus/menu/input guards and unchanged complete match bytes passed");
 }

@@ -22,6 +22,8 @@ original-game action-by-action comparison is still needed under #98.
 | Native state | First frame | Count | Inspected shape |
 |---|---|---|---|
 | Pointer | 0 | 1 | White arrow, top-left origin |
+| Scroll N/NE/E/SE/S/SW/W/NW | 2 | 8 static directions | Green arrows |
+| Blocked scroll N/NE/E/SE/S/SW/W/NW | 10 | 8 static directions | Slashed arrows |
 | Select | 18 | 13 | Green contracting ring |
 | Move | 31 | 10 | Green rotating outward arrows |
 | Blocked | 41 | 1 | Slashed movement arrows |
@@ -34,8 +36,12 @@ original-game action-by-action comparison is still needed under #98.
 
 The sheet does not encode action names, hotspots or frame durations.
 OpenYR places the arrow's authored origin at the hit point and centers
-radial icons at (27,21), inferred from the 55x43 canvas geometry. It plays
-one frame per two simulation ticks on an absolute clock. These are explicit
+radial icons at (27,21), inferred from the 55x43 canvas geometry. Scroll
+arrows instead use inward placement: horizontal hotspot 0/27/54 for
+west/neutral/east, vertical hotspot 0/21/42 for north/neutral/south. This keeps
+the complete 55x43 canvas inside the world viewport at its edges and corners.
+Each scroll direction has one static frame. Other icons play one frame per
+two simulation ticks on an absolute clock. These are explicit
 provisional policies, not observed original hotspots or cadence. Drawing
 never advances simulation state or consumes its RNG. Each icon keeps its
 source UI-pixel size independently of map zoom.
@@ -86,7 +92,7 @@ weapon/ownership filtering, focus reset and cancellation.
 
 The full #98 requirement remains open for original hotspot/cadence and
 state mapping comparisons, action-specific harvesting feedback, minimap
-miniatures, edge-scroll arrows, range distinctions and future menu/modality
+miniatures, range distinctions and future menu/modality
 integration. Pointer ownership and coordinate behavior still need physical
 Retina/resizing/focus exercises. No original implementation code was used.
 
@@ -108,3 +114,38 @@ speed setting, frame handling and editing are not established. Applying a
 single measured period from it would give conflicting rates, so playback
 cadence remains provisional pending a controlled original capture. No source
 or executable implementation was used in this comparison.
+
+## Edge-scroll feedback
+
+The retail contact sheet shows eight green directional arrows at frames 2-9,
+clockwise from north, and eight matching slashed arrows at frames 10-17.
+Both sheets contain identical pixels here. These frame assignments come from
+source-art inspection; no controlled original-game scroll capture establishes
+its hotspots, blocked-corner behavior or input policy yet.
+
+When the native edge-scroll preference is enabled, the shared resolver in
+`yr-app/src/camera.rs` supplies both camera motion and cursor direction.
+It checks the same 12-pixel world edge zone, focus, fresh pointer movement,
+ongoing match and absence of menu/keyboard/drag gestures. The sidebar has
+no edge zone. Camera raster bounds and the actual composition dimensions
+apply at every map zoom. If a corner has only one available axis, both the
+cursor and camera use it at full cardinal speed. If neither axis can move,
+the attempted direction uses its slashed arrow. Viewports larger than the
+map cannot advertise movement on that axis.
+
+The arrow takes priority over selection, attack, placement and repair/sell
+feedback. Left press/release while it is shown cannot submit those commands;
+right-click cancellation remains available. Interior clicks and existing
+press/drag gestures keep their normal input paths. These are native policies
+pending original-game calibration, rather than claims of original parity.
+
+`OPENYR_CAMERA_INPUT_PROOF=<external-dir> cargo test -p yr-app --bin openyr
+camera::tests::retail_edge_cursors -- --nocapture` exports all sixteen states
+through the live compositor, plus per-frame camera/tick/hash/cursor receipts.
+The same test checks actual panning and the live left-press/release handler,
+all input guards and unchanged complete match bytes. Asset-free tests cover
+bounds at multiple zooms and viewport sizes, directional layout, static frame
+clocks and full-canvas visibility at each edge. Retail pixel checks cover
+all sixteen source canvases with independent SHP/palette decoding. Exports
+contain retail art and stay outside git. Physical Retina/focus exercises and
+original-game comparisons remain in #98.
