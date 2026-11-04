@@ -74,8 +74,22 @@ impl Clip {
             Some(v) => v.parse::<u64>().ok(),
             None => Some(default),
         };
-        let start = usize::try_from(number("Start", 0)?).ok()?;
-        let end = usize::try_from(number("End", shp.frames.len() as u64)?).ok()?;
+        // Flaming infantry have eight running groups before their collapse,
+        // followed by a separate half-sheet. Only present the collapse here;
+        // original running motion and its transition still need observation.
+        let (first, limit) = if section.and_then(|s| s.get_bool("IsFlamingGuy")) == Some(true) {
+            let running = usize::try_from(number("RunningFrames", 0)?).ok()?;
+            let first = running.checked_mul(8)?;
+            let limit = shp.frames.len() / 2;
+            if running == 0 || shp.frames.len() % 2 != 0 || first >= limit {
+                return None;
+            }
+            (first, limit)
+        } else {
+            (0, shp.frames.len())
+        };
+        let start = usize::try_from(number("Start", first as u64)?).ok()?;
+        let end = usize::try_from(number("End", limit as u64)?).ok()?;
         let loop_start = usize::try_from(number("LoopStart", start as u64)?).ok()?;
         let loop_end = usize::try_from(number("LoopEnd", end as u64)?).ok()?;
         let loop_count = number("LoopCount", 1)?;
@@ -84,8 +98,9 @@ impl Clip {
             .and_then(|s| s.get_bool("Translucent"))
             .unwrap_or(false);
         let transparency = number("Translucency", if translucent { 50 } else { 0 })?;
-        if start >= end
-            || end > shp.frames.len()
+        if start < first
+            || start >= end
+            || end > limit
             || loop_start < start
             || loop_start >= loop_end
             || loop_end > end

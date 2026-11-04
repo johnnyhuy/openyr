@@ -31,6 +31,7 @@ Local rules and art resolve the following authored effects:
 | AP shell impact | Fired 105mm/120mm to AP AnimList | S_CLSN16/S_CLSN22.SHP | 148x158 | 13 each |
 | Small-arms impact | Fired M60 to SA AnimList | PIFFPIFF.SHP | 28x28 | 12 |
 | Human infantry explosion | Lethal warhead InfDeath=3 to General InfantryExplode | S_BANG34.SHP | 148x158 | 13 |
+| Human infantry burn collapse | Lethal warhead InfDeath=4 to General FlamingInfantry | FLAMEGUY.SHP | 52x102 | 60 collapse, 216 total |
 | Human infantry electrocution | Lethal warhead InfDeath=5 | ELECTRO.SHP | 60x56 | 15 |
 | Human infantry Virus death | Lethal warhead InfDeath=8 | VIRUSD.SHP | 186x190 | 35 |
 | Human infantry Nuke Melt | Lethal warhead InfDeath=7 | NUKEDIE.SHP | 60x60 | 60 |
@@ -362,6 +363,51 @@ The shared compositor fixture fires a real retail MTNK `105mm` shell at a GI
 two cells away and exports per-age ticks/hashes with
 `OPENYR_INFANTRY_DEATH_PROOF`, as documented above. The ordinary impact effect
 remains independent; removing the death layer provides a same-tick comparison.
+
+## Initial burn collapse
+
+Retail `RULESMD.INI` names `InfDeath=4` as burn death and selects
+`[General] FlamingInfantry=FLAMEGUY`. Initiate `PsychicJab` and its elite
+variant use `SAFlame`, which selects 4. Mirage `MirageGun` and its elite
+variant use `MirageWH`, also selecting 4. The route follows the lethal
+weapon, independently of the current shooter type and victim owner.
+
+`ARTMD.INI` declares `[FLAMEGUY]` with `IsFlamingGuy=true`,
+`RunningFrames=6`, `LoopCount=1` and `Rate=500`. The installed
+`RA2.MIX/CONQUER.MIX/FLAMEGUY.SHP` is 63,112 bytes, with 216 frames on a
+52x102 canvas. Contact-sheet inspection shows eight six-frame running
+groups at 0-47, a collapse at 48-107 and an empty trailing half at 108-215.
+Every trailing frame has an empty SHP header. These observations come from
+retail INI/SHP data, without original engine source inspection.
+
+This initial stationary presentation plays only the collapse at the actual
+fatal-hit position. For `IsFlamingGuy=true`, the bounded effect loader
+requires a positive `RunningFrames`, an even sheet count and a nonempty
+collapse after eight running groups. Explicit start/end and loop ranges
+must stay within that collapse. Missing, invalid, overflowing or out-of-range
+layout values suppress the optional clip before canvas decoding. The same
+limits on canvases, actors and caches as other generic deaths apply.
+
+Human infantry with an explicit lethal selector 4 resolve the configured
+general setting. Other classes, non-human infantry, unknown provenance and
+missing or malformed optional art receive no guessed burn clip. The art
+uses the existing `ANIM.PAL` and effect blending policy without house remap,
+in world painter order. It creates no simulation entity or occupancy.
+
+At the existing provisional rate conversion, the native 15 Hz clock uses
+source frame `48 + floor(age * 500 / 225)`, expiring at age 27. It skips
+some source frames at that cadence. Tests slow only their comparison clock
+to visit all 60 independently decoded collapse canvases and anchors, then
+check the actual retail-rate frame choices and expiry. Redraws preserve
+the simulation hash and complete save bytes. Past transients reset on load;
+saved flights can still create burns after shooter loss. The controlled EB1
+proof registers a retail Initiate and fires its actual PsychicJab at a GI,
+using `OPENYR_INFANTRY_DEATH_PROOF` as documented above.
+
+Directional running, motion and the run-to-collapse transition are not yet
+implemented. Original cadence, facing, palette lighting, shadow treatment,
+reports and corpse persistence remain unverified in #102. Source-pixel
+agreement does not establish original-engine parity.
 
 ## Cannon bodies and travel
 
