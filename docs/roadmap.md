@@ -496,8 +496,10 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       for initial match and saved-match loading (#199). Saved-map preview updates
       follow the active worker and cannot reuse a different map's thumbnail.
       Country-map source pixels, scaled cancel controls, missing-art recovery
-      and stage captures are checked. Exact original text, bar geometry and
-      timing remain uncalibrated within #96.
+      and stage captures are checked on Linux and macOS. Retail EB1 reaches
+      the same tick-6000 hash on both platforms. macOS display capture remains
+      permission-blocked. Exact original text, bar geometry and timing remain
+      uncalibrated within #96.
 - [x] Account for terrain lift when centering world/radar camera targets (#129).
       Shared ground projection keeps targets at the world viewport center
       across supported scales/zooms and three layouts; click/box selection,

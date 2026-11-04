@@ -84,5 +84,20 @@ Running Xorg and the native app in one task session resolved that capture
 failure. Live screenshots and an eight-second, 60 fps X11 recording exercise
 Main Menu, Single Player, Skirmish, loading and match entry through public
 pointer input. Compositor exports retain each preparation stage separately.
-Live macOS, Retina input and audio-output verification remain open; this Linux
-session has no output device. Retail images and derived match data stay outside git.
+That Linux session had no output device. Retail images and derived match data
+stay outside git.
+
+The macOS follow-up ran the full workspace test suite with the retail install,
+strict clippy, formatting, all 19 observer tests and the recursive archive scan.
+All passed. The native Main Menu process opened a 48000 Hz stereo F32 audio
+device, and a release EB1 frame run reached Lost at tick 5767. Its tick-6000
+hash was `752f3f10fc2821e5`, matching the Linux receipt. The actual front-flow
+handler test exported cancel/retry, session/terrain/artwork preparation and
+match-entry frames; separate source-art captures cover EB1 and Alamo.
+
+The sandboxed window launch could not connect to macOS services. Launching
+outside the sandbox reached Main Menu. Screenshot capture still failed with
+`could not create image from display`, including outside the sandbox. The
+recording attempt produced no usable file. Use the shared-compositor captures
+for this run's proof. Live visual inspection, Retina input and audible playback
+remain unverified; opening an audio device alone does not verify playback.
