@@ -4,6 +4,8 @@ pub(crate) mod art;
 mod controls;
 pub use controls::{control_at, draw_controls, ServiceMode};
 mod power;
+mod scroll;
+pub use scroll::View;
 pub mod radar;
 pub(crate) mod text;
 pub use art::SidebarArt;
@@ -95,14 +97,18 @@ pub fn slot_at(
     width: u32,
     height: u32,
     session: &Session,
-    category: Category,
+    view: impl Into<View>,
     pos: (f64, f64),
 ) -> Option<usize> {
-    slots(session, category).enumerate().find_map(|(i, slot)| {
-        let origin = slot_origin(width, i);
-        (origin.1 + SLOT_H <= height as i32 - 26 && contains(origin, (SLOT_W, SLOT_H), pos))
-            .then_some(slot)
-    })
+    if !contains((0, 0), (width as i32, height as i32), pos) {
+        return None;
+    }
+    view.into()
+        .visible_slots(session, height)
+        .find_map(|(i, slot)| {
+            let origin = slot_origin(width, i);
+            contains(origin, (SLOT_W, SLOT_H), pos).then_some(slot)
+        })
 }
 
 pub fn ready_category(session: &Session) -> Option<Category> {
@@ -139,9 +145,10 @@ pub fn draw(
     width: u32,
     height: u32,
     session: &Session,
-    category: Category,
+    view: impl Into<View>,
     placing: Option<usize>,
 ) {
+    let view = view.into();
     let mut canvas = Canvas {
         frame,
         width,
@@ -178,7 +185,7 @@ pub fn draw(
     for (i, tab) in Category::ALL.into_iter().enumerate() {
         let (x, y) = tab_origin(width, tab);
         // Retail sheet order: up, selected, disabled, pressed-up, pressed-selected.
-        let selected = tab == category;
+        let selected = tab == view.category;
         if let Some(image) = art.tabs[i].get(usize::from(selected)) {
             canvas.image((x, y), image);
         } else {
@@ -189,12 +196,9 @@ pub fn draw(
             canvas.rect((x + 3, y + TAB_H - 3), (22, 2), [96, 255, 96, 255]);
         }
     }
-    for (i, slot) in slots(session, category).enumerate() {
+    for (i, slot) in view.visible_slots(session, height) {
         let buildable = &session.buildables[slot];
         let (sx, sy) = slot_origin(width, i);
-        if sy + SLOT_H > height as i32 - 26 {
-            break;
-        }
         if let Some((w, h, pixels)) = &buildable.cameo {
             for y in 0..(*h).min(SLOT_H as u32) {
                 for x in 0..(*w).min(SLOT_W as u32) {
@@ -261,6 +265,7 @@ pub fn draw(
             canvas.rect((sx + SLOT_W - 1, sy), (1, SLOT_H), TEXT);
         }
     }
+    view.draw_buttons(&mut canvas, session);
 }
 
 /// Localized details remain available without widening the retail cameo grid.
@@ -269,13 +274,13 @@ pub fn draw_tooltip(
     width: u32,
     height: u32,
     session: &Session,
-    category: Category,
+    view: impl Into<View>,
     cursor: (f64, f64),
 ) {
     let face = Typeface(session.sidebar_art.font.as_ref());
     let lines = if power::contains(width, height, cursor) {
         power::tooltip(session.sim.power())
-    } else if let Some(slot) = slot_at(width, height, session, category, cursor) {
+    } else if let Some(slot) = slot_at(width, height, session, view, cursor) {
         let buildable = &session.buildables[slot];
         let mut lines = face.name_lines(&buildable.name);
         lines.push(format!("${} {}", buildable.cost, duration(buildable.ticks)));

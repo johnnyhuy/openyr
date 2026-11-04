@@ -100,8 +100,8 @@ minimap with navigation and a camera outline (`radar.md`). Exact transition
 cadence, radar colors, scaling and shroud still need comparison. Power-meter
 calibration, original repair/sell timing and animations, top-strip controls,
 the bottom command bar, exact text spacing and colors,
-hover/pressed/disabled tab transitions, queue-hold calibration and dynamic
-sidebar scrolling remain UI fidelity work. Other factions and loose
+hover/pressed/disabled tab transitions, queue-hold calibration and original
+scroll-control styling/timing remain UI fidelity work. Other factions and loose
 per-file sidebar overrides are not yet selected by this Allied loader.
 
 The production-clock mask order and geometry are retail-verified. The
@@ -214,3 +214,54 @@ copy, cancellation, structure hold and READY placement. Set
 `cargo test -p yr-app --bin openyr production_tests -- --nocapture` to
 export tick-labeled full frames, queue receipts and a held match snapshot.
 Retail art and snapshots stay outside git.
+
+## Sidebar scrolling
+
+The native sidebar now shows a bounded window of complete two-column rows.
+The first row remains at y=228; the 26-pixel bottom cap stays reserved. A
+row fits only when its whole 48-pixel cameo lies above that cap. Scrolling
+advances by rows without changing original production slot ids. Drawing,
+hover details and left/right production handlers use the same visible list.
+Empty slots, two-pixel gutters, partial rows and the cap cannot start builds.
+
+Each category retains its own first row. Changing categories discards partial
+wheel input; focus/menu cleanup does the same. The effective offset is clamped
+against current category length and framebuffer height for every draw and hit
+test. A view with no complete rows shows no cameos or scroll actions. A larger
+view returns to the top when all entries fit. Replacing a match through the
+menu resets sidebar presentation state; save files contain no scroll state.
+
+Overflow adds two native up/down controls inside the bottom cap, aligned
+with the cameo columns, at y=height-24, each 60x20 pixels. Gold arrows are
+enabled and gray arrows are disabled at their respective bounds. These are
+native fallback controls, not sampled retail arrow art. They move one row per
+click; held-button repeat is not implemented. The existing retail chrome is
+unchanged when the category fits. Arrow styling, placement and repeat timing
+still need original-game comparison under #86.
+
+Wheel input over the panel scrolls its category and never changes map zoom,
+including over credits, radar, gutters and a non-overflowing category. One
+vertical line moves one row. Trackpad deltas accumulate at 50 vertical pixel-delta units
+per row. Excess outward movement is discarded at each bound so a
+reversal responds without undoing old overscroll. Horizontal-only and
+non-finite deltas do nothing. Focus loss, pointer leave, modal menus and
+active map/radar drags prevent match-wheel actions. World wheel input retains
+zoom behavior. These are explicit native input policies pending calibration.
+
+`scrolling_tests` uses actual app wheel, tab, arrow and production handlers
+on retail EB1. It checks every category at zero-row, one-row, two-row and full
+heights, both 168- and 800-pixel widths, with byte-exact cameo crops against
+the complete panel. Tests cover slot boundaries, offset bounds, category
+return, fractional input, focus cleanup, invalid input, hidden READY work,
+scrolled Chrono Miner hold/resume and unchanged complete saved match bytes.
+The regular stock retail sandbox has no overflowing category at the default
+1280x800 framebuffer; the compact proof exercises the same compositor and
+handlers at 800x352 and 800x302. Desktop resizing still scales the fixed
+framebuffer rather than changing the available row count.
+
+```sh
+OPENYR_SIDEBAR_SCROLL_PROOF=/tmp/openyr-sidebar-scroll cargo test -p yr-app --bin openyr scrolling_tests -- --nocapture
+```
+
+The optional proof writes tick- and row-labeled compositor PNGs outside git.
+Physical mouse/trackpad and Retina behavior still need desktop verification.

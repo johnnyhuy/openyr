@@ -42,6 +42,8 @@ Johnny on 2026-10-31.
       diagnostics before failing; intentionally closed output pipes still
       exit successfully. Synthetic CLI tests cover malformed archives,
       nested assets and the uncapped error total.
+- [x] Use an actual closed pipe for CLI output tests (#202), avoiding an
+      intermittent macOS socket fixture failure in the required workspace suite.
 - [x] PCX reader (8-bit paletted + 24-bit planar; all 271 retail files)
 - [x] AUD / AUDIO.BAG+IDX / IMA WAV decoders, bit-exact vs ffmpeg
 - [x] Bink 1 container metadata (#110): all 146 retail Bink entries validate
@@ -250,10 +252,17 @@ Johnny on 2026-10-31.
       freeze while held, other queues continue, and held state survives saves.
       Native hold text and original multi-copy input details still need
       calibration (`docs/formats/sidebar.md`).
+- [x] Scroll overflowing sidebar categories (#201, #86): per-category row
+      positions, wheel/trackpad accumulation and bounded bottom controls share
+      cameo geometry with drawing, hover and production clicks. Compact retail
+      compositions reach every original slot and preserve saved match bytes;
+      held and READY queues retain their actions. Wheel input over the panel
+      leaves map zoom unchanged. Original arrow styling and timing remain open
+      (`docs/formats/sidebar.md`).
 - [ ] Complete original sidebar behavior and command bar (#86), including
       radar calibration/shroud, power-meter calibration, repair/sell fidelity, text calibration,
       button transitions,
-      queue scrolling and original-game compositing comparisons.
+      scrolling calibration and original-game compositing comparisons.
 - [x] Native contextual cursor rendering: YR's 517-frame sheet and its
       palette, shared select/move/attack/service resolution, authored blocked
       states and fixed-size UI composition. Left clicks select/order and

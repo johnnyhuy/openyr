@@ -498,6 +498,7 @@ impl App {
                 }
                 self.menu.setup.options = session.start_options;
                 self.session = Some(*session);
+                self.sidebar_view = Default::default();
                 self.map = Some(map);
                 self.menu.map_name = map_name.clone();
                 self.map_name = map_name;
