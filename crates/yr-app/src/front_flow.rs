@@ -21,7 +21,7 @@ impl App {
     }
     pub(super) fn enter_front(&mut self) {
         if let Some(job) = &mut self.load_job {
-            job.cancelled = true;
+            job.cancel();
         }
         self.report_audio();
         self.audio = None;
@@ -34,6 +34,7 @@ impl App {
         self.groups = Default::default();
         self.pending.clear();
         self.front_preview = None;
+        self.loading_preview = None;
         self.chooser_preview = None;
         self.chooser_epoch = self.chooser_epoch.wrapping_add(1);
         self.menu.map_name = self.map_name.clone();
@@ -74,6 +75,7 @@ impl App {
         let fs = yr_assets::AssetFs::open(std::path::Path::new(&self.gamedir))
             .map_err(|e| e.to_string())?;
         self.front_art = yr_app::frontend::Art::load(&fs);
+        self.loading_art = yr_app::loading::Art::load(&fs);
         self.menu_art = yr_app::menu::Art::load(&fs);
         self.menu.maps = yr_app::menu::maps::MapList {
             entries: yr_app::menu::maps::catalog(&fs),
@@ -88,40 +90,11 @@ impl App {
         Ok(())
     }
     pub(super) fn start_front_preview(&mut self) {
-        if self.load_job.is_some() {
-            self.menu.message(
-                "Please wait for the previous load to finish".into(),
-                Page::SinglePlayer,
-            );
-            return;
-        }
         if self.front_preview.is_some() {
             self.open_menu(Page::Skirmish);
             return;
         }
-        let directory = self.gamedir.clone();
-        let map = self.map_name.clone();
-        let scale = self.scale;
-        let (sender, receiver) = std::sync::mpsc::channel();
-        let result = std::thread::Builder::new()
-            .name("openyr-map-preview".into())
-            .spawn(move || {
-                let result = yr_app::frontend::load_preview(&directory, &map, scale)
-                    .map(menu_flow::Prepared::Preview);
-                let _ = sender.send(result);
-            });
-        match result {
-            Ok(_) => {
-                self.load_job = Some(menu_flow::LoadJob {
-                    receiver,
-                    cancelled: false,
-                    back: Page::SinglePlayer,
-                });
-                self.open_menu(Page::Loading);
-            }
-            Err(e) => self.menu.message(e.to_string(), Page::SinglePlayer),
-        }
-        self.reset_menu_clock();
+        self.start_load(menu_flow::LoadKind::Preview);
     }
     pub(super) fn choose_front_directory(&mut self) {
         self.cancel_pointer_action();

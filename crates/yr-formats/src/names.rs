@@ -188,6 +188,9 @@ pub const KNOWN_NAMES: &[&str] = &[
     "LIBUBN.PAL",
     "TEMPERAT.PAL",
     "AMMO.PAL",
+    // American multiplayer loading screen, confirmed in LOADMD.MIX.
+    "MPLSU.PAL",
+    "LS800USTATES.SHP",
     // misc
     "MOUSE.SHA",
     "MOUSE.SHP",

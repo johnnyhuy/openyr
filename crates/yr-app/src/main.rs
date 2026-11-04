@@ -135,6 +135,8 @@ struct App {
     menu: yr_app::menu::State,
     menu_art: yr_app::menu::Art,
     load_job: Option<menu_flow::LoadJob>,
+    loading_art: yr_app::loading::Art,
+    loading_preview: Option<Box<yr_app::frontend::Preview>>,
     preferences_path: Option<PathBuf>,
     quit_requested: bool,
     startup_menu: bool,
@@ -626,6 +628,30 @@ impl App {
     }
 
     fn compose_at(&self, frame: &mut [u8], fw: u32, fh: u32, now: Instant) {
+        if self.menu.page == yr_app::menu::Page::Loading && self.menu.loading.battle {
+            let preview = self.loading_preview.as_deref().or_else(|| {
+                self.menu
+                    .loading
+                    .map_name
+                    .eq_ignore_ascii_case(&self.map_name)
+                    .then_some(self.front_preview.as_ref())
+                    .flatten()
+            });
+            yr_app::loading::draw(frame, fw, fh, &self.loading_art, &self.menu, preview);
+            if self
+                .pointer
+                .custom(&self.loading_art.cursor, (fw, fh), self.cursor)
+            {
+                self.loading_art.cursor.draw(
+                    frame,
+                    (fw, fh),
+                    self.cursor,
+                    yr_app::cursor::Kind::Pointer,
+                    self.front_phase,
+                );
+            }
+            return;
+        }
         if self.menu.front {
             yr_app::frontend::draw(
                 frame,
@@ -1270,6 +1296,7 @@ impl ApplicationHandler for App {
         };
         if let Ok(fs) = yr_assets::AssetFs::open(std::path::Path::new(&self.gamedir)) {
             self.menu_art = yr_app::menu::Art::load(&fs);
+            self.loading_art = yr_app::loading::Art::load(&fs);
         }
         self.pointer.focused = window.has_focus();
         if self.startup_menu {
@@ -1673,6 +1700,8 @@ fn new_app(gamedir: String, map_name: String, scale: u32) -> App {
         menu: Default::default(),
         menu_art: Default::default(),
         load_job: None,
+        loading_art: Default::default(),
+        loading_preview: None,
         preferences_path: None,
         quit_requested: false,
         startup_menu: false,

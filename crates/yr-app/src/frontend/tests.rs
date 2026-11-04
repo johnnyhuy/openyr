@@ -443,7 +443,14 @@ fn front_navigation_geometry_and_disabled_modes_are_consistent() {
     assert!(!s.keyboard_focus);
     s.navigate(1);
     assert!(s.keyboard_focus);
+    assert_eq!(s.buttons()[s.focus].0, Button::SinglePlayer);
+    s.navigate(1);
     assert_eq!(s.buttons()[s.focus].0, Button::Controls);
+    s.navigate(-1);
+    assert_eq!(s.buttons()[s.focus].0, Button::SinglePlayer);
+    s.set(Page::Main);
+    s.navigate(-1);
+    assert_eq!(s.buttons()[s.focus].0, Button::Quit);
     s.set(Page::Main);
     assert!(!s.keyboard_focus);
     for b in [Button::Internet, Button::Network, Button::Movies] {

@@ -1,6 +1,13 @@
 use super::*;
 use std::io::Read;
 use yr_app::menu::{Effect, Intent, Layout, Page};
+mod loading;
+pub(super) use loading::LoadKind;
+
+pub(super) enum LoadProgress {
+    Status(yr_app::menu::LoadStatus),
+    Preview(Box<yr_app::frontend::Preview>),
+}
 
 pub(super) enum Prepared {
     Match {
@@ -8,6 +15,7 @@ pub(super) enum Prepared {
         map: yr_render::RenderedMap,
         map_name: String,
         save_path: Option<PathBuf>,
+        sprites: Option<Box<std::cell::RefCell<yr_render::sprites::SpriteBank>>>,
     },
     Preview(yr_app::frontend::Preview),
 }
@@ -15,6 +23,9 @@ pub(super) struct LoadJob {
     pub(super) receiver: std::sync::mpsc::Receiver<Result<Prepared, String>>,
     pub(super) cancelled: bool,
     pub(super) back: Page,
+    progress: std::sync::mpsc::Receiver<LoadProgress>,
+    stop: std::sync::Arc<std::sync::atomic::AtomicBool>,
+    next: Option<loading::LoadRequest>,
 }
 #[derive(serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -58,7 +69,7 @@ impl App {
         self.order_feedback.clear();
         if page != Page::Loading {
             if let Some(job) = &mut self.load_job {
-                job.cancelled = true;
+                job.cancel();
             }
         }
         self.cancel_pointer_action();
@@ -360,7 +371,7 @@ impl App {
             }
             Effect::CancelLoad => {
                 if let Some(job) = &mut self.load_job {
-                    job.cancelled = true;
+                    job.cancel();
                 }
                 let back = self
                     .load_job
@@ -433,79 +444,21 @@ impl App {
         self.reset_menu_clock();
     }
     pub(super) fn start_menu_load(&mut self, path: Option<PathBuf>) {
-        if self.load_job.is_some() {
-            self.menu.message(
-                "Please wait for the previous load to finish".into(),
-                if self.menu.front {
-                    Page::Load
-                } else {
-                    Page::Pause
-                },
-            );
-            return;
-        }
-        let directory = self.gamedir.clone();
-        let map = self.map_name.clone();
-        let scale = self.scale;
-        let seed = self.session.as_ref().map_or(42, Session::seed);
-        let options = if self.menu.front {
-            yr_app::session::StartOptions {
-                shared_forces: true,
-                credits: Some(self.menu.setup.value(yr_app::menu::setup::Field::Credits)),
-                units: Some(self.menu.setup.value(yr_app::menu::setup::Field::Units) as u16),
-            }
-        } else {
-            self.session
-                .as_ref()
-                .map_or(self.menu.setup.options, |s| s.start_options)
-        };
-        let (sender, receiver) = std::sync::mpsc::channel();
-        let back = if self.menu.front {
-            if path.is_some() {
-                Page::Load
-            } else {
-                Page::Skirmish
-            }
-        } else {
-            Page::Pause
-        };
-        let spawned = std::thread::Builder::new()
-            .name("openyr-match-load".into())
-            .spawn(move || {
-                let result = (|| {
-                    let (session, map_name) = match &path {
-                        Some(path) => yr_app::snapshot::load_from_menu(&directory, &map, path)?,
-                        None => (
-                            yr_app::session::load_with_options(&directory, &map, seed, options)?,
-                            map,
-                        ),
-                    };
-                    let map = yr_render::render_map(&directory, &map_name, scale)?;
-                    Ok(Prepared::Match {
-                        session: Box::new(session),
-                        map,
-                        map_name,
-                        save_path: path,
-                    })
-                })();
-                let _ = sender.send(result);
-            });
-        match spawned {
-            Ok(_) => {
-                self.load_job = Some(LoadJob {
-                    receiver,
-                    cancelled: false,
-                    back,
-                });
-                self.open_menu(Page::Loading);
-            }
-            Err(e) => self.menu.message(e.to_string(), back),
-        }
+        self.start_load(LoadKind::Match(path));
     }
     pub(super) fn poll_menu_load(&mut self) {
         let Some(job) = self.load_job.as_ref() else {
             return;
         };
+        while let Ok(progress) = job.progress.try_recv() {
+            if !job.cancelled && self.menu.page == Page::Loading {
+                match progress {
+                    LoadProgress::Status(status) => self.menu.loading = status,
+                    LoadProgress::Preview(preview) => self.loading_preview = Some(preview),
+                }
+                self.view.dirty = true;
+            }
+        }
         let result = match job.receiver.try_recv() {
             Ok(result) => result,
             Err(std::sync::mpsc::TryRecvError::Empty) => return,
@@ -514,9 +467,13 @@ impl App {
             }
         };
         let job = self.load_job.take().unwrap();
+        self.loading_preview = None;
         let cancelled = job.cancelled;
         let back = job.back;
         if cancelled {
+            if let Some(request) = job.next {
+                self.spawn_load(request);
+            }
             return;
         }
         match result {
@@ -530,6 +487,7 @@ impl App {
                 map,
                 map_name,
                 save_path,
+                sprites,
             }) => {
                 self.menu.front = false;
                 self.movie = None;
@@ -543,7 +501,7 @@ impl App {
                 self.map = Some(map);
                 self.menu.map_name = map_name.clone();
                 self.map_name = map_name;
-                self.sprites = load_sprites(&self.gamedir, &self.map_name);
+                self.sprites = sprites.map(|bank| *bank);
                 self.animations = Default::default();
                 self.effects = Default::default();
                 self.selected.clear();

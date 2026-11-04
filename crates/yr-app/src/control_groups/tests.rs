@@ -327,19 +327,16 @@ fn retail_team_keys_preserve_match_state_and_drive_selection_orders_and_camera()
     }
     yr_app::interaction::draw_feedback(&mut [0; 3], 320, 64, session, "invalid framebuffer");
     // A completed replacement must clear groups even when unit IDs coincide.
-    let (send, receive) = std::sync::mpsc::channel();
+    let (job, send, _) = menu_flow::LoadJob::channel(yr_app::menu::Page::Pause);
     send.send(Ok(menu_flow::Prepared::Match {
         map_name: "EB1.MMX".into(),
         session: Box::new(app.session.take().unwrap()),
         map: app.map.take().unwrap(),
         save_path: None,
+        sprites: app.sprites.take().map(Box::new),
     }))
     .unwrap();
-    app.load_job = Some(menu_flow::LoadJob {
-        receiver: receive,
-        cancelled: false,
-        back: yr_app::menu::Page::Pause,
-    });
+    app.load_job = Some(job);
     app.poll_menu_load();
     assert!(app.groups.members.iter().all(BTreeSet::is_empty));
     assert!(app.groups.notice.is_none() && app.selected.is_empty());

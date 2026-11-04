@@ -106,7 +106,7 @@ pub fn draw(
                 .take(48)
                 .collect(),
         ),
-        Page::Loading => ("Loading", "Preparing the match...".into()),
+        Page::Loading => ("Loading", String::new()),
         Page::Result(true) => (art.label("TXT_VICTORIOUS", "Victory"), String::new()),
         Page::Result(false) => (art.label("TXT_SCENARIO_LOST", "Defeat"), String::new()),
         Page::Message { text, .. } => ("OpenYR", text.clone()),
@@ -130,6 +130,15 @@ pub fn draw(
     {
         let line: String = line.iter().collect();
         c.text((40, 72 + i as i32 * 22), &line, WHITE, 50);
+    }
+    if state.page == Page::Loading {
+        for (text, y) in [
+            (state.loading.name.as_str(), 72),
+            (state.loading.stage.label(), 104),
+        ] {
+            let text = fit(c.face, text, world - 80);
+            c.text((40, y), &text, WHITE, usize::MAX);
+        }
     }
     if matches!(state.page, Page::Save | Page::Load | Page::Delete) {
         c.rect((38, 142), (world - 76, 250), [0, 0, 0, 255]);

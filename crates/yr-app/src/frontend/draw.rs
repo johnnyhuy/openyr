@@ -157,7 +157,24 @@ pub fn draw(frame: &mut [u8], width: u32, height: u32, art: &Art, scene: Scene<'
             }
         }
         Page::Exit => centered(&mut c, 0, 380, 632, "Exit OpenYR?", YELLOW),
-        Page::Loading => centered(&mut c, 0, 80, 632, "Preparing the match...", YELLOW),
+        Page::Loading => {
+            centered(&mut c, 0, 80, 632, "Loading", YELLOW);
+            let name = fit(c.face, &s.loading.name, 568);
+            centered(&mut c, 0, 124, 632, &name, WHITE);
+            centered(&mut c, 0, 168, 632, s.loading.stage.label(), YELLOW);
+            // Indeterminate activity, not a fabricated percentage of work.
+            let x = 64 + (scene.phase % 46) as i32 * 10;
+            c.rect((32, 212), (568, 4), [40, 40, 48, 255]);
+            c.rect((x, 212), (72, 4), YELLOW);
+            centered(
+                &mut c,
+                0,
+                248,
+                632,
+                "Escape or Back cancels loading.",
+                WHITE,
+            );
+        }
         Page::Message { text, .. } => {
             let (first, rows, _) = message::viewport(c.face, text, s.message_scroll);
             for (i, line) in message::lines(c.face, text)
