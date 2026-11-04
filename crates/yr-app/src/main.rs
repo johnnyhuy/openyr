@@ -288,6 +288,20 @@ impl App {
         self.view.dirty = true;
     }
 
+    fn left_press(&mut self) {
+        // Edge arrows own the gesture, including blocked map boundaries.
+        if self.edge_cursor(self.camera_size()).is_some() {
+            return;
+        }
+        if self.service_mode != ServiceMode::None {
+            self.service_click();
+        } else if self.placing.is_some() {
+            self.try_place();
+        } else {
+            self.left_down = Some(self.cursor);
+        }
+    }
+
     fn left_release(&mut self) {
         self.radar_drag = false;
         if let Some(a) = self.left_down.take() {
@@ -349,9 +363,12 @@ impl App {
         self.view.dirty = true;
     }
 
-    fn cursor_kind(&self, width: u32) -> yr_app::cursor::Kind {
+    fn cursor_kind(&self, size: (u32, u32)) -> yr_app::cursor::Kind {
         use yr_app::cursor::Kind;
-        if self.cursor.0 >= f64::from(width.saturating_sub(SIDEBAR_W)) {
+        if let Some(kind) = self.edge_cursor(size) {
+            return kind;
+        }
+        if self.cursor.0 >= f64::from(size.0.saturating_sub(SIDEBAR_W)) {
             return Kind::Pointer;
         }
         if self.placing.is_some() {
@@ -1009,9 +1026,13 @@ impl App {
                 .pointer
                 .custom(&session.cursor_art, (fw, fh), self.cursor)
             {
-                session
-                    .cursor_art
-                    .draw(frame, (fw, fh), self.cursor, self.cursor_kind(fw), tick);
+                session.cursor_art.draw(
+                    frame,
+                    (fw, fh),
+                    self.cursor,
+                    self.cursor_kind((fw, fh)),
+                    tick,
+                );
             }
         }
     }
@@ -1383,23 +1404,15 @@ impl ApplicationHandler for App {
                         }
                     }
                 }
-                (MouseButton::Left, ElementState::Pressed)
-                    if self.service_mode != ServiceMode::None =>
-                {
-                    self.service_click();
-                }
                 (MouseButton::Right, ElementState::Pressed)
                     if self.service_mode != ServiceMode::None =>
                 {
                     self.service_mode = ServiceMode::None;
                 }
-                (MouseButton::Left, ElementState::Pressed) if self.placing.is_some() => {
-                    self.try_place();
-                }
                 (MouseButton::Right, ElementState::Pressed) if self.placing.is_some() => {
                     self.placing = None;
                 }
-                (MouseButton::Left, ElementState::Pressed) => self.left_down = Some(self.cursor),
+                (MouseButton::Left, ElementState::Pressed) => self.left_press(),
                 (MouseButton::Left, ElementState::Released) => self.left_release(),
                 (MouseButton::Right, ElementState::Pressed) => {
                     self.right_down = Some(self.cursor);
@@ -2125,7 +2138,10 @@ mod render_tests {
             f64::from(point.1 - app.view.cam_y),
         );
         app.pointer.inside = true;
-        assert_eq!(app.cursor_kind(WIN_W), yr_app::cursor::Kind::Blocked);
+        assert_eq!(
+            app.cursor_kind((WIN_W, WIN_H)),
+            yr_app::cursor::Kind::Blocked
+        );
         let hash = app.session.as_ref().unwrap().sim.state_hash();
         app.left_click(app.cursor);
         assert!(

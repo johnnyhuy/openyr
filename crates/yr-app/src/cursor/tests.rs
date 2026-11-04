@@ -99,13 +99,13 @@ fn retail_yr_and_ra2_frames_palette_and_final_hotspot_pixels_match_source() {
         let (start, count) = kind.frames();
         for offset in 0..count {
             let tick = offset as u64 * 2;
-            let mut frame = vec![0; 100 * 80 * 4];
-            art.draw(&mut frame, (100, 80), (45.75, 35.5), kind, tick);
+            let mut frame = vec![0; 140 * 110 * 4];
+            art.draw(&mut frame, (140, 110), (65.75, 55.5), kind, tick);
             let raw = source.decode_frame_canvas(start + offset).unwrap();
             let (hx, hy) = kind.hotspot();
             for (p, &index) in raw.iter().enumerate() {
-                let (x, y) = (45 - hx + (p % 55) as i32, 35 - hy + (p / 55) as i32);
-                let at = (y * 100 + x) as usize * 4;
+                let (x, y) = (65 - hx + (p % 55) as i32, 55 - hy + (p / 55) as i32);
+                let at = (y * 140 + x) as usize * 4;
                 assert_eq!(
                     &frame[at..at + 4],
                     &if index == 0 {
@@ -130,14 +130,56 @@ fn retail_yr_and_ra2_frames_palette_and_final_hotspot_pixels_match_source() {
         for kind in Kind::ALL {
             let (_, count) = kind.frames();
             for phase in 0..count {
-                let mut frame = vec![0; 100 * 80 * 4];
-                art.draw(&mut frame, (100, 80), (45.0, 35.0), kind, phase as u64 * 2);
+                let mut frame = vec![0; 140 * 110 * 4];
+                art.draw(&mut frame, (140, 110), (65.0, 55.0), kind, phase as u64 * 2);
                 std::fs::write(
                     path.join(format!("{kind:?}-{phase:02}.png")),
-                    yr_render::png::encode_rgba(100, 80, &frame),
+                    yr_render::png::encode_rgba(140, 110, &frame),
                 )
                 .unwrap();
             }
         }
     }
+}
+
+#[test]
+fn scroll_canvases_remain_inside_each_viewport_edge() {
+    let art = Art {
+        frames: vec![vec![255; WIDTH * HEIGHT * 4]; 517],
+    };
+    for direction in Direction::ALL {
+        let (x, y) = direction.axes();
+        assert_eq!(Direction::from_axes(x, y), Some(direction));
+        let axis = |a: i8, size: u32| match a {
+            -1 => 0.0,
+            1 => f64::from(size - 1),
+            _ => f64::from(size / 2),
+        };
+        for blocked in [false, true] {
+            let kind = Kind::Scroll(direction, blocked);
+            assert_eq!(
+                kind.frames(),
+                (2 + direction as usize + usize::from(blocked) * 8, 1)
+            );
+            let mut frame = vec![0; 140 * 110 * 4];
+            art.draw(
+                &mut frame,
+                (140, 110),
+                (axis(x, 140), axis(y, 110)),
+                kind,
+                u64::MAX,
+            );
+            assert_eq!(
+                frame
+                    .as_chunks::<4>()
+                    .0
+                    .iter()
+                    .filter(|p| p[3] != 0)
+                    .count(),
+                WIDTH * HEIGHT
+            );
+        }
+    }
+    assert_eq!(Direction::from_axes(0, 0), None);
+    assert_eq!(Direction::from_axes(2, 1), None);
 }

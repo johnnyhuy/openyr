@@ -256,6 +256,13 @@ Johnny on 2026-10-31.
       stale gestures. Elevated ground picking and box anchors match drawing
       (#104). Source canvases, route eligibility and native composition are
       checked (`docs/formats/cursors.md`). Hotspots and cadence are provisional.
+- [x] Bounds-aware edge-scroll cursors (#98): retail green/slashed arrows
+      use the same guarded direction as camera motion. Partially blocked
+      corners show the remaining axis; fully blocked edges show a slash.
+      Edge clicks cannot issue world/placement/service commands. Source
+      pixels, inward native hotspots, all directions, zoom/bounds and complete
+      match save invariance are checked. Original hotspots/behavior remain
+      unverified (`docs/formats/cursors.md`).
 - [ ] Contextual animated game cursor parity (#98): observed retail frames,
       palettes and hotspots for selection, movement, attack, harvesting,
       placement and other supported commands. Match actual command validation,

@@ -147,7 +147,7 @@ mod retail_pointer_tests {
         app.selected.clear();
         app.session.as_mut().unwrap().sim.set_terrain(original_grid);
         centre(&mut app, cell);
-        assert_eq!(app.cursor_kind(WIN_W), Kind::Select);
+        assert_eq!(app.cursor_kind((WIN_W, WIN_H)), Kind::Select);
         proof(&app, "select-tick-1");
         app.left_down = Some(app.cursor);
         app.left_release();
@@ -175,14 +175,14 @@ mod retail_pointer_tests {
             })
             .unwrap();
         app.cursor = point(&app, target);
-        assert_eq!(app.cursor_kind(WIN_W), Kind::Move);
+        assert_eq!(app.cursor_kind((WIN_W, WIN_H)), Kind::Move);
         proof(&app, "move-tick-1");
         app.left_down = Some(app.cursor);
         app.left_release();
         assert!(matches!(app.pending.as_slice(),[Command::Move {id,..}] if *id==unit.id));
         app.control = true;
         app.shift = true;
-        assert_eq!(app.cursor_kind(WIN_W), Kind::AttackMove);
+        assert_eq!(app.cursor_kind((WIN_W, WIN_H)), Kind::AttackMove);
         proof(&app, "attack-move-tick-1");
         app.left_down = Some(app.cursor);
         app.left_release();
@@ -212,7 +212,7 @@ mod retail_pointer_tests {
             .unwrap()
             .clone();
         centre(&mut app, (i32::from(enemy.cell.0), i32::from(enemy.cell.1)));
-        assert_eq!(app.cursor_kind(WIN_W), Kind::Attack);
+        assert_eq!(app.cursor_kind((WIN_W, WIN_H)), Kind::Attack);
         proof(&app, "attack-tick-1");
         app.left_down = Some(app.cursor);
         app.left_release();
@@ -235,7 +235,7 @@ mod retail_pointer_tests {
             .clone();
         centre(&mut app, (i32::from(plant.cell.0), i32::from(plant.cell.1)));
         app.service_mode = ServiceMode::Repair;
-        assert_eq!(app.cursor_kind(WIN_W), Kind::NoRepair);
+        assert_eq!(app.cursor_kind((WIN_W, WIN_H)), Kind::NoRepair);
         proof(&app, "no-repair-tick-1");
         let session = app.session.as_mut().unwrap();
         let bytes = session.sim.save_bytes().unwrap();
@@ -248,18 +248,18 @@ mod retail_pointer_tests {
         let mut bytes = bytes[..12].to_vec();
         bytes.extend(serde_json::to_vec(&json).unwrap());
         session.sim = yr_sim::Sim::from_save_bytes(&bytes).unwrap();
-        assert_eq!(app.cursor_kind(WIN_W), Kind::Repair);
+        assert_eq!(app.cursor_kind((WIN_W, WIN_H)), Kind::Repair);
         proof(&app, "repair-tick-1");
         assert!(
             matches!(app.world_action(app.cursor).unwrap().commands.as_slice(),[Command::Repair {id,..}] if *id==plant.id)
         );
         app.service_mode = ServiceMode::Sell;
-        assert_eq!(app.cursor_kind(WIN_W), Kind::Sell);
+        assert_eq!(app.cursor_kind((WIN_W, WIN_H)), Kind::Sell);
         proof(&app, "sell-tick-1");
         app.service_click();
         assert!(matches!(app.pending.as_slice(),[Command::Sell {id,..}] if *id==plant.id));
         centre(&mut app, (i32::from(enemy.cell.0), i32::from(enemy.cell.1)));
-        assert_eq!(app.cursor_kind(WIN_W), Kind::NoSell);
+        assert_eq!(app.cursor_kind((WIN_W, WIN_H)), Kind::NoSell);
         proof(&app, "no-sell-tick-1");
         // Leave/focus suppression paints no software pointer and retains the hash.
         let hash = app.session.as_ref().unwrap().sim.state_hash();

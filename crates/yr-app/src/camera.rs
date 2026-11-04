@@ -1,6 +1,7 @@
 //! Native camera policy; timing and bounds are independent of simulation state.
 
 use super::*;
+use yr_app::cursor::{Direction, Kind};
 
 const SPEED: f32 = 600.0;
 const EDGE: f64 = 12.0;
@@ -29,6 +30,30 @@ impl View {
             self.cam_y += direction.1 * step;
             self.dirty = true;
         }
+    }
+
+    fn available_scroll(
+        &self,
+        requested: Direction,
+        map: &yr_render::RenderedMap,
+        viewport: (u32, u32),
+    ) -> Option<Direction> {
+        let (x, y) = requested.axes();
+        let axis = |direction: i8, position: f32, extent: u32, visible: u32| {
+            let limit = extent as f32 - visible as f32 / self.zoom;
+            if limit <= 0.0
+                || direction < 0 && position <= 0.0
+                || direction > 0 && position >= limit
+            {
+                0
+            } else {
+                direction
+            }
+        };
+        Direction::from_axes(
+            axis(x, self.cam_x, map.width, viewport.0),
+            axis(y, self.cam_y, map.height, viewport.1),
+        )
     }
 
     fn constrain(&mut self, map: &yr_render::RenderedMap, viewport: (u32, u32)) {
@@ -94,6 +119,47 @@ impl App {
         self.view.dirty = true;
     }
 
+    /// The same guarded, bounds-aware intent drives both cursor and panning.
+    pub(super) fn edge_scroll(&self, size: (u32, u32)) -> Option<(Direction, bool)> {
+        if !self.menu.edge_scroll
+            || self.menu.visible()
+            || !self.camera.edge_armed
+            || !self.pointer.inside
+            || !self.pointer.focused
+            || self.left_down.is_some()
+            || self.right_down.is_some()
+            || self.right_panning
+            || self.radar_drag
+            || self.keys.iter().any(|k| {
+                matches!(
+                    k,
+                    KeyCode::ArrowLeft
+                        | KeyCode::ArrowRight
+                        | KeyCode::ArrowUp
+                        | KeyCode::ArrowDown
+                )
+            })
+            || !self
+                .session
+                .as_ref()
+                .is_some_and(|s| s.outcome == Outcome::Ongoing)
+        {
+            return None;
+        }
+        let viewport = (size.0.saturating_sub(SIDEBAR_W), size.1);
+        let (x, y) = edge_direction(self.cursor, viewport);
+        let requested = Direction::from_axes(x as i8, y as i8)?;
+        let available = self
+            .view
+            .available_scroll(requested, self.map.as_ref()?, viewport);
+        Some((available.unwrap_or(requested), available.is_none()))
+    }
+
+    pub(super) fn edge_cursor(&self, size: (u32, u32)) -> Option<Kind> {
+        self.edge_scroll(size)
+            .map(|(direction, blocked)| Kind::Scroll(direction, blocked))
+    }
+
     /// Shared redraw handler. A delayed frame never catches up with a large pan.
     pub(super) fn update_camera(&mut self, now: Instant, size: (u32, u32)) {
         let elapsed = self.camera.elapsed(now);
@@ -115,15 +181,9 @@ impl App {
         let direction = if keyboard != (0.0, 0.0) {
             self.cancel_pointer_action();
             keyboard
-        } else if self.menu.edge_scroll
-            && self.camera.edge_armed
-            && self.pointer.inside
-            && self.left_down.is_none()
-            && self.right_down.is_none()
-            && !self.right_panning
-            && !self.radar_drag
-        {
-            edge_direction(self.cursor, (size.0.saturating_sub(SIDEBAR_W), size.1))
+        } else if let Some((direction, false)) = self.edge_scroll(size) {
+            let (x, y) = direction.axes();
+            (f32::from(x), f32::from(y))
         } else {
             (0.0, 0.0)
         };
