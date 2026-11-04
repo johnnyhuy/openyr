@@ -132,8 +132,15 @@ pub enum Command {
         cost: i64,
         percent: yr_rules::Decimal,
     },
-    /// Cancel the newest order of `kind` in `factory`'s queue; refunds
-    /// what it had drawn.
+    /// Set suspension on the player's unfinished head of this factory queue.
+    /// A mismatched kind or already completed order is ignored.
+    HoldProduce {
+        factory: Factory,
+        kind: u16,
+        held: bool,
+    },
+    /// Cancel a held head of this kind, otherwise the newest matching order.
+    /// Refund exactly what that order had drawn.
     CancelProduce {
         factory: Factory,
         kind: u16,
@@ -515,24 +522,11 @@ impl Sim {
                 Command::Remove { id } => {
                     self.units.retain(|u| u.id != id);
                 }
-                Command::Produce {
-                    factory,
-                    kind,
-                    product,
-                    cost,
-                    ticks,
-                } => {
-                    self.queue_produce(OWNER_PLAYER, factory, kind, product, cost, ticks);
-                }
-                Command::CancelProduce { factory, kind } => {
+                Command::Produce { .. }
+                | Command::HoldProduce { .. }
+                | Command::CancelProduce { .. } => {
                     let economy = self.economies.entry(OWNER_PLAYER).or_default();
-                    if let Some(i) = economy
-                        .production
-                        .iter()
-                        .rposition(|o| o.factory == factory && o.kind == kind)
-                    {
-                        economy.credits += economy.production.remove(i).paid;
-                    }
+                    economy.credits += production::apply(&mut economy.production, *cmd);
                 }
             }
         }
@@ -1118,19 +1112,27 @@ impl Sim {
         cost: i64,
         ticks: u32,
     ) {
-        self.economies
-            .entry(owner)
-            .or_default()
-            .production
-            .push(BuildOrder {
+        let economy = self.economies.entry(owner).or_default();
+        production::apply(
+            &mut economy.production,
+            Command::Produce {
                 factory,
                 kind,
                 product,
-                cost: cost.max(0),
-                ticks: ticks.max(1),
-                progress: 0,
-                paid: 0,
-            });
+                cost,
+                ticks,
+            },
+        );
+    }
+
+    /// Project pending queue controls without ticking, spending or changing RNG.
+    /// Other pending command types, including placement, are ignored here.
+    pub fn production_with_pending(&self, commands: &[Command]) -> Vec<BuildOrder> {
+        let mut queue = self.production().to_vec();
+        for &command in commands {
+            production::apply(&mut queue, command);
+        }
+        queue
     }
 
     fn place_produced(&mut self, owner: u8, kind: u16, x: u16, y: u16) {

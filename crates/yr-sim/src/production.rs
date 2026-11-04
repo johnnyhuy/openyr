@@ -114,6 +114,13 @@ pub struct BuildOrder {
     pub progress: i64,
     /// Credits drawn so far.
     pub paid: i64,
+    /// Explicit player suspension, separate from credit/power/factory stalls.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub held: bool,
+}
+
+fn is_false(value: &bool) -> bool {
+    !value
 }
 
 impl BuildOrder {
@@ -129,6 +136,9 @@ impl BuildOrder {
     /// Advance by one tick at `factor` if `credits` covers the slice.
     /// Returns the credits drawn (0 when stalled or already done).
     pub(crate) fn advance(&mut self, factor: Fix, credits: i64) -> Option<i64> {
+        if self.held {
+            return None;
+        }
         let total = self.total();
         if self.progress >= total {
             return Some(0);
@@ -148,6 +158,60 @@ impl BuildOrder {
     pub fn done(&self) -> bool {
         self.progress >= self.total()
     }
+}
+
+/// Shared queue edits for tick application and pending UI intent previews.
+/// Returns the exact refund; previews never apply it to live credits.
+pub(crate) fn apply(queue: &mut Vec<BuildOrder>, command: crate::Command) -> i64 {
+    use crate::Command;
+    match command {
+        Command::Produce {
+            factory,
+            kind,
+            product,
+            cost,
+            ticks,
+        } => {
+            queue.push(BuildOrder {
+                factory,
+                kind,
+                product,
+                cost: cost.max(0),
+                ticks: ticks.max(1),
+                progress: 0,
+                paid: 0,
+                held: false,
+            });
+        }
+        Command::HoldProduce {
+            factory,
+            kind,
+            held,
+        } => {
+            if let Some(order) = queue
+                .iter_mut()
+                .find(|o| o.factory == factory)
+                .filter(|o| o.kind == kind && !o.done())
+            {
+                order.held = held;
+            }
+        }
+        Command::CancelProduce { factory, kind } => {
+            let held_head = queue
+                .iter()
+                .position(|o| o.factory == factory)
+                .filter(|&i| queue[i].kind == kind && queue[i].held);
+            if let Some(i) = held_head.or_else(|| {
+                queue
+                    .iter()
+                    .rposition(|o| o.factory == factory && o.kind == kind)
+            }) {
+                return queue.remove(i).paid;
+            }
+        }
+        _ => {}
+    }
+    0
 }
 
 #[cfg(test)]
@@ -170,6 +234,7 @@ mod tests {
             ticks,
             progress: 0,
             paid: 0,
+            held: false,
         }
     }
 
@@ -198,3 +263,6 @@ mod tests {
         assert_eq!(n, 20);
     }
 }
+
+#[cfg(test)]
+mod hold_tests;

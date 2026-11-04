@@ -244,10 +244,16 @@ Johnny on 2026-10-31.
 - [ ] Scale generator output with observed health fractions (#93). The
       current simulation keeps full output until destruction, including in
       radar, production and the meter.
+- [x] Hold/resume sidebar production (#86, #197): right-click suspends the
+      unfinished factory head, left-click resumes without queuing a copy,
+      and another right-click cancels with an exact refund. Progress/payment
+      freeze while held, other queues continue, and held state survives saves.
+      Native hold text and original multi-copy input details still need
+      calibration (`docs/formats/sidebar.md`).
 - [ ] Complete original sidebar behavior and command bar (#86), including
       radar calibration/shroud, power-meter calibration, repair/sell fidelity, text calibration,
       button transitions,
-      queue hold/scrolling and original-game compositing comparisons.
+      queue scrolling and original-game compositing comparisons.
 - [x] Native contextual cursor rendering: YR's 517-frame sheet and its
       palette, shared select/move/attack/service resolution, authored blocked
       states and fixed-size UI composition. Left clicks select/order and

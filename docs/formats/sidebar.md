@@ -100,7 +100,7 @@ minimap with navigation and a camera outline (`radar.md`). Exact transition
 cadence, radar colors, scaling and shroud still need comparison. Power-meter
 calibration, original repair/sell timing and animations, top-strip controls,
 the bottom command bar, exact text spacing and colors,
-hover/pressed/disabled tab transitions, queue hold behavior and dynamic
+hover/pressed/disabled tab transitions, queue-hold calibration and dynamic
 sidebar scrolling remain UI fidelity work. Other factions and loose
 per-file sidebar overrides are not yet selected by this Allied loader.
 
@@ -167,3 +167,50 @@ cargo run --release -- --load /tmp/openyr-power-proof/shortage.oyrsave --frames 
 The optional test dump writes sidebar PNGs and scenario saves outside git.
 The saved tick is printed with each state so the shared headless renderer
 can capture the same match state. Retail artwork must never be committed.
+
+## Production hold
+
+The original [RA2 manual, Building Units and Structures, printed page 19](https://oldgamesdownload.com/manual/command-conquer-red-alert-2-windows-manual-english/)
+specifies right-click suspension of an unfinished item, left-click resume,
+and a second right-click cancellation that returns its spent credits.
+This is behavioral evidence from the manual, not a controlled original-game
+pixel or timing observation. The original startup blocker remains #148.
+
+The shared sidebar handlers follow that sequence for the current factory
+head. A held head keeps its progress, paid credits and queue position;
+its production clock stays fixed. `ON HOLD` appears in gold retail-font
+text on a black strip, and hover text explains resume/cancel. This strip's
+wording, geometry and color remain native presentation policies. Drawing
+preserves complete saved match bytes. Category changes and focus/menu
+changes cannot release a hold because it belongs to simulation state.
+
+Pending queue controls use the same queue-edit function as simulation ticks,
+so rapid hold/resume/cancel clicks before the next tick see earlier intent
+without advancing time, charging credits or drawing RNG. Other pending world
+commands are outside that preview.
+
+The hold blocks every successor in that factory queue. Other player
+factories and enemy production continue normally. Resuming does not queue
+another copy, spend the remaining price up front or bypass low-power,
+credit or missing-factory stalls. Credits returning or a replacement factory
+cannot release the explicit hold. Completed structures retain their READY
+placement/cancellation workflow and cannot be held.
+
+For multiple copies, the second right-click cancels the held paid head,
+then the next item starts unheld. Right-clicking a different waiting type
+retains the existing newest-matching cancellation behavior. These details
+are explicit native policies until observed in the original game. The
+manual establishes single-item hold/resume/refund, not every queued-copy
+case. Hold-specific EVA audio remains a follow-up in #86.
+
+`production::hold_tests` exercises fixed integer payments, head blocking,
+factory/owner isolation, idempotent hold commands, factory/credit recovery,
+refunds, successor state, hash differences, legacy saves and deterministic
+continuation. The retail `production_tests` test uses the live sidebar
+handlers and compositor with actual MTNK/GAPOWR recipes on EB1. It checks
+paid suspension, continued hold, save reconstruction, resume without a
+copy, cancellation, structure hold and READY placement. Set
+`OPENYR_PRODUCTION_HOLD_PROOF=<external-dir>` when running
+`cargo test -p yr-app --bin openyr production_tests -- --nocapture` to
+export tick-labeled full frames, queue receipts and a held match snapshot.
+Retail art and snapshots stay outside git.

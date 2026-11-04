@@ -4,7 +4,7 @@ use crate::{BuildOrder, Product, Sim, UnitSpec, WeaponSpec};
 use std::fmt;
 
 const MAGIC: &[u8; 8] = b"OYRSIM\0\0";
-pub const VERSION: u32 = 3;
+pub const VERSION: u32 = 4;
 pub const MAX_SAVE_BYTES: usize = 64 * 1024 * 1024;
 const MAX_STAT: i64 = i32::MAX as i64;
 const MAX_COORD: i32 = 1 << 24;
@@ -286,6 +286,7 @@ pub(crate) fn product(p: Product) -> Result<(), SaveError> {
 
 pub(crate) fn order(o: &BuildOrder) -> Result<(), SaveError> {
     product(o.product)?;
+    require(!o.held || !o.done(), "completed build cannot be held")?;
     require(
         (0..=MAX_STAT).contains(&o.cost) && o.ticks > 0,
         "build cost/time out of range",
