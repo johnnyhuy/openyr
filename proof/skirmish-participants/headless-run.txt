@@ -1,0 +1,31 @@
+tick 2: queued GAPOWR
+/workspace/scratch/skirmish-proof/headless/frame-00300.png: Structures tab
+/workspace/scratch/skirmish-proof/headless/frame-00300-defences.png: Defences tab
+/workspace/scratch/skirmish-proof/headless/frame-00300-infantry.png: Infantry tab
+/workspace/scratch/skirmish-proof/headless/frame-00300-vehicles.png: Vehicles tab
+AI: $9182, queue 2, groups 0, scout false, hash 5d75ea53ce8243a8
+/workspace/scratch/skirmish-proof/headless/frame-00300.png: tick 300 $8578 player 12 units / 5 buildings / enemy 11 units, 5 enemy buildings, power (200, 85), queue 7, Ongoing
+tick 560: placed GAPOWR at (82, 81)
+/workspace/scratch/skirmish-proof/headless/frame-00900.png: Structures tab
+/workspace/scratch/skirmish-proof/headless/frame-00900-defences.png: Defences tab
+/workspace/scratch/skirmish-proof/headless/frame-00900-infantry.png: Infantry tab
+/workspace/scratch/skirmish-proof/headless/frame-00900-vehicles.png: Vehicles tab
+AI: $8437, queue 1, groups 0, scout true, hash 947797538d5bfdf9
+/workspace/scratch/skirmish-proof/headless/frame-00900.png: tick 900 $6774 player 16 units / 6 buildings / enemy 11 units, 4 enemy buildings, power (400, 85), queue 2, Ongoing
+tick 1200: queued GAREFN
+/workspace/scratch/skirmish-proof/headless/frame-01500.png: Structures tab
+/workspace/scratch/skirmish-proof/headless/frame-01500-defences.png: Defences tab
+/workspace/scratch/skirmish-proof/headless/frame-01500-infantry.png: Infantry tab
+/workspace/scratch/skirmish-proof/headless/frame-01500-vehicles.png: Vehicles tab
+AI: $7145, queue 3, groups 1, scout true, hash b855af5d49b2ee39
+/workspace/scratch/skirmish-proof/headless/frame-01500.png: tick 1500 $5344 player 13 units / 6 buildings / enemy 9 units, 2 enemy buildings, power (400, 85), queue 2, Ongoing
+tick 2480: placed GAREFN at (89, 77)
+OpenYR: match OpenYR: EB1.MMX | $4000 | tick 5767 | AI groups 3 | 0 selected | Lost
+/workspace/scratch/skirmish-proof/headless/frame-06000.png: Structures tab
+/workspace/scratch/skirmish-proof/headless/frame-06000-defences.png: Defences tab
+/workspace/scratch/skirmish-proof/headless/frame-06000-infantry.png: Infantry tab
+/workspace/scratch/skirmish-proof/headless/frame-06000-vehicles.png: Vehicles tab
+AI: $5687, queue 2, groups 3, scout true, hash 752f3f10fc2821e5
+/workspace/scratch/skirmish-proof/headless/frame-06000.png: tick 6000 $4000 player 0 units / 0 buildings / enemy 11 units, 1 enemy buildings, power (0, 0), queue 0, Lost
+/workspace/scratch/skirmish-proof/headless/audio.wav: stereo 44100 Hz, 5999 ticks; cues in /workspace/scratch/skirmish-proof/headless/audio-cues.tsv
+OpenYR: headless tick 6000, hash 752f3f10fc2821e5, Lost
