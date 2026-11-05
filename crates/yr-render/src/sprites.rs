@@ -396,12 +396,22 @@ impl SpriteBank {
 
     /// Static projectile art from the retained fired weapon identity.
     pub fn get_projectile(&mut self, source: u64) -> Option<&Sprite> {
+        self.get_projectile_directed(source, None)
+    }
+
+    /// Optional directional art uses the authoritative next flight step in leptons.
+    pub fn get_projectile_directed(
+        &mut self,
+        source: u64,
+        motion: Option<(i32, i32)>,
+    ) -> Option<&Sprite> {
         self.projectiles.get(
             &self.vfs,
             &self.rules,
             &self.art_ini,
             &self.unit_pal,
             source,
+            motion,
         )
     }
 

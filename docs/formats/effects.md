@@ -436,8 +436,8 @@ current theater's unit palette, transparent index zero and no shadow half.
 The retained weapon identity selects the projectile image independently of
 the current shooter or target. The renderer accepts one-frame SHP bodies,
 caps canvases at 128x128 and caches at most 128 weapon sources. Missing or
-ambiguous sources, invalid names/data, invisible types, directional/animated
-sheets and voxel projectiles have no guessed body.
+ambiguous sources, invalid names/data, invisible types, animated sheets, unsupported directional layouts and voxel projectiles have no
+guessed body.
 
 The previous rules conversion used `Fix::from_int(Speed * 4)` and multiplied
 velocity by an extra 256 (#122). The current native policy uses raw leptons:
@@ -461,6 +461,62 @@ bodies. No new flight clock or physics approximation is added by rendering.
 Save/load immediately reconstructs the body from saved position/provenance;
 old flights without provenance omit optional art. Rendering never changes
 the sim, save bytes or RNG.
+
+## Directional missile bodies
+
+Retail `RULESMD.INI` gives IFV (`FV`) `Primary=HoverMissile`. That weapon
+uses `AAHeatSeeker2`, whose `Image=DRAGON` is declared with `Rotates=yes`
+in `ARTMD.INI`. Aegis `Medusa` uses `MedusaProjectile` and `Image=MEDUSA`,
+also rotating. `RA2.MIX/CONQUER.MIX/DRAGON.SHP` is 1,384 bytes with 32
+24x16 canvases. `MEDUSA.SHP` in the same archive is 1,832 bytes with 64
+19x19 canvases; its trailing 32 headers are empty. Numbered contact sheets
+show a complete directional turn in the first 32 canvases. These are retail
+INI/header/pixel observations, without inspecting original instructions.
+
+The initial native policy selects the nearest of 32 directions,
+counterclockwise from screen up, after projecting the current axis-clamped
+homing step into the 2:1 isometric view. This follows the target's current
+position, including turns after one axis reaches alignment, rather than
+retaining the dead shooter's facing. Direction is reconstructed from saved
+flight/target data on the first draw after load. The read-only sim helper
+shares the clamp used by the flight phase and adds no persisted fields.
+Future target motion may change the next tick's step. Original frame-zero
+orientation and quantization still require a controlled original-game capture;
+source-pixel agreement alone does not establish that calibration.
+
+Only 32-frame rotating sheets and 64-frame sheets with an entirely empty
+trailing half are supported. Ambiguous counts, nonempty trailing halves,
+animated/voxel bodies, unsafe image names, invisible projectiles and malformed
+optional assets are omitted. Canvases remain capped at 128x128. At most 128
+weapon sources and 64 decoded body frames are cached; eviction reconstructs
+pixels from the original bytes. Static one-frame cannon bodies keep their
+existing path. Rendering uses the current theater's unit palette with index
+zero transparent, canvas-center anchors, no assumed shadow half and the shared
+world-depth pass. It changes no flight physics, RNG, hash or save schema.
+
+`DRAGON` declares `UseLineTrail=yes`, `LineTrailColor=216,216,255` and
+`LineTrailColorDecrement=16`; `MEDUSA` declares `UseLineTrail=yes`,
+`LineTrailColor=208,208,208`, `LineTrailColorDecrement=12` and `SpawnDelay=2`.
+Those trails remain unimplemented in #102, along with original launch offsets,
+height, trajectories, lighting, nonempty shadow halves and other projectile
+classes. The body does not imply that these effects or flight behavior match
+the original engine.
+
+```sh
+cargo test -p yr-render projectiles -- --nocapture
+OPENYR_MISSILE_PROOF=/tmp/openyr-missiles cargo test -p yr-app --bin openyr retail_missiles -- --nocapture
+```
+
+The controlled EB1 compositor fixture fires actual retail IFV HoverMissiles
+in eight directions, destroys the shooter and compares visible/hidden bodies
+at tick 3 with identical gameplay hashes. Repeated redraws preserve complete
+save bytes. Restoring the in-flight snapshot and rebuilding the sprite bank
+reproduces the full frame. The target then moves and the flight still arrives.
+The exports include full native frames, same-tick hidden-body comparisons,
+state/motion JSON and an in-flight save, all outside git. Independent source
+checks compare all 32 DRAGON and 32 MEDUSA canvases and verify anchors, empty
+halves, cache bounds and reconstruction after eviction. Synthetic cases reject
+hostile dimensions/counts and unsupported layouts before canvas decoding.
 
 ## Verification
 

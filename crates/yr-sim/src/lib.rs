@@ -318,6 +318,15 @@ pub struct Projectile {
     speed: Fix,
 }
 
+impl Projectile {
+    fn motion_to(&self, tx: Fix, ty: Fix) -> (Fix, Fix) {
+        (
+            (tx - self.x).clamp(-self.speed, self.speed),
+            (ty - self.y).clamp(-self.speed, self.speed),
+        )
+    }
+}
+
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct Sim {
@@ -916,6 +925,13 @@ impl Sim {
         self.reap_dead();
     }
 
+    /// The homing step toward the current target position, also available after load.
+    /// Missing targets have no direction and will be removed by the flight phase.
+    pub fn projectile_motion(&self, p: &Projectile) -> Option<(Fix, Fix)> {
+        let (tx, ty) = self.target_pos(p.target)?;
+        Some(p.motion_to(tx, ty))
+    }
+
     fn projectile_phase(&mut self) {
         let mut hits: Vec<(u32, i64, Option<ShotOrigin>)> = Vec::new();
         let mut alive: Vec<Projectile> = Vec::new();
@@ -928,8 +944,9 @@ impl Sim {
                 hits.push((p.target, p.damage, p.origin));
             } else {
                 // Axis-clamped homing step (deterministic, no floats).
-                p.x += dx.clamp(-p.speed, p.speed);
-                p.y += dy.clamp(-p.speed, p.speed);
+                let (mx, my) = p.motion_to(tx, ty);
+                p.x += mx;
+                p.y += my;
                 alive.push(p);
             }
         }

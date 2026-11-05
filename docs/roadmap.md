@@ -201,6 +201,12 @@ Johnny on 2026-10-31.
       (#102, #122), including exact source pixels, invisible-weapon exclusion,
       bounded optional decoding and immediate in-flight save/load reconstruction.
       Original arcs, launch offsets, trajectories, lighting and depth remain open.
+- [x] Directional retail missile bodies (#206, #102): bounded 32-facing SHP
+      sheets (including an empty trailing half) follow the current axis-clamped
+      homing direction in world depth. All DRAGON/MEDUSA source frames, eight
+      firing directions, moving targets, shooter loss and fresh-cache saved
+      flights are checked without changing hashes or save bytes. Original
+      orientation calibration, trails, height, offsets and lighting remain open.
 - [x] Give the controlled cannon proof shooter player ownership (#131), so its
       real tank body is drawn alongside the muzzle, projectile and enemy target.
 - [x] Sidebar labels from `ra2md.csf` (#47): all 22 Allied entries show
