@@ -21,6 +21,8 @@ mod death_tests;
 mod front_flow;
 mod launcher;
 mod menu_flow;
+#[cfg(test)]
+mod missile_tests;
 mod order_feedback;
 #[cfg(test)]
 mod production_tests;
@@ -932,7 +934,7 @@ impl App {
         #[derive(Clone, Copy)]
         enum WorldArt<'a> {
             Entity(usize),
-            Projectile(u64),
+            Projectile(u64, Option<(i32, i32)>),
             Effect(&'a yr_app::effects::Effect),
         }
         let mut world: Vec<_> = markers
@@ -950,7 +952,13 @@ impl App {
             world.extend(session.sim.projectiles().iter().filter_map(|projectile| {
                 Some((
                     point(projectile.x, projectile.y),
-                    WorldArt::Projectile(projectile.origin?.weapon?),
+                    WorldArt::Projectile(
+                        projectile.origin?.weapon?,
+                        session
+                            .sim
+                            .projectile_motion(projectile)
+                            .map(|(x, y)| (x.raw(), y.raw())),
+                    ),
                 ))
             }));
         }
@@ -1051,9 +1059,10 @@ impl App {
             let WorldArt::Entity(index) = art else {
                 if let Some(bank) = bank.as_mut() {
                     let (sprite, position) = match art {
-                        WorldArt::Projectile(source) => {
-                            (bank.get_projectile(source), (footprint.x, footprint.y))
-                        }
+                        WorldArt::Projectile(source, motion) => (
+                            bank.get_projectile_directed(source, motion),
+                            (footprint.x, footprint.y),
+                        ),
                         WorldArt::Effect(effect) => (
                             bank.get_effect(&effect.name, tick.saturating_sub(effect.born)),
                             (effect.x.raw() as f32 / 256.0, effect.y.raw() as f32 / 256.0),
