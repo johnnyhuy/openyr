@@ -74,6 +74,12 @@ Johnny on 2026-10-31.
       and death events route type/weapon art through ANIM.PAL, bounded caches
       and one-shot presentation clocks. All 78 source frames, colored alpha,
       same-tick fire/death and unchanged sim/save data are checked.
+- [x] Put ground-position combat art into world footprint order (#204, #102).
+      Muzzle, impact/destruction clips and cannon bodies can pass behind
+      foreground units/buildings while front effects retain alpha blending.
+      Actual retail fatal shots check rear/front overlap, saved-flight cache
+      reconstruction and unchanged sim/save bytes. Original layer overrides,
+      muzzle offsets, projectile height and static baked objects remain open.
 - [ ] Complete original effects and graphics calibration (#102): special
       warhead impacts, other projectile classes/trails, smoke/fire, debris, environmental and
       special-weapon effects, special infantry deaths, muzzle offsets, depth, timing

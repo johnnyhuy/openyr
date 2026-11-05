@@ -14,6 +14,15 @@ struct Entity {
     y: Fix,
     facing: u8,
     owner: u8,
+    foundation: Option<Foundation>,
+}
+
+/// Retained structure bounds keep its combat art above its own body while
+/// still allowing foreground neighbours to occlude it after destruction.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Foundation {
+    pub cell: (u16, u16),
+    pub size: (u16, u16),
 }
 
 pub struct Effect {
@@ -21,6 +30,7 @@ pub struct Effect {
     pub x: Fix,
     pub y: Fix,
     pub born: u64,
+    pub foundation: Option<Foundation>,
 }
 
 pub struct InfantryDeath {
@@ -46,12 +56,23 @@ impl EffectScene {
             .sim
             .units()
             .iter()
-            .map(|u| (u.id, u.kind, u.x, u.y, u.facing, u.owner))
+            .map(|u| (u.id, u.kind, u.x, u.y, u.facing, u.owner, None))
             .chain(session.sim.buildings().iter().map(|b| {
                 let (x, y) = b.centre();
-                (b.id, b.kind, x, y, 0, b.owner)
+                (
+                    b.id,
+                    b.kind,
+                    x,
+                    y,
+                    0,
+                    b.owner,
+                    Some(Foundation {
+                        cell: b.cell,
+                        size: b.size,
+                    }),
+                )
             }))
-            .filter_map(|(id, kind, x, y, facing, owner)| {
+            .filter_map(|(id, kind, x, y, facing, owner, foundation)| {
                 Some((
                     id,
                     Entity {
@@ -60,6 +81,7 @@ impl EffectScene {
                         y,
                         facing,
                         owner,
+                        foundation,
                     },
                 ))
             })
@@ -98,6 +120,7 @@ impl EffectScene {
                             y,
                             facing,
                             owner,
+                            foundation: None,
                         },
                         origin,
                     ));
@@ -105,6 +128,7 @@ impl EffectScene {
                 continue;
             }
             if let Event::Impact {
+                target,
                 x,
                 y,
                 origin: Some(origin),
@@ -115,7 +139,16 @@ impl EffectScene {
                     .weapon
                     .and_then(|weapon| bank.impact_effect(weapon, origin.damage))
                 {
-                    self.push(bank, name, x, y, tick);
+                    self.push(
+                        bank,
+                        Effect {
+                            name,
+                            x,
+                            y,
+                            born: tick,
+                            foundation: entities.get(&target).and_then(|e| e.foundation),
+                        },
+                    );
                 }
                 continue;
             }
@@ -156,19 +189,28 @@ impl EffectScene {
                 bank.destruction_effect(&entity.kind)
             };
             if let Some(name) = name {
-                self.push(bank, name, entity.x, entity.y, tick);
+                self.push(
+                    bank,
+                    Effect {
+                        name,
+                        x: entity.x,
+                        y: entity.y,
+                        born: tick,
+                        foundation: entity.foundation,
+                    },
+                );
             }
         }
     }
 
-    fn push(&mut self, bank: &mut SpriteBank, name: String, x: Fix, y: Fix, born: u64) {
-        if !bank.effect_alive(&name, 0) {
+    fn push(&mut self, bank: &mut SpriteBank, effect: Effect) {
+        if !bank.effect_alive(&effect.name, 0) {
             return;
         }
         if self.active.len() == MAX_EFFECTS {
             self.active.remove(0);
         }
-        self.active.push(Effect { name, x, y, born });
+        self.active.push(effect);
     }
 }
 

@@ -13,6 +13,8 @@
 //! `yr_sim::Command` only, the UI never mutates sim state directly (issue #15).
 
 mod camera;
+#[cfg(test)]
+mod combat_depth_tests;
 mod control_groups;
 #[cfg(test)]
 mod death_tests;
@@ -924,8 +926,53 @@ impl App {
                 });
             }
         }
+        // Ground-position combat art shares entity depth instead of painting
+        // through every foreground body. Equal-position shots follow entities;
+        // projectiles precede transients, preserving their existing tie order.
+        #[derive(Clone, Copy)]
+        enum WorldArt<'a> {
+            Entity(usize),
+            Projectile(u64),
+            Effect(&'a yr_app::effects::Effect),
+        }
+        let mut world: Vec<_> = markers
+            .iter()
+            .enumerate()
+            .map(|(index, m)| (m.footprint, WorldArt::Entity(index)))
+            .collect();
+        let point = |x: Fix, y: Fix| yr_render::depth::Footprint {
+            x: x.raw() as f32 / 256.0,
+            y: y.raw() as f32 / 256.0,
+            w: 0.0,
+            h: 0.0,
+        };
+        if let Some(session) = &self.session {
+            world.extend(session.sim.projectiles().iter().filter_map(|projectile| {
+                Some((
+                    point(projectile.x, projectile.y),
+                    WorldArt::Projectile(projectile.origin?.weapon?),
+                ))
+            }));
+        }
+        world.extend(self.effects.active.iter().map(|effect| {
+            (
+                effect.foundation.map_or_else(
+                    || point(effect.x, effect.y),
+                    |foundation| yr_render::depth::Footprint {
+                        x: f32::from(foundation.cell.0),
+                        y: f32::from(foundation.cell.1),
+                        w: f32::from(foundation.size.0),
+                        h: f32::from(foundation.size.1),
+                    },
+                ),
+                WorldArt::Effect(effect),
+            )
+        }));
         let order = yr_render::depth::painter_order(
-            &markers.iter().map(|m| m.footprint).collect::<Vec<_>>(),
+            &world
+                .iter()
+                .map(|(footprint, _)| *footprint)
+                .collect::<Vec<_>>(),
         );
         for sy in 0..fh as i32 {
             let my = self.view.cam_y + sy as f32 / self.view.zoom;
@@ -1000,6 +1047,39 @@ impl App {
             }
         }
         for &index in &order {
+            let (footprint, art) = world[index];
+            let WorldArt::Entity(index) = art else {
+                if let Some(bank) = bank.as_mut() {
+                    let (sprite, position) = match art {
+                        WorldArt::Projectile(source) => {
+                            (bank.get_projectile(source), (footprint.x, footprint.y))
+                        }
+                        WorldArt::Effect(effect) => (
+                            bank.get_effect(&effect.name, tick.saturating_sub(effect.born)),
+                            (effect.x.raw() as f32 / 256.0, effect.y.raw() as f32 / 256.0),
+                        ),
+                        WorldArt::Entity(_) => unreachable!(),
+                    };
+                    if let Some(sprite) = sprite {
+                        let (mx, my) = yr_app::interaction::ground_point(
+                            map,
+                            self.session.as_ref().and_then(|s| s.sim.terrain()),
+                            position,
+                        );
+                        blit_sprite(
+                            frame,
+                            fw,
+                            fh,
+                            sprite,
+                            (mx - self.view.cam_x) * self.view.zoom,
+                            (my - self.view.cam_y) * self.view.zoom,
+                            k,
+                            SpritePass::Effect,
+                        );
+                    }
+                }
+                continue;
+            };
             let m = &markers[index];
             let drawn = match (&m.art, bank.as_mut()) {
                 (Some((id, facing, owner)), Some(bank)) => {
@@ -1037,56 +1117,6 @@ impl App {
             };
             if !drawn && m.death.is_none() {
                 draw_diamond(frame, fw, fh, m.wx, m.wy, m.half_w, m.col);
-            }
-        }
-        if let Some(bank) = bank.as_mut() {
-            if let Some(session) = &self.session {
-                for projectile in session.sim.projectiles() {
-                    let Some(sprite) = projectile
-                        .origin
-                        .and_then(|origin| origin.weapon)
-                        .and_then(|source| bank.get_projectile(source))
-                    else {
-                        continue;
-                    };
-                    let x = projectile.x.raw() as f32 / 256.0;
-                    let y = projectile.y.raw() as f32 / 256.0;
-                    let (mx, my) =
-                        yr_app::interaction::ground_point(map, session.sim.terrain(), (x, y));
-                    blit_sprite(
-                        frame,
-                        fw,
-                        fh,
-                        sprite,
-                        (mx - self.view.cam_x) * self.view.zoom,
-                        (my - self.view.cam_y) * self.view.zoom,
-                        k,
-                        SpritePass::Effect,
-                    );
-                }
-            }
-            for effect in &self.effects.active {
-                let x = effect.x.raw() as f32 / 256.0;
-                let y = effect.y.raw() as f32 / 256.0;
-                let (mx, my) = yr_app::interaction::ground_point(
-                    map,
-                    self.session.as_ref().and_then(|s| s.sim.terrain()),
-                    (x, y),
-                );
-                if let Some(sprite) =
-                    bank.get_effect(&effect.name, tick.saturating_sub(effect.born))
-                {
-                    blit_sprite(
-                        frame,
-                        fw,
-                        fh,
-                        sprite,
-                        (mx - self.view.cam_x) * self.view.zoom,
-                        (my - self.view.cam_y) * self.view.zoom,
-                        k,
-                        SpritePass::Effect,
-                    );
-                }
             }
         }
         drop(bank);
@@ -2561,6 +2591,7 @@ mod render_tests {
                         x: e.x,
                         y: e.y,
                         born: e.born,
+                        foundation: e.foundation,
                     })
                     .collect();
                 let without = capture(&app, "impact-without-same-tick", true);
