@@ -3,6 +3,106 @@ use std::path::PathBuf;
 use yr_sim::{Command, OWNER_PLAYER};
 
 #[test]
+fn retail_building_impacts_and_destruction_retain_their_foundation() {
+    let dir = PathBuf::from(std::env::var("HOME").unwrap())
+        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    if !dir.is_dir() {
+        return;
+    }
+    let fs = yr_assets::AssetFs::open(&dir).unwrap();
+    let rules = yr_rules::Rules::load(
+        &yr_formats::IniFile::parse(&String::from_utf8_lossy(fs.read("RULESMD.INI").unwrap())),
+        &yr_formats::IniFile::parse(&String::from_utf8_lossy(fs.read("ARTMD.INI").unwrap())),
+    );
+    let dir = dir.to_str().unwrap();
+    let mut session = crate::session::load(dir, "EB1.MMX", 42).unwrap();
+    let yard = session.kinds.iter().position(|k| k == "GACNST").unwrap() as u16;
+    let tank = session.kinds.iter().position(|k| k == "MTNK").unwrap() as u16;
+    session.sim = yr_sim::Sim::new(42);
+    session
+        .sim
+        .set_terrain(yr_sim::TerrainGrid::new(0, 0, 12, 12));
+    let mut weapon = yr_sim::WeaponSpec::from_rules(&rules, "105mm").unwrap();
+    weapon.projectile_speed = Fix::ZERO;
+    weapon.rof_ticks = 1;
+    session.sim.step(&[
+        Command::PlaceBuilding {
+            kind: yard,
+            x: 2,
+            y: 2,
+            w: 4,
+            h: 4,
+            hp: 1000,
+            armor: 0,
+            power: 0,
+            owner: yr_sim::OWNER_ENEMY,
+            role: yr_sim::Role::ConstructionYard,
+        },
+        Command::Spawn {
+            kind: tank,
+            x: Fix::ONE,
+            y: Fix::from_int(3),
+            loco: yr_sim::terrain::Loco::Track,
+            speed: Fix::ZERO,
+            hp: 1000,
+            armor: 0,
+            weapon: Some(weapon),
+        },
+        Command::AssignOwner {
+            id: 2,
+            owner: OWNER_PLAYER,
+        },
+    ]);
+    session.sim.drain_events();
+    let mut bank = SpriteBank::open(dir, "EB1.MMX").unwrap();
+    let mut scene = EffectScene::default();
+    scene.remember(&session);
+    session.sim.step(&[Command::Attack { id: 2, target: 1 }]);
+    let events = session.sim.drain_events();
+    scene.update(&session, &events, &mut bank);
+    let foundation = Some(Foundation {
+        cell: (2, 2),
+        size: (4, 4),
+    });
+    let impact = scene.active.iter().find(|e| e.name == "S_CLSN22").unwrap();
+    assert_eq!(impact.foundation, foundation);
+    assert_eq!((impact.x, impact.y), (Fix::from_int(4), Fix::from_int(4)));
+    let muzzle = scene.active.iter().find(|e| e.name == "GUNFIRE").unwrap();
+    assert_eq!(muzzle.foundation, None);
+    session.sim.step(&[Command::Destroy { id: 1 }]);
+    let events = session.sim.drain_events();
+    scene.update(&session, &events, &mut bank);
+    assert!(session.sim.buildings().is_empty());
+    let destruction = scene
+        .active
+        .iter()
+        .find(|e| e.born == session.sim.tick())
+        .unwrap();
+    assert_eq!(destruction.foundation, foundation);
+    assert_eq!(
+        (destruction.x, destruction.y),
+        (Fix::from_int(4), Fix::from_int(4))
+    );
+    // Unknown targets keep the authoritative impact point without inventing
+    // the foundation of another building at the same coordinates.
+    scene.update(
+        &session,
+        &[Event::Impact {
+            target: 999,
+            x: Fix::from_int(4),
+            y: Fix::from_int(4),
+            origin: Some(yr_sim::ShotOrigin {
+                shooter: 2,
+                weapon: weapon.source,
+                damage: weapon.damage,
+            }),
+        }],
+        &mut bank,
+    );
+    assert_eq!(scene.active.last().unwrap().foundation, None);
+}
+
+#[test]
 fn retail_infantry_deaths_use_lethal_weapon_after_saved_flight_and_shooter_loss() {
     let dir = PathBuf::from(std::env::var("HOME").unwrap())
         .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");

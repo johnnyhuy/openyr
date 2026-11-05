@@ -58,8 +58,25 @@ tick the app remembers entity types and positions, preserving effects from
 an entity that fires and dies during that same tick. Surviving entities use
 their current poses. Effects are centered on the entity's ground position
 with the map's actual terrain-height lift. Barrel/infantry muzzle offsets
-and per-effect depth still need original-game observation; the first pass
-paints effects after world bodies and before health bars and UI.
+and art-specific layer overrides still need original-game observation.
+Ground-position effects and cannon bodies now join units, buildings and
+infantry death clips in the footprint painter order (#204). A rear effect
+therefore passes behind a foreground body instead of painting through it.
+An effect in front retains straight-alpha blending. Effects on a known
+building inherit its full foundation, while their draw anchor remains the
+actual muzzle/impact/destruction position. This keeps impacts above the
+struck building itself and preserves its depth against adjacent structures.
+Remembered foundations survive the building's destruction; unknown targets
+fall back to an authoritative ground point. Equal-position units or matching
+foundations precede their combat art; equal-position cannon bodies precede
+transient clips, and clips keep event insertion order. Bibs and unioned
+ground shadows remain below bodies, with health bars and UI above all combat art.
+
+This is the existing native ground-plane policy, not original-engine layer
+parity. Effect `Layer`, `ZAdjust` and `YSort` overrides, airborne projectile
+height, muzzle offsets and interleaving with objects already baked into the
+terrain image remain unimplemented or uncalibrated. No new simulation
+position, clock, RNG call or saved state is introduced.
 
 Clips play from `Start` (default 0) to exclusive `End` (default actual frame
 count). Finite `LoopCount` defaults to 1 and allows 1 through 1024 total
@@ -436,9 +453,11 @@ This corrects an internal unit mismatch; the factor of four is still a native
 policy pending controlled original observation in #19. Flight positions keep
 the existing deterministic axis-clamped homing model. Original arcing height,
 barrel launch offsets, collision, trajectories, trails, palette lighting and
-depth against tall objects remain unimplemented or uncalibrated. Bodies draw
-at the authoritative ground position with terrain lift, before transient
-effects. No new flight clock or physics approximation is added by rendering.
+art-specific layers against tall objects remain unimplemented or uncalibrated.
+Bodies draw
+at the authoritative ground position with terrain lift, in world footprint
+order alongside bodies and transients. Equal-position transients follow cannon
+bodies. No new flight clock or physics approximation is added by rendering.
 Save/load immediately reconstructs the body from saved position/provenance;
 old flights without provenance omit optional art. Rendering never changes
 the sim, save bytes or RNG.
@@ -476,6 +495,26 @@ cargo test -p yr-render -p yr-app effects -- --nocapture
 OPENYR_VISUAL_DUMP=/tmp/openyr-native-effects cargo test -p yr-app --bin openyr retail_native_detail_and_event_effect_proof -- --nocapture
 cargo run --release -- <gamedir> EB1.MMX --frames /tmp/openyr-native-skirmish 300 900 1500 2400 3000
 ```
+
+The combat-depth regression fires an actual retail MTNK `105mm` at a
+one-health vehicle beside a Construction Yard, once behind it and once in
+front. Sampled flight/clip ticks compare opaque foreground-building pixels
+to both a combat-hidden baseline and the previous overlay composition. Live unit
+coverage is excluded from this building-specific mask because those units
+have their own world depth. The flight, muzzle, impact and destruction all
+come from simulation events. A saved flight reconstructs with a fresh sprite
+bank; repeated compositions preserve the hash and complete save bytes.
+Building impacts also retain their own body coverage, and event-routing
+checks preserve a foundation through destruction. Missing optional art never
+produces a fallback diamond.
+
+```sh
+OPENYR_COMBAT_DEPTH_PROOF=/tmp/openyr-combat-depth cargo test -p yr-app --bin openyr retail_combat_art_respects -- --nocapture
+```
+
+The exports pair the fixed compositor with a reconstruction of the old overlay
+at the same tick and hash, plus JSON receipts. They demonstrate native
+occlusion; they do not establish original-game layer or timing parity.
 
 All exports contain retail art and stay outside git. No original engine
 source or instructions were used. These observations come from the user's
