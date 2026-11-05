@@ -121,7 +121,7 @@ Main opens Single Player, actual controls or an exit confirmation. Internet,
 network, campaign and movie/credits actions are visibly disabled. Single
 Player opens saved matches or the supported skirmish setup. Setup shows the
 retail map's authored preview and two participants. Names, nine Allied/Soviet
-countries, eight colors, authored start indices, opposing teams, Short Game,
+countries in retail registry order, eight colors, authored start indices, opposing teams, Short Game,
 three native speeds, credits and unit count feed actual setup and saved metadata.
 The form retains two participants; extra map rows stay closed. Country menus
 exclude Yuri because the slave economy and its starting setup are unsupported.
@@ -149,7 +149,8 @@ outside dismisses the popup and consumes the click, including over Start.
 Name editing supports selection replacement, Ctrl+A and Unicode backspace;
 Enter moves focus without starting a match. Invalid names disable Start.
 
-Selected colors come from retail [Colors] HSV values and reach sprite remaps,
+Selected colors come from retail [Colors] HSV values evaluated with bounded
+integer ratios, avoiding float cancellation at exact component boundaries. They reach sprite remaps,
 radar, fallback markers and loading bars. Short Game counts surviving structures
 for victory; otherwise surviving units also count. Slow/Normal/Fast pace the
 window at 10/15/30 steps per second without changing simulation tick arithmetic.

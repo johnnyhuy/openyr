@@ -603,34 +603,32 @@ pub fn named_color(rules: &IniFile, name: &str) -> [u8; 3] {
     let hsv = rules
         .section("Colors")
         .and_then(|s| s.get(name))
-        .and_then(|v| {
-            let mut it = v
-                .split(';')
-                .next()?
-                .split(',')
-                .map(|p| p.trim().parse::<f32>().ok());
-            Some((it.next()??, it.next()??, it.next()??))
+        .and_then(|value| {
+            let mut parts = value.split(';').next()?.split(',');
+            let mut next = || parts.next()?.trim().parse::<u8>().ok().map(u32::from);
+            let value = (next()?, next()?, next()?);
+            parts.next().is_none().then_some(value)
         });
-    let Some((h, sat, val)) = hsv else {
-        return [170, 170, 170];
+    let Some((hue, saturation, value)) = hsv else {
+        return [170; 3];
     };
-    let (h, sat, val) = (h / 255.0 * 360.0, sat / 255.0, val / 255.0);
-    let c = val * sat;
-    let x = c * (1.0 - ((h / 60.0) % 2.0 - 1.0).abs());
-    let (r, g, b) = match h {
-        h if h < 60.0 => (c, x, 0.0),
-        h if h < 120.0 => (x, c, 0.0),
-        h if h < 180.0 => (0.0, c, x),
-        h if h < 240.0 => (0.0, x, c),
-        h if h < 300.0 => (x, 0.0, c),
-        _ => (c, 0.0, x),
+    // Evaluate the HSV ramps as integer ratios. Float cancellation at the
+    // minimum component previously turned exact 20 into 19 (SovietLoad).
+    let phase = hue * 6;
+    let sector = phase / 255 % 6;
+    let fraction = phase % 255;
+    let low = value * (255 - saturation) / 255;
+    let rising = value * (65025 - saturation * (255 - fraction)) / 65025;
+    let falling = value * (65025 - saturation * fraction) / 65025;
+    let rgb = match sector {
+        0 => [value, rising, low],
+        1 => [falling, value, low],
+        2 => [low, value, rising],
+        3 => [low, falling, value],
+        4 => [rising, low, value],
+        _ => [value, low, falling],
     };
-    let m = val - c;
-    [
-        ((r + m) * 255.0) as u8,
-        ((g + m) * 255.0) as u8,
-        ((b + m) * 255.0) as u8,
-    ]
+    rgb.map(|v| v as u8)
 }
 
 /// Build the sim terrain grid for a parsed map: TMP terrain types and
@@ -727,6 +725,22 @@ mod tests {
                 (rx - x).abs() < 0.001 && (ry - y).abs() < 0.001,
                 "({x},{y}) -> ({px},{py}) -> ({rx},{ry})"
             );
+        }
+    }
+}
+
+#[cfg(test)]
+mod named_color_tests {
+    use super::*;
+    #[test]
+    fn exact_hsv_components_do_not_cross_a_presentation_quantum() {
+        let rules = IniFile::parse("[Colors]\nSovietLoad=0,235,255\nAlliedLoad=164,255,255\nGrey=0,0,128\nWrap=255,255,255\nBad=0,256,255\nExtra=0,255,255,0\nNegative=-1,255,255\n");
+        assert_eq!(named_color(&rules, "SovietLoad"), [255, 20, 20]);
+        assert_eq!(named_color(&rules, "AlliedLoad"), [0, 36, 255]);
+        assert_eq!(named_color(&rules, "Grey"), [128; 3]);
+        assert_eq!(named_color(&rules, "Wrap"), [255, 0, 0]);
+        for name in ["Bad", "Extra", "Negative", "Missing"] {
+            assert_eq!(named_color(&rules, name), [170; 3]);
         }
     }
 }

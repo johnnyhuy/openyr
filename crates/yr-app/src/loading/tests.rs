@@ -122,8 +122,8 @@ fn retail_loading_preserves_the_stock_country_map_and_uses_the_selected_preview(
             draw(&mut frame, 800, 600, &art, &state, Some(&preview));
             // Independent receipt: raw 802-byte SHP rows, source MPLSU.PAL,
             // RGB565 output. This is a source-art check, not original runtime parity.
-            let country = hash(&frame, (450, 32, 316, 313));
-            assert_eq!(country, 0x97061e52e7661e85);
+            let country = hash(&frame, (450, 32, 316, 268));
+            assert_eq!(country, 0x12a2489dceca70f1);
             if let Some(proof) = &proof {
                 std::fs::create_dir_all(proof).unwrap();
                 std::fs::write(
@@ -190,7 +190,7 @@ fn retail_country_choices_preserve_each_source_map_and_selected_bar_color() {
             art.strings
                 .as_ref()
                 .unwrap()
-                .get(&format!("LoadBriefShort:{}", country.brief()))
+                .get(&format!("LoadBrief:{}", country.brief()))
                 .is_some(),
             "{country:?} brief"
         );
@@ -201,7 +201,7 @@ fn retail_country_choices_preserve_each_source_map_and_selected_bar_color() {
         let mut frame = vec![0; 800 * 600 * 4];
         draw(&mut frame, 800, 600, &art, &state, None);
         // Independent compression-2 row traversal, without the SHP decoder.
-        for y in 32..345usize {
+        for y in 32..300usize {
             let row = &bytes[32 + y * 802..32 + (y + 1) * 802];
             assert_eq!(u16::from_le_bytes(row[..2].try_into().unwrap()), 802);
             for x in 450..766usize {
@@ -218,12 +218,19 @@ fn retail_country_choices_preserve_each_source_map_and_selected_bar_color() {
                 assert_eq!(&frame[at..at + 3], &rgb, "{country:?} {x},{y}");
             }
         }
-        let at = (510 * 800 + 160) * 4;
         let rgb = art.colors[6];
+        let at = (329 * 800 + 21) * 4;
         assert_eq!(
             &frame[at..at + 4],
             &[rgb[0] & 248, rgb[1] & 252, rgb[2] & 248, 255]
         );
+        assert_eq!(art.flags.len(), 9);
+        assert!(art
+            .strings
+            .as_ref()
+            .unwrap()
+            .get(&format!("Name:{}", country.specialty()))
+            .is_some());
         if let Some(out) = std::env::var_os("OPENYR_LOADING_PROOF") {
             std::fs::create_dir_all(&out).unwrap();
             std::fs::write(
@@ -261,5 +268,136 @@ fn unresolved_saved_identity_does_not_show_the_previous_country_or_names() {
     assert_eq!(
         &frame[(32 * 800 + 450) * 4..(32 * 800 + 450) * 4 + 4],
         &[0, 8, 24, 255]
+    );
+}
+
+#[test]
+fn retail_loading_glyph_masks_and_badge_match_public_original_capture() {
+    let directory = std::env::var_os("OPENYR_GAMEDIR")
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(|| {
+            std::path::PathBuf::from(std::env::var("HOME").unwrap_or_default())
+                .join("Games/RA2YR/prefix/drive_c/Westwood/RA2")
+        });
+    if !directory.is_dir() {
+        return;
+    }
+    let fs = AssetFs::open(&directory).unwrap();
+    let art = Art::load(&fs);
+    // The published reference uses Yuri. Exercise the shared layout without
+    // exposing an unsupported Yuri gameplay country in the setup menu.
+    let background = decode_background(
+        fs.read("LS800YURI.SHP").unwrap(),
+        fs.read("MPYLS.PAL").unwrap(),
+    )
+    .unwrap();
+    let flag = decode_flag(PcxImage::parse(fs.read("YRII.PCX").unwrap()).unwrap()).unwrap();
+    let strings = art.strings.as_ref().unwrap();
+    let mut pixels = vec![0; 800 * 600 * 4];
+    let mut canvas = Canvas {
+        frame: &mut pixels,
+        width: 800,
+        height: 600,
+        face: Typeface(art.font.as_ref()),
+    };
+    canvas.image((0, 0), &background);
+    let caption = [255, 20, 20, 255];
+    text(
+        &mut canvas,
+        (20, 300),
+        390,
+        strings.get("GUI:LoadingEx").unwrap(),
+        caption,
+    );
+    details(
+        &mut canvas,
+        strings.get("Name:yuri").unwrap(),
+        strings.get("LoadBrief:YuriCountry").unwrap(),
+        strings.get("Name:YuriCountry").unwrap(),
+        caption,
+    );
+    client(
+        &mut canvas,
+        Some(&flag),
+        "New Player",
+        [58, 210, 41, 255],
+        1,
+    );
+    // Independent masks from CodeWeavers' 800x600 original-game PNG. Both
+    // sides are normalized to RGB565 high bits; the source file stays external.
+    for (rect, color, count, expected) in [
+        ((20, 300, 51, 17), [248, 20, 16], 201, 0x02c7db9ea5a9d8f8u64),
+        ((20, 90, 23, 16), [0, 0, 0], 119, 0x090493d155a000a8),
+        ((20, 160, 400, 34), [248, 20, 16], 2854, 0xfa9a01cc55233b1f),
+        ((714, 307, 30, 21), [248, 20, 16], 89, 0x100784c427d8e6e8),
+        ((174, 326, 69, 17), [56, 208, 40], 306, 0x9d2610e8fffc7d69),
+    ] {
+        let mut hash = 0xcbf29ce484222325u64;
+        let mut actual = 0;
+        for y in rect.1..rect.1 + rect.3 {
+            for x in rect.0..rect.0 + rect.2 {
+                let at = (y * 800 + x) * 4;
+                let matches = (0..3).all(|c| pixels[at + c] & [248, 252, 248][c] == color[c]);
+                actual += usize::from(matches);
+                hash = (hash ^ u64::from(matches)).wrapping_mul(0x100000001b3);
+            }
+        }
+        assert_eq!(
+            (actual, hash),
+            (count, expected),
+            "original glyph mask {rect:?}"
+        );
+    }
+    let mut badge_hash = 0xcbf29ce484222325u64;
+    for (i, pixel) in flag.pixels.as_chunks::<4>().0.iter().enumerate() {
+        if pixel[3] == 0 {
+            continue;
+        }
+        let at = (((323 + i / 47) * 800) + 117 + i % 47) * 4;
+        assert_eq!(&pixels[at..at + 4], pixel);
+        for (value, mask) in pixels[at..at + 4].iter().zip([248, 252, 248, 255]) {
+            badge_hash = (badge_hash ^ u64::from(value & mask)).wrapping_mul(0x100000001b3);
+        }
+    }
+    assert_eq!(
+        badge_hash, 0x04c633e7d9bfb83d,
+        "original non-magenta badge pixels"
+    );
+    if let Some(out) = std::env::var_os("OPENYR_LOADING_PROOF") {
+        std::fs::create_dir_all(&out).unwrap();
+        std::fs::write(
+            std::path::PathBuf::from(out).join("shared-layout-yuri-reference.png"),
+            yr_render::png::encode_rgba(800, 600, &pixels),
+        )
+        .unwrap();
+    }
+}
+
+#[test]
+fn long_briefs_missing_flags_and_client_progress_remain_bounded() {
+    let face = Typeface(None);
+    let lines = wrap(face, &"word ".repeat(10_000), 100);
+    assert!(lines.len() <= 4 && lines.iter().all(|s| face.width(s) <= 100));
+    assert!(decode_flag(PcxImage {
+        width: 1,
+        height: 1,
+        pixels: yr_formats::PcxPixels::Rgb(vec![0; 3])
+    })
+    .is_none());
+    let mut pixels = vec![0; 800 * 600 * 4];
+    let mut canvas = Canvas {
+        frame: &mut pixels,
+        width: 800,
+        height: 600,
+        face,
+    };
+    client(&mut canvas, None, "Player", [255, 0, 0, 255], i32::MAX);
+    assert_eq!(
+        &pixels[(331 * 800 + 104) * 4..(331 * 800 + 104) * 4 + 4],
+        &[180, 0, 0, 255]
+    );
+    assert_eq!(
+        &pixels[(331 * 800 + 105) * 4..(331 * 800 + 105) * 4 + 4],
+        &[0, 0, 0, 255]
     );
 }

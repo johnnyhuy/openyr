@@ -32,7 +32,8 @@ palette is 768 bytes. No guessed fallback palette substitutes for a country.
 | Iraq | LS800IRAQ.SHP | MPLSI.PAL |
 
 The loading-art cache is bounded to these nine known pairs. Country title and
-brief labels use the selected country's CSF keys. Caption colors use retail
+brief labels use the selected country's CSF keys. Badges are 47x23 PCX files
+with their own palettes and transparent magenta, scoped to the selected country. Caption colors use retail
 [Colors] AlliedLoad=164,255,255 or SovietLoad=0,235,255, interpreted through the
 same HSV conversion as house colors. Player labels and bars use the selected
 names and color indices. Validated saved metadata selects these before
@@ -51,11 +52,14 @@ LS800USTATES.SHP d1f01f393ae5abc1840093899c2353e3aca4b221678c213004adc7d0a6eb5b6
 MPLSU.PAL a9e530e442a886cc8a82c978b0a97a58991508a16e9ecb979f25bb55e6cd9d47
 ```
 
-The untouched country-map panel at `(450,32,316,313)` contains 98908 pixels.
-An independent row and palette traversal gives RGBA FNV-1a
-`97061e52e7661e85` after RGB565 quantization. The retail compositor regression
-checks that whole region at each loading stage. This verifies source-art
-selection and composition, not original runtime parity.
+The original untouched country-map receipt was `(450,32,316,313)`, 98908
+pixels, RGBA FNV-1a `97061e52e7661e85` after RGB565 quantization. The country
+name now occupies its observed lower-right position inside that panel. The
+current source-art regression checks `(450,32,316,268)`, 84688 untouched pixels,
+with independent raw-row/palette hash `12a2489dceca70f1` for America, at every
+stage. All nine countries also compare every pixel in that untouched region
+against their own raw rows. This checks source composition separately from
+the original text measurements below.
 
 ## Map and loading state
 
@@ -73,12 +77,62 @@ reconstruction resolves the installed map, the worker sends that map name
 and its preview. Cancelled progress and images are discarded; a queued retry
 captures its own setup. The old active map changes only when loading succeeds.
 
-The two preparation bars represent the supported local player and computer.
-They advance at completed session and terrain stages while the worker prepares
-the sprite bank. They do not claim a measured percentage or remote peer status.
-`GAME.FNT`, `Name:Americans`, `LoadBriefShort:USA`, `GUI:LoadingEx` and
-`GUI:Battle` supply the retail text. The player labels follow the selected Skirmish profile. Country choices select
-side setup and art; they do not implement absent special gameplay abilities.
+One local progress row represents this process preparing the match for both
+participants. A computer opponent does not have an independent loading client.
+Completed stages advance the bar without a measured percentage, remote status
+or artificial delay. The row uses the selected human name, color and badge.
+`GAME.FNT`, the selected specialty `Name:` key and full `LoadBrief:` value,
+`GUI:LoadingEx` and the selected country's `Name:` key supply the retail text.
+The specialty keys are `para`, `beagle`, `gtgcan`, `tnkd`, `snipe`, `dtruck`,
+`deso`, `terror` and `ttnk` in retail country order. The Libyan briefing key
+is actually spelled `LoadBrief:Lybia` in the supplied CSF. These are presentation
+labels; country choices do not implement absent special gameplay abilities.
+
+## Public original loading observation
+
+[CodeWeavers' compatibility page](https://www.codeweavers.com/compatibility/crossover/command-and-conquer-red-alert-2-yuris-revenge)
+provides a direct 800x600 original loading PNG, captioned as a CrossOver 13.1.0
+capture on macOS 10.9. It uses Yuri, which is a static layout reference only;
+Yuri remains absent from supported gameplay choices. The
+[original image](https://media.codeweavers.com/pub/crossover/website/appdb/255644f70a7152708e96c9dd87e773e2.png)
+has SHA256 `c803596685de291f2d50aa36ad3762140c3a49fbdb30b43a4dc2de5f3e8da768`.
+No original implementation code or process memory was read. Public country
+asset/key documentation helped locate candidates; every used file/key is
+verified in the supplied archives and CSF.
+
+| Element | Observed native-canvas position | Verification |
+| --- | --- | --- |
+| Specialty title | `(20,90)` | uppercase, black; 119 foreground pixels |
+| Full briefing | `(20,158)` | 400-pixel word wrap, 17-pixel line pitch; 2854 foreground pixels |
+| Loading label | `(20,300)` | 201 foreground pixels |
+| Country label | right aligned to x=740, y=310 | 89 foreground pixels |
+| Country badge | `(117,323)`, 47x23 | 716 non-magenta source pixels |
+| Human name | `(174,326)` | bracketed; 306 foreground pixels |
+| Progress border | `(21,329)`, 86x11 | observed geometry; native stage fill/style |
+
+Five complete foreground masks contain 16638 samples and 3569 foreground
+pixels. The regression reconstructs them with the shared detail/client helpers
+and compares exact independent FNV-1a receipts from the reference. Both sides
+are normalized to RGB565 high bits because the published PNG expands five/six
+bit channels to eight bits. The source flag's 716 non-magenta pixels also match
+the original exactly at the observed position. Optional exported captures use
+the same helpers; no screenshot or source art is a repository fixture.
+
+The screenshot foreground normalizes to `(248,20,16)`. Retail
+`SovietLoad=0,235,255` evaluates exactly to `(255,20,20)` before RGB565. The
+previous floating-point cancellation made the low components 19, changing the
+green channel to 16. Bounded integer HSV ratios retain 20, and retain the exact
+36-valued green component in `AlliedLoad=164,255,255`. The shared conversion also
+serves Skirmish swatches and house remaps; no simulation state changes.
+
+The five comparisons establish text shape and placement, not full-screen pixel
+parity. Text backings, bar fill/gradient, the lower map preview and country-label
+backing remain native choices. The reference map was not reliably identified
+in the installed active catalog, so its preview bounds/sampling are not inferred.
+A single static capture cannot establish progress cadence. Map/save names and
+cancellation remain native additions. Actual original startup is still tracked
+by #148; this public reference unblocks static measurements without an
+unsandboxed original-game run.
 
 The native cancel control occupies `(16,568,160,25)`. Its painted text and
 mouse target use the same 800x600 transform as the background. Escape and
@@ -97,9 +151,9 @@ and that cancellation rejects later images. Front-flow tests additionally
 exercise actual navigation, retry, start, save, restore and return handlers.
 
 The artwork and preview frame are observed from the supplied retail data.
-Text placement, player-bar geometry, preview sampling and progress timing
-are native choices until a usable original loading-screen capture is obtained.
-No full-screen pixel-parity claim is made. A Linux Wine reference attempt did
+The measured static text and badge positions are listed above. Progress fill,
+preview sampling and runtime timing remain uncalibrated. No full-screen
+pixel-parity claim is made. A Linux Wine reference attempt did
 not reach a usable original window. The first native Xorg capture crossed
 isolated IPC namespaces and returned black with Mesa shared-memory errors.
 Running Xorg and the native app in one task session resolved that capture
@@ -132,6 +186,6 @@ The latest sandboxed original-game probe used the supplied launcher in a
 separate Wine prefix. It exited with signal 11, created no windows and yielded
 no usable original capture. Automatic approval review rejected an unsandboxed
 reference run because it would expose the wider filesystem and inherited
-environment. That run was not retried. Exact text/bar geometry, preview
-placement and progress timing remain uncalibrated; source-pixel checks do not
-establish original runtime parity. #148 tracks the reference startup failure.
+environment. That run was not retried. The later public capture supplies static text/badge measurements without
+rerunning that executable. Exact progress style, preview placement and runtime
+timing remain uncalibrated; source-pixel checks do not establish runtime parity. #148 tracks the reference startup failure.
