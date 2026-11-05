@@ -230,6 +230,67 @@ fn retail_combat_art_respects_foreground_bodies_and_reconstructs_saved_flights()
         );
         println!("rear={rear}, overlapping combat art {overlap:?}");
     }
+    // A flight through the rear part of a foundation remains behind its body.
+    app.effects = Default::default();
+    let baseline = compose(&app);
+    let tick = app.session.as_ref().unwrap().sim.tick();
+    app.effects.trails.push(yr_app::effects::Trail {
+        from: (
+            Fix::from_int(i32::from(cx) + 2),
+            Fix::from_int(i32::from(cy) + 2),
+        ),
+        to: (
+            Fix::from_raw((i32::from(cx) + 2) * 256 + 160),
+            Fix::from_int(i32::from(cy) + 2),
+        ),
+        born: tick,
+        style: yr_render::LineTrail {
+            color: [216, 216, 255],
+            decrement: 16,
+        },
+    });
+    let actual = compose(&app);
+    let mut overlay = baseline.clone();
+    yr_app::trails::draw(
+        &mut overlay,
+        &app.effects.trails[0],
+        tick,
+        yr_app::trails::View {
+            size: (WIN_W, WIN_H),
+            viewport_width: WIN_W - SIDEBAR_W,
+            map: app.map.as_ref().unwrap(),
+            terrain: app.session.as_ref().unwrap().sim.terrain(),
+            camera: (app.view.cam_x, app.view.cam_y, app.view.zoom),
+        },
+    );
+    let mask = building_mask(&app);
+    let mut occluded = 0;
+    for p in 0..mask.len() / 4 {
+        if mask[p * 4 + 3] == 255 {
+            let range = p * 4..p * 4 + 3;
+            assert_eq!(actual[range.clone()], baseline[range.clone()]);
+            occluded += usize::from(overlay[range.clone()] != baseline[range]);
+        }
+    }
+    assert!(
+        occluded > 0,
+        "rear trail must exercise opaque foreground coverage"
+    );
+    println!("foreground body occludes {occluded} trail pixels");
+    if let Some(out) = &output {
+        for (label, pixels) in [
+            ("fixed", &actual),
+            ("overlay", &overlay),
+            ("hidden", &baseline),
+        ] {
+            std::fs::write(
+                out.join(format!("trail-depth-{label}-t{tick:03}.png")),
+                yr_render::png::encode_rgba(WIN_W, WIN_H, pixels),
+            )
+            .unwrap();
+        }
+    }
+    app.effects.trails.clear();
     // A building's own impact must remain above its body. Its full retained
     // foundation ties with the body, rather than sorting its centre behind it.
     let b = &app.session.as_ref().unwrap().sim.buildings()[0];

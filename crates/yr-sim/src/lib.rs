@@ -166,6 +166,13 @@ pub enum Event {
         shooter: u32,
         target: u32,
     },
+    /// Actual flight segment, including the final step to an impact. This
+    /// observation carries no presentation clock and consumes no RNG.
+    ProjectileMoved {
+        from: (Fix, Fix),
+        to: (Fix, Fix),
+        origin: Option<ShotOrigin>,
+    },
     Hit {
         target: u32,
         damage: i64,
@@ -940,13 +947,24 @@ impl Sim {
                 continue;
             };
             let (dx, dy) = (tx - p.x, ty - p.y);
+            let from = (p.x, p.y);
             if dist2(dx, dy) <= i64::from(p.speed.raw()) * i64::from(p.speed.raw()) {
+                self.events.push(Event::ProjectileMoved {
+                    from,
+                    to: (tx, ty),
+                    origin: p.origin,
+                });
                 hits.push((p.target, p.damage, p.origin));
             } else {
                 // Axis-clamped homing step (deterministic, no floats).
                 let (mx, my) = p.motion_to(tx, ty);
                 p.x += mx;
                 p.y += my;
+                self.events.push(Event::ProjectileMoved {
+                    from,
+                    to: (p.x, p.y),
+                    origin: p.origin,
+                });
                 alive.push(p);
             }
         }
@@ -2349,6 +2367,83 @@ mod tests {
             "footprint freed"
         );
         assert_eq!(sim.power(), (200, 150), "drain removed with the building");
+    }
+
+    #[test]
+    fn flight_segments_cover_travel_and_arrival_after_restore_and_shooter_loss() {
+        let mut sim = Sim::new(42);
+        let mut weapon = gun(50, 100, 10, Fix::ONE);
+        weapon.source = Some(123);
+        let spawn = |x, weapon| Command::Spawn {
+            kind: 0,
+            x: Fix::from_int(x),
+            y: Fix::ZERO,
+            loco: terrain::Loco::Track,
+            speed: Fix::ZERO,
+            hp: 200,
+            armor: 0,
+            weapon,
+        };
+        sim.step(&[
+            spawn(0, Some(weapon)),
+            spawn(4, None),
+            Command::AssignOwner {
+                id: 2,
+                owner: OWNER_ENEMY,
+            },
+            Command::Attack { id: 1, target: 2 },
+        ]);
+        let launch = sim.drain_events();
+        assert!(launch.iter().any(|e| matches!(e, Event::ProjectileMoved { from, to, .. } if *from == (Fix::ZERO,Fix::ZERO) && *to == (Fix::ONE,Fix::ZERO))));
+        let mut lost_target = sim.clone();
+        lost_target.step(&[Command::Destroy { id: 2 }]);
+        assert!(lost_target.projectiles().is_empty());
+        assert!(!lost_target
+            .drain_events()
+            .iter()
+            .any(|e| matches!(e, Event::ProjectileMoved { .. })));
+        sim.step(&[Command::Destroy { id: 1 }]);
+        sim.drain_events();
+        let save = sim.save_bytes().unwrap();
+        let mut restored = Sim::from_save_bytes(&save).unwrap();
+        let mut last = (sim.projectiles()[0].x, sim.projectiles()[0].y);
+        let mut hit = false;
+        for _ in 0..4 {
+            sim.step(&[]);
+            restored.step(&[]);
+            let events = sim.drain_events();
+            assert_eq!(events, restored.drain_events());
+            assert_eq!(sim.state_hash(), restored.state_hash());
+            assert_eq!(sim.save_bytes().unwrap(), restored.save_bytes().unwrap());
+            let movement = events
+                .iter()
+                .find_map(|e| match e {
+                    Event::ProjectileMoved { from, to, origin } => Some((*from, *to, *origin)),
+                    _ => None,
+                })
+                .unwrap();
+            assert_eq!(movement.0, last);
+            assert_eq!(movement.2.unwrap().weapon, Some(123));
+            last = movement.1;
+            if let Some(index) = events
+                .iter()
+                .position(|e| matches!(e, Event::Impact { .. }))
+            {
+                assert!(events[..index]
+                    .iter()
+                    .any(|e| matches!(e, Event::ProjectileMoved { .. })));
+                assert_eq!(last, (Fix::from_int(4), Fix::ZERO));
+                assert!(sim.projectiles().is_empty());
+                hit = true;
+                break;
+            }
+        }
+        assert!(hit);
+        sim.step(&[]);
+        assert!(!sim
+            .drain_events()
+            .iter()
+            .any(|e| matches!(e, Event::ProjectileMoved { .. })));
     }
 
     #[test]

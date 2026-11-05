@@ -518,6 +518,64 @@ checks compare all 32 DRAGON and 32 MEDUSA canvases and verify anchors, empty
 halves, cache bounds and reconstruction after eviction. Synthetic cases reject
 hostile dimensions/counts and unsupported layouts before canvas decoding.
 
+## Configured missile line trails
+
+Retail `ARTMD.INI` resolves IFV `HoverMissile` through `AAHeatSeeker2` to
+`[DRAGON]`. It explicitly declares `UseLineTrail=yes`,
+`LineTrailColor=216,216,255` and `LineTrailColorDecrement=16`. Aegis `Medusa`
+resolves through `MedusaProjectile` to `[MEDUSA]`, with color `208,208,208`
+and decrement `12`. Both sections comment out their older `Trailer=`
+smoke references. These observations come from the installed archives,
+`RA2MD.MIX/LOCALMD.MIX` for art and `EXPANDMD01.MIX` for rules; they do not
+establish original runtime trail semantics.
+
+The initial native policy emits one segment per actual homing movement tick,
+including the final segment to the authoritative impact position. A missing
+target produces no segment. `Event::ProjectileMoved` retains the original
+weapon identity, so neither shooter survival nor its current weapon is
+required. Invisible, undefined, unknown or ambiguous sources have no guessed
+trail. Settings require an explicit enabled flag, exactly three byte-valued
+RGB components and a nonzero byte-valued decrement. Missing or malformed
+optional settings disable only the trail.
+
+Presentation retains at most 512 segments, dropping the oldest first. At age
+`t`, each RGB component is reduced by `t * decrement`, saturating at zero;
+all-black segments expire. Thus DRAGON expires at age 16 and MEDUSA at age
+18 under this provisional one-decrement-per-sim-tick policy. Checked ages
+reject future segments after clock replacement. Draws never advance the
+clock or consume RNG. Past history resets on load like muzzle/impact clips;
+new movement from a saved flight immediately creates fresh segments. Match
+snapshots drain tick events before saving, so no trail history enters their
+bytes. Raw simulation snapshots taken with pending events can include the
+new additive movement observation; those events round-trip like other events.
+
+Each short segment joins world painter order at its midpoint, precedes its
+missile at an equal depth and projects both endpoints using terrain lift.
+The raster is one native world pixel wide, follows camera zoom/scale, clips
+to the world viewport and adds faded RGB with saturation while preserving
+alpha. The native midpoint depth, raster width, additive blending and fade
+cadence are deliberate provisional policies. Original join/compositing,
+launch offsets, height, trajectories, exact foreground clipping and timing
+still need original-game observation in #102. Long segments are not split
+at foreground footprints; baked map objects retain the existing limitation.
+This does not add `Trailer=` particle art or voxel projectile trails.
+
+Synthetic tests cover invalid colors/decrements, extreme ages, history
+bounds and clipped raster writes. Retail tests check both configured styles,
+actual movement and arrival after shooter loss, turns, no-provenance paths,
+expiry, foreground-building occlusion, complete save bytes and hash invariance.
+The controlled EB1 fixture restores the same shooterless flight twice with fresh sprite banks, compares
+all 32 continuation frames and records trail-hidden comparisons at ticks
+3, 6, 9, 12, 16, 22 and 34. The final segment arrives at tick 8; all trails
+are gone at tick 24. These comparisons exercise the shared native compositor
+without claiming original-game visual parity.
+
+```sh
+cargo test -p yr-render line_trail -- --nocapture
+OPENYR_TRAIL_PROOF=/tmp/openyr-line-trails cargo test -p yr-app line_trail -- --nocapture
+cargo test -p yr-sim flight_segments -- --nocapture
+```
+
 ## Verification
 
 Synthetic tests reject oversized canvases/counts, invalid ranges/rates,

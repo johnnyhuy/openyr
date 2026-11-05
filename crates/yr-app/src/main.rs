@@ -930,12 +930,13 @@ impl App {
         }
         // Ground-position combat art shares entity depth instead of painting
         // through every foreground body. Equal-position shots follow entities;
-        // projectiles precede transients, preserving their existing tie order.
+        // trails precede projectile bodies, which precede other transients.
         #[derive(Clone, Copy)]
         enum WorldArt<'a> {
             Entity(usize),
             Projectile(u64, Option<(i32, i32)>),
             Effect(&'a yr_app::effects::Effect),
+            Trail(&'a yr_app::effects::Trail),
         }
         let mut world: Vec<_> = markers
             .iter()
@@ -948,6 +949,19 @@ impl App {
             w: 0.0,
             h: 0.0,
         };
+        world.extend(self.effects.trails.iter().map(|trail| {
+            (
+                point(
+                    Fix::from_raw(
+                        ((i64::from(trail.from.0.raw()) + i64::from(trail.to.0.raw())) / 2) as i32,
+                    ),
+                    Fix::from_raw(
+                        ((i64::from(trail.from.1.raw()) + i64::from(trail.to.1.raw())) / 2) as i32,
+                    ),
+                ),
+                WorldArt::Trail(trail),
+            )
+        }));
         if let Some(session) = &self.session {
             world.extend(session.sim.projectiles().iter().filter_map(|projectile| {
                 Some((
@@ -1057,6 +1071,21 @@ impl App {
         for &index in &order {
             let (footprint, art) = world[index];
             let WorldArt::Entity(index) = art else {
+                if let WorldArt::Trail(trail) = art {
+                    yr_app::trails::draw(
+                        frame,
+                        trail,
+                        tick,
+                        yr_app::trails::View {
+                            size: (fw, fh),
+                            viewport_width: fw.saturating_sub(SIDEBAR_W),
+                            map,
+                            terrain: self.session.as_ref().and_then(|s| s.sim.terrain()),
+                            camera: (self.view.cam_x, self.view.cam_y, self.view.zoom),
+                        },
+                    );
+                    continue;
+                }
                 if let Some(bank) = bank.as_mut() {
                     let (sprite, position) = match art {
                         WorldArt::Projectile(source, motion) => (
@@ -1067,7 +1096,7 @@ impl App {
                             bank.get_effect(&effect.name, tick.saturating_sub(effect.born)),
                             (effect.x.raw() as f32 / 256.0, effect.y.raw() as f32 / 256.0),
                         ),
-                        WorldArt::Entity(_) => unreachable!(),
+                        WorldArt::Entity(_) | WorldArt::Trail(_) => unreachable!(),
                     };
                     if let Some(sprite) = sprite {
                         let (mx, my) = yr_app::interaction::ground_point(

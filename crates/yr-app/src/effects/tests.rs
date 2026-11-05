@@ -487,3 +487,68 @@ fn retail_effects_follow_shots_deaths_and_leave_sim_and_saves_unchanged() {
         "transient effects are not replayed on load"
     );
 }
+
+#[test]
+fn retail_line_trail_history_is_bounded_and_expires_without_draws() {
+    let dir = PathBuf::from(std::env::var("HOME").unwrap())
+        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    if !dir.is_dir() {
+        return;
+    }
+    let fs = yr_assets::AssetFs::open(&dir).unwrap();
+    let rules = yr_rules::Rules::load(
+        &yr_formats::IniFile::parse(&String::from_utf8_lossy(fs.read("RULESMD.INI").unwrap())),
+        &yr_formats::IniFile::parse(&String::from_utf8_lossy(fs.read("ARTMD.INI").unwrap())),
+    );
+    let session = crate::session::load(dir.to_str().unwrap(), "EB1.MMX", 42).unwrap();
+    let mut bank = SpriteBank::open(dir.to_str().unwrap(), "EB1.MMX").unwrap();
+    let mut scene = EffectScene::default();
+    let event = Event::ProjectileMoved {
+        from: (Fix::ZERO, Fix::ZERO),
+        to: (Fix::ONE, Fix::ONE),
+        origin: Some(yr_sim::ShotOrigin {
+            shooter: 999,
+            weapon: Some(rules.weapons.get("HoverMissile").unwrap().source_id()),
+            damage: 25,
+        }),
+    };
+    let hash = session.sim.state_hash();
+    let save = crate::snapshot::encode(&session).unwrap();
+    scene.update(&session, &vec![event; 600], &mut bank);
+    assert_eq!(scene.trails.len(), MAX_TRAILS);
+    let old_count = scene.trails.len();
+    scene.update(
+        &session,
+        &[
+            Event::ProjectileMoved {
+                from: (Fix::ONE, Fix::ONE),
+                to: (Fix::ONE, Fix::ONE),
+                origin: None,
+            },
+            Event::ProjectileMoved {
+                from: (Fix::ZERO, Fix::ZERO),
+                to: (Fix::ONE, Fix::ONE),
+                origin: None,
+            },
+        ],
+        &mut bank,
+    );
+    assert_eq!(scene.trails.len(), old_count);
+    assert_eq!(session.sim.state_hash(), hash);
+    assert_eq!(crate::snapshot::encode(&session).unwrap(), save);
+    for trail in &mut scene.trails {
+        trail.born = session.sim.tick() + 1;
+    }
+    scene.update(&session, &[], &mut bank);
+    assert!(
+        scene.trails.is_empty(),
+        "future trails are discarded after clock replacement"
+    );
+    scene.update(&session, &[event], &mut bank);
+    let mut later = session;
+    for _ in 0..16 {
+        later.sim.step(&[]);
+    }
+    scene.update(&later, &[], &mut bank);
+    assert!(scene.trails.is_empty());
+}

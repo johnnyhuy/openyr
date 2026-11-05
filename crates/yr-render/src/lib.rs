@@ -14,6 +14,7 @@ pub mod depth;
 mod effects;
 pub mod png;
 mod projectiles;
+pub use projectiles::LineTrail;
 pub mod sprites;
 mod voxels;
 

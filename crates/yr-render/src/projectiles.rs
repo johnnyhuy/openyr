@@ -9,6 +9,37 @@ use yr_rules::Rules;
 const MAX_SOURCES: usize = 128;
 const MAX_FRAMES: usize = 64;
 
+/// Explicit retail line-trail settings. Fade cadence is a presentation policy.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct LineTrail {
+    pub color: [u8; 3],
+    pub decrement: u8,
+}
+
+impl LineTrail {
+    pub(crate) fn load(section: &yr_formats::IniSection) -> Option<Self> {
+        if section.get_bool("UseLineTrail") != Some(true) {
+            return None;
+        }
+        let mut components = section.get("LineTrailColor")?.split(',');
+        let mut color = [0; 3];
+        for value in &mut color {
+            *value = components.next()?.trim().parse::<u8>().ok()?;
+        }
+        if components.next().is_some() {
+            return None;
+        }
+        let decrement = section.get("LineTrailColorDecrement")?.parse::<u8>().ok()?;
+        (decrement > 0 && color != [0; 3]).then_some(Self { color, decrement })
+    }
+
+    pub fn color_at(self, age: u64) -> Option<[u8; 3]> {
+        let fade = age.saturating_mul(u64::from(self.decrement)).min(255) as u8;
+        let color = self.color.map(|c| c.saturating_sub(fade));
+        (color != [0; 3]).then_some(color)
+    }
+}
+
 fn safe_image(image: &str) -> bool {
     !image.is_empty()
         && image.len() <= 64
@@ -369,5 +400,75 @@ mod tests {
         }
         assert_eq!(cache.bodies.len(), 128);
         println!("120MM.SHP: 24x24, one frame, exact UNITTEM.PAL body, no shadow-half assumption");
+    }
+}
+
+#[cfg(test)]
+mod trail_tests {
+    use super::*;
+
+    #[test]
+    fn explicit_trail_settings_are_bounded_and_fade_without_overflow() {
+        let parse = |text: &str| {
+            LineTrail::load(
+                IniFile::parse(&format!("[X]\n{text}"))
+                    .section("X")
+                    .unwrap(),
+            )
+        };
+        let style =
+            parse("UseLineTrail=yes\nLineTrailColor=216,216,255\nLineTrailColorDecrement=16")
+                .unwrap();
+        assert_eq!(style.color_at(0), Some([216, 216, 255]));
+        assert_eq!(style.color_at(13), Some([8, 8, 47]));
+        assert_eq!(style.color_at(15), Some([0, 0, 15]));
+        assert_eq!(style.color_at(16), None);
+        assert_eq!(style.color_at(u64::MAX), None);
+        for text in [
+            "UseLineTrail=no\nLineTrailColor=1,2,3\nLineTrailColorDecrement=1",
+            "UseLineTrail=yes\nLineTrailColor=0,0,0\nLineTrailColorDecrement=1",
+            "UseLineTrail=yes\nLineTrailColor=1,2\nLineTrailColorDecrement=1",
+            "UseLineTrail=yes\nLineTrailColor=1,2,3,4\nLineTrailColorDecrement=1",
+            "UseLineTrail=yes\nLineTrailColor=-1,2,3\nLineTrailColorDecrement=1",
+            "UseLineTrail=yes\nLineTrailColor=256,2,3\nLineTrailColorDecrement=1",
+            "UseLineTrail=yes\nLineTrailColor=1,2,3\nLineTrailColorDecrement=0",
+            "UseLineTrail=yes\nLineTrailColor=1,2,3\nLineTrailColorDecrement=256",
+            "UseLineTrail=yes\nLineTrailColor=1,2,3\nLineTrailColorDecrement=-1",
+            "UseLineTrail=yes\nLineTrailColor=1,2,3\nLineTrailColorDecrement=18446744073709551615",
+            "UseLineTrail=yes\nLineTrailColor=1,2,3",
+            "UseLineTrail=yes\nLineTrailColorDecrement=16",
+        ] {
+            assert_eq!(parse(text), None, "{text}");
+        }
+    }
+
+    #[test]
+    fn retail_missile_trail_colors_come_from_the_fired_weapon() {
+        let dir = std::path::PathBuf::from(std::env::var("HOME").unwrap_or_default())
+            .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+        if !dir.is_dir() {
+            return;
+        }
+        let fs = AssetFs::open(&dir).unwrap();
+        let ini = |name| IniFile::parse(&String::from_utf8_lossy(fs.read(name).unwrap()));
+        let art = ini("ARTMD.INI");
+        let rules = Rules::load(&ini("RULESMD.INI"), &art);
+        let bank = crate::sprites::SpriteBank::open(dir.to_str().unwrap(), "EB1.MMX").unwrap();
+        for (id, color, decrement) in [
+            ("HoverMissile", [216, 216, 255], 16),
+            ("Medusa", [208; 3], 12),
+        ] {
+            assert_eq!(
+                bank.projectile_line_trail(rules.weapons.get(id).unwrap().source_id()),
+                Some(LineTrail { color, decrement })
+            );
+        }
+        for id in ["105mm", "M60", "ElectricBolt"] {
+            assert_eq!(
+                bank.projectile_line_trail(rules.weapons.get(id).unwrap().source_id()),
+                None
+            );
+        }
+        assert_eq!(bank.projectile_line_trail(u64::MAX), None);
     }
 }
