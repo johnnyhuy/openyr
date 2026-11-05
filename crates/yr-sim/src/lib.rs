@@ -1050,14 +1050,18 @@ impl Sim {
     }
 
     /// (produced, drained) power totals of `owner`'s buildings.
+    ///
+    /// Produced power uses each building's health-scaled output
+    /// (`Building::effective_power`); drained power is unscaled (#93).
     pub fn power_of(&self, owner: u8) -> (i64, i64) {
         let mut produced = 0;
         let mut drained = 0;
         for b in self.buildings.iter().filter(|b| b.owner == owner) {
-            if b.power >= 0 {
-                produced += b.power;
+            let power = b.effective_power();
+            if power >= 0 {
+                produced += power;
             } else {
-                drained -= b.power;
+                drained -= power;
             }
         }
         (produced, drained)
@@ -2847,6 +2851,54 @@ mod tests {
         assert_eq!(sim.power_of(OWNER_ENEMY), (0, 500));
         assert!(!sim.low_power(), "other owners' drain is not the player's");
         assert_eq!(sim.production_factor(), Fix::ONE);
+    }
+
+    #[test]
+    fn damaged_generator_scales_power_and_save_load_preserves_it() {
+        let mut sim = Sim::new(4);
+        sim.set_terrain(TerrainGrid::new(0, 0, 16, 16));
+        let place = |x, power, owner| Command::PlaceBuilding {
+            kind: 0,
+            x,
+            y: 0,
+            w: 2,
+            h: 2,
+            hp: 1000,
+            armor: 0,
+            power,
+            owner,
+            role: Role::Combat,
+        };
+        sim.step(&[
+            place(0, 200, OWNER_PLAYER),
+            place(2, -150, OWNER_PLAYER),
+            place(4, 200, OWNER_ENEMY),
+        ]);
+        assert_eq!(sim.power(), (200, 150));
+        assert!(!sim.low_power());
+        // Half health on the player plant halves its output. The base
+        // goes low-power and production slows; drain stays at 150 even
+        // when the consumer itself is damaged.
+        sim.buildings[0].hp = 500;
+        sim.buildings[1].hp = 10;
+        assert_eq!(sim.power(), (100, 150));
+        assert!(sim.low_power());
+        assert!(sim.production_factor() < Fix::ONE);
+        // Enemy output is isolated and still at full health.
+        assert_eq!(sim.power_of(OWNER_ENEMY), (200, 0));
+        sim.buildings[2].hp = 250;
+        assert_eq!(sim.power_of(OWNER_ENEMY), (50, 0));
+        assert_eq!(sim.power(), (100, 150), "enemy damage does not leak");
+        // Save/load round-trips the damaged totals and the state hash.
+        let bytes = sim.save_bytes().unwrap();
+        let restored = Sim::from_save_bytes(&bytes).unwrap();
+        assert_eq!(restored.power(), (100, 150));
+        assert_eq!(restored.power_of(OWNER_ENEMY), (50, 0));
+        assert_eq!(restored.state_hash(), sim.state_hash());
+        // Destroying the damaged plant removes its remaining output.
+        let plant_id = sim.buildings[0].id;
+        sim.step(&[Command::Destroy { id: plant_id }]);
+        assert_eq!(sim.power(), (0, 150));
     }
 
     #[test]
