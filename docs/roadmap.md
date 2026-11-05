@@ -206,7 +206,14 @@ Johnny on 2026-10-31.
       homing direction in world depth. All DRAGON/MEDUSA source frames, eight
       firing directions, moving targets, shooter loss and fresh-cache saved
       flights are checked without changing hashes or save bytes. Original
-      orientation calibration, trails, height, offsets and lighting remain open.
+      orientation calibration, original trail behavior, height, offsets and lighting
+      remain open.
+- [x] Initial configured missile line trails (#208, #102): actual movement
+      segments, including arrival, use DRAGON/MEDUSA color and decrement
+      settings in bounded transient world-depth history. Turning, shooter
+      loss, source settings, expiry, save continuation and unchanged sim/save
+      bytes are checked. Original fade cadence, raster/blend policy, height,
+      offsets and precise layer behavior remain uncalibrated.
 - [x] Give the controlled cannon proof shooter player ownership (#131), so its
       real tank body is drawn alongside the muzzle, projectile and enemy target.
 - [x] Sidebar labels from `ra2md.csf` (#47): all 22 Allied entries show

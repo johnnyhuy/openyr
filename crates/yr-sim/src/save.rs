@@ -49,9 +49,12 @@ impl Sim {
                 order.product = order.product.without_weapon_source();
             }
         }
-        setup
-            .events
-            .retain(|event| !matches!(event, crate::Event::Impact { .. }));
+        setup.events.retain(|event| {
+            !matches!(
+                event,
+                crate::Event::Impact { .. } | crate::Event::ProjectileMoved { .. }
+            )
+        });
         let mut bytes = setup.save_bytes()?;
         bytes[8..12].copy_from_slice(&1u32.to_le_bytes());
         Ok(bytes)

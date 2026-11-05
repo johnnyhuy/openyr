@@ -399,6 +399,24 @@ impl SpriteBank {
         self.get_projectile_directed(source, None)
     }
 
+    /// Optional explicit trail data follows the saved fired weapon identity.
+    pub fn projectile_line_trail(&self, source: u64) -> Option<crate::LineTrail> {
+        let mut matches = self
+            .rules
+            .weapons
+            .iter()
+            .filter(|w| w.source_id() == source);
+        let weapon = matches.next()?;
+        if matches.next().is_some() {
+            return None;
+        }
+        let projectile = self.rules.projectiles.get(weapon.projectile.as_deref()?)?;
+        if !projectile.defined || projectile.inviso == Some(true) {
+            return None;
+        }
+        crate::LineTrail::load(self.art_ini.section(projectile.image.as_deref()?)?)
+    }
+
     /// Optional directional art uses the authoritative next flight step in leptons.
     pub fn get_projectile_directed(
         &mut self,

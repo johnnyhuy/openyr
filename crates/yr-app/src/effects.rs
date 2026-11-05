@@ -6,6 +6,20 @@ use yr_render::sprites::SpriteBank;
 use yr_sim::{Event, Fix};
 
 const MAX_EFFECTS: usize = 256;
+const MAX_TRAILS: usize = 512;
+
+pub struct Trail {
+    pub from: (Fix, Fix),
+    pub to: (Fix, Fix),
+    pub born: u64,
+    pub style: yr_render::LineTrail,
+}
+
+impl Trail {
+    pub fn color(&self, tick: u64) -> Option<[u8; 3]> {
+        self.style.color_at(tick.checked_sub(self.born)?)
+    }
+}
 
 #[derive(Clone)]
 struct Entity {
@@ -48,6 +62,7 @@ pub struct EffectScene {
     entities: BTreeMap<u32, Entity>,
     pub active: Vec<Effect>,
     pub deaths: Vec<InfantryDeath>,
+    pub trails: Vec<Trail>,
 }
 
 impl EffectScene {
@@ -90,6 +105,7 @@ impl EffectScene {
 
     pub fn update(&mut self, session: &Session, events: &[Event], bank: &mut SpriteBank) {
         let tick = session.sim.tick();
+        self.trails.retain(|t| t.color(tick).is_some());
         self.active
             .retain(|e| tick >= e.born && bank.effect_alive(&e.name, tick - e.born));
         self.deaths.retain(|d| {
@@ -102,6 +118,25 @@ impl EffectScene {
         entities.extend(self.entities.iter().map(|(&id, e)| (id, e.clone())));
         let mut fatal_hits = BTreeMap::new();
         for event in events {
+            if let Event::ProjectileMoved { from, to, origin } = *event {
+                if from != to {
+                    if let Some(style) = origin
+                        .and_then(|o| o.weapon)
+                        .and_then(|source| bank.projectile_line_trail(source))
+                    {
+                        if self.trails.len() == MAX_TRAILS {
+                            self.trails.remove(0);
+                        }
+                        self.trails.push(Trail {
+                            from,
+                            to,
+                            born: tick,
+                            style,
+                        });
+                    }
+                }
+                continue;
+            }
             if let Event::FatalHit {
                 target,
                 kind,
