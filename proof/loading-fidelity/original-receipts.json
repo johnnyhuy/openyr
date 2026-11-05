@@ -1,0 +1,85 @@
+{
+  "loading": {
+    "rect": [
+      20,
+      300,
+      51,
+      17
+    ],
+    "color": [
+      248,
+      20,
+      16
+    ],
+    "foreground": 201,
+    "mask_fnv1a": "02c7db9ea5a9d8f8"
+  },
+  "specialty": {
+    "rect": [
+      20,
+      90,
+      23,
+      16
+    ],
+    "color": [
+      0,
+      0,
+      0
+    ],
+    "foreground": 119,
+    "mask_fnv1a": "090493d155a000a8"
+  },
+  "brief": {
+    "rect": [
+      20,
+      160,
+      400,
+      34
+    ],
+    "color": [
+      248,
+      20,
+      16
+    ],
+    "foreground": 2854,
+    "mask_fnv1a": "fa9a01cc55233b1f"
+  },
+  "country": {
+    "rect": [
+      714,
+      307,
+      30,
+      21
+    ],
+    "color": [
+      248,
+      20,
+      16
+    ],
+    "foreground": 89,
+    "mask_fnv1a": "100784c427d8e6e8"
+  },
+  "player": {
+    "rect": [
+      174,
+      326,
+      69,
+      17
+    ],
+    "color": [
+      56,
+      208,
+      40
+    ],
+    "foreground": 306,
+    "mask_fnv1a": "9d2610e8fffc7d69"
+  },
+  "badge": {
+    "position": [
+      117,
+      323
+    ],
+    "source_pixels": 716,
+    "rgba_fnv1a": "04c633e7d9bfb83d"
+  }
+}

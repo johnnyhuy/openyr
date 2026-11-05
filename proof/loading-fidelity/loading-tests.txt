@@ -1,0 +1,15 @@
+   Compiling yr-app v0.1.0 (/workspace/openyr-loading-fidelity/crates/yr-app)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.65s
+     Running unittests src/lib.rs (/workspace/openyr/target/debug/deps/yr_app-3d65909a3deb91c6)
+
+running 7 tests
+test loading::tests::loading_cancel_hit_matches_the_visible_control_on_front_and_pause_surfaces ... ok
+test loading::tests::long_briefs_missing_flags_and_client_progress_remain_bounded ... ok
+test loading::tests::preview_keeps_its_aspect_ratio_and_invalid_art_stays_recoverable ... ok
+test loading::tests::retail_country_choices_preserve_each_source_map_and_selected_bar_color ... ok
+test loading::tests::retail_loading_glyph_masks_and_badge_match_public_original_capture ... ok
+test loading::tests::retail_loading_preserves_the_stock_country_map_and_uses_the_selected_preview ... ok
+test loading::tests::unresolved_saved_identity_does_not_show_the_previous_country_or_names ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 91 filtered out; finished in 6.88s
+

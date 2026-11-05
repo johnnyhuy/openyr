@@ -1,0 +1,82 @@
+[
+  {
+    "file": "country-France.png",
+    "pixel_sha256": "10ebe8953b32b2d870dabd45b51bc37d78c5007f5bb86e3f690fb2e90466c5c9",
+    "file_sha256": "42dd1ecca40c5b9025004980c1647d610029d901cb3c706eac98ff3c427465d7"
+  },
+  {
+    "file": "country-Libya.png",
+    "pixel_sha256": "aa6eb91d0f316365c26fab2e9664da90b253200883380e5196911568b786104c",
+    "file_sha256": "41bc2ea05ccbd52ef4c53549022998690caee79567589424545ac6f03e139138"
+  },
+  {
+    "file": "country-Germany.png",
+    "pixel_sha256": "5b717ed3e01a0113f6f43f96dfa778aa08553511f65701244f5372a6cd2a0a0c",
+    "file_sha256": "fb0e2eba1ff66d82684a71846b5887d49b82bd123bfcc31ea9d9c6242d6d16b5"
+  },
+  {
+    "file": "country-Russia.png",
+    "pixel_sha256": "15e4ae6edba0b57db8a44aa74c8d6b7952adbcaa9a9ff436f4ac9fb44b260426",
+    "file_sha256": "fc6df2e9ef777912f80a23923d681ab3bfd1527344c1e008690d5a226e72a390"
+  },
+  {
+    "file": "country-Cuba.png",
+    "pixel_sha256": "bc0d22d5b1bc2957e0b0cccdb72bced0a3aa795fff6d7dda5ece81f5d84fb8d1",
+    "file_sha256": "a71e357ee752fc2d96fc24cb12864246fa04d55d6a65dea6e2c137b529676b84"
+  },
+  {
+    "file": "country-Britain.png",
+    "pixel_sha256": "4e44eac13f82964e39e620af33e8a2fc7e2d722a1076f28fa5aaa344540a3e9c",
+    "file_sha256": "6ec7e951b5cd796dd6406d161304cc312967c8ae86cf0096fa62d61a4aafead0"
+  },
+  {
+    "file": "country-Korea.png",
+    "pixel_sha256": "766b9386ca6ad89fa1fa19fe4356cc210afce0179903385d7faa0a5af237ca7c",
+    "file_sha256": "7214bbd922fb984d365eb2b468fb0f80755b173d48894af25251d2e6085f98ea"
+  },
+  {
+    "file": "country-America.png",
+    "pixel_sha256": "792ced4e2e5a0c5f0cc628af99fd37abea6c72365974ff2f198a4df8f0cb0e84",
+    "file_sha256": "a5a30a90e8b18592c339ea6aa3e43d5c9425be61c4fcd7321f9568b00b7ea803"
+  },
+  {
+    "file": "country-Iraq.png",
+    "pixel_sha256": "3f65b133a01750514f57125710f37e53e2cf642481915b9796401fb5b5e01030",
+    "file_sha256": "d88961608a5c786fcdeb95ff608a8f1e954e301f41300b9ac9e036bb9ab74dbc"
+  },
+  {
+    "file": "shared-layout-yuri-reference.png",
+    "pixel_sha256": "21b8db22a9d9ca7385120f0d02291ca5251e92123633c1e164778593662142ef",
+    "file_sha256": "05d2bd531f3613aa22d6d00ca453adc43f1d89da313299a3687a2fc32eb6d27a"
+  },
+  {
+    "file": "loading-EB1.MMX-Artwork.png",
+    "pixel_sha256": "5fdba65517e7a3318878d6651dae31e1298967a0330eae2748cc160885f85723",
+    "file_sha256": "d85463def8a9a9b6a235e83f0e6e28801795c9a957446d1b8bf56a90f3578aee"
+  },
+  {
+    "file": "loading-XMP29U2.MAP-Artwork.png",
+    "pixel_sha256": "e9e4a8d2135dce9d763b71c2ded93811abc166be14e5f97f47b91b4585084abf",
+    "file_sha256": "e9dbdad5339d4789fe7a2946ee50384f92ef9bc253f676d6d461e22bcae246c5"
+  },
+  {
+    "file": "live-04-country-popup.png",
+    "pixel_sha256": "4ae95108610c60dbdeef62c89f2843c2b008a9468790901b8dbb096e83187535",
+    "file_sha256": "195bcda0197f372d6cf2bc40b9141f1ac68775a5075ecad5d78179909d7f7bdc"
+  },
+  {
+    "file": "live-05-configured.png",
+    "pixel_sha256": "811fd7e93c6fae1dc1218fdcb8ecd2ae2443e21d34059664920bd8d307cfbe80",
+    "file_sha256": "2829eef882e6387a6befa49e861ea384100aaf220f0afff55ea1b1beb82d3af4"
+  },
+  {
+    "file": "live-06-after-start.png",
+    "pixel_sha256": "5b92971392b83ad107060a380a83de6b7838694f57c44768d9125975da621d74",
+    "file_sha256": "2abb0e918d2c769585d2a9c11a52700a2022df80d68aa3ab3dab31e1d972b83f"
+  },
+  {
+    "file": "live-07-match.png",
+    "pixel_sha256": "f5113f9b139a2de1df92693ebe6bb5f5b62def454ddc88365ea2535bd4220de1",
+    "file_sha256": "ff19667ae866afd28ca5415aaaca3f65f01ef2ca7233b5398a5ca45c35ab090d"
+  }
+]
