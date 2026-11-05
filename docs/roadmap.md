@@ -124,6 +124,14 @@ Johnny on 2026-10-31.
       general-setting overrides, saved flights after shooter loss and unchanged
       sim/save bytes are checked. Original timing, lighting, scorch and reports
       remain unverified (`docs/formats/effects.md`).
+- [x] Human infantry Mutate deaths (#102, #218): lethal `InfDeath=9`
+      resolves `[General] InfantryMutate` to the 60-frame retail GENDEATH
+      clip in world painter order. Every source frame, eligibility, expiry
+      and general-setting overrides are checked. No retail weapon carries
+      the Mutate warheads, so selector resolution is exercised directly;
+      Genetic Mutator simulation and the mutation transform remain separate
+      work. Original timing, lighting, scorch and reports remain unverified
+      (`docs/formats/effects.md`).
 - [x] Initial human infantry explosion deaths (#102, #191, #192): lethal
       `InfDeath=3` resolves `[General] InfantryExplode` to retail S_BANG34
       with its declared translucency in world painter order. Generic deaths

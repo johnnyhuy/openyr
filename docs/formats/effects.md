@@ -36,6 +36,7 @@ Local rules and art resolve the following authored effects:
 | Human infantry Virus death | Lethal warhead InfDeath=8 | VIRUSD.SHP | 186x190 | 35 |
 | Human infantry Nuke Melt | Lethal warhead InfDeath=7 | NUKEDIE.SHP | 60x60 | 60 |
 | Human infantry Brute smash | Lethal warhead InfDeath=10 to General InfantryBrute | BRUTDIE.SHP | 102x118 | 60 |
+| Human infantry Mutate death | Lethal warhead InfDeath=9 to General InfantryMutate | GENDEATH.SHP | 260x304 | 60 |
 
 `105mm` and `120mm` both declare `Anim=GUNFIRE`. M60 declares eight
 machine-gun names in screen compass order. Existing facing projection
@@ -305,8 +306,9 @@ a Brute. `[General] InfantryBrute=BRUTDIE` selects the generic death art.
 `BRUTE` declares `Primary=Punch`, which uses `Battering` and selector 10.
 `PunchE`, `Smash`, `SmashE`, `TRexBite` and `TRexInfBite` also resolve to
 selector 10. The route follows the actual lethal weapon, independently of
-its shooter's type or the victim's current owner. Mutation uses selector 9
-and remains separate simulation and rendering work.
+its shooter's type or the victim's current owner. Mutation uses selector 9;
+its rendering is covered under Mutate deaths below, and the mutation
+transform itself remains separate simulation work.
 
 `ARTMD.INI` declares `[BRUTDIE]` with `Scorch=yes`, `Layer=ground` and
 `Report=InfantryPsyCrush`. Its `AltPalette=yes` line is commented out. There
@@ -335,6 +337,43 @@ saved lethal provenance after shooter loss and unchanged hashes/save bytes.
 The shared controlled compositor fixture registers a retail Brute and fires
 its actual Punch at a GI one cell away. Per-age exports include ticks and
 state hashes, using `OPENYR_INFANTRY_DEATH_PROOF` as documented above.
+
+## Mutate deaths
+
+Retail `RULESMD.INI` assigns `InfDeath=9` to the `Mutate` and
+`MutateExplosion` warheads. No retail weapon section carries either
+warhead. `[SpecialWeapons]` exposes them as `MutateWarhead` and
+`MutateExplosionWarhead` for the Genetic Mutator, and `[General]`
+declares `MutateExplosion=yes`. `[General] InfantryMutate=GENDEATH`
+selects the generic death art. These are observations from retail data,
+without original code inspection.
+
+`ARTMD.INI` declares `[GENDEATH]` with `Layer=ground`,
+`Report=InfantryMelt`, `MakeInfantry=0`, `Shadow=no` and
+`StartSound=GeneticMutatorActivate`. There is no image, palette,
+transparency, rate, start, end or loop override.
+`RA2MD.MIX/CONQMD.MIX/GENDEATH.SHP` is 118,304 bytes, with 60 frames
+on a 260x304 canvas. All frames are body art, without a shadow half.
+Source comparisons use `ANIM.PAL`, expanded from six-bit channels with
+transparent index zero.
+
+Explicit lethal selector 9 now uses the shared bounded special-death
+path for registered infantry without `NotHuman=yes`. It retains the
+actual fatal pose, joins world painter order and ignores house remap
+and facing. Missing general settings, invalid names and malformed
+optional art suppress the clip without restoring the dead victim.
+Other techno classes, animals and unknown sources receive no guessed
+Mutate death.
+
+The existing provisional rate 200 plays all 60 frames over ages 0
+through 67 and expires at age 68. Drawing never advances the clock.
+Tests compare all source canvases, check general-setting overrides
+and optional-art failure, and exercise selector 9 directly, because
+no simulated weapon fires the Mutate warheads yet. The Genetic
+Mutator superweapon and the infantry-to-Brute mutation transform are
+separate simulation work. Original timing, anchor, lighting, scorch,
+animation reports and non-human exceptions remain unverified in #102.
+Source agreement does not establish original-engine playback parity.
 
 ## Infantry explosion deaths
 
