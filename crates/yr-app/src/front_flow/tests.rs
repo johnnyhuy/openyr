@@ -960,3 +960,90 @@ fn retail_skirmish_heading_tracks_dialog_refreshes() {
         "original heading lifecycle: {mismatches:?}"
     );
 }
+
+#[test]
+fn retail_participant_controls_reach_loading_match_and_restart() {
+    use yr_app::{
+        match_config::{Country, GameSpeed},
+        menu::setup::Field,
+    };
+    let directory = retail_directory();
+    if !directory.is_dir() {
+        return;
+    }
+    let mut app = new_app(directory.to_string_lossy().into(), "EB1.MMX".into(), 1);
+    app.enter_front();
+    click(&mut app, Button::SinglePlayer);
+    click(&mut app, Button::Skirmish);
+    wait(&mut app);
+    let field_click = |app: &mut App, field: Field| {
+        let layout = Layout::for_state(&app.menu, WIN_W, WIN_H);
+        let (x, y, _, _) = field.rect();
+        app.cursor = (
+            layout.origin.0 + f64::from(x + 8) * layout.scale,
+            layout.origin.1 + f64::from(y + 8) * layout.scale,
+        );
+        app.menu_mouse(ElementState::Pressed, MouseButton::Left);
+        app.menu_mouse(ElementState::Released, MouseButton::Left);
+    };
+    field_click(&mut app, Field::Name(0));
+    app.menu_key_code(KeyCode::KeyJ, Some("Johnny"), false);
+    app.menu_key_code(KeyCode::Enter, None, false);
+    assert_eq!(
+        app.menu.page,
+        Page::Skirmish,
+        "editing a name must not start the match"
+    );
+    field_click(&mut app, Field::Country(0));
+    proof(&app, "participants-01-country-popup");
+    for _ in 0..5 {
+        app.menu_key_code(KeyCode::ArrowDown, None, false);
+    }
+    app.menu_key_code(KeyCode::Enter, None, false);
+    assert_eq!(app.menu.setup.config.players[0].country, Country::Russia);
+    field_click(&mut app, Field::Color(0));
+    app.menu_key_code(KeyCode::ArrowDown, None, false);
+    app.menu_key_code(KeyCode::Enter, None, false);
+    assert_eq!(app.menu.setup.config.players[0].color, 2);
+    field_click(&mut app, Field::Team(0));
+    app.menu_key_code(KeyCode::ArrowDown, None, false);
+    app.menu_key_code(KeyCode::Enter, None, false);
+    field_click(&mut app, Field::ShortGame);
+    field_click(&mut app, Field::Speed);
+    app.menu_key_code(KeyCode::ArrowDown, None, false);
+    app.menu_key_code(KeyCode::Enter, None, false);
+    assert_eq!(app.menu.setup.config.speed, GameSpeed::Fast);
+    field_click(&mut app, Field::Country(1));
+    // Closing a popup over Start must consume the click.
+    click(&mut app, Button::Start);
+    assert_eq!(app.menu.page, Page::Skirmish);
+    assert!(app.load_job.is_none());
+    assert!(app.menu.setup.popup.is_none());
+    let config = app.menu.setup.config.clone();
+    proof(&app, "participants-02-configured-setup");
+    click(&mut app, Button::Start);
+    assert_eq!(app.menu.loading.config, config);
+    proof(&app, "participants-03-country-loading");
+    wait(&mut app);
+    assert_eq!(app.session.as_ref().unwrap().match_config, config);
+    assert!(app
+        .session
+        .as_ref()
+        .unwrap()
+        .buildables
+        .iter()
+        .any(|b| b.id == "HTNK"));
+    proof(&app, "participants-04-soviet-match");
+    app.reset_menu_clock();
+    let tick = app.session.as_ref().unwrap().sim.tick();
+    let now = app.last_tick + Duration::from_millis(100);
+    assert!(app.advance_clock(now));
+    assert_eq!(app.session.as_ref().unwrap().sim.tick(), tick + 3);
+    app.escape_command_or_pause();
+    click(&mut app, Button::Abort);
+    click(&mut app, Button::Restart);
+    wait(&mut app);
+    assert_eq!(app.session.as_ref().unwrap().match_config, config);
+    assert_eq!(app.session.as_ref().unwrap().sim.tick(), 1);
+    proof(&app, "participants-05-restarted-match");
+}

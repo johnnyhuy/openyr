@@ -595,9 +595,14 @@ pub fn house_color(rules: &IniFile, owner: &str) -> [u8; 3] {
         .and_then(|s| s.get("Color"))
         .map(|v| v.split(';').next().unwrap_or(v).trim().to_string())
         .unwrap_or_else(|| "LightGrey".to_string());
+    named_color(rules, &name)
+}
+
+/// RGB for a named entry in the retail rules palette.
+pub fn named_color(rules: &IniFile, name: &str) -> [u8; 3] {
     let hsv = rules
         .section("Colors")
-        .and_then(|s| s.get(&name))
+        .and_then(|s| s.get(name))
         .and_then(|v| {
             let mut it = v
                 .split(';')

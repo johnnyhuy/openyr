@@ -335,6 +335,7 @@ impl App {
         self.camera.edge_armed = false;
         self.menu.maps.drag = None;
         self.menu.setup.drag = None;
+        self.menu.setup.popup = None;
         self.menu.pressed = None;
         self.left_down = None;
         self.right_down = None;
@@ -569,7 +570,11 @@ impl App {
             self.radar_click(cell);
             return;
         }
-        if let Some(category) = sidebar::tab_at(size.0, self.cursor) {
+        if let Some(category) = self
+            .session
+            .as_ref()
+            .and_then(|session| sidebar::session_tab_at(size.0, session, self.cursor))
+        {
             self.sidebar_view.select(category);
             self.service_mode = ServiceMode::None;
             self.placing = None;
@@ -863,7 +868,7 @@ impl App {
                     wx,
                     wy,
                     half_w: half,
-                    col: owner_col(b.owner),
+                    col: selected_owner_col(self.session.as_ref(), b.owner),
                     selected: false,
                     hp: hp_frac(b.hp, b.max_hp),
                     art: (b.owner != yr_sim::OWNER_NEUTRAL)
@@ -892,7 +897,7 @@ impl App {
                     wx,
                     wy,
                     half_w: (14.0 * zoom).max(5.0),
-                    col: owner_col(u.owner),
+                    col: selected_owner_col(self.session.as_ref(), u.owner),
                     selected: self.selected.contains(&u.id),
                     hp: hp_frac(u.hp, u.max_hp),
                     art: (u.owner != yr_sim::OWNER_NEUTRAL)
@@ -1018,7 +1023,7 @@ impl App {
             if let (Some((id, _, owner)), Some(animation), Some(bank)) =
                 (&m.art, m.building, bank.as_mut())
             {
-                let remap = owner_remap(bank, *owner);
+                let remap = owner_remap(bank, *owner, self.session.as_ref());
                 if let Some(bib) = bank.get_building(id, remap, animation).and_then(|b| b.bib) {
                     blit_sprite(frame, fw, fh, bib, m.ax, m.ay, k, SpritePass::Body);
                 }
@@ -1033,7 +1038,7 @@ impl App {
                 continue;
             }
             if let (Some((id, facing, owner)), Some(bank)) = (&m.art, bank.as_mut()) {
-                let remap = owner_remap(bank, *owner);
+                let remap = owner_remap(bank, *owner, self.session.as_ref());
                 if let Some(animation) = m.building {
                     if let Some(building) = bank.get_building(id, remap, animation) {
                         for layer in building.bib.into_iter().chain(building.layers) {
@@ -1121,7 +1126,7 @@ impl App {
             let m = &markers[index];
             let drawn = match (&m.art, bank.as_mut()) {
                 (Some((id, facing, owner)), Some(bank)) => {
-                    let remap = owner_remap(bank, *owner);
+                    let remap = owner_remap(bank, *owner, self.session.as_ref());
                     if let Some(animation) = m.building {
                         if let Some(building) = bank.get_building(id, remap, animation) {
                             for layer in building.layers {
@@ -1232,6 +1237,12 @@ impl App {
     }
 }
 
+fn selected_owner_col(session: Option<&Session>, owner: u8) -> [u8; 4] {
+    session
+        .and_then(|s| s.owner_colors.get(usize::from(owner)))
+        .map_or_else(|| owner_col(owner), |c| [c[0], c[1], c[2], 255])
+}
+
 fn owner_col(owner: u8) -> [u8; 4] {
     match owner {
         yr_sim::OWNER_PLAYER => PLAYER_COL,
@@ -1240,12 +1251,19 @@ fn owner_col(owner: u8) -> [u8; 4] {
     }
 }
 
-/// House colour for sim owners: the player plays the Allies' first
-/// country, the scripted enemy the Soviets' (`[Colors]` via rules).
-fn owner_remap(bank: &yr_render::sprites::SpriteBank, owner: u8) -> [u8; 3] {
+/// Selected house colors for live participants, with neutral artwork fallback.
+fn owner_remap(
+    bank: &yr_render::sprites::SpriteBank,
+    owner: u8,
+    session: Option<&Session>,
+) -> [u8; 3] {
     match owner {
-        yr_sim::OWNER_PLAYER => bank.house_color("Americans"),
-        yr_sim::OWNER_ENEMY => bank.house_color("Russians"),
+        yr_sim::OWNER_PLAYER => {
+            session.map_or_else(|| bank.house_color("Americans"), |s| s.owner_colors[0])
+        }
+        yr_sim::OWNER_ENEMY => {
+            session.map_or_else(|| bank.house_color("Russians"), |s| s.owner_colors[1])
+        }
         _ => bank.house_color(""),
     }
 }

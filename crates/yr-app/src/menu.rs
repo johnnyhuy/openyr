@@ -63,6 +63,7 @@ pub struct LoadStatus {
     pub stage: LoadStage,
     pub map_name: String,
     pub battle: bool,
+    pub config: crate::match_config::MatchConfig,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -188,6 +189,8 @@ impl State {
         self.pressed = None;
         self.setup.focus = None;
         self.setup.drag = None;
+        self.setup.popup = None;
+        self.setup.name_selected = false;
     }
     pub fn refresh_heading(&mut self) {
         if self.front && matches!(self.page, Page::Skirmish | Page::ChooseMap) {
@@ -219,7 +222,7 @@ impl State {
                 (MainMenu, true),
             ],
             Page::Skirmish => vec![
-                (Start, true),
+                (Start, self.setup.config.validate().is_ok()),
                 (ChooseMap, !self.maps.entries.is_empty()),
                 (Back, true),
             ],
@@ -282,10 +285,10 @@ impl State {
         self.keyboard_focus = true;
         let buttons = self.buttons();
         if self.front && self.page == Page::Skirmish {
-            let mut stops = vec![
-                (Some(setup::Field::Credits), 0),
-                (Some(setup::Field::Units), 0),
-            ];
+            let mut stops: Vec<_> = setup::Setup::fields()
+                .into_iter()
+                .map(|field| (Some(field), 0))
+                .collect();
             stops.extend(
                 buttons
                     .iter()

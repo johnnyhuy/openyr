@@ -4,6 +4,7 @@
 use crate::{
     cursor,
     frontend::Preview,
+    match_config::{Country, Side, COLOR_NAMES},
     menu::{Button, Layout, LoadStage, State},
     sidebar::{art::Image, text::Typeface, Canvas},
 };
@@ -11,25 +12,39 @@ use yr_assets::AssetFs;
 use yr_formats::{CsfFile, Palette, ShpFile, UnicodeFont};
 
 const PREVIEW: (i32, i32, i32, i32) = (500, 380, 216, 166);
-const GOLD: [u8; 4] = [248, 232, 96, 255];
+const FALLBACK_CAPTION: [u8; 4] = [248, 232, 96, 255];
 const WHITE: [u8; 4] = [224, 232, 240, 255];
 
 #[derive(Default)]
 pub struct Art {
     pub cursor: cursor::Art,
-    background: Option<Image>,
+    backgrounds: Vec<(Country, Image)>,
+    colors: [[u8; 3]; 8],
+    captions: [[u8; 3]; 2],
     font: Option<UnicodeFont>,
     strings: Option<CsfFile>,
 }
 
 impl Art {
     pub fn load(fs: &AssetFs) -> Self {
+        let rules = yr_formats::IniFile::parse(&String::from_utf8_lossy(
+            fs.read("RULESMD.INI").unwrap_or_default(),
+        ));
         Self {
+            colors: std::array::from_fn(|i| yr_render::named_color(&rules, COLOR_NAMES[i])),
+            captions: ["AlliedLoad", "SovietLoad"].map(|name| yr_render::named_color(&rules, name)),
             cursor: cursor::Art::load(fs),
-            background: fs
-                .read("LS800USTATES.SHP")
-                .zip(fs.read("MPLSU.PAL"))
-                .and_then(|(shp, pal)| decode_background(shp, pal)),
+            backgrounds: Country::ALL
+                .into_iter()
+                .filter_map(|country| {
+                    let (shp, pal) = country.loading_art();
+                    let image = fs
+                        .read(shp)
+                        .zip(fs.read(pal))
+                        .and_then(|(shp, pal)| decode_background(shp, pal))?;
+                    Some((country, image))
+                })
+                .collect(),
             font: fs
                 .read("GAME.FNT")
                 .and_then(|bytes| UnicodeFont::parse(bytes).ok())
@@ -71,7 +86,7 @@ fn decode_background(bytes: &[u8], palette: &[u8]) -> Option<Image> {
     })
 }
 
-/// The supported sandbox has an American player and one computer. Loading
+/// The supported match has a local player and one computer. Loading
 /// bars represent completed preparation stages, not elapsed-time estimates
 /// or invented remote-client progress.
 pub fn draw(
@@ -101,7 +116,18 @@ pub fn draw(
         face: Typeface(art.font.as_ref()),
     };
     canvas.rect((0, 0), (800, 600), [4, 8, 24, 255]);
-    if let Some(background) = &art.background {
+    let config = &state.loading.config;
+    let country = config.players[0].country;
+    let known = !state.loading.map_name.is_empty();
+    let caption = art.captions[usize::from(country.side() == Side::Soviet)];
+    let caption = if !known {
+        WHITE
+    } else if caption == [0; 3] {
+        FALLBACK_CAPTION
+    } else {
+        [caption[0], caption[1], caption[2], 255]
+    };
+    if let Some((_, background)) = art.backgrounds.iter().find(|(c, _)| known && *c == country) {
         canvas.image((0, 0), background);
     }
     text(
@@ -109,28 +135,33 @@ pub fn draw(
         (24, 20),
         390,
         art.label("GUI:LoadingEx", "Loading..."),
-        GOLD,
+        caption,
     );
-    text(
-        &mut canvas,
-        (24, 90),
-        390,
-        art.label("Name:Americans", "America"),
-        GOLD,
-    );
-    text(
-        &mut canvas,
-        (24, 166),
-        390,
-        art.label("LoadBriefShort:USA", "America"),
-        WHITE,
-    );
+    if known {
+        text(
+            &mut canvas,
+            (24, 90),
+            390,
+            art.label(&format!("Name:{}", country.id()), country.name()),
+            caption,
+        );
+        text(
+            &mut canvas,
+            (24, 166),
+            390,
+            art.label(
+                &format!("LoadBriefShort:{}", country.brief()),
+                country.name(),
+            ),
+            WHITE,
+        );
+    }
     text(
         &mut canvas,
         (490, 361),
         240,
         art.label("GUI:Battle", "Battle"),
-        GOLD,
+        caption,
     );
     text(&mut canvas, (480, 574), 270, &state.loading.name, WHITE);
     canvas.rect(
@@ -146,19 +177,23 @@ pub fn draw(
         LoadStage::Terrain => 1,
         LoadStage::Artwork => 2,
     };
-    for (name, y, color) in [
-        ("Commander", 506, GOLD),
-        ("Computer", 538, [232, 64, 64, 255]),
-    ] {
+    for (player, y) in config.players.iter().filter(|_| known).zip([506, 538]) {
+        let rgb = art
+            .colors
+            .get(usize::from(player.color))
+            .copied()
+            .unwrap_or([170; 3]);
+        let color = [rgb[0], rgb[1], rgb[2], 255];
+        let name = &player.name;
         text(&mut canvas, (24, y), 126, name, color);
         canvas.rect((158, y + 3), (270, 10), [64, 64, 80, 255]);
         canvas.rect((159, y + 4), (268, 8), [0, 0, 0, 255]);
         canvas.rect((159, y + 4), (268 * completed / 3, 8), color);
     }
     let (x, y, _, _) = layout.button(0, Button::Back);
-    text(&mut canvas, (x + 8, y + 5), 144, "Esc: Cancel", GOLD);
+    text(&mut canvas, (x + 8, y + 5), 144, "Esc: Cancel", caption);
     if state.keyboard_focus {
-        canvas.rect((x + 8, y + 22), (100, 1), GOLD);
+        canvas.rect((x + 8, y + 22), (100, 1), caption);
     }
     for y in 0..height {
         for x in 0..width {

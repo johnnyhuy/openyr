@@ -4,11 +4,11 @@
 //! Contents: the sim terrain grid for the map, the map's own pre-placed
 //! structures/units as sim entities, a player starting force at the
 //! first start waypoint, a computer base at the second, and the
-//! selected starting credits. Both owners use the sandbox's Allied
-//! starting composition (AMCV, CMIN, four MTNKs, four infantry at
-//! UnitCount=10). Legacy saves retain three computer guards. Win/lose is judged on
-//! owned entities with no buildings and no units left.
+//! selected starting credits. Each participant uses their selected side's
+//! starting composition. Legacy saves retain three computer guards. Short Game
+//! judges surviving structures; other matches also count surviving units.
 
+use crate::match_config::{Country, MatchConfig, Side, COLOR_NAMES};
 use yr_assets::{AssetFs, Theater};
 use yr_formats::MapFile;
 use yr_rules::{Armor, Rules, TechnoKind};
@@ -54,6 +54,9 @@ impl StartOptions {
 }
 
 pub struct Session {
+    pub match_config: MatchConfig,
+    pub owner_colors: [[u8; 3]; 3],
+    color_palette: [[u8; 3]; 8],
     pub start_options: StartOptions,
     pub sim: Sim,
     pub outcome: Outcome,
@@ -139,10 +142,6 @@ impl Buildable {
         }
     }
 }
-
-/// Sandbox sidebar picks (allied tech, YR ids), kept when present in rules.
-const VEHICLE_SLOTS: &[&str] = &["MTNK", "FV", "SREF", "CMIN"];
-const INFANTRY_SLOTS: &[&str] = &["E1", "GGI", "SNIPE"];
 
 /// The player's country. `[Countries]` lists Americans first, the
 /// skirmish dialog's default; it decides `RequiredHouses=` and
@@ -272,71 +271,73 @@ fn house_allows(t: &yr_rules::TechnoType, country: &str) -> bool {
     (t.required_houses.is_empty() || named(&t.required_houses)) && !named(&t.forbidden_houses)
 }
 
-/// The supported setup has one country, including the computer's guards.
+/// Validate the selected country's generated force.
 /// Map-authored objects do not pass through this generated-force filter.
-fn allied_type<'a>(
+fn country_type<'a>(
     rules: &'a Rules,
     id: &str,
     kind: TechnoKind,
+    country: Country,
 ) -> Result<&'a yr_rules::TechnoType, String> {
+    let country = country.id();
     let t = rules
         .techno(id)
         .filter(|t| t.defined && t.kind == kind)
-        .ok_or_else(|| format!("Allied setup requires the defined {kind:?} type {id}"))?;
-    if !t
-        .owner
-        .iter()
-        .any(|h| h.eq_ignore_ascii_case(PLAYER_COUNTRY))
-        || !house_allows(t, PLAYER_COUNTRY)
-    {
-        return Err(format!(
-            "Allied setup requires {id} to allow {PLAYER_COUNTRY}"
-        ));
+        .ok_or_else(|| format!("Skirmish setup requires the defined {kind:?} type {id}"))?;
+    if !t.owner.iter().any(|h| h.eq_ignore_ascii_case(country)) || !house_allows(t, country) {
+        return Err(format!("Skirmish setup requires {id} to allow {country}"));
     }
     Ok(t)
 }
 
-fn validate_allied_setup(fs: &AssetFs, rules: &Rules, theater: Theater) -> Result<(), String> {
-    for id in ["GACNST", "GAPOWR", "GAREFN", "GAWEAP", "GAPILE"] {
-        let t = allied_type(rules, id, TechnoKind::Building)?;
+fn validate_country_setup(
+    fs: &AssetFs,
+    rules: &Rules,
+    theater: Theater,
+    country: Country,
+) -> Result<(), String> {
+    let side = country.side();
+    for id in side.buildings() {
+        let t = country_type(rules, id, TechnoKind::Building, country)?;
         let name = yr_render::building_shp_candidates(&t.image.to_ascii_uppercase(), theater)
             .into_iter()
             .find(|name| fs.read(name).is_some())
-            .ok_or_else(|| format!("Allied setup requires {id} building art"))?;
+            .ok_or_else(|| format!("Skirmish setup requires {id} building art"))?;
         if !fs
             .read(&name)
             .and_then(|data| yr_formats::ShpFile::parse(data).ok())
             .is_some_and(|s| !s.frames.is_empty())
         {
-            return Err(format!("Allied setup cannot decode {id} art {name}"));
+            return Err(format!("Skirmish setup cannot decode {id} art {name}"));
         }
     }
-    for id in ["AMCV", "CMIN", "MTNK", "E1"] {
-        let t = allied_type(
+    for id in side.force() {
+        let t = country_type(
             rules,
             id,
-            if id == "E1" {
+            if id == side.force()[3] {
                 TechnoKind::Infantry
             } else {
                 TechnoKind::Vehicle
             },
+            country,
         )?;
         let image = t.image.to_ascii_uppercase();
         let voxel = t.art.as_ref().is_some_and(|a| a.voxel);
         let name = format!("{image}.{}", if voxel { "VXL" } else { "SHP" });
         let data = fs
             .read(&name)
-            .ok_or_else(|| format!("Allied setup requires {id} art {name}"))?;
+            .ok_or_else(|| format!("Skirmish setup requires {id} art {name}"))?;
         let valid = if voxel {
             yr_formats::VxlFile::parse(data).is_ok()
         } else {
             yr_formats::ShpFile::parse(data).is_ok_and(|s| !s.frames.is_empty())
         };
         if !valid {
-            return Err(format!("Allied setup cannot decode {id} art {name}"));
+            return Err(format!("Skirmish setup cannot decode {id} art {name}"));
         }
-        if id == "CMIN" && t.harvester != Some(true) {
-            return Err("Allied setup requires CMIN Harvester=yes".into());
+        if id == side.force()[1] && t.harvester != Some(true) {
+            return Err(format!("Skirmish setup requires {id} Harvester=yes"));
         }
     }
     Ok(())
@@ -344,6 +345,19 @@ fn validate_allied_setup(fs: &AssetFs, rules: &Rules, theater: Theater) -> Resul
 
 /// Retain one MCV and miner, then repeat four tanks and four infantry
 /// when a map requests more than the retail ten-unit force.
+fn starting_kind_for(side: Side, index: usize) -> &'static str {
+    if side == Side::Allied {
+        return starting_kind(index);
+    }
+    let force = side.force();
+    match index {
+        0 => force[0],
+        1 => force[1],
+        i if (i - 2) % 8 < 4 => force[2],
+        _ => force[3],
+    }
+}
+
 fn starting_kind(index: usize) -> &'static str {
     match index {
         0 => "AMCV",
@@ -359,7 +373,7 @@ fn starting_count(rules: &Rules, grid: &TerrainGrid) -> Result<usize, String> {
     usize::try_from(count)
         .ok()
         .filter(|&n| n <= cells)
-        .ok_or_else(|| format!("Allied setup UnitCount={count} is outside this map's capacity"))
+        .ok_or_else(|| format!("Skirmish setup UnitCount={count} is outside this map's capacity"))
 }
 
 /// First passable cell at or after `start`, scanning expanding offsets.
@@ -498,7 +512,21 @@ pub fn load_with_options(
     seed: u64,
     options: StartOptions,
 ) -> Result<Session, String> {
+    load_with_config(gamedir, map_name, seed, options, MatchConfig::default())
+}
+
+pub fn load_with_config(
+    gamedir: &str,
+    map_name: &str,
+    seed: u64,
+    options: StartOptions,
+    config: MatchConfig,
+) -> Result<Session, String> {
     options.validate()?;
+    config.validate()?;
+    if !options.shared_forces && config != MatchConfig::default() {
+        return Err("Legacy starting forces cannot use participant overrides".into());
+    }
     let mut fs = AssetFs::open(std::path::Path::new(gamedir)).map_err(|e| e.to_string())?;
     let raw = match fs.read(map_name) {
         Some(d) => d.to_vec(),
@@ -527,6 +555,7 @@ pub fn load_with_options(
         &overlay_types,
         seed,
         options.shared_forces,
+        &config,
     )?;
     session.start_options = options;
     if crate::snapshot::valid_map_reference(map_name) && fs.read(map_name).is_some() {
@@ -543,7 +572,15 @@ pub fn setup(
     overlay_types: &[String],
     seed: u64,
 ) -> Result<Session, String> {
-    setup_profile(fs, map, rules, overlay_types, seed, true)
+    setup_profile(
+        fs,
+        map,
+        rules,
+        overlay_types,
+        seed,
+        true,
+        &MatchConfig::default(),
+    )
 }
 
 fn setup_profile(
@@ -553,10 +590,14 @@ fn setup_profile(
     overlay_types: &[String],
     seed: u64,
     shared_forces: bool,
+    config: &MatchConfig,
 ) -> Result<Session, String> {
     let theater = Theater::from_map_name(&map.theater).ok_or("unknown theater")?;
     fs.set_theater(theater);
-    validate_allied_setup(fs, rules, theater)?;
+    config.validate()?;
+    for player in &config.players {
+        validate_country_setup(fs, rules, theater, player.country)?;
+    }
     let grid = yr_render::build_terrain(fs, map, overlay_types, theater)?;
     let target_count = starting_count(rules, &grid)?;
     let mut sim = Sim::new(seed);
@@ -570,8 +611,17 @@ fn setup_profile(
     sim.set_terrain(grid.clone());
     sim.set_credits(rules.skirmish.money.unwrap_or(10_000));
 
-    let yard = "GACNST";
-    let (buildables, mut kinds) = buildables(fs, rules, Some(yard));
+    let player_side = config.players[0].country.side();
+    let enemy_side = config.players[1].country.side();
+    let [yard, power_plant, refinery, war_factory, barracks] = player_side.buildings();
+    let enemy_base = enemy_side.buildings();
+    let (buildables, mut kinds) =
+        catalog_buildables(fs, rules, Some(yard), config.players[0].country);
+    let (enemy_buildables, enemy_kinds) =
+        catalog_buildables(fs, rules, Some(enemy_base[0]), config.players[1].country);
+    for id in &enemy_kinds {
+        intern(&mut kinds, id);
+    }
     let mut cmds: Vec<Command> = Vec::new();
     let mut next_id = sim.next_id_peek();
     let mut taken_cells: Vec<(u16, u16)> = Vec::new();
@@ -617,7 +667,38 @@ fn setup_profile(
     // Neutral spawns queued above use predicted ids; owner assignment is
     // inside place_unit via next_id_peek. Starting forces:
     let waypoints = start_waypoints(map);
-    let player_at = waypoints.first().copied().unwrap_or((10, 10));
+    let authored = crate::frontend::start_points(&map.ini);
+    let chosen =
+        |owner: usize, fallback: Option<(u16, u16)>| -> Result<Option<(u16, u16)>, String> {
+            match config.players[owner].start {
+                Some(index) => authored[usize::from(index)].map(Some).ok_or_else(|| {
+                    "The selected starting position is missing from this map".into()
+                }),
+                None => Ok(fallback),
+            }
+        };
+    let enemy_explicit = config.players[1]
+        .start
+        .and_then(|i| authored[usize::from(i)]);
+    let player_default = if enemy_explicit.is_some() {
+        waypoints
+            .iter()
+            .copied()
+            .find(|p| Some(*p) != enemy_explicit)
+    } else {
+        waypoints.first().copied()
+    };
+    let player_at = chosen(0, player_default)?.unwrap_or((10, 10));
+    let explicit = config.players.iter().any(|p| p.start.is_some());
+    let enemy_default = if explicit {
+        waypoints.iter().copied().find(|p| *p != player_at)
+    } else {
+        waypoints.get(1).copied()
+    };
+    let enemy_at = chosen(1, enemy_default)?;
+    if explicit && enemy_at == Some(player_at) {
+        return Err("Choose different starting positions".into());
+    }
     {
         let mut ctx = PlaceCtx {
             next_id: &mut next_id,
@@ -632,22 +713,22 @@ fn setup_profile(
             PLAYER,
             &BaseSpec {
                 yard,
-                power_plant: "GAPOWR",
-                refinery: "GAREFN",
-                extra: &["GAWEAP", "GAPILE"],
+                power_plant,
+                refinery,
+                extra: &[war_factory, barracks],
             },
             &mut cmds,
         );
     }
     for index in 0..target_count {
-        let id = starting_kind(index);
+        let id = starting_kind_for(player_side, index);
         let loco = rules
             .techno(id)
             .map(|t| techno_loco(t.kind))
             .unwrap_or(Loco::Track);
         let Some(cell) = free_cell(&grid, loco, player_at, &sim, &taken_cells) else {
             return Err(format!(
-                "Allied setup cannot place all {target_count} starting units near waypoint 0"
+                "Skirmish setup cannot place all {target_count} starting units near waypoint 0"
             ));
         };
         taken_cells.push(cell);
@@ -662,7 +743,7 @@ fn setup_profile(
             &mut extra,
         );
         cmds.extend(extra);
-        if let Some(uid) = uid.filter(|_| id == "CMIN") {
+        if let Some(uid) = uid.filter(|_| id == player_side.force()[1]) {
             cmds.push(Command::AssignRole {
                 id: uid,
                 role: Role::Harvester,
@@ -670,9 +751,8 @@ fn setup_profile(
         }
     }
     // Computer base and guards at the second waypoint.
-    let had_enemy = waypoints.len() > 1;
-    if had_enemy {
-        let enemy_at = waypoints[1];
+    let had_enemy = enemy_at.is_some();
+    if let Some(enemy_at) = enemy_at {
         {
             let mut ctx = PlaceCtx {
                 next_id: &mut next_id,
@@ -686,10 +766,10 @@ fn setup_profile(
                 enemy_at,
                 ENEMY,
                 &BaseSpec {
-                    yard,
-                    power_plant: "GAPOWR",
-                    refinery: "GAREFN",
-                    extra: &["GAWEAP", "GAPILE"],
+                    yard: enemy_base[0],
+                    power_plant: enemy_base[1],
+                    refinery: enemy_base[2],
+                    extra: &enemy_base[3..],
                 },
                 &mut cmds,
             );
@@ -698,7 +778,7 @@ fn setup_profile(
             let count = if shared_forces { target_count } else { 3 };
             for index in 0..count {
                 let id = if shared_forces {
-                    starting_kind(index)
+                    starting_kind_for(enemy_side, index)
                 } else {
                     "MTNK"
                 };
@@ -710,13 +790,13 @@ fn setup_profile(
                     if !shared_forces {
                         break;
                     }
-                    return Err(format!("Allied setup cannot place all {count} computer starting units near waypoint 1"));
+                    return Err(format!("Skirmish setup cannot place all {count} computer starting units near waypoint 1"));
                 };
                 taken_cells.push(cell);
                 let mut extra = Vec::new();
                 let uid = place_unit(&mut kinds, &mut next_id, rules, id, cell, ENEMY, &mut extra);
                 cmds.extend(extra);
-                if let Some(id) = uid.filter(|_| id == "CMIN") {
+                if let Some(id) = uid.filter(|_| id == enemy_side.force()[1]) {
                     cmds.push(Command::AssignRole {
                         id,
                         role: Role::Harvester,
@@ -727,11 +807,18 @@ fn setup_profile(
     }
     sim.step(&cmds);
     if had_enemy {
-        // Both sides use Allied factory types in this first skirmish. Resolve
-        // costs, specs and prerequisite groups once; decisions live in yr-sim.
+        // Resolve the computer country's factory types and prerequisite groups
+        // once; decisions live in yr-sim.
         let mut choices = Vec::new();
-        for id in ["MTNK", "E1", "GAPOWR", "GAREFN", "GAWEAP", "GAPILE"] {
-            let Some((slot, b)) = buildables.iter().enumerate().find(|(_, b)| b.id == id) else {
+        for id in [
+            enemy_side.force()[2],
+            enemy_side.force()[3],
+            enemy_base[1],
+            enemy_base[2],
+            enemy_base[3],
+            enemy_base[4],
+        ] {
+            let Some(b) = enemy_buildables.iter().find(|b| b.id == id) else {
                 continue;
             };
             let prerequisites = b
@@ -764,7 +851,7 @@ fn setup_profile(
             }
             choices.push(yr_sim::ai::AiBuild {
                 factory: b.factory,
-                kind: slot as u16,
+                kind: intern(&mut kinds, &b.id),
                 product,
                 cost: b.cost,
                 ticks: b.ticks,
@@ -782,7 +869,22 @@ fn setup_profile(
     )?;
     let mut radar = crate::sidebar::radar::Radar::load(fs, map, rules);
     radar.reset(&sim, &kinds);
+    let mut color_rules = yr_formats::IniFile::parse(&String::from_utf8_lossy(
+        fs.read("RULESMD.INI").unwrap_or_default(),
+    ));
+    color_rules.merge_from(&map.ini);
+    let color_palette =
+        std::array::from_fn(|i| yr_render::named_color(&color_rules, COLOR_NAMES[i]));
+    let owner_colors = [
+        color_palette[usize::from(config.players[0].color)],
+        color_palette[usize::from(config.players[1].color)],
+        [170; 3],
+    ];
+    radar.set_colors(owner_colors);
     Ok(Session {
+        match_config: config.clone(),
+        owner_colors,
+        color_palette,
         start_options: StartOptions::default(),
         radar,
         services: crate::service::Services::load(rules),
@@ -790,7 +892,7 @@ fn setup_profile(
         outcome: Outcome::Ongoing,
         had_enemy,
         buildables,
-        sidebar_art: crate::sidebar::SidebarArt::load(fs),
+        sidebar_art: crate::sidebar::SidebarArt::load_for_side(fs, player_side),
         cursor_art: crate::cursor::Art::load(fs),
         kinds,
         prerequisite_groups: rules.globals.prerequisite_groups.clone(),
@@ -828,11 +930,18 @@ pub fn build_ticks(cost: i64, build_speed_units: i64) -> u32 {
 /// sandbox picks above; structures are every `[BuildingTypes]` entry the
 /// player's side can build: `Prerequisite=` names the side's construction
 /// yard (how YR gates side ownership), `TechLevel=` within the skirmish
-/// level, open to [`PLAYER_COUNTRY`], with a cost and a `Foundation=`.
+/// level, open to the selected country, with a cost and a `Foundation=`.
 /// Walls, water-bound shipyards and the yard itself (deployed from an
 /// MCV) are left out. Slot `i` is kind tag `i`; free units (refinery
 /// harvesters) are interned after the slots.
-fn buildables(fs: &AssetFs, rules: &Rules, yard: Option<&str>) -> (Vec<Buildable>, Vec<String>) {
+fn catalog_buildables(
+    fs: &AssetFs,
+    rules: &Rules,
+    yard: Option<&str>,
+    country: Country,
+) -> (Vec<Buildable>, Vec<String>) {
+    let side = country.side();
+    let country = country.id();
     let names = crate::localization::SidebarNames::load(fs);
     let speed = rules.globals.build_speed.map_or(700_000, |d| d.units());
     let tech_level = rules.skirmish.tech_level.unwrap_or(10);
@@ -841,11 +950,12 @@ fn buildables(fs: &AssetFs, rules: &Rules, yard: Option<&str>) -> (Vec<Buildable
         .find_map(|n| fs.read(n).and_then(yr_formats::Palette::parse));
     let mut out = Vec::new();
     let mut free_units: Vec<(usize, String)> = Vec::new();
-    let units = VEHICLE_SLOTS
+    let units = side
+        .vehicles()
         .iter()
         .map(|id| (id.to_string(), Factory::Vehicle))
         .chain(
-            INFANTRY_SLOTS
+            side.infantry()
                 .iter()
                 .map(|id| (id.to_string(), Factory::Infantry)),
         );
@@ -865,7 +975,7 @@ fn buildables(fs: &AssetFs, rules: &Rules, yard: Option<&str>) -> (Vec<Buildable
     for (id, factory) in units.chain(structures) {
         let Some(t) = rules.techno(&id) else { continue };
         let Some(cost) = t.cost else { continue };
-        if !house_allows(t, PLAYER_COUNTRY) {
+        if !house_allows(t, country) {
             continue;
         }
         let product = if factory == Factory::Building {
@@ -935,6 +1045,14 @@ fn decode_cameo(
 }
 
 impl Session {
+    pub fn apply_match_config(&mut self, config: MatchConfig) -> Result<(), String> {
+        config.validate()?;
+        self.owner_colors[0] = self.color_palette[usize::from(config.players[0].color)];
+        self.owner_colors[1] = self.color_palette[usize::from(config.players[1].color)];
+        self.radar.set_colors(self.owner_colors);
+        self.match_config = config;
+        Ok(())
+    }
     pub fn seed(&self) -> u64 {
         self.seed
     }
@@ -1135,9 +1253,11 @@ impl Session {
         if self.outcome != Outcome::Ongoing {
             return;
         }
-        let player_alive = self.sim.units().iter().any(|u| u.owner == PLAYER)
+        let player_alive = (!self.match_config.short_game
+            && self.sim.units().iter().any(|u| u.owner == PLAYER))
             || self.sim.buildings().iter().any(|b| b.owner == PLAYER);
-        let enemy_alive = self.sim.units().iter().any(|u| u.owner == ENEMY)
+        let enemy_alive = (!self.match_config.short_game
+            && self.sim.units().iter().any(|u| u.owner == ENEMY))
             || self.sim.buildings().iter().any(|b| b.owner == ENEMY);
         if !player_alive {
             self.outcome = Outcome::Lost;
@@ -1167,19 +1287,19 @@ mod starting_force_tests {
             "",
         ] {
             assert!(
-                allied_type(&make(fields), "AMCV", TechnoKind::Vehicle).is_err(),
+                country_type(&make(fields), "AMCV", TechnoKind::Vehicle, Country::America).is_err(),
                 "{fields}"
             );
         }
         let allowed = make("Owner=americans\nRequiredHouses=AMERICANS\nForbiddenHouses=British");
-        assert!(allied_type(&allowed, "AMCV", TechnoKind::Vehicle).is_ok());
-        assert!(allied_type(&allowed, "AMCV", TechnoKind::Infantry).is_err());
-        assert!(allied_type(&allowed, "SMCV", TechnoKind::Vehicle).is_err());
+        assert!(country_type(&allowed, "AMCV", TechnoKind::Vehicle, Country::America).is_ok());
+        assert!(country_type(&allowed, "AMCV", TechnoKind::Infantry, Country::America).is_err());
+        assert!(country_type(&allowed, "SMCV", TechnoKind::Vehicle, Country::America).is_err());
         let undefined = Rules::load(
             &IniFile::parse("[VehicleTypes]\n0=AMCV"),
             &IniFile::parse(""),
         );
-        assert!(allied_type(&undefined, "AMCV", TechnoKind::Vehicle).is_err());
+        assert!(country_type(&undefined, "AMCV", TechnoKind::Vehicle, Country::America).is_err());
     }
 
     #[test]
@@ -1241,6 +1361,9 @@ mod save_tests {
         let kinds = vec!["E1".into()];
         let setup_hash = setup_fingerprint(&sim, &buildables, &kinds, &[]).unwrap();
         Session {
+            match_config: MatchConfig::default(),
+            owner_colors: [[170; 3]; 3],
+            color_palette: [[170; 3]; 8],
             start_options: StartOptions::default(),
             sim,
             outcome: Outcome::Ongoing,

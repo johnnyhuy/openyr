@@ -1,13 +1,13 @@
 # Match loading screen
 
-The supported American sandbox uses the retail multiplayer country artwork,
+The supported two-participant skirmish uses the retail multiplayer country artwork,
 with the selected match's map thumbnail in its lower-right preview frame.
 This is separate from the shell panel used while preparing Skirmish setup.
 The shared compositor handles both front-menu starts and pause-menu restores.
 
 ## Retail assets
 
-Both files resolve through `RA2MD.MIX/LOADMD.MIX` in the supplied install.
+All country pairs resolve through `RA2MD.MIX/LOADMD.MIX` in the supplied install.
 These names are confirmed against the MIX CRC IDs and are included in the
 inspection tool's name database.
 
@@ -15,6 +15,28 @@ inspection tool's name database.
 | --- | --- | --- | --- |
 | `LS800USTATES.SHP` | `6affc0dc` | 481232 | 800x600, one full-canvas frame, compression 2 |
 | `MPLSU.PAL` | `7a0171a5` | 768 | 256 six-bit RGB triples for the American loading artwork |
+
+The other selectable countries use these verified SHP/palette pairs from the
+same archive. Every SHP is one 800x600 compression-2 frame, 481232 bytes; every
+palette is 768 bytes. No guessed fallback palette substitutes for a country.
+
+| Country | SHP | Palette |
+| --- | --- | --- |
+| Korea | LS800KOREA.SHP | MPLSK.PAL |
+| France | LS800FRANCE.SHP | MPLSF.PAL |
+| Germany | LS800GERMANY.SHP | MPLSG.PAL |
+| Britain | LS800UKINGDOM.SHP | MPLSUK.PAL |
+| Russia | LS800RUSSIA.SHP | MPLSR.PAL |
+| Cuba | LS800CUBA.SHP | MPLSC.PAL |
+| Libya | LS800LIBYA.SHP | MPLSL.PAL |
+| Iraq | LS800IRAQ.SHP | MPLSI.PAL |
+
+The loading-art cache is bounded to these nine known pairs. Country title and
+brief labels use the selected country's CSF keys. Caption colors use retail
+[Colors] AlliedLoad=164,255,255 or SovietLoad=0,235,255, interpreted through the
+same HSV conversion as house colors. Player labels and bars use the selected
+names and color indices. Validated saved metadata selects these before
+session reconstruction rather than showing the previous match's country.
 
 The SHP has a 32-byte combined header and frame record. Its 600 rows each
 contain a two-byte length of 802 followed by 800 indices. Index zero is drawn
@@ -55,8 +77,8 @@ The two preparation bars represent the supported local player and computer.
 They advance at completed session and terrain stages while the worker prepares
 the sprite bank. They do not claim a measured percentage or remote peer status.
 `GAME.FNT`, `Name:Americans`, `LoadBriefShort:USA`, `GUI:LoadingEx` and
-`GUI:Battle` supply the retail text. The current player labels follow the fixed
-Skirmish profile. There are no new faction choices or gameplay abilities.
+`GUI:Battle` supply the retail text. The player labels follow the selected Skirmish profile. Country choices select
+side setup and art; they do not implement absent special gameplay abilities.
 
 The native cancel control occupies `(16,568,160,25)`. Its painted text and
 mouse target use the same 800x600 transform as the background. Escape and
@@ -101,3 +123,15 @@ outside the sandbox reached Main Menu. Screenshot capture still failed with
 recording attempt produced no usable file. Use the shared-compositor captures
 for this run's proof. Live visual inspection, Retina input and audible playback
 remain unverified; opening an audio device alone does not verify playback.
+
+The Linux participant follow-up verifies all nine untouched country-map panels
+against independent raw 802-byte row and palette traversal, along with selected
+bar colors. Real menu handlers cover popup selection, dismissal over Start,
+name entry, Short Game, speed, country loading, match entry and restart.
+The latest sandboxed original-game probe used the supplied launcher in a
+separate Wine prefix. It exited with signal 11, created no windows and yielded
+no usable original capture. Automatic approval review rejected an unsandboxed
+reference run because it would expose the wider filesystem and inherited
+environment. That run was not retried. Exact text/bar geometry, preview
+placement and progress timing remain uncalibrated; source-pixel checks do not
+establish original runtime parity. #148 tracks the reference startup failure.

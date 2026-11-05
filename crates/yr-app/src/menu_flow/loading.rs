@@ -17,6 +17,7 @@ pub(super) struct LoadRequest {
     scale: u32,
     seed: u64,
     options: yr_app::session::StartOptions,
+    config: yr_app::match_config::MatchConfig,
     back: Page,
     status: LoadStatus,
 }
@@ -107,12 +108,26 @@ impl App {
             scale: self.scale,
             seed: self.session.as_ref().map_or(42, Session::seed),
             options,
+            config: if self.menu.front {
+                self.menu.setup.config.clone()
+            } else {
+                self.session
+                    .as_ref()
+                    .map_or_else(Default::default, |session| session.match_config.clone())
+            },
             back: back.clone(),
             status: LoadStatus {
                 name,
                 stage,
                 map_name,
                 battle,
+                config: if self.menu.front {
+                    self.menu.setup.config.clone()
+                } else {
+                    self.session
+                        .as_ref()
+                        .map_or_else(Default::default, |session| session.match_config.clone())
+                },
             },
         };
         self.loading_preview = None;
@@ -155,7 +170,7 @@ impl LoadRequest {
         progress: &mpsc::Sender<LoadProgress>,
         stop: &AtomicBool,
     ) -> Result<Prepared, String> {
-        let report = |stage, map_name: &str| {
+        let report = |stage, map_name: &str, config: &yr_app::match_config::MatchConfig| {
             if stop.load(Ordering::Relaxed) {
                 return Err("Loading cancelled".to_string());
             }
@@ -164,40 +179,45 @@ impl LoadRequest {
                 stage,
                 map_name: map_name.to_owned(),
                 battle: self.status.battle,
+                config: config.clone(),
             }));
             Ok(())
         };
         match self.kind {
             LoadKind::Preview => {
-                report(LoadStage::Preview, &self.map)?;
+                report(LoadStage::Preview, &self.map, &self.config)?;
                 yr_app::frontend::load_preview(&self.directory, &self.map, self.scale)
                     .map(Prepared::Preview)
             }
             LoadKind::Match(path) => {
-                report(LoadStage::Session, &self.status.map_name)?;
+                report(LoadStage::Session, &self.status.map_name, &self.config)?;
                 let (session, map_name) = match &path {
-                    Some(path) => {
-                        yr_app::snapshot::load_from_menu(&self.directory, &self.map, path)?
-                    }
+                    Some(path) => yr_app::snapshot::load_from_menu_with_metadata(
+                        &self.directory,
+                        &self.map,
+                        path,
+                        |map, config| report(LoadStage::Session, map, config),
+                    )?,
                     None => (
-                        yr_app::session::load_with_options(
+                        yr_app::session::load_with_config(
                             &self.directory,
                             &self.map,
                             self.seed,
                             self.options,
+                            self.config.clone(),
                         )?,
                         self.map,
                     ),
                 };
-                report(LoadStage::Terrain, &map_name)?;
+                report(LoadStage::Terrain, &map_name, &session.match_config)?;
                 if let Ok(preview) =
                     yr_app::frontend::load_preview(&self.directory, &map_name, self.scale)
                 {
                     let _ = progress.send(LoadProgress::Preview(Box::new(preview)));
                 }
-                report(LoadStage::Terrain, &map_name)?;
+                report(LoadStage::Terrain, &map_name, &session.match_config)?;
                 let map = yr_render::render_map(&self.directory, &map_name, self.scale)?;
-                report(LoadStage::Artwork, &map_name)?;
+                report(LoadStage::Artwork, &map_name, &session.match_config)?;
                 let sprites = load_sprites(&self.directory, &map_name).map(Box::new);
                 Ok(Prepared::Match {
                     session: Box::new(session),
@@ -326,6 +346,7 @@ mod tests {
                 map_name: "XMP29U2.MAP".into(),
                 battle: true,
                 stage: LoadStage::Terrain,
+                config: Default::default(),
             }))
             .unwrap();
         progress

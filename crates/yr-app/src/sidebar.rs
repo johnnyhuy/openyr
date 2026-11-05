@@ -93,6 +93,28 @@ pub fn tab_at(width: u32, pos: (f64, f64)) -> Option<Category> {
         .find(|&category| contains(tab_origin(width, category), (28, TAB_H), pos))
 }
 
+fn tab_rect(width: u32, session: &Session, category: Category) -> (i32, i32, i32, i32) {
+    let (w, h) = session.sidebar_art.tabs[0]
+        .first()
+        .map_or((28, TAB_H), |image| {
+            (image.width as i32, image.height as i32)
+        });
+    let index = Category::ALL.iter().position(|&c| c == category).unwrap() as i32;
+    (
+        width.saturating_sub(WIDTH) as i32 + 26 + index * w,
+        TAB_TOP,
+        w,
+        h,
+    )
+}
+
+pub fn session_tab_at(width: u32, session: &Session, pos: (f64, f64)) -> Option<Category> {
+    Category::ALL.into_iter().find(|&category| {
+        let (x, y, w, h) = tab_rect(width, session, category);
+        contains((x, y), (w, h), pos)
+    })
+}
+
 pub fn slot_at(
     width: u32,
     height: u32,
@@ -183,7 +205,7 @@ pub fn draw(
     let ready = session.ready_structure();
     let ready_tab = ready_category(session);
     for (i, tab) in Category::ALL.into_iter().enumerate() {
-        let (x, y) = tab_origin(width, tab);
+        let (x, y, _, _) = tab_rect(width, session, tab);
         // Retail sheet order: up, selected, disabled, pressed-up, pressed-selected.
         let selected = tab == view.category;
         if let Some(image) = art.tabs[i].get(usize::from(selected)) {

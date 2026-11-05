@@ -496,8 +496,14 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
 - [x] Calibrate numeric slider value-well backgrounds (#168) using the classic
       three-part retail skin. All 63720 RGBA samples match across initial,
       endpoint and midpoint controls without exclusions.
-- [ ] Complete player, faction, color/team and game-rule controls, original
-      starting-force composition, speed and timing remain part of #96.
+- [x] Supported two-participant setup controls within #96: player names,
+      nine Allied/Soviet countries, colors, authored starts, opposing teams,
+      Short Game and native speed presets. Choices feed side-specific forces,
+      production/AI, sidebar art, radar/remaps, country loading and bounded
+      version-4 save metadata. Default/legacy save fingerprints stay compatible.
+- [ ] Complete broader Skirmish modes, Yuri, country special abilities and
+      remaining game rules. Original starting-force composition, speed and
+      timing calibration remain part of #96.
 - [ ] Calibrate the chooser start projection without map-specific offsets
       (#164), retaining all exact Skirmish comparisons. Free For All, Team
       Alliance, random generation and the complete Skirmish form remain in #96.

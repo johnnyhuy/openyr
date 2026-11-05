@@ -96,6 +96,7 @@ pub(super) fn draw(canvas: &mut Canvas<'_>, session: &Session) {
 
 fn draw_meter(canvas: &mut Canvas<'_>, meter: &Meter, art: &[super::art::Image]) {
     let x = canvas.width.saturating_sub(WIDTH) as i32 + LEFT;
+    let pip_width = art.first().map_or(PIP_WIDTH, |image| image.width as i32);
     for row in 0..meter.output.min(meter.rows) {
         let pip = meter.pip(row);
         let origin = (x, meter.y(row));
@@ -109,7 +110,7 @@ fn draw_meter(canvas: &mut Canvas<'_>, meter: &Meter, art: &[super::art::Image])
     // including when no generators survive. It never exaggerates output.
     if meter.demand > 0 {
         canvas.rect(
-            (x + PIP_WIDTH + 1, meter.y(meter.demand - 1)),
+            (x + pip_width + 1, meter.y(meter.demand - 1)),
             (4, PIP_HEIGHT),
             if meter.shortage { RED } else { GOLD },
         );

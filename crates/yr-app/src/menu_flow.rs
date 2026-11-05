@@ -122,8 +122,12 @@ impl App {
         self.accum += now.saturating_duration_since(self.last_tick);
         self.last_tick = now;
         let mut stepped = false;
-        while self.accum >= TICK {
-            self.accum -= TICK;
+        let tick = self
+            .session
+            .as_ref()
+            .map_or(TICK, |session| session.match_config.speed.tick());
+        while self.accum >= tick {
+            self.accum -= tick;
             if self.session.is_some() {
                 self.tick_session();
                 stepped = true;
@@ -133,6 +137,18 @@ impl App {
     }
     pub(super) fn menu_mouse(&mut self, state: ElementState, button: MouseButton) {
         let layout = Layout::for_state(&self.menu, WIN_W, WIN_H);
+        if self.menu.front && self.menu.page == Page::Skirmish && self.menu.setup.popup.is_some() {
+            if state == ElementState::Pressed {
+                if button == MouseButton::Left {
+                    self.menu.setup.popup_hit(layout.local(self.cursor));
+                } else {
+                    self.menu.setup.popup = None;
+                }
+                self.menu.pressed = None;
+                self.reset_menu_clock();
+            }
+            return;
+        }
         if button == MouseButton::Left {
             match state {
                 ElementState::Pressed => {
@@ -144,6 +160,7 @@ impl App {
                             if let Some(field) = yr_app::menu::setup::Setup::hit((x, y)) {
                                 self.menu.setup.focus = Some(field);
                                 self.menu.setup.press(field, x);
+                                self.menu.pressed = None;
                             }
                         }
                     }
@@ -220,7 +237,56 @@ impl App {
             }
         }
         if self.menu.front && self.menu.page == Page::Skirmish {
+            use yr_app::menu::setup::Field;
+            if self.menu.setup.popup.is_some() {
+                match code {
+                    KeyCode::Escape => self.menu.setup.popup = None,
+                    KeyCode::Enter | KeyCode::NumpadEnter | KeyCode::Space if !repeat => {
+                        self.menu.setup.popup_accept()
+                    }
+                    KeyCode::ArrowUp | KeyCode::ArrowLeft => self.menu.setup.popup_move(-1),
+                    KeyCode::ArrowDown | KeyCode::ArrowRight => self.menu.setup.popup_move(1),
+                    KeyCode::Tab => {
+                        self.menu.setup.popup = None;
+                        self.menu.navigate(if self.shift { -1 } else { 1 });
+                    }
+                    _ => {}
+                }
+                self.reset_menu_clock();
+                return;
+            }
             if let Some(field) = self.menu.setup.focus {
+                if matches!(field, Field::Name(_)) {
+                    if matches!(code, KeyCode::Enter | KeyCode::NumpadEnter) && !repeat {
+                        self.menu.navigate(1);
+                        self.reset_menu_clock();
+                        return;
+                    }
+                    if code == KeyCode::KeyA && self.control {
+                        self.menu.setup.name_selected = true;
+                        self.reset_menu_clock();
+                        return;
+                    }
+                    if code == KeyCode::Backspace {
+                        self.menu.setup.edit_name(None);
+                        self.reset_menu_clock();
+                        return;
+                    }
+                    if !self.control && text.is_some_and(|s| s.chars().any(|c| !c.is_control())) {
+                        self.menu.setup.edit_name(text);
+                        self.reset_menu_clock();
+                        return;
+                    }
+                }
+                if !field.slider()
+                    && !matches!(field, Field::Name(_))
+                    && matches!(code, KeyCode::Enter | KeyCode::NumpadEnter | KeyCode::Space)
+                    && !repeat
+                {
+                    self.menu.setup.press(field, field.rect().0);
+                    self.reset_menu_clock();
+                    return;
+                }
                 let delta = match code {
                     KeyCode::ArrowLeft | KeyCode::ArrowDown => Some(-1),
                     KeyCode::ArrowRight | KeyCode::ArrowUp => Some(1),
@@ -479,6 +545,7 @@ impl App {
         match result {
             Ok(Prepared::Preview(preview)) => {
                 self.menu.setup.update_profile(preview.setup);
+                self.menu.setup.set_starts(&preview.starts);
                 self.front_preview = Some(preview);
                 self.menu.set(Page::Skirmish);
             }
@@ -497,6 +564,7 @@ impl App {
                     self.save_path = path;
                 }
                 self.menu.setup.options = session.start_options;
+                self.menu.setup.config = session.match_config.clone();
                 self.session = Some(*session);
                 self.sidebar_view = Default::default();
                 self.map = Some(map);

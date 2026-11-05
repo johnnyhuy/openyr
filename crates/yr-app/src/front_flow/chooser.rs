@@ -41,6 +41,7 @@ impl App {
         self.map_name = entry.asset.clone();
         self.menu.map_name = self.map_name.clone();
         self.menu.setup.update_profile(preview.setup);
+        self.menu.setup.set_starts(&preview.starts);
         self.front_preview = Some(preview);
         self.chooser_epoch = self.chooser_epoch.wrapping_add(1);
         self.menu.maps.drag = None;
