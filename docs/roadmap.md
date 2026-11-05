@@ -269,9 +269,13 @@ Johnny on 2026-10-31.
       destruction, enemy isolation, compact windows and save/load are checked
       in the shared window/headless panel (`docs/formats/sidebar.md`).
       Display scale and surplus thresholds still need original-game calibration.
-- [ ] Scale generator output with observed health fractions (#93). The
-      current simulation keeps full output until destruction, including in
-      radar, production and the meter.
+- [x] Scale generator output with health fractions (#93): produced power
+      uses `power * hp / max_hp` with truncating integer division in the
+      shared owner totals, so radar, production and the meter all see the
+      reduced output. Drain stays unscaled. Damage, destruction, ownership
+      isolation and save/load are checked in `yr-sim`. The manual confirms
+      health-dependent output; the exact original rounding still needs
+      Wine observation.
 - [x] Hold/resume sidebar production (#86, #197): right-click suspends the
       unfinished factory head, left-click resumes without queuing a copy,
       and another right-click cancels with an exact refund. Progress/payment
