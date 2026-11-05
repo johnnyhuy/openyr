@@ -220,6 +220,55 @@ fn retail_virus_death_frames_match_source_and_expire() {
 }
 
 #[test]
+fn retail_mutate_death_frames_match_source_and_expire() {
+    let dir = PathBuf::from(std::env::var("HOME").unwrap())
+        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    if !dir.is_dir() {
+        return;
+    }
+    let fs = AssetFs::open(&dir).unwrap();
+    let art = IniFile::parse(&String::from_utf8_lossy(fs.read("ARTMD.INI").unwrap()));
+    let palette = Palette::parse(fs.read("ANIM.PAL").unwrap()).unwrap();
+    let shp = ShpFile::parse(fs.read("GENDEATH.SHP").unwrap()).unwrap();
+    assert_eq!((shp.width, shp.height, shp.frames.len()), (260, 304, 60));
+    let mut effects = Effects::default();
+    let mut frames = std::collections::BTreeSet::new();
+    for tick in 0..=68 {
+        let frame = tick * 200 / 225;
+        let sprite = effects.get(&fs, &art, "GENDEATH", tick);
+        if frame >= 60 {
+            assert!(sprite.is_none());
+            continue;
+        }
+        frames.insert(frame);
+        let expected: Vec<_> = shp
+            .decode_frame_canvas(frame as usize)
+            .unwrap()
+            .into_iter()
+            .flat_map(|index| {
+                if index == 0 {
+                    [0; 4]
+                } else {
+                    palette.rgba(index)
+                }
+            })
+            .collect();
+        let sprite = sprite.unwrap();
+        assert_eq!(
+            (sprite.w, sprite.h, sprite.ax, sprite.ay),
+            (260, 304, 130, 152)
+        );
+        assert!(
+            sprite.rgba == expected,
+            "GENDEATH tick {tick}, frame {frame}"
+        );
+    }
+    assert_eq!(frames.len(), 60);
+    assert_eq!(effects.frames.len(), 60);
+    assert!(!effects.alive(&fs, &art, "GENDEATH", u64::MAX));
+}
+
+#[test]
 fn retail_head_pop_frames_match_source_and_expire() {
     let dir = PathBuf::from(std::env::var("HOME").unwrap())
         .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");

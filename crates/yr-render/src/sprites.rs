@@ -335,6 +335,7 @@ impl SpriteBank {
             6 => self.rules_ini.section("General")?.get("InfantryHeadPop"),
             7 => Some("NUKEDIE"),
             8 => self.rules_ini.section("General")?.get("InfantryVirus"),
+            9 => self.rules_ini.section("General")?.get("InfantryMutate"),
             10 => self.rules_ini.section("General")?.get("InfantryBrute"),
             _ => None,
         }
@@ -761,7 +762,7 @@ mod tests {
         assert!(!bank.infantry_death_alive("E1", 5, 31));
         assert!(!bank.infantry_death_alive("E1", 5, u64::MAX));
         assert_eq!(bank.infantry_death_sequence("E1", 0), None);
-        for selector in [0, 9, u8::MAX] {
+        for selector in [0, 11, u8::MAX] {
             assert!(bank
                 .get_infantry_death("E1", selector, 0, [0; 3], 0)
                 .is_none());
@@ -1096,6 +1097,82 @@ mod tests {
             bank.effects = Default::default();
             assert_eq!(bank.infantry_death_sequence("E1", source), None);
             assert!(bank.get_infantry_death("E1", 10, 0, [0; 3], 0).is_none());
+            assert!(bank.get_infantry_death("E1", 1, 0, [0; 3], 0).is_some());
+        }
+    }
+
+    #[test]
+    fn retail_mutate_deaths_use_general_art_for_human_victims() {
+        let dir = std::path::PathBuf::from(std::env::var("HOME").unwrap())
+            .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+        if !dir.is_dir() {
+            return;
+        }
+        let mut bank = SpriteBank::open(dir.to_str().unwrap(), "EB1.MMX").unwrap();
+        // No retail weapon section carries the Mutate warheads; only the
+        // Genetic Mutator superweapon uses them, and it is not simulated.
+        // Selector resolution is exercised directly here.
+        for kind in ["E1", "GGI", "SHK"] {
+            assert!(
+                bank.get_infantry_death(kind, 9, 0, [0; 3], 0).is_some(),
+                "{kind}"
+            );
+            assert!(bank.infantry_death_alive(kind, 9, 0), "{kind}");
+        }
+        for kind in ["DOG", "COW", "MTNK", "SHAD", "GAPOWR", "MISSING"] {
+            assert_eq!(bank.infantry_death_sequence(kind, 0), None, "{kind}");
+            assert!(
+                bank.get_infantry_death(kind, 9, 0, [0; 3], 0).is_none(),
+                "{kind}"
+            );
+            assert!(!bank.infantry_death_alive(kind, 9, 0), "{kind}");
+        }
+        let first = bank
+            .get_infantry_death("E1", 9, 0, [255, 0, 0], 8)
+            .unwrap()
+            .rgba
+            .clone();
+        assert!(
+            first
+                == bank
+                    .get_infantry_death("GGI", 9, 128, [0, 0, 255], 8)
+                    .unwrap()
+                    .rgba,
+            "generic Mutate death ignores facing and remap"
+        );
+        assert!(bank.infantry_death_alive("E1", 9, 67));
+        assert!(!bank.infantry_death_alive("E1", 9, 68));
+        assert!(!bank.infantry_death_alive("E1", 9, u64::MAX));
+        let original = bank.rules_ini.clone();
+        // The general setting is authoritative, including optional overrides.
+        bank.rules_ini
+            .merge_from(&IniFile::parse("[General]\nInfantryMutate=ELECTRO"));
+        let expected = bank.get_effect("ELECTRO", 8).unwrap().rgba.clone();
+        assert!(bank.get_infantry_death("E1", 9, 0, [0; 3], 8).unwrap().rgba == expected);
+        for invalid in ["", "MISSING", "../../unsafe"] {
+            bank.rules_ini = original.clone();
+            bank.rules_ini.merge_from(&IniFile::parse(&format!(
+                "[General]\nInfantryMutate={invalid}"
+            )));
+            assert!(bank.get_infantry_death("E1", 9, 0, [0; 3], 0).is_none());
+            assert!(!bank.infantry_death_alive("E1", 9, 0));
+        }
+        bank.rules_ini = original.clone();
+        bank.rules_ini
+            .sections
+            .iter_mut()
+            .find(|section| section.name.eq_ignore_ascii_case("General"))
+            .unwrap()
+            .entries
+            .retain(|(key, _)| !key.eq_ignore_ascii_case("InfantryMutate"));
+        assert!(bank.get_infantry_death("E1", 9, 0, [0; 3], 0).is_none());
+        assert!(!bank.infantry_death_alive("E1", 9, 0));
+        bank.rules_ini = original;
+        for malformed in ["[GENDEATH]\nImage=../../unsafe", "[GENDEATH]\nRate=0"] {
+            bank.art_ini = IniFile::parse(malformed);
+            bank.effects = Default::default();
+            assert!(bank.get_infantry_death("E1", 9, 0, [0; 3], 0).is_none());
+            assert!(!bank.infantry_death_alive("E1", 9, 0));
             assert!(bank.get_infantry_death("E1", 1, 0, [0; 3], 0).is_some());
         }
     }
