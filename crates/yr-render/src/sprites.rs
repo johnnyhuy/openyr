@@ -401,6 +401,15 @@ impl SpriteBank {
 
     /// Optional explicit trail data follows the saved fired weapon identity.
     pub fn projectile_line_trail(&self, source: u64) -> Option<crate::LineTrail> {
+        crate::LineTrail::load(self.projectile_art(source)?)
+    }
+
+    /// Optional particle art resolves independently of supported body classes.
+    pub fn projectile_trailer(&self, source: u64) -> Option<crate::ProjectileTrailer> {
+        crate::ProjectileTrailer::load(self.projectile_art(source)?)
+    }
+
+    fn projectile_art(&self, source: u64) -> Option<&yr_formats::IniSection> {
         let mut matches = self
             .rules
             .weapons
@@ -414,7 +423,8 @@ impl SpriteBank {
         if !projectile.defined || projectile.inviso == Some(true) {
             return None;
         }
-        crate::LineTrail::load(self.art_ini.section(projectile.image.as_deref()?)?)
+        self.art_ini
+            .section(projectile.image.as_deref().unwrap_or(&projectile.id))
     }
 
     /// Optional directional art uses the authoritative next flight step in leptons.

@@ -633,3 +633,62 @@ occlusion; they do not establish original-game layer or timing parity.
 All exports contain retail art and stay outside git. No original engine
 source or instructions were used. These observations come from the user's
 retail SHP, palette and INI data plus the native rendering path.
+
+## Configured projectile trailer animations
+
+Retail `ARTMD.INI` explicitly names the following `Trailer` clips. Its
+projectile comment describes `SpawnDelay` as frames between spawns, with a
+default of three. This is file evidence, not an original-game timing observation.
+
+| Projectile image | Trailer | SpawnDelay | Clip size/frames | Rate | Alpha |
+| --- | --- | --- | --- | --- | --- |
+| DREDMISS | DURASMOKE | 2 | 22x20 / 20 | 450 | 127 |
+| MISLCHEM | SMOKEY2 | absent (3) | 22x22 / 20 | absent (200) | 127 |
+| SUBT | BBBLELRG | absent (3) | 32x34 / 15 | 450 | 255 |
+
+Smoke declares `Translucent=yes`; bubbles do not. The existing effect decoder
+uses ANIM.PAL and centered canvases. All 55 source canvases and their alpha
+values are checked, including odd frames skipped at Rate=450. DRAGON and
+MEDUSA comment out their older Trailer entries; their line trails remain
+independent, without guessed smoke. An empty NKMSLDN Trailer also stays off.
+
+The native policy emits a stationary clip at the vacated position of each
+actual movement segment when `absolute_sim_tick % SpawnDelay == 0`. This
+includes arrival movement on an eligible tick, excludes zero-length movement
+and retains the fired weapon after shooter death. Emission uses no RNG and
+never advances on redraw. Explicit names must be safe bounded asset names;
+intervals must fit a positive u16. Missing or malformed optional art does not
+hide the projectile, units or terrain. The existing 256-effect scene limit,
+128-clip metadata limit and 64 decoded-frame cache also bound trailers.
+
+Clips use the existing provisional Rate/225 presentation clock and expire
+without drawing. Past clips reset on load; saved flights emit again on the
+same absolute tick phase. Two fresh-cache restores reproduce all 40 subsequent
+frames and complete save bytes for each controlled weapon. Actual target
+movement turns the longer flights. Particle-hidden comparisons isolate the
+new pixels at identical simulation hashes.
+
+DredCollision and ChemLauncher are legacy sections without installed techno
+references, so the normal typed registry omits them. The smoke proof adds
+only temporary map INI weapon references on retail EB1, leaving their weapon,
+projectile and art settings unchanged. It uses an IFV actor with an explicit
+weapon command. The SubTorpedo chain is already registered in retail rules;
+its controlled land fixture demonstrates presentation, not naval gameplay.
+Special launchers and voxel projectile bodies are not added by this slice.
+
+Trailers join the existing ground-position effect painter order. Original
+launch-relative emission phase, frame-to-tick mapping, drift, altitude,
+anchors, lighting and exact layer/transparency semantics remain unverified in
+#102. In particular, BBBLELRG's `Flat=yes` and `Layer=surface` do not yet get
+an original surface-plane treatment beneath ships. Static baked map objects
+also retain their existing interleaving limitation. Source-pixel agreement
+does not establish original playback or compositing parity.
+
+```sh
+cargo test -p yr-render trailer -- --nocapture
+OPENYR_PARTICLE_PROOF=/tmp/openyr-particle-trailers cargo test -p yr-app projectile_trailer -- --nocapture
+```
+
+The proof directory contains the temporary retail map, in-flight snapshots,
+visible/hidden shared-compositor frames and tick/hash/particle receipts.
+It contains EA artwork and stays outside git.

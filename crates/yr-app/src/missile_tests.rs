@@ -333,3 +333,196 @@ fn retail_line_trails_follow_actual_flight_and_restart_after_load() {
         std::fs::write(out.join("saved-flight.oyrsave"), checkpoint).unwrap();
     }
 }
+
+#[test]
+fn retail_projectile_trailers_follow_flight_and_rebuild_after_load() {
+    let Some((mut app, cx, cy, kind, _)) = missile_app() else {
+        return;
+    };
+    let output = std::env::var_os("OPENYR_PARTICLE_PROOF").map(PathBuf::from);
+    let root = output.clone().unwrap_or_else(|| {
+        std::env::temp_dir().join(format!("openyr-particle-flight-{}", std::process::id()))
+    });
+    std::fs::create_dir_all(&root).unwrap();
+    let fs = yr_assets::AssetFs::open(std::path::Path::new(&app.gamedir)).unwrap();
+    // These legacy smoke weapons are not referenced by installed technos.
+    // Use supported map overrides to register their unchanged retail chains.
+    let overrides = "\n[FV]\nPrimary=ChemLauncher\n[SHAD]\nPrimary=DredCollision\n";
+    let mut map = fs.read("EB1.MMX").unwrap().to_vec();
+    map.extend(overrides.as_bytes());
+    let map_path = root.join("trailer-fixture.mmx");
+    std::fs::write(&map_path, map).unwrap();
+    app.map_name = map_path.to_str().unwrap().into();
+    app.session = Some(app.load_session().unwrap());
+    let mut rules_ini =
+        yr_formats::IniFile::parse(&String::from_utf8_lossy(fs.read("RULESMD.INI").unwrap()));
+    rules_ini.merge_from(&yr_formats::IniFile::parse(overrides));
+    let rules = yr_rules::Rules::load(
+        &rules_ini,
+        &yr_formats::IniFile::parse(&String::from_utf8_lossy(fs.read("ARTMD.INI").unwrap())),
+    );
+    let grid = app.session.as_ref().unwrap().sim.terrain().unwrap().clone();
+    for (weapon_name, name, interval, distance) in [
+        ("ChemLauncher", "SMOKEY2", 3, 2),
+        ("DredCollision", "DURASMOKE", 2, 0),
+        ("SubTorpedo", "BBBLELRG", 3, 2),
+    ] {
+        let weapon = yr_sim::WeaponSpec::from_rules(&rules, weapon_name).unwrap();
+        app.session.as_mut().unwrap().sim = yr_sim::Sim::new(42);
+        app.session.as_mut().unwrap().sim.set_terrain(grid.clone());
+        app.session.as_mut().unwrap().outcome = Outcome::Ongoing;
+        app.effects = Default::default();
+        app.animations = Default::default();
+        app.sprites = load_sprites(&app.gamedir, &app.map_name);
+        let spawn = |x, y, weapon| Command::Spawn {
+            kind,
+            x: Fix::from_int(x),
+            y: Fix::from_int(y),
+            loco: yr_sim::terrain::Loco::Track,
+            speed: Fix::from_raw(32),
+            hp: 2000,
+            armor: 0,
+            weapon,
+        };
+        app.pending.extend([
+            spawn(
+                i32::from(cx) - distance,
+                i32::from(cy) - distance,
+                Some(weapon),
+            ),
+            Command::AssignOwner {
+                id: 1,
+                owner: yr_sim::OWNER_PLAYER,
+            },
+            spawn(
+                i32::from(cx) + distance.max(1),
+                i32::from(cy) + distance.max(1),
+                None,
+            ),
+            Command::AssignOwner {
+                id: 2,
+                owner: yr_sim::OWNER_ENEMY,
+            },
+            Command::Attack { id: 1, target: 2 },
+        ]);
+        app.tick_session();
+        assert_eq!(app.session.as_ref().unwrap().sim.projectiles().len(), 1);
+        let checkpoint = yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap();
+        if output.is_some() {
+            std::fs::write(root.join(format!("{name}-flight.oyrsave")), &checkpoint).unwrap();
+        }
+        let mut expected = Vec::new();
+        for pass in 0..2 {
+            yr_app::snapshot::restore(app.session.as_mut().unwrap(), &checkpoint).unwrap();
+            app.effects = Default::default();
+            app.animations = Default::default();
+            app.sprites = load_sprites(&app.gamedir, &app.map_name);
+            assert!(app.effects.active.is_empty());
+            let mut visible_ticks = 0;
+            let mut arrived = false;
+            let mut directions = std::collections::BTreeSet::new();
+            for age in 1..=40 {
+                if age == 1 {
+                    app.pending.push(Command::Destroy { id: 1 });
+                }
+                if age == 1 {
+                    app.pending.push(Command::Move {
+                        id: 2,
+                        x: Fix::from_int(i32::from(cx) - 3),
+                        y: Fix::from_int(i32::from(cy) + 3),
+                    });
+                }
+                let previous = app
+                    .session
+                    .as_ref()
+                    .unwrap()
+                    .sim
+                    .projectiles()
+                    .first()
+                    .copied();
+                app.tick_session();
+                let session = app.session.as_ref().unwrap();
+                let tick = session.sim.tick();
+                let hash = session.sim.state_hash();
+                let save = yr_app::snapshot::encode(session).unwrap();
+                arrived |= session.sim.projectiles().is_empty();
+                let newborn: Vec<_> = app
+                    .effects
+                    .active
+                    .iter()
+                    .filter(|e| e.name == name && e.born == tick)
+                    .collect();
+                assert_eq!(
+                    newborn.len(),
+                    usize::from(previous.is_some() && tick % interval == 0)
+                );
+                for e in newborn {
+                    let p = previous.unwrap();
+                    assert_eq!(
+                        (e.x, e.y),
+                        (p.x, p.y),
+                        "particle stays at vacated flight position"
+                    );
+                    assert!(e.foundation.is_none());
+                }
+                if let (Some(p), Some(q)) = (previous, session.sim.projectiles().first()) {
+                    directions.insert(((q.x - p.x).raw().signum(), (q.y - p.y).raw().signum()));
+                }
+                let visible = compose(&app);
+                if age == 4 {
+                    assert_eq!(compose(&app), visible, "redraws do not advance particles");
+                }
+                let active = std::mem::take(&mut app.effects.active);
+                app.effects.active = active.iter().filter(|e| e.name != name).cloned().collect();
+                let hidden = compose(&app);
+                app.effects.active = active;
+                let changed = visible
+                    .as_chunks::<4>()
+                    .0
+                    .iter()
+                    .zip(hidden.as_chunks::<4>().0)
+                    .filter(|(a, b)| a != b)
+                    .count();
+                visible_ticks += usize::from(changed > 0);
+                assert_eq!(app.session.as_ref().unwrap().sim.state_hash(), hash);
+                assert_eq!(
+                    yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap(),
+                    save
+                );
+                if pass == 0 {
+                    expected.push((hash, save, visible.clone()));
+                    if output.is_some() {
+                        std::fs::write(root.join(format!("{name}-state-t{tick:03}.json")),
+                            serde_json::to_vec_pretty(&serde_json::json!({"tick":tick,"hash":format!("{hash:016x}"),"particle_pixels":changed,
+                            "particles":app.effects.active.iter().filter(|e| e.name == name).map(|e| serde_json::json!({"born":e.born,"x":e.x.raw(),"y":e.y.raw()})).collect::<Vec<_>>()})).unwrap()).unwrap();
+                        for (label, pixels) in [("visible", &visible), ("hidden", &hidden)] {
+                            std::fs::write(
+                                root.join(format!("{name}-{label}-t{tick:03}.png")),
+                                yr_render::png::encode_rgba(WIN_W, WIN_H, pixels),
+                            )
+                            .unwrap();
+                        }
+                    }
+                } else {
+                    assert_eq!(
+                        expected[age - 1],
+                        (hash, save, visible),
+                        "fresh-cache continuation tick {tick}"
+                    );
+                }
+                println!(
+                    "{name} pass {pass}, tick {tick}, {changed} particle pixels, hash {hash:016x}"
+                );
+            }
+            assert!(arrived);
+            if distance > 0 {
+                assert!(directions.len() > 1, "target movement turns the flight");
+            }
+            assert!(visible_ticks > 0);
+            assert!(app.effects.active.iter().all(|e| e.name != name));
+        }
+    }
+    if output.is_none() {
+        std::fs::remove_dir_all(root).unwrap();
+    }
+}

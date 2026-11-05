@@ -595,3 +595,42 @@ fn retail_effect_frames_match_anim_palette_and_cache_stays_bounded() {
     }
     assert_eq!(bank.frames.len(), MAX_CACHED_FRAMES);
 }
+
+#[test]
+fn retail_smoke_trailer_all_canvases_match_with_translucency() {
+    let dir = PathBuf::from(std::env::var("HOME").unwrap())
+        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    if !dir.is_dir() {
+        return;
+    }
+    let fs = AssetFs::open(&dir).unwrap();
+    let pal = Palette::parse(fs.read("ANIM.PAL").unwrap()).unwrap();
+    // Unit-rate overrides let the existing decoder expose every canvas,
+    // including odd DURASMOKE frames skipped at its retail Rate=450.
+    let art = IniFile::parse("[DURASMOKE]\nTranslucent=yes\nRate=225\n[SMOKEY2]\nTranslucent=yes\nRate=225\n[BBBLELRG]\nRate=225\n");
+    let mut cache = Effects::default();
+    for name in ["DURASMOKE", "SMOKEY2", "BBBLELRG"] {
+        let shp = ShpFile::parse(fs.read(&format!("{name}.SHP")).unwrap()).unwrap();
+        for frame in 0..shp.frames.len() {
+            let expected: Vec<_> = shp
+                .decode_frame_canvas(frame)
+                .unwrap()
+                .into_iter()
+                .flat_map(|i| {
+                    if i == 0 {
+                        [0; 4]
+                    } else {
+                        let [r, g, b, _] = pal.rgba(i);
+                        [r, g, b, if name == "BBBLELRG" { 255 } else { 127 }]
+                    }
+                })
+                .collect();
+            assert_eq!(
+                cache.get(&fs, &art, name, frame as u64).unwrap().rgba,
+                expected
+            );
+        }
+        assert!(!cache.alive(&fs, &art, name, shp.frames.len() as u64));
+    }
+    assert!(cache.frames.len() <= MAX_CACHED_FRAMES);
+}
