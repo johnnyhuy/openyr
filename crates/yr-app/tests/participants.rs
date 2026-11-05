@@ -19,7 +19,17 @@ fn install() -> Option<String> {
 #[test]
 fn every_supported_country_gets_its_own_base_force_and_production() {
     let Some(dir) = install() else { return };
-    for country in Country::ALL {
+    let fs = yr_assets::AssetFs::open(std::path::Path::new(&dir)).unwrap();
+    let rules =
+        yr_formats::IniFile::parse(&String::from_utf8_lossy(fs.read("RULESMD.INI").unwrap()));
+    let source = rules.section("Countries").unwrap();
+    for (index, country) in Country::ALL.into_iter().enumerate() {
+        assert_eq!(
+            source.get(&index.to_string()),
+            Some(country.id()),
+            "retail country order"
+        );
+
         let mut config = MatchConfig::default();
         config.players[0].country = country;
         config.players[1].country = if country.side() == yr_app::match_config::Side::Allied {

@@ -28,10 +28,10 @@ impl Country {
         Self::France,
         Self::Germany,
         Self::Britain,
-        Self::Russia,
-        Self::Cuba,
         Self::Libya,
         Self::Iraq,
+        Self::Cuba,
+        Self::Russia,
     ];
     pub fn id(self) -> &'static str {
         match self {
@@ -77,6 +77,32 @@ impl Country {
             Self::Cuba => ("LS800CUBA.SHP", "MPLSC.PAL"),
             Self::Libya => ("LS800LIBYA.SHP", "MPLSL.PAL"),
             Self::Iraq => ("LS800IRAQ.SHP", "MPLSI.PAL"),
+        }
+    }
+    pub fn flag(self) -> &'static str {
+        match self {
+            Self::America => "USAI.PCX",
+            Self::Korea => "JAPI.PCX",
+            Self::France => "FRAI.PCX",
+            Self::Germany => "GERI.PCX",
+            Self::Britain => "GBRI.PCX",
+            Self::Russia => "RUSI.PCX",
+            Self::Cuba => "LATI.PCX",
+            Self::Libya => "DJBI.PCX",
+            Self::Iraq => "ARBI.PCX",
+        }
+    }
+    pub fn specialty(self) -> &'static str {
+        match self {
+            Self::America => "para",
+            Self::Korea => "beagle",
+            Self::France => "gtgcan",
+            Self::Germany => "tnkd",
+            Self::Britain => "snipe",
+            Self::Russia => "ttnk",
+            Self::Cuba => "terror",
+            Self::Libya => "dtruck",
+            Self::Iraq => "deso",
         }
     }
     pub fn brief(self) -> &'static str {

@@ -541,6 +541,16 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       the same tick-6000 hash on both platforms. macOS display capture remains
       permission-blocked. Exact original text, bar geometry and timing remain
       uncalibrated within #96.
+- [x] Calibrate shared loading text and badge placement against a public original
+      capture (#213): five complete glyph masks, 16638 samples and 3569
+      foreground pixels match; 716 source-badge pixels match at `(117,323)`.
+      The specialty title/full briefing, country tag and single local progress
+      row replace guessed text and independent AI bars. Map sampling, backdrop
+      details, progress fill and runtime timing remain unverified within #96.
+- [x] Preserve exact HSV color components in loading/menu swatches and house
+      remaps (#214), avoiding float cancellation across an RGB565 quantum.
+      Keep the supported Skirmish countries in retail registry order (#215)
+      without changing saved country enums or the simulation schema.
 - [x] Account for terrain lift when centering world/radar camera targets (#129).
       Shared ground projection keeps targets at the world viewport center
       across supported scales/zooms and three layouts; click/box selection,

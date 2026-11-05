@@ -996,7 +996,8 @@ fn retail_participant_controls_reach_loading_match_and_restart() {
     );
     field_click(&mut app, Field::Country(0));
     proof(&app, "participants-01-country-popup");
-    for _ in 0..5 {
+    // The retail Countries list puts Russia at index 8.
+    for _ in 0..8 {
         app.menu_key_code(KeyCode::ArrowDown, None, false);
     }
     app.menu_key_code(KeyCode::Enter, None, false);

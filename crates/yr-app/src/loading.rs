@@ -9,7 +9,7 @@ use crate::{
     sidebar::{art::Image, text::Typeface, Canvas},
 };
 use yr_assets::AssetFs;
-use yr_formats::{CsfFile, Palette, ShpFile, UnicodeFont};
+use yr_formats::{CsfFile, Palette, PcxImage, ShpFile, UnicodeFont};
 
 const PREVIEW: (i32, i32, i32, i32) = (500, 380, 216, 166);
 const FALLBACK_CAPTION: [u8; 4] = [248, 232, 96, 255];
@@ -19,6 +19,7 @@ const WHITE: [u8; 4] = [224, 232, 240, 255];
 pub struct Art {
     pub cursor: cursor::Art,
     backgrounds: Vec<(Country, Image)>,
+    flags: Vec<(Country, Image)>,
     colors: [[u8; 3]; 8],
     captions: [[u8; 3]; 2],
     font: Option<UnicodeFont>,
@@ -43,6 +44,15 @@ impl Art {
                         .zip(fs.read(pal))
                         .and_then(|(shp, pal)| decode_background(shp, pal))?;
                     Some((country, image))
+                })
+                .collect(),
+            flags: Country::ALL
+                .into_iter()
+                .filter_map(|country| {
+                    let image = fs
+                        .read(country.flag())
+                        .and_then(|b| PcxImage::parse(b).ok())?;
+                    Some((country, decode_flag(image)?))
                 })
                 .collect(),
             font: fs
@@ -87,7 +97,7 @@ fn decode_background(bytes: &[u8], palette: &[u8]) -> Option<Image> {
 }
 
 /// The supported match has a local player and one computer. Loading
-/// bars represent completed preparation stages, not elapsed-time estimates
+/// progress represents completed preparation stages, not elapsed-time estimates
 /// or invented remote-client progress.
 pub fn draw(
     frame: &mut [u8],
@@ -132,37 +142,43 @@ pub fn draw(
     }
     text(
         &mut canvas,
-        (24, 20),
+        (20, 300),
         390,
         art.label("GUI:LoadingEx", "Loading..."),
         caption,
     );
     if known {
-        text(
+        details(
             &mut canvas,
-            (24, 90),
-            390,
+            art.label(&format!("Name:{}", country.specialty()), country.name()),
+            art.label(&format!("LoadBrief:{}", country.brief()), country.name()),
             art.label(&format!("Name:{}", country.id()), country.name()),
             caption,
         );
-        text(
+        let player = &config.players[0];
+        let rgb = art
+            .colors
+            .get(usize::from(player.color))
+            .copied()
+            .unwrap_or([170; 3]);
+        let flag = art
+            .flags
+            .iter()
+            .find(|(c, _)| *c == country)
+            .map(|(_, image)| image);
+        let completed = match state.loading.stage {
+            LoadStage::Waiting | LoadStage::Preview | LoadStage::Session => 0,
+            LoadStage::Terrain => 1,
+            LoadStage::Artwork => 2,
+        };
+        client(
             &mut canvas,
-            (24, 166),
-            390,
-            art.label(
-                &format!("LoadBriefShort:{}", country.brief()),
-                country.name(),
-            ),
-            WHITE,
+            flag,
+            &player.name,
+            [rgb[0], rgb[1], rgb[2], 255],
+            completed,
         );
     }
-    text(
-        &mut canvas,
-        (490, 361),
-        240,
-        art.label("GUI:Battle", "Battle"),
-        caption,
-    );
     text(&mut canvas, (480, 574), 270, &state.loading.name, WHITE);
     canvas.rect(
         (PREVIEW.0, PREVIEW.1),
@@ -171,24 +187,6 @@ pub fn draw(
     );
     if let Some(preview) = preview {
         picture(&mut canvas, preview);
-    }
-    let completed = match state.loading.stage {
-        LoadStage::Waiting | LoadStage::Preview | LoadStage::Session => 0,
-        LoadStage::Terrain => 1,
-        LoadStage::Artwork => 2,
-    };
-    for (player, y) in config.players.iter().filter(|_| known).zip([506, 538]) {
-        let rgb = art
-            .colors
-            .get(usize::from(player.color))
-            .copied()
-            .unwrap_or([170; 3]);
-        let color = [rgb[0], rgb[1], rgb[2], 255];
-        let name = &player.name;
-        text(&mut canvas, (24, y), 126, name, color);
-        canvas.rect((158, y + 3), (270, 10), [64, 64, 80, 255]);
-        canvas.rect((159, y + 4), (268, 8), [0, 0, 0, 255]);
-        canvas.rect((159, y + 4), (268 * completed / 3, 8), color);
     }
     let (x, y, _, _) = layout.button(0, Button::Back);
     text(&mut canvas, (x + 8, y + 5), 144, "Esc: Cancel", caption);
@@ -212,6 +210,92 @@ pub fn draw(
             };
             frame[at..at + 4].copy_from_slice(&color);
         }
+    }
+}
+
+fn decode_flag(image: PcxImage) -> Option<Image> {
+    if (image.width, image.height) != (47, 23) {
+        return None;
+    }
+    let mut pixels = image.to_rgba();
+    for pixel in pixels.as_chunks_mut::<4>().0 {
+        if pixel[..3] == [255, 0, 255] {
+            pixel[3] = 0;
+        }
+    }
+    Some(Image {
+        width: image.width,
+        height: image.height,
+        pixels,
+    })
+}
+
+fn details(canvas: &mut Canvas<'_>, specialty: &str, brief: &str, country: &str, color: [u8; 4]) {
+    text(
+        canvas,
+        (20, 90),
+        390,
+        &specialty
+            .chars()
+            .take(160)
+            .flat_map(char::to_uppercase)
+            .take(160)
+            .collect::<String>(),
+        [0, 0, 0, 255],
+    );
+    for (line, text_value) in wrap(canvas.face, brief, 400).iter().enumerate() {
+        text(canvas, (20, 158 + line as i32 * 17), 400, text_value, color);
+    }
+    let width = canvas.face.width(country).min(280) + 1;
+    canvas.rect((740 - width - 4, 307), (width + 8, 21), [0, 0, 0, 255]);
+    text(canvas, (740 - width, 310), 280, country, color);
+}
+
+fn wrap(face: Typeface<'_>, value: &str, width: i32) -> Vec<String> {
+    let mut lines = vec![String::new()];
+    let bounded: String = value.chars().take(640).collect();
+    for word in bounded.split_whitespace().take(160) {
+        let current = lines.last_mut().unwrap();
+        let candidate = if current.is_empty() {
+            word.to_owned()
+        } else {
+            format!("{current} {word}")
+        };
+        if !current.is_empty() && face.width(&candidate) > width {
+            if lines.len() == 4 {
+                break;
+            }
+            lines.push(word.chars().take(160).collect());
+        } else {
+            *current = candidate.chars().take(160).collect();
+        }
+    }
+    lines
+}
+
+fn client(
+    canvas: &mut Canvas<'_>,
+    flag: Option<&Image>,
+    name: &str,
+    color: [u8; 4],
+    completed: i32,
+) {
+    if let Some(flag) = flag {
+        canvas.image((117, 323), flag);
+    }
+    text(canvas, (174, 326), 246, &format!("[{name}]"), color);
+    canvas.rect((21, 329), (86, 11), color);
+    canvas.rect((22, 330), (84, 9), [0, 0, 0, 255]);
+    let filled = 82 * completed.clamp(0, 3) / 3;
+    for y in 0..7 {
+        let level = if y < 3 { 180 } else { 112 };
+        let shaded = [
+            ((u16::from(color[0]) * level) / 255) as u8,
+            ((u16::from(color[1]) * level) / 255) as u8,
+            ((u16::from(color[2]) * level) / 255) as u8,
+            255,
+        ];
+        canvas.rect((23, 331 + y), (filled, 1), shaded);
     }
 }
 
