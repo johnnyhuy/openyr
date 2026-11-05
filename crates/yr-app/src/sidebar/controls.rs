@@ -1,4 +1,4 @@
-//! Authored Allied repair/sell controls at native pixel coordinates.
+//! Authored side-specific repair/sell controls at native pixel coordinates.
 
 use super::{Canvas, Session, Typeface, WIDTH};
 
@@ -43,18 +43,18 @@ pub fn control_at(width: u32, session: &Session, pos: (f64, f64)) -> Option<Serv
         .into_iter()
         .find(|&mode| {
             let (x, y) = origin(width, mode);
-            if !super::contains((x, y), (64, 31), pos) {
-                return false;
-            }
             let images = if mode == ServiceMode::Repair {
                 &session.sidebar_art.repair
             } else {
                 &session.sidebar_art.sell
             };
             images.first().is_some_and(|image| {
+                if !super::contains((x, y), (image.width as i32, image.height as i32), pos) {
+                    return false;
+                }
                 let dx = pos.0.floor() as i32 - x;
                 let dy = pos.1.floor() as i32 - y;
-                image.pixels[((dy * 64 + dx) * 4 + 3) as usize] != 0
+                image.pixels[((dy * image.width as i32 + dx) * 4 + 3) as usize] != 0
             })
         })
 }

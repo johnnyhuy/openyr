@@ -1,4 +1,4 @@
-//! Allied sidebar assets, kept outside the world's shared filename namespace.
+//! Side-specific sidebar assets, kept outside the world's shared filename namespace.
 
 use yr_assets::AssetFs;
 use yr_formats::{mix_id, MixArchive, Palette, ShpFile, UnicodeFont};
@@ -28,6 +28,9 @@ pub struct SidebarArt {
 
 impl SidebarArt {
     pub fn load(fs: &AssetFs) -> Self {
+        Self::load_for_side(fs, crate::match_config::Side::Allied)
+    }
+    pub fn load_for_side(fs: &AssetFs, side: crate::match_config::Side) -> Self {
         let font = fs
             .read("GAME.FNT")
             .and_then(|data| match UnicodeFont::parse(data) {
@@ -43,16 +46,16 @@ impl SidebarArt {
                     None
                 }
             });
-        // The sandbox currently uses the Americans. SIDEC archives repeat
+        // SIDEC archives repeat
         // filenames, so mounting all sides would silently mix their artwork.
-        let Some(bytes) = fs.read("SIDEC01.MIX") else {
+        let Some(bytes) = fs.read(side.sidebar()) else {
             return Self {
                 font,
                 ..Self::default()
             };
         };
         let Ok(archive) = MixArchive::parse(bytes) else {
-            eprintln!("OpenYR: cannot decode Allied sidebar archive");
+            eprintln!("OpenYR: cannot decode selected sidebar archive");
             return Self {
                 font,
                 ..Self::default()
@@ -91,6 +94,10 @@ impl SidebarArt {
                 .collect::<Option<Vec<_>>>()
                 .unwrap_or_default()
         };
+        let (control_w, control_h, pip_w, tab_w, tab_h) = match side {
+            crate::match_config::Side::Allied => (64, 31, 12, 28, 27),
+            crate::match_config::Side::Soviet => (52, 32, 16, 32, 28),
+        };
         let one = |name, w, h| frames(name, w, h, 1).pop();
         Self {
             font,
@@ -100,10 +107,10 @@ impl SidebarArt {
             header: one("SIDE1.SHP", 168, 69),
             row: one("SIDE2.SHP", 168, 50),
             bottom: one("SIDE3.SHP", 168, 26),
-            repair: frames("REPAIR.SHP", 64, 31, 2),
-            sell: frames("SELL.SHP", 64, 31, 2),
-            power: frames("POWERP.SHP", 12, 2, 5),
-            tabs: std::array::from_fn(|i| frames(&format!("TAB{i:02}.SHP"), 28, 27, 5)),
+            repair: frames("REPAIR.SHP", control_w, control_h, 2),
+            sell: frames("SELL.SHP", control_w, control_h, 2),
+            power: frames("POWERP.SHP", pip_w, 2, 5),
+            tabs: std::array::from_fn(|i| frames(&format!("TAB{i:02}.SHP"), tab_w, tab_h, 5)),
             clock: frames("GCLOCK2.SHP", 60, 48, 55)
                 .into_iter()
                 .map(|image| {
@@ -125,6 +132,63 @@ mod tests {
     use super::*;
     use crate::sidebar::{self, Category};
     use std::path::PathBuf;
+
+    #[test]
+    fn retail_soviet_controls_use_source_dimensions_and_bounded_hits() {
+        let dir = std::env::var_os("OPENYR_GAMEDIR")
+            .map(PathBuf::from)
+            .unwrap_or_else(|| {
+                PathBuf::from(std::env::var("HOME").unwrap_or_default())
+                    .join("Games/RA2YR/prefix/drive_c/Westwood/RA2")
+            });
+        if !dir.is_dir() {
+            return;
+        }
+        let fs = AssetFs::open(&dir).unwrap();
+        let mut config = crate::match_config::MatchConfig::default();
+        config.players[0].country = crate::match_config::Country::Russia;
+        let session = crate::session::load_with_config(
+            dir.to_str().unwrap(),
+            "EB1.MMX",
+            42,
+            Default::default(),
+            config,
+        )
+        .unwrap();
+        let art = &session.sidebar_art;
+        let archive = MixArchive::parse(fs.read("SIDEC02.MIX").unwrap()).unwrap();
+        let palette = Palette::parse(archive.get_by_id(mix_id("SIDEBAR.PAL")).unwrap()).unwrap();
+        for (name, images, dimensions) in [
+            ("REPAIR.SHP", &art.repair, (52, 32, 2)),
+            ("SELL.SHP", &art.sell, (52, 32, 2)),
+            ("POWERP.SHP", &art.power, (16, 2, 5)),
+            ("TAB00.SHP", &art.tabs[0], (32, 28, 5)),
+        ] {
+            assert_eq!(images.len(), dimensions.2);
+            let source = ShpFile::parse(archive.get_by_id(mix_id(name)).unwrap()).unwrap();
+            for (index, image) in images.iter().enumerate() {
+                assert_eq!((image.width, image.height), (dimensions.0, dimensions.1));
+                let expected: Vec<_> = source
+                    .decode_frame_canvas(index)
+                    .unwrap()
+                    .into_iter()
+                    .flat_map(|i| if i == 0 { [0; 4] } else { palette.rgba(i) })
+                    .collect();
+                assert_eq!(image.pixels, expected, "{name} frame {index}");
+            }
+        }
+        for y in 160..201 {
+            for x in 0..168 {
+                let _ = sidebar::control_at(168, &session, (f64::from(x), f64::from(y)));
+            }
+        }
+        for (i, category) in Category::ALL.into_iter().enumerate() {
+            assert_eq!(
+                sidebar::session_tab_at(168, &session, ((26 + i * 32 + 31) as f64, 224.0)),
+                Some(category)
+            );
+        }
+    }
 
     #[test]
     fn retail_sidebar_matches_source_pixels_and_all_clock_phases() {

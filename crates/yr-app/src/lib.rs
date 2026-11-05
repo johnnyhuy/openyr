@@ -8,6 +8,7 @@ pub mod effects;
 pub mod interaction;
 pub mod loading;
 mod localization;
+pub mod match_config;
 pub mod menu;
 mod service;
 pub mod session;

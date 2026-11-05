@@ -10,6 +10,7 @@ fn state() -> State {
             map_name: "EB1.MMX".into(),
             battle: true,
             stage: LoadStage::Terrain,
+            config: Default::default(),
         },
         ..Default::default()
     }
@@ -105,7 +106,7 @@ fn retail_loading_preserves_the_stock_country_map_and_uses_the_selected_preview(
     let fs = AssetFs::open(&directory).unwrap();
     let art = Art::load(&fs);
     assert!(
-        art.background.is_some(),
+        art.backgrounds.len() == Country::ALL.len(),
         "retail country artwork should load"
     );
     let mut state = state();
@@ -150,4 +151,115 @@ fn hash(frame: &[u8], rect: (i32, i32, i32, i32)) -> u64 {
         }
     }
     hash
+}
+
+#[test]
+fn retail_country_choices_preserve_each_source_map_and_selected_bar_color() {
+    let directory = std::env::var_os("OPENYR_GAMEDIR")
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(|| {
+            std::path::PathBuf::from(std::env::var("HOME").unwrap_or_default())
+                .join("Games/RA2YR/prefix/drive_c/Westwood/RA2")
+        });
+    if !directory.is_dir() {
+        return;
+    }
+    let fs = AssetFs::open(&directory).unwrap();
+    let art = Art::load(&fs);
+    assert_eq!(art.backgrounds.len(), 9);
+    let rules =
+        yr_formats::IniFile::parse(&String::from_utf8_lossy(fs.read("RULESMD.INI").unwrap()));
+    assert_eq!(
+        art.captions,
+        ["AlliedLoad", "SovietLoad"].map(|name| yr_render::named_color(&rules, name))
+    );
+    let mut state = state();
+    state.loading.config.players[0].name = "Johnny".into();
+    state.loading.config.players[0].color = 6;
+    for country in Country::ALL {
+        state.loading.config.players[0].country = country;
+        assert!(
+            art.strings
+                .as_ref()
+                .unwrap()
+                .get(&format!("Name:{}", country.id()))
+                .is_some(),
+            "{country:?} name"
+        );
+        assert!(
+            art.strings
+                .as_ref()
+                .unwrap()
+                .get(&format!("LoadBriefShort:{}", country.brief()))
+                .is_some(),
+            "{country:?} brief"
+        );
+        let (shp, pal) = country.loading_art();
+        let bytes = fs.read(shp).unwrap();
+        let palette = fs.read(pal).unwrap();
+        assert_eq!(bytes.len(), 481232);
+        let mut frame = vec![0; 800 * 600 * 4];
+        draw(&mut frame, 800, 600, &art, &state, None);
+        // Independent compression-2 row traversal, without the SHP decoder.
+        for y in 32..345usize {
+            let row = &bytes[32 + y * 802..32 + (y + 1) * 802];
+            assert_eq!(u16::from_le_bytes(row[..2].try_into().unwrap()), 802);
+            for x in 450..766usize {
+                let index = usize::from(row[2 + x]);
+                let rgb: [u8; 3] = std::array::from_fn(|c| {
+                    let v = if index == 0 {
+                        0
+                    } else {
+                        palette[3 * index + c]
+                    };
+                    ((v << 2) | (v >> 4)) & [248, 252, 248][c]
+                });
+                let at = (y * 800 + x) * 4;
+                assert_eq!(&frame[at..at + 3], &rgb, "{country:?} {x},{y}");
+            }
+        }
+        let at = (510 * 800 + 160) * 4;
+        let rgb = art.colors[6];
+        assert_eq!(
+            &frame[at..at + 4],
+            &[rgb[0] & 248, rgb[1] & 252, rgb[2] & 248, 255]
+        );
+        if let Some(out) = std::env::var_os("OPENYR_LOADING_PROOF") {
+            std::fs::create_dir_all(&out).unwrap();
+            std::fs::write(
+                std::path::PathBuf::from(out).join(format!("country-{country:?}.png")),
+                yr_render::png::encode_rgba(800, 600, &frame),
+            )
+            .unwrap();
+        }
+    }
+}
+
+#[test]
+fn unresolved_saved_identity_does_not_show_the_previous_country_or_names() {
+    let mut art = Art::default();
+    art.backgrounds.push((
+        Country::America,
+        Image {
+            width: 800,
+            height: 600,
+            pixels: [255, 0, 0, 255].repeat(800 * 600),
+        },
+    ));
+    let mut state = state();
+    state.loading.map_name.clear();
+    let mut frame = vec![0; 800 * 600 * 4];
+    draw(&mut frame, 800, 600, &art, &state, None);
+    assert_eq!(
+        &frame[(90 * 800 + 24) * 4..(90 * 800 + 24) * 4 + 4],
+        &[0, 8, 24, 255]
+    );
+    assert_eq!(
+        &frame[(506 * 800 + 24) * 4..(506 * 800 + 24) * 4 + 4],
+        &[0, 8, 24, 255]
+    );
+    assert_eq!(
+        &frame[(32 * 800 + 450) * 4..(32 * 800 + 450) * 4 + 4],
+        &[0, 8, 24, 255]
+    );
 }

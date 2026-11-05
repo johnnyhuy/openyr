@@ -371,7 +371,7 @@ fn building_mask(app: &App) -> Vec<u8> {
         (f32::from(b.cell.0) + 0.5, f32::from(b.cell.1) + 0.5),
     );
     let mut bank = app.sprites.as_ref().unwrap().borrow_mut();
-    let remap = owner_remap(&bank, b.owner);
+    let remap = owner_remap(&bank, b.owner, Some(session));
     let art = bank
         .get_building(
             &session.kinds[usize::from(b.kind)],
@@ -396,7 +396,7 @@ fn building_mask(app: &App) -> Vec<u8> {
     // pixels which are not themselves covered by a live unit's opaque art.
     let mut units = vec![0; mask.len()];
     for u in session.sim.units() {
-        let remap = owner_remap(&bank, u.owner);
+        let remap = owner_remap(&bank, u.owner, Some(session));
         let (mx, my) = yr_app::interaction::ground_point(
             map,
             session.sim.terrain(),

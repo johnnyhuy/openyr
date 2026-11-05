@@ -120,19 +120,44 @@ warning phases and fourteen visible movie phases from the original renderer.
 Main opens Single Player, actual controls or an exit confirmation. Internet,
 network, campaign and movie/credits actions are visibly disabled. Single
 Player opens saved matches or the supported skirmish setup. Setup shows the
-retail map's authored preview, fixed Allied player/computer profile and actual
-starting credits. Broader maps/factions/modes/difficulty remain unavailable.
+retail map's authored preview and two participants. Names, nine Allied/Soviet
+countries, eight colors, authored start indices, opposing teams, Short Game,
+three native speeds, credits and unit count feed actual setup and saved metadata.
+The form retains two participants; extra map rows stay closed. Country menus
+exclude Yuri because the slave economy and its starting setup are unsupported.
+Free For All, Team Alliance, difficulty and random maps remain unavailable.
 Its form layout is provisional. The authored thumbnail is preferred; a map
 without one falls back to the shared terrain renderer.
 
-The supported country is `Americans`. Generated bases use GACNST, GAPOWR,
-GAREFN, GAWEAP and GAPILE. The retail `UnitCount=10` force is one AMCV,
-one CMIN, four MTNKs and four E1s (#124). The computer guards use MTNK too.
-Setup checks `Owner=`, `RequiredHouses=` and `ForbiddenHouses=` for these
-types, and decodes their required body art before entering the match.
-Missing types, unavailable art or an ineligible country return through the
-existing loading error page. Map-authored objects retain their types and
-remain separate from this generated force.
+Each country uses its side's base, production catalog, starting force, AI
+choices and SIDEC archive. Allied bases use GACNST, GAPOWR, GAREFN, GAWEAP,
+GAPILE, and their ten-unit force uses AMCV, CMIN, four MTNKs and four E1s.
+Soviet equivalents are NACNST, NAPOWR, NAREFN, NAWEAP, NAHAND and SMCV,
+HARV, four HTNKs and four E2s. Required/forbidden-country restrictions still
+filter production, including British snipers. Setup validates required types
+and body art before committing the match. Map-authored objects retain their
+types and remain separate from this generated force.
+
+Names support up to 32 characters and 96 UTF-8 bytes, with no controls or
+blank-only values. Duplicate colors, starts or matching nonzero teams are
+unavailable. Teams identify opposing participants in this 1v1 setup; this is
+not cooperative AI. Start selection retains authored waypoint indices even
+when they are sparse. Auto chooses a different point from an explicit opponent.
+Changing maps clears positions absent from the accepted map. Drop-downs support
+mouse and arrow/Enter selection, Escape dismissal and Tab navigation. Clicking
+outside dismisses the popup and consumes the click, including over Start.
+Name editing supports selection replacement, Ctrl+A and Unicode backspace;
+Enter moves focus without starting a match. Invalid names disable Start.
+
+Selected colors come from retail [Colors] HSV values and reach sprite remaps,
+radar, fallback markers and loading bars. Short Game counts surviving structures
+for victory; otherwise surviving units also count. Slow/Normal/Fast pace the
+window at 10/15/30 steps per second without changing simulation tick arithmetic.
+These are native speed presets, not measured original speed-slider timings.
+Unsupported MCV Repacks, Crates, Superweapons and Build Off Ally remain disabled.
+Soviet source controls differ from Allied dimensions: repair/sell are 52x32,
+power pips 16x2 and tabs 32x28. Decode bounds and pointer hits use those sizes;
+exact side-specific placement still needs original observation.
 
 Smaller unit counts take a prefix of that force; larger counts retain one
 MCV and miner, then repeat groups of four tanks and four infantry. Negative
@@ -148,7 +173,7 @@ page's return route, shows loading, retains the old match until successful
 replacement, and ignores cancelled results. Its worker prepares the session,
 terrain and sprite bank before committing the replacement. Preview loading
 shows the selected map and current stage. Match loading uses the retail
-American country screen, the selected map thumbnail and preparation bars;
+selected country screen, the selected map thumbnail and preparation bars;
 see [loading-screen.md](loading-screen.md) for asset evidence and calibration
 limits. The bars represent completed stages, not elapsed time or network peers.
 Back/Escape requests cancellation; the

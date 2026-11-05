@@ -12,7 +12,7 @@ All header integers are little-endian. A match file has this layout:
 | Offset | Bytes | Value |
 | --- | --- | --- |
 | 0 | 8 | ASCII `OYRMATCH` |
-| 8 | 4 | Match format version, 1, 2 or 3 |
+| 8 | 4 | Match format version, 1, 2, 3 or 4 |
 | 12 | 8 | Original setup seed |
 | 20 | 8 | Setup compatibility fingerprint |
 | 28 | 8 | Saved sim state hash |
@@ -40,6 +40,23 @@ in its slot. Reserved flags, truncated fields, credits outside 0 through
 1,000,000,000 and unit counts above 4096 are rejected before reconstruction.
 The fixed metadata adds 11 bytes; the simulation payload limit remains 64 MiB.
 The simulation schema is unchanged.
+
+Version 4 adds participant configuration after the version-3 options: a
+little-endian u16 JSON byte length, followed by that many UTF-8 bytes, then the
+unchanged simulation snapshot. The length must be 1 through 4096 and fit the
+actual input before decoding. The object contains exactly two participants
+(name, country enum, color index, team and optional authored waypoint index),
+Short Game and the native speed enum. Unknown fields/enums, malformed JSON,
+out-of-range values and conflicting choices fail before reconstruction.
+Names are bounded by 32 characters and 96 bytes, with no controls or blank-only
+values. See [front-menu.md](front-menu.md) for supported choices and limitations.
+
+Only non-default participant configuration uses version 4. Default and legacy
+profiles retain their prior envelope versions and setup fingerprints. Menu
+loads report validated map/configuration before expensive reconstruction, so
+the loading screen uses the saved country's artwork and player labels.
+Save/load and restart retain all settings. No additional simulation fields,
+floating-point state or presentation clocks enter the snapshot.
 
 The map reference is a bounded ASCII filename with letters, digits, spaces,
 underscores, hyphens and dots. Leading dots, path separators, drive prefixes,
@@ -139,7 +156,7 @@ that reads version 3.
 ## Loading and writing
 
 Readers reject unsupported versions before parsing the payload. The app
-reads at most 64 MiB plus 294 bytes of match metadata and one sentinel byte. JSON
+reads at most 64 MiB plus 4403 bytes of bounded match metadata and one sentinel byte. JSON
 vectors grow from actual elements, never header counts. After decoding,
 checked terrain dimensions must equal the actual cell count and fit the
 u16 coordinate domain. Entity ids must be ordered and unique with a valid

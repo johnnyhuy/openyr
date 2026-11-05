@@ -19,63 +19,71 @@ pub(super) fn draw(c: &mut Canvas<'_>, art: &Art, state: &State, preview: Option
     ] {
         c.text((x, 34), art.label(key, label), YELLOW, 40);
     }
-    // These rows describe the current two-owner Allied sandbox. Additional
-    // participants, country changes, teams and color selection remain disabled.
     let rows = preview.map_or(2, |p| {
         p.starts.iter().filter(|s| s.is_some()).count().clamp(2, 8)
     });
     for row in 0..rows {
         let y = 59 + row as i32 * 26;
-        for (x, w, label) in [
-            (
-                59,
-                151,
-                if row == 0 {
-                    "Commander"
-                } else if row == 1 {
-                    "Computer"
-                } else {
-                    "Closed"
-                },
-            ),
-            (
-                287,
-                118,
-                if row < 2 {
-                    art.label("Name:Americans", "America")
-                } else {
-                    "---"
-                },
-            ),
-            (
-                486,
-                39,
-                if row == 0 {
-                    "1"
-                } else if row == 1 {
-                    "2"
-                } else {
-                    "---"
-                },
-            ),
-            (546, 39, "---"),
+        let player = state.setup.config.players.get(row);
+        let country = player.map(|p| p.country);
+        let country_key = country.map(|c| format!("Name:{}", c.id()));
+        let name = player.map_or("Closed", |p| p.name.as_str());
+        let country_name = country.map_or("---", |c| {
+            art.label(country_key.as_deref().unwrap(), c.name())
+        });
+        let start = player.and_then(|p| p.start).map_or_else(
+            || if row < 2 { "Auto".into() } else { "---".into() },
+            |p| (p + 1).to_string(),
+        );
+        let team = player
+            .filter(|p| p.team != 0)
+            .map_or_else(|| "---".to_string(), |p| p.team.to_string());
+        for (x, w, label, field) in [
+            (59, 151, name, Field::Name(row)),
+            (287, 118, country_name, Field::Country(row)),
+            (486, 39, start.as_str(), Field::Start(row)),
+            (546, 39, team.as_str(), Field::Team(row)),
         ] {
             bevel(c, x, y, w, 25);
-            c.rect((x + 2, y + 2), (w - 4, 21), [16, 16, 16, 255]);
-            c.text((x + 4, y + 3), label, GRAY, 22);
+            let focused = state.setup.focus == Some(field);
+            let selected = focused && matches!(field, Field::Name(_)) && state.setup.name_selected;
+            c.rect(
+                (x + 2, y + 2),
+                (w - 4, 21),
+                if selected {
+                    [32, 56, 88, 255]
+                } else {
+                    [16, 16, 16, 255]
+                },
+            );
+            let fitted = super::draw::fit(
+                c.face,
+                label,
+                w - if matches!(field, Field::Name(_)) {
+                    10
+                } else {
+                    20
+                },
+            );
+            c.text(
+                (x + 4, y + 3),
+                &fitted,
+                if focused { YELLOW } else { GRAY },
+                32,
+            );
+            if player.is_some() && !matches!(field, Field::Name(_)) {
+                c.text((x + w - 10, y + 4), "v", GRAY, 1);
+            }
+            if state.keyboard_focus && focused {
+                c.rect((x + 3, y + 23), (w - 6, 1), YELLOW);
+            }
         }
         bevel(c, 423, y, 45, 25);
-        c.rect(
-            (425, y + 2),
-            (41, 21),
-            if row == 0 {
-                [200, 160, 0, 255]
-            } else if row == 1 {
-                [160, 0, 0, 255]
-            } else {
-                [16, 16, 16, 255]
-            },
-        );
+        let rgb = player.map_or([16; 3], |p| art.colors[usize::from(p.color)]);
+        c.rect((425, y + 2), (41, 21), [rgb[0], rgb[1], rgb[2], 255]);
+        if state.setup.focus == Some(Field::Color(row)) {
+            c.rect((425, y + 22), (41, 1), YELLOW);
+        }
     }
     for (x, y, key, label) in [
         (71, 286, "GUI:ShortGame", "Short Game"),
@@ -86,9 +94,18 @@ pub(super) fn draw(c: &mut Canvas<'_>, art: &Art, state: &State, preview: Option
     ] {
         if let Some(image) = art.setup_widgets.get(1) {
             c.image((x, y), image);
-            c.shade((x, y), (18, 18));
+            if y != 286 {
+                c.shade((x, y), (18, 18));
+            } else if state.setup.config.short_game {
+                c.text((x + 4, y + 1), "X", YELLOW, 1);
+            }
         }
-        c.text((x + 25, y), art.label(key, label), GRAY, 44);
+        c.text(
+            (x + 25, y),
+            art.label(key, label),
+            if y == 286 { YELLOW } else { GRAY },
+            44,
+        );
     }
     c.text(
         (302, 286),
@@ -96,12 +113,16 @@ pub(super) fn draw(c: &mut Canvas<'_>, art: &Art, state: &State, preview: Option
         GRAY,
         40,
     );
-    c.text((404, 286), "Fixed", GRAY, 16);
+    bevel(c, 402, 282, 133, 26);
+    c.rect((404, 284), (129, 22), [16, 16, 16, 255]);
+    c.text((408, 286), state.setup.config.speed.label(), YELLOW, 16);
+    c.text((520, 286), "v", GRAY, 1);
     for field in [Field::Credits, Field::Units] {
         let y = Setup::y(field);
         let (key, label) = match field {
             Field::Credits => ("GUI:Credits", "Credits"),
             Field::Units => ("GUI:UnitCount", "Unit Count"),
+            _ => continue,
         };
         c.text(
             (302, if field == Field::Units { 341 } else { 314 }),
@@ -153,6 +174,26 @@ pub(super) fn draw(c: &mut Canvas<'_>, art: &Art, state: &State, preview: Option
         let text = super::draw::fit(c.face, text, 136);
         let width = c.face.width(&text);
         c.text((650 + (136 - width.min(136)) / 2, y), &text, YELLOW, 28);
+    }
+    if let (Some(popup), Some((x, y, w, h))) = (state.setup.popup, state.setup.popup_rect()) {
+        c.rect((x, y), (w, h), [16, 16, 16, 255]);
+        for (index, label) in state.setup.choices(popup.field).iter().enumerate() {
+            let enabled = state.setup.available(popup.field, index);
+            let at = y + index as i32 * 22;
+            if popup.selected == index {
+                c.rect((x + 1, at + 1), (w - 2, 20), [64, 24, 16, 255]);
+            }
+            c.text(
+                (x + 4, at + 3),
+                &super::draw::fit(c.face, label, w - 8),
+                if enabled { YELLOW } else { GRAY },
+                32,
+            );
+        }
+        c.rect((x, y), (w, 1), [160, 188, 192, 255]);
+        c.rect((x, y), (1, h), [160, 188, 192, 255]);
+        c.rect((x + w - 1, y), (1, h), [104, 120, 128, 255]);
+        c.rect((x, y + h - 1), (w, 1), [104, 120, 128, 255]);
     }
 }
 fn bevel(c: &mut Canvas<'_>, x: i32, y: i32, w: i32, h: i32) {

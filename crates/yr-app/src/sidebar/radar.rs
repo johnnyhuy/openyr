@@ -210,6 +210,10 @@ impl Radar {
         }
     }
 
+    pub(crate) fn set_colors(&mut self, colors: [[u8; 3]; 3]) {
+        self.colors = colors;
+    }
+
     fn available(&self, sim: &Sim, kinds: &[String]) -> bool {
         let (produced, drained) = sim.power_of(OWNER_PLAYER);
         produced >= drained

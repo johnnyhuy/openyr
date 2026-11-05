@@ -275,12 +275,16 @@ pub fn draw(frame: &mut [u8], width: u32, height: u32, art: &Art, scene: Scene<'
     }
     centered(&mut c, 638, 581, 156, "OpenYR 0.1", YELLOW);
     let message_status;
+    let setup_status;
     let status = match &s.page {
         Page::Main if hovered.is_some() => "Select a mode. Gray actions are unavailable.",
         Page::SinglePlayer if hovered.is_some() => "Saved matches or supported skirmish setup.",
         Page::Main | Page::SinglePlayer => "",
         Page::Skirmish => {
-            "Set credits and units. Tab selects; arrows adjust. Choose a map or start."
+            setup_status = s.setup.config.validate().err().unwrap_or_else(|| {
+                "Two-player Allied/Soviet skirmish. Tab selects; Enter opens choices.".into()
+            });
+            setup_status.as_str()
         }
         Page::Load => "Select a saved match. Arrows select; Escape returns.",
         Page::Delete => "Select a saved match to delete. Arrows select; Escape returns.",

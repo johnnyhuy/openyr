@@ -3,6 +3,7 @@ use yr_assets::AssetFs;
 use yr_formats::{CsfFile, MixArchive, Palette, PcxImage, ShpFile, UnicodeFont};
 #[derive(Default)]
 pub struct Art {
+    pub(super) colors: [[u8; 3]; 8],
     pub cursor: cursor::Art,
     pub(super) font: Option<UnicodeFont>,
     pub(super) strings: Option<CsfFile>,
@@ -23,6 +24,14 @@ pub struct Art {
 impl Art {
     pub fn load(fs: &AssetFs) -> Self {
         let mut art = Self {
+            colors: {
+                let rules = yr_formats::IniFile::parse(&String::from_utf8_lossy(
+                    fs.read("RULESMD.INI").unwrap_or_default(),
+                ));
+                std::array::from_fn(|i| {
+                    yr_render::named_color(&rules, crate::match_config::COLOR_NAMES[i])
+                })
+            },
             cursor: cursor::Art::load(fs),
             font: fs
                 .read("GAME.FNT")

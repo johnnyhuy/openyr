@@ -72,7 +72,7 @@ pub fn load_preview(directory: &str, map_name: &str, scale: u32) -> Result<Previ
     })
 }
 
-fn start_points(ini: &yr_formats::IniFile) -> [Option<(u16, u16)>; 8] {
+pub(crate) fn start_points(ini: &yr_formats::IniFile) -> [Option<(u16, u16)>; 8] {
     std::array::from_fn(|index| {
         let raw = ini.section("Waypoints")?.get(&index.to_string())?;
         let packed = raw.trim().parse::<u32>().ok()?;

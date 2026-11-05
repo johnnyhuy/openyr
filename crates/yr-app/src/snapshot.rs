@@ -1,5 +1,6 @@
 //! Match save envelope and app-side disk I/O. Presentation is rebuilt on load.
 
+use crate::match_config::MatchConfig;
 use crate::session::{Outcome, Session, StartOptions};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
@@ -8,7 +9,9 @@ const MAGIC: &[u8; 8] = b"OYRMATCH";
 const HEADER: usize = 37;
 const MAP_LIMIT: usize = 255;
 const OPTIONS_BYTES: usize = 11;
-const LIMIT: usize = yr_sim::save::MAX_SAVE_BYTES + HEADER + 2 + MAP_LIMIT + OPTIONS_BYTES;
+const CONFIG_LIMIT: usize = 4096;
+const LIMIT: usize =
+    yr_sim::save::MAX_SAVE_BYTES + HEADER + 2 + MAP_LIMIT + OPTIONS_BYTES + 2 + CONFIG_LIMIT;
 
 pub(crate) fn valid_map_reference(name: &str) -> bool {
     !name.is_empty()
@@ -32,10 +35,16 @@ pub fn encode(session: &Session) -> Result<Vec<u8>, String> {
         return Err("invalid saved map reference".into());
     }
     session.start_options.validate()?;
+    session.match_config.validate()?;
     let options = session.start_options;
     let configured = options.shared_forces;
     out.extend(
-        (if configured {
+        (if session.match_config != MatchConfig::default() {
+            if !configured {
+                return Err("Legacy starting forces cannot use participant overrides".into());
+            }
+            4u32
+        } else if configured {
             3u32
         } else if map.is_some() {
             2u32
@@ -62,6 +71,14 @@ pub fn encode(session: &Session) -> Result<Vec<u8>, String> {
         out.extend(options.credits.unwrap_or(0).to_le_bytes());
         out.extend(options.units.unwrap_or(0).to_le_bytes());
     }
+    if session.match_config != MatchConfig::default() {
+        let config = serde_json::to_vec(&session.match_config).map_err(|e| e.to_string())?;
+        if config.len() > CONFIG_LIMIT {
+            return Err("Match configuration exceeds 4 KiB".into());
+        }
+        out.extend((config.len() as u16).to_le_bytes());
+        out.extend(config);
+    }
     out.extend(session.sim.save_bytes().map_err(|e| e.to_string())?);
     Ok(out)
 }
@@ -73,6 +90,7 @@ struct Header<'a> {
     outcome: Outcome,
     map: Option<&'a str>,
     options: StartOptions,
+    config: MatchConfig,
     payload_at: usize,
 }
 
@@ -81,9 +99,9 @@ fn header(bytes: &[u8]) -> Result<Header<'_>, String> {
         return Err("invalid or truncated OpenYR match save (limit 64 MiB)".into());
     }
     let version = u32::from_le_bytes(bytes[8..12].try_into().unwrap());
-    if !matches!(version, 1..=3) {
+    if !matches!(version, 1..=4) {
         return Err(format!(
-            "unsupported match save version {version}; expected 1, 2 or 3"
+            "unsupported match save version {version}; expected 1, 2, 3 or 4"
         ));
     }
     let (map, mut payload_at) = if version >= 2 {
@@ -112,7 +130,7 @@ fn header(bytes: &[u8]) -> Result<Header<'_>, String> {
         shared_forces: version >= 3,
         ..StartOptions::default()
     };
-    if version == 3 {
+    if version >= 3 {
         let data = bytes
             .get(payload_at..payload_at + OPTIONS_BYTES)
             .ok_or("truncated saved start options")?;
@@ -127,6 +145,30 @@ fn header(bytes: &[u8]) -> Result<Header<'_>, String> {
         options.validate()?;
         payload_at += OPTIONS_BYTES;
     }
+    let config = if version == 4 {
+        let raw = bytes
+            .get(payload_at..payload_at + 2)
+            .ok_or("truncated match configuration length")?;
+        let length = usize::from(u16::from_le_bytes(raw.try_into().unwrap()));
+        if length == 0 || length > CONFIG_LIMIT {
+            return Err("Invalid match configuration length".into());
+        }
+        payload_at += 2;
+        let end = payload_at
+            .checked_add(length)
+            .ok_or("match configuration length overflow")?;
+        let config: MatchConfig = serde_json::from_slice(
+            bytes
+                .get(payload_at..end)
+                .ok_or("truncated match configuration")?,
+        )
+        .map_err(|e| format!("Invalid match configuration: {e}"))?;
+        config.validate()?;
+        payload_at = end;
+        config
+    } else {
+        MatchConfig::default()
+    };
     if bytes.len() - payload_at > yr_sim::save::MAX_SAVE_BYTES {
         return Err("OpenYR simulation payload exceeds 64 MiB".into());
     }
@@ -143,6 +185,7 @@ fn header(bytes: &[u8]) -> Result<Header<'_>, String> {
         },
         map,
         options,
+        config,
         payload_at,
     })
 }
@@ -162,6 +205,7 @@ pub fn restore(session: &mut Session, bytes: &[u8]) -> Result<(), String> {
     session.radar.reset(&session.sim, &session.kinds);
     session.outcome = h.outcome;
     session.start_options = h.options;
+    session.apply_match_config(h.config)?;
     if session.source_map.is_none() {
         session.source_map = h.map.map(str::to_owned);
     }
@@ -192,6 +236,16 @@ pub fn load_from_menu(
     fallback_map: &str,
     path: &Path,
 ) -> Result<(Session, String), String> {
+    load_from_menu_with_metadata(gamedir, fallback_map, path, |_, _| Ok(()))
+}
+
+/// Report validated save identity before reconstructing its simulation/art.
+pub fn load_from_menu_with_metadata(
+    gamedir: &str,
+    fallback_map: &str,
+    path: &Path,
+    metadata: impl FnOnce(&str, &MatchConfig) -> Result<(), String>,
+) -> Result<(Session, String), String> {
     let bytes = read(path)?;
     let h = header(&bytes)?;
     let map_name = h.map.unwrap_or(fallback_map).to_owned();
@@ -203,13 +257,15 @@ pub fn load_from_menu(
             ));
         }
     }
+    metadata(&map_name, &h.config)?;
     let session = load_bytes(gamedir, &map_name, path, &bytes)?;
     Ok((session, map_name))
 }
 
 fn load_bytes(gamedir: &str, map_name: &str, path: &Path, bytes: &[u8]) -> Result<Session, String> {
     let h = header(bytes)?;
-    let mut session = crate::session::load_with_options(gamedir, map_name, h.seed, h.options)?;
+    let mut session =
+        crate::session::load_with_config(gamedir, map_name, h.seed, h.options, h.config.clone())?;
     restore(&mut session, bytes)?;
     println!(
         "OpenYR: loaded {} at tick {}, hash {:016x}, {:?}",
@@ -344,5 +400,43 @@ mod options_tests {
         );
         assert_eq!(h.map, None);
         assert_eq!(h.payload_at, HEADER + 2 + OPTIONS_BYTES);
+    }
+}
+
+#[cfg(test)]
+mod participant_tests {
+    use super::*;
+    fn envelope(config: &[u8], declared: u16) -> Vec<u8> {
+        let mut bytes = MAGIC.to_vec();
+        bytes.extend(4u32.to_le_bytes());
+        bytes.resize(HEADER + 2 + OPTIONS_BYTES, 0);
+        bytes.extend(declared.to_le_bytes());
+        bytes.extend(config);
+        bytes
+    }
+    #[test]
+    fn participant_metadata_is_bounded_and_validated_before_reconstruction() {
+        let config = serde_json::to_vec(&MatchConfig::default()).unwrap();
+        let bytes = envelope(&config, config.len() as u16);
+        let h = header(&bytes).unwrap();
+        assert_eq!(h.config, MatchConfig::default());
+        assert_eq!(h.payload_at, bytes.len());
+        for end in HEADER..bytes.len() {
+            assert!(header(&bytes[..end]).is_err(), "{end}");
+        }
+        for declared in [0, 4097, u16::MAX] {
+            assert!(header(&envelope(&config, declared)).is_err());
+        }
+        for json in [b"{}".as_slice(), b"[]", b"null", b"{bad", b"\xff"] {
+            assert!(header(&envelope(json, json.len() as u16)).is_err());
+        }
+        let mut invalid = MatchConfig::default();
+        invalid.players[1].color = invalid.players[0].color;
+        let json = serde_json::to_vec(&invalid).unwrap();
+        assert!(header(&envelope(&json, json.len() as u16)).is_err());
+        let unknown = String::from_utf8(config)
+            .unwrap()
+            .replace("America", "Yuri");
+        assert!(header(&envelope(unknown.as_bytes(), unknown.len() as u16)).is_err());
     }
 }
