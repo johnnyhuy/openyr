@@ -214,6 +214,13 @@ Johnny on 2026-10-31.
       loss, source settings, expiry, save continuation and unchanged sim/save
       bytes are checked. Original fade cadence, raster/blend policy, height,
       offsets and precise layer behavior remain uncalibrated.
+- [x] Initial explicit projectile trailer animations (#210, #102): actual
+      flight movement resolves smoke/bubble clips through retained weapon
+      identity, with bounded history and source alpha. Retail canvases,
+      turns, shooter loss, arrival, expiry and two fresh-cache save
+      continuations are checked. Original emission timing, motion, height
+      and surface-layer behavior remain uncalibrated; legacy smoke weapons
+      use temporary map references in the proof (`docs/formats/effects.md`).
 - [x] Give the controlled cannon proof shooter player ownership (#131), so its
       real tank body is drawn alongside the muzzle, projectile and enemy target.
 - [x] Sidebar labels from `ra2md.csf` (#47): all 22 Allied entries show

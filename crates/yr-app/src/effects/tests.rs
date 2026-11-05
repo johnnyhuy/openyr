@@ -552,3 +552,73 @@ fn retail_line_trail_history_is_bounded_and_expires_without_draws() {
     scene.update(&later, &[], &mut bank);
     assert!(scene.trails.is_empty());
 }
+
+#[test]
+fn retail_projectile_trailer_history_is_bounded_and_ignores_missing_provenance() {
+    let dir = PathBuf::from(std::env::var("HOME").unwrap())
+        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    if !dir.is_dir() {
+        return;
+    }
+    let fs = yr_assets::AssetFs::open(&dir).unwrap();
+    let rules = yr_rules::Rules::load(
+        &yr_formats::IniFile::parse(&String::from_utf8_lossy(fs.read("RULESMD.INI").unwrap())),
+        &yr_formats::IniFile::parse(&String::from_utf8_lossy(fs.read("ARTMD.INI").unwrap())),
+    );
+    let mut session = crate::session::load(dir.to_str().unwrap(), "EB1.MMX", 42).unwrap();
+    session.sim = yr_sim::Sim::new(42);
+    let mut bank = SpriteBank::open(dir.to_str().unwrap(), "EB1.MMX").unwrap();
+    let mut scene = EffectScene::default();
+    let event = |weapon| Event::ProjectileMoved {
+        from: (Fix::ZERO, Fix::ZERO),
+        to: (Fix::ONE, Fix::ONE),
+        origin: Some(yr_sim::ShotOrigin {
+            shooter: 999,
+            weapon,
+            damage: 100,
+        }),
+    };
+    let source = Some(rules.weapons.get("SubTorpedo").unwrap().source_id());
+    let hash = session.sim.state_hash();
+    let save = crate::snapshot::encode(&session).unwrap();
+    scene.update(&session, &vec![event(source); 600], &mut bank);
+    assert_eq!(scene.active.len(), MAX_EFFECTS);
+    assert!(scene
+        .active
+        .iter()
+        .all(|e| e.name == "BBBLELRG" && e.foundation.is_none()));
+    let count = scene.active.len();
+    scene.update(
+        &session,
+        &[
+            event(None),
+            event(Some(u64::MAX)),
+            Event::ProjectileMoved {
+                from: (Fix::ONE, Fix::ONE),
+                to: (Fix::ONE, Fix::ONE),
+                origin: Some(yr_sim::ShotOrigin {
+                    shooter: 999,
+                    weapon: source,
+                    damage: 100,
+                }),
+            },
+        ],
+        &mut bank,
+    );
+    assert_eq!(scene.active.len(), count);
+    assert_eq!(session.sim.state_hash(), hash);
+    assert_eq!(crate::snapshot::encode(&session).unwrap(), save);
+    scene.active.clear();
+    session.sim.step(&[]); // Tick one is outside the three-tick bubble emission phase.
+    scene.update(&session, &[event(source)], &mut bank);
+    assert!(scene.active.is_empty());
+    session.sim.step(&[]);
+    session.sim.step(&[]);
+    scene.update(&session, &[event(source)], &mut bank);
+    assert_eq!(scene.active.len(), 1);
+    for _ in 0..300 {
+        session.sim.step(&[]);
+    }
+    scene.update(&session, &[], &mut bank);
+    assert!(scene.active.is_empty(), "clips expire without redraws");
+}

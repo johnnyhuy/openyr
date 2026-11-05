@@ -9,6 +9,32 @@ use yr_rules::Rules;
 const MAX_SOURCES: usize = 128;
 const MAX_FRAMES: usize = 64;
 
+/// Explicit particle art with a bounded native emission interval in sim ticks.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ProjectileTrailer {
+    pub name: String,
+    pub interval: u16,
+}
+
+impl ProjectileTrailer {
+    pub(crate) fn load(section: &yr_formats::IniSection) -> Option<Self> {
+        let name = section.get("Trailer")?;
+        if !safe_image(name) {
+            return None;
+        }
+        // The retail art comment documents a default of three frames.
+        // Mapping those frames to sim ticks remains a provisional policy.
+        let interval = match section.get("SpawnDelay") {
+            Some(value) => value.parse::<u16>().ok()?,
+            None => 3,
+        };
+        (interval > 0).then(|| Self {
+            name: name.to_string(),
+            interval,
+        })
+    }
+}
+
 /// Explicit retail line-trail settings. Fade cadence is a presentation policy.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct LineTrail {
@@ -470,5 +496,132 @@ mod trail_tests {
             );
         }
         assert_eq!(bank.projectile_line_trail(u64::MAX), None);
+    }
+}
+
+#[cfg(test)]
+mod trailer_tests {
+    use super::*;
+
+    #[test]
+    fn projectile_trailer_settings_reject_hostile_names_and_intervals() {
+        let parse = |text: &str| {
+            ProjectileTrailer::load(
+                IniFile::parse(&format!("[P]\n{text}"))
+                    .section("P")
+                    .unwrap(),
+            )
+        };
+        assert_eq!(parse("Trailer=SMOKEY2").unwrap().interval, 3);
+        assert_eq!(
+            parse("Trailer=DURASMOKE\nSpawnDelay=2").unwrap().interval,
+            2
+        );
+        for text in [
+            "",
+            "Trailer=",
+            "Trailer=none",
+            "Trailer=../BAD",
+            "Trailer=A,B",
+            "Trailer=A\nSpawnDelay=0",
+            "Trailer=A\nSpawnDelay=-1",
+            "Trailer=A\nSpawnDelay=nope",
+            "Trailer=A\nSpawnDelay=65536",
+            "Trailer=A\nSpawnDelay=18446744073709551615",
+        ] {
+            assert_eq!(parse(text), None, "{text}");
+        }
+        assert!(parse(&format!("Trailer={}", "A".repeat(65))).is_none());
+    }
+
+    #[test]
+    fn retail_projectile_trailers_resolve_explicit_art_and_match_every_source_frame() {
+        let dir = std::path::PathBuf::from(std::env::var("HOME").unwrap_or_default())
+            .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+        if !dir.is_dir() {
+            return;
+        }
+        let fs = AssetFs::open(&dir).unwrap();
+        let ini = |name| IniFile::parse(&String::from_utf8_lossy(fs.read(name).unwrap()));
+        let art = ini("ARTMD.INI");
+        let mut rules_ini = ini("RULESMD.INI");
+        let overrides = "\n[FV]\nPrimary=ChemLauncher\n[SHAD]\nPrimary=DredCollision\n";
+        rules_ini.merge_from(&IniFile::parse(overrides));
+        let rules = Rules::load(&rules_ini, &art);
+        let map_path =
+            std::env::temp_dir().join(format!("openyr-trailer-source-{}.mmx", std::process::id()));
+        let mut map_bytes = fs.read("EB1.MMX").unwrap().to_vec();
+        map_bytes.extend(overrides.as_bytes());
+        std::fs::write(&map_path, map_bytes).unwrap();
+        let pal = Palette::parse(fs.read("ANIM.PAL").unwrap()).unwrap();
+        let mut bank =
+            crate::sprites::SpriteBank::open(dir.to_str().unwrap(), map_path.to_str().unwrap())
+                .unwrap();
+        std::fs::remove_file(&map_path).unwrap();
+        for (weapon, name, interval, rate) in [
+            ("DredCollision", "DURASMOKE", 2, 450),
+            ("ChemLauncher", "SMOKEY2", 3, 200),
+            ("SubTorpedo", "BBBLELRG", 3, 450),
+        ] {
+            assert_eq!(
+                bank.projectile_trailer(rules.weapons.get(weapon).unwrap().source_id()),
+                Some(ProjectileTrailer {
+                    name: name.into(),
+                    interval
+                })
+            );
+            let shp = ShpFile::parse(fs.read(&format!("{name}.SHP")).unwrap()).unwrap();
+            let mut seen = std::collections::BTreeSet::new();
+            for age in 0..300u64 {
+                let frame = age * rate / 225;
+                let sprite = bank.get_effect(name, age);
+                if frame >= shp.frames.len() as u64 {
+                    assert!(sprite.is_none());
+                    continue;
+                }
+                let sprite = sprite.unwrap();
+                seen.insert(frame);
+                let expected: Vec<_> = shp
+                    .decode_frame_canvas(frame as usize)
+                    .unwrap()
+                    .into_iter()
+                    .flat_map(|index| {
+                        if index == 0 {
+                            [0; 4]
+                        } else {
+                            let [r, g, b, _] = pal.rgba(index);
+                            [r, g, b, if name == "BBBLELRG" { 255 } else { 127 }]
+                        }
+                    })
+                    .collect();
+                assert_eq!(sprite.rgba, expected, "{name} age {age}, frame {frame}");
+                assert_eq!(
+                    (sprite.ax, sprite.ay),
+                    (i32::from(shp.width) / 2, i32::from(shp.height) / 2)
+                );
+            }
+            // DURASMOKE advances two source frames per native tick. Check the
+            // skipped canvases too using an isolated rate override in Effects.
+            if rate == 200 {
+                assert_eq!(seen.len(), shp.frames.len());
+            }
+            assert!(!bank.effect_alive(name, u64::MAX));
+            println!(
+                "{weapon}: {name}, {}x{}, {} source frames, interval {interval}, rate {rate}",
+                shp.width,
+                shp.height,
+                shp.frames.len()
+            );
+        }
+        for weapon in ["HoverMissile", "Medusa", "105mm", "M60", "ElectricBolt"] {
+            assert!(bank
+                .projectile_trailer(rules.weapons.get(weapon).unwrap().source_id())
+                .is_none());
+        }
+        assert!(bank.projectile_trailer(u64::MAX).is_none());
+        assert_eq!(
+            ProjectileTrailer::load(art.section("NKMSLDN").unwrap()),
+            None
+        );
     }
 }

@@ -39,6 +39,7 @@ pub struct Foundation {
     pub size: (u16, u16),
 }
 
+#[derive(Clone)]
 pub struct Effect {
     pub name: String,
     pub x: Fix,
@@ -133,6 +134,25 @@ impl EffectScene {
                             born: tick,
                             style,
                         });
+                    }
+                    if let Some(trailer) = origin
+                        .and_then(|o| o.weapon)
+                        .and_then(|source| bank.projectile_trailer(source))
+                        .filter(|t| tick.is_multiple_of(u64::from(t.interval)))
+                    {
+                        // Absolute tick phase is reconstructible after load.
+                        // Emit at the vacated position; drift/height and the
+                        // original launch-relative phase remain uncalibrated.
+                        self.push(
+                            bank,
+                            Effect {
+                                name: trailer.name,
+                                x: from.0,
+                                y: from.1,
+                                born: tick,
+                                foundation: None,
+                            },
+                        );
                     }
                 }
                 continue;
