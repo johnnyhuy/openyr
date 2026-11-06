@@ -74,6 +74,27 @@ pub(crate) fn animated_sprite(
     pal: &Palette,
     remap: [u8; 3],
 ) -> Option<crate::sprites::Sprite> {
+    animated_sprite_remap(model, facing, frames, pal, Some(remap))
+}
+
+/// Ownerless bodies (projectiles) keep their authored palette colours;
+/// the remap range is not tinted toward any house.
+pub(crate) fn animated_sprite_unremapped(
+    model: &VoxelModel,
+    facing: u16,
+    frames: &[usize],
+    pal: &Palette,
+) -> Option<crate::sprites::Sprite> {
+    animated_sprite_remap(model, facing, frames, pal, None)
+}
+
+fn animated_sprite_remap(
+    model: &VoxelModel,
+    facing: u16,
+    frames: &[usize],
+    pal: &Palette,
+    remap: Option<[u8; 3]>,
+) -> Option<crate::sprites::Sprite> {
     let points = projected_points(model, facing, frames);
     if points.is_empty() {
         return None;
@@ -93,14 +114,7 @@ pub(crate) fn animated_sprite(
     let (w, h, ax, ay) = (w as u32, h as u32, -min[0] as i32, -min[1] as i32);
     let mut rgba = vec![0; w as usize * h as usize * 4];
     raster(
-        &mut rgba,
-        w as usize,
-        h as usize,
-        ax,
-        ay,
-        points,
-        pal,
-        Some(remap),
+        &mut rgba, w as usize, h as usize, ax, ay, points, pal, remap,
     );
     Some(crate::sprites::Sprite { w, h, ax, ay, rgba })
 }
