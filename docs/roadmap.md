@@ -586,6 +586,13 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       cleanup and complete save-byte/sim-hash invariance are checked in
       `docs/order-feedback.md`. Original appearance/timing, radar/service
       acknowledgements and physical desktop input remain open.
+- [x] Reject pointer input in physical window margins (#223, #97): failed
+      framebuffer mappings, focus loss, resize/DPI changes and enter/leave
+      cancel stale gestures. Buttons and wheels require fresh valid motion;
+      menu-to-match panning retains a local delta. Linux live before/after
+      checks at 1600x1000 and 1920x1200 verify ignored margin wheels and working
+      in-frame wheels; retail selection and complete save bytes are checked.
+      Physical Mac Retina/input checks remain open (`docs/window-input.md`).
 - [ ] Complete world interaction and desktop UX (#97): consistent selection,
       supported control groups/hotkeys, hover/target/order feedback, bounded
       camera movement and configurable edge scrolling. Clear held input on

@@ -241,9 +241,12 @@ pub struct Presence {
 }
 impl Presence {
     pub fn custom(&self, art: &Art, size: (u32, u32), pos: (f64, f64)) -> bool {
+        self.active(size, pos) && art.available()
+    }
+    /// Shared ownership gate for custom drawing and pointer input.
+    pub fn active(&self, size: (u32, u32), pos: (f64, f64)) -> bool {
         self.inside
             && self.focused
-            && art.available()
             && pos.0.is_finite()
             && pos.1.is_finite()
             && pos.0 >= 0.0

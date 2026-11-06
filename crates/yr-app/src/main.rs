@@ -28,6 +28,7 @@ mod order_feedback;
 mod production_tests;
 #[cfg(test)]
 mod scrolling_tests;
+mod surface_input;
 
 use pixels::{Pixels, SurfaceTexture};
 use std::collections::BTreeSet;
@@ -363,11 +364,10 @@ impl App {
             self.menu.refresh_heading();
             self.groups.interrupt();
             self.order_feedback.clear();
-            self.pointer.inside = false;
+            self.invalidate_pointer();
             self.keys.clear();
             self.shift = false;
             self.control = false;
-            self.cancel_pointer_action();
             self.placing = None;
             self.service_mode = ServiceMode::None;
             self.attack_move = false;
@@ -1548,125 +1548,25 @@ impl ApplicationHandler for App {
                 el.exit();
             }
             WindowEvent::Resized(size) => {
+                self.invalidate_pointer();
                 if let Some(p) = &mut self.pixels {
                     let _ = p.resize_surface(size.width.max(1), size.height.max(1));
                     self.view.dirty = true;
                 }
             }
             WindowEvent::Focused(focused) => self.focus_changed(focused),
-            WindowEvent::CursorEntered { .. } => {
-                self.pointer.inside = true;
-                self.view.dirty = true;
-            }
-            WindowEvent::CursorLeft { .. } => {
-                self.pointer.inside = false;
-                self.cancel_pointer_action();
-                self.view.dirty = true;
-            }
+            WindowEvent::CursorEntered { .. }
+            | WindowEvent::CursorLeft { .. }
+            | WindowEvent::ScaleFactorChanged { .. } => self.invalidate_pointer(),
             WindowEvent::ModifiersChanged(m) => {
                 self.shift = m.state().shift_key();
                 self.control = m.state().control_key();
             }
-            WindowEvent::MouseInput { state, button, .. } if self.menu.visible() => {
-                self.menu_mouse(state, button)
-            }
-            WindowEvent::MouseInput { state, button, .. } => match (button, state) {
-                (MouseButton::Left, ElementState::Pressed) if self.in_sidebar(self.cursor) => {
-                    self.sidebar_left_press(self.camera_size());
-                }
-                (MouseButton::Right, ElementState::Pressed) if self.in_sidebar(self.cursor) => {
-                    self.sidebar_right_press(self.camera_size());
-                }
-                (MouseButton::Right, ElementState::Pressed)
-                    if self.service_mode != ServiceMode::None =>
-                {
-                    self.service_mode = ServiceMode::None;
-                }
-                (MouseButton::Right, ElementState::Pressed) if self.placing.is_some() => {
-                    self.placing = None;
-                }
-                (MouseButton::Left, ElementState::Pressed) => self.left_press(),
-                (MouseButton::Left, ElementState::Released) => self.left_release(),
-                (MouseButton::Right, ElementState::Pressed) => {
-                    self.right_down = Some(self.cursor);
-                    self.right_panning = false;
-                }
-                (MouseButton::Right, ElementState::Released) => self.right_release(),
-                _ => {}
-            },
+            WindowEvent::MouseInput { state, button, .. } => self.pointer_button(state, button),
             WindowEvent::CursorMoved { position, .. } => {
-                // Work in frame pixels (the surface may be HiDPI-scaled).
-                let position = match &self.pixels {
-                    Some(p) => {
-                        let (x, y) =
-                            match p.window_pos_to_pixel((position.x as f32, position.y as f32)) {
-                                Ok((x, y)) => (x as f64, y as f64),
-                                Err((x, y)) => (x as f64, y as f64),
-                            };
-                        winit::dpi::PhysicalPosition::new(x, y)
-                    }
-                    None => position,
-                };
-                self.cursor = (position.x, position.y);
-                self.pointer.inside = self.pointer.focused;
-                self.camera.edge_armed = self.pointer.focused && !self.menu.visible();
-                if self.menu.visible() {
-                    if self.menu.front && self.menu.page == yr_app::menu::Page::Skirmish {
-                        if let Some((x, _)) =
-                            yr_app::menu::Layout::for_state(&self.menu, WIN_W, WIN_H)
-                                .local(self.cursor)
-                        {
-                            self.menu.setup.drag_to(x);
-                        }
-                    }
-                    if self.menu.page == yr_app::menu::Page::ChooseMap {
-                        if let Some((_, y)) =
-                            yr_app::menu::Layout::for_state(&self.menu, WIN_W, WIN_H)
-                                .local(self.cursor)
-                        {
-                            self.menu.maps.drag_to(y);
-                        }
-                    }
-                    self.view.dirty = true;
-                    self.update_pointer_visibility();
-                    return;
-                }
-                if self.radar_drag {
-                    if let Some(cell) = self.radar_target(self.cursor) {
-                        self.radar_pan(cell);
-                    }
-                }
-                self.view.dirty = true;
-                if self.right_down.is_some() {
-                    let dx = (position.x - self.last_cursor.0) as f32;
-                    let dy = (position.y - self.last_cursor.1) as f32;
-                    if dx.abs() + dy.abs() > 2.0 {
-                        self.right_panning = true;
-                    }
-                    if self.right_panning {
-                        self.left_down = None;
-                        self.view.cam_x -= dx / self.view.zoom;
-                        self.view.cam_y -= dy / self.view.zoom;
-                        self.bound_camera(self.camera_size());
-                        self.view.dirty = true;
-                    }
-                }
-                if self.left_down.is_some() {
-                    self.view.dirty = true;
-                }
-                self.last_cursor = (position.x, position.y);
+                self.pointer_moved((position.x, position.y))
             }
-            WindowEvent::MouseWheel { delta, .. } if self.menu.visible() => {
-                let down = match delta {
-                    MouseScrollDelta::LineDelta(_, y) => y < 0.0,
-                    MouseScrollDelta::PixelDelta(p) => p.y < 0.0,
-                };
-                self.menu_scroll(if down { 1 } else { -1 });
-                self.view.dirty = true;
-            }
-            WindowEvent::MouseWheel { delta, .. } => {
-                self.match_wheel(delta, self.camera_size());
-            }
+            WindowEvent::MouseWheel { delta, .. } => self.pointer_wheel(delta),
             WindowEvent::KeyboardInput { event, .. } if self.menu.visible() => {
                 self.menu_key(&event)
             }
