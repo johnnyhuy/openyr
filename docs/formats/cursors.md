@@ -159,3 +159,10 @@ attack-command target, with the same Shift-only selection routing as clicks.
 No cursor frame, hotspot, cadence, parser or asset format changed. Bracket
 appearance is a native policy documented in `docs/order-feedback.md`, pending
 original observation. Service and placement previews remain separate work.
+
+
+Selected units' current hostile attack targets also reuse the native brackets,
+independently of pointer hover (`docs/order-feedback.md`). The existing sim
+attack field supplies current targets, including automatic engagements. This
+adds no cursor state, frame, hotspot, cadence, asset or save-format change.
+Appearance and physical Retina delivery remain uncalibrated under #97/#98.

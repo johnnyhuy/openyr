@@ -32,7 +32,7 @@ boundary independently of world zoom. Green means move, gold attack-move and
 red attack or unavailable, with text distinguishing those last two cases.
 
 These colors, shapes, text and duration are native policies. They have not
-been calibrated against original-game acknowledgements. Persistent ordered-target highlighting
+been calibrated against original-game acknowledgements. Original calibration
 and physical macOS/Retina input remain under #97/#98 and related UI issues.
 No original code or additional artwork is used by this slice.
 
@@ -65,9 +65,8 @@ six-pixel corner strokes clipped to the world viewport. They draw above world
 art and below the sidebar, tooltips and cursor.
 
 This is a native visibility policy for #97. The colors, footprint brackets and
-immediate appearance are not calibrated original-game output. Persistent
-ordered-target highlights, service/placement previews and physical Retina input
-remain open. Retail hover tests compare preview ids with actual select/attack
+immediate appearance are not calibrated original-game output. Original target-highlight calibration, service/placement hover previews and
+physical Retina input remain open. Retail hover tests compare preview ids with actual select/attack
 click results at three window sizes and three zooms, cover inactive/modal/drag
 and unavailable-selection guards, and compare complete match save bytes before
 and after pointer-only interaction. Optional `OPENYR_HOVER_PROOF=<external-dir>`
@@ -150,3 +149,33 @@ cancellation, expiry, stale-mode and focus/menu/resize guards.
 `OPENYR_PLACEMENT_ORDER_PROOF=<external-dir>` exports shared images and a
 controlled native READY save with AI disabled for live observation. The save
 stays outside proof uploads; derived art stays off main.
+
+
+Selected living owned armed units now show red corner brackets around their
+current living hostile attack targets, even after pointer leave or expiry of
+the brief order notice. The renderer reads the simulation's existing attack
+field each composition and draws each target once. This includes existing
+automatic engagements as well as explicit attacks; it does not infer active
+combat from a pending UI command. Position updates, selection changes, target
+removal and restored attack state take effect without a UI target cache.
+
+Current-target brackets share the hover preview's terrain-height projection,
+footprint extent, six-pixel corners and world-viewport clipping. Large zoomed
+footprints can put their corners outside the visible viewport. Focus loss,
+menus, finished matches and placement/service modes suppress current-target
+brackets. Fresh pointer motion is not required to restore them when the active
+context returns. Pending Stop/Move commands change highlights only when the
+simulation changes its attack state; normal automatic reacquisition remains
+unchanged. Save/load uses existing attack fields and existing selection policy.
+
+This is a native visibility policy for #97, not measured original-game target
+highlight appearance. No command, combat rule, simulation field, save schema,
+cursor sheet or timer changed. Retail tests cover unit/building targets, mixed
+and stale selection, deduplication, three layouts/zooms, context guards,
+restoration and removal. Two validated in-cell native poses isolate position
+following from a retail guard's parked movement policy. Read/draw passes keep
+complete match bytes unchanged; equivalent Stop steps keep snapshots identical.
+`OPENYR_CURRENT_TARGET_PROOF=<external-dir>` exports shared compositions and a
+controlled stationary durable-target save for live checks. The fixture disables
+AI and uses ordinary native spawn/attack commands; its save stays outside proof
+uploads and derived art stays off main.

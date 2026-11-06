@@ -603,8 +603,7 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       corner brackets use the existing cursor/click resolver and current entity
       ground anchors. Focus/menu/gesture/command-mode guards, Shift routing,
       compact layouts, unavailable attackers and complete save-byte invariance
-      are checked. Original appearance, persistent ordered-target highlights
-      and physical Retina input remain open (`docs/order-feedback.md`).
+      are checked. Original appearance and physical Retina input remain open (`docs/order-feedback.md`).
 - [x] Acknowledge powered-radar orders (#97): move/attack-move requests reuse
       native world-order text and snapped destination markers without changing
       commands, selection, zoom or order-time camera position. Navigation and
@@ -626,6 +625,12 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       zooms retain command/save behavior and equivalent stepped snapshots.
       Original appearance/timing and physical Mac/Retina input remain open
       (`docs/order-feedback.md`, `docs/formats/rules.md`).
+- [x] Show selected units' current attack targets (#97): deduplicated native
+      brackets follow living hostile targets from existing sim state, independent
+      of pointer hover or brief notices. Selection/context/removal/restoration,
+      three layouts/zooms, position updates and complete snapshot invariance are
+      checked. No commands, combat or save fields change. Original appearance
+      and physical Mac/Retina input remain open (`docs/order-feedback.md`).
 - [ ] Complete world interaction and desktop UX (#97): consistent selection,
       supported control groups/hotkeys, hover/target/order feedback, bounded
       camera movement and configurable edge scrolling. Clear held input on
