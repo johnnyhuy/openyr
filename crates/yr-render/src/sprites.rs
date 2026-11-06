@@ -434,13 +434,23 @@ impl SpriteBank {
         source: u64,
         motion: Option<(i32, i32)>,
     ) -> Option<&Sprite> {
-        self.projectiles.get(
+        self.get_projectile_directed_at(source, motion, 0)
+    }
+
+    pub fn get_projectile_directed_at(
+        &mut self,
+        source: u64,
+        motion: Option<(i32, i32)>,
+        tick: u64,
+    ) -> Option<&Sprite> {
+        self.projectiles.get_at(
             &self.vfs,
             &self.rules,
             &self.art_ini,
             &self.unit_pal,
             source,
             motion,
+            tick,
         )
     }
 

@@ -78,6 +78,11 @@ fn safe_image(image: &str) -> bool {
 struct Body {
     file: String,
     rotating: bool,
+    // Zero for static and rotating bodies. Otherwise the count of body
+    // frames in the first half of the sheet; the second half is the
+    // empty shadow slot observed in retail animated projectile sheets.
+    animated: usize,
+    anim_palette: bool,
 }
 
 impl Body {
@@ -113,16 +118,42 @@ impl Body {
         if shp.width == 0 || shp.height == 0 || shp.width > 128 || shp.height > 128 {
             return None;
         }
-        let valid = if rotating {
-            shp.frames.len() == 32
-                || shp.frames.len() == 64 && shp.frames[32..].iter().all(|f| f.is_empty())
+        let anim_palette = section.and_then(|s| s.get_bool("AnimPalette")) == Some(true);
+        let (valid, animated) = if rotating {
+            (
+                shp.frames.len() == 32
+                    || shp.frames.len() == 64 && shp.frames[32..].iter().all(|f| f.is_empty()),
+                0,
+            )
+        } else if shp.frames.len() == 1 {
+            (true, 0)
         } else {
-            shp.frames.len() == 1
+            // Animated bodies cycle the first half of the sheet. The
+            // second half is an empty shadow slot, as on infantry sheets.
+            let half = shp.frames.len() / 2;
+            (
+                shp.frames.len() % 2 == 0
+                    && half >= 2
+                    && shp.frames[..half].iter().all(|f| !f.is_empty())
+                    && shp.frames[half..].iter().all(|f| f.is_empty()),
+                half,
+            )
         };
-        valid.then_some(Self { file, rotating })
+        valid.then_some(Self {
+            file,
+            rotating,
+            animated,
+            anim_palette,
+        })
     }
 
-    fn frame(&self, motion: Option<(i32, i32)>) -> Option<usize> {
+    fn frame(&self, motion: Option<(i32, i32)>, tick: u64) -> Option<usize> {
+        if self.animated > 0 {
+            // Absolute tick phase reconstructs the same frame after a
+            // load, with no saved presentation state. One frame per
+            // simulation tick is a provisional cadence.
+            return Some((tick % self.animated as u64) as usize);
+        }
         if !self.rotating {
             return Some(0);
         }
@@ -144,9 +175,12 @@ pub(crate) struct Projectiles {
     bodies: HashMap<u64, Option<Body>>,
     frames: HashMap<(u64, usize), Option<Sprite>>,
     order: VecDeque<(u64, usize)>,
+    anim_pal: Option<Palette>,
+    anim_pal_tried: bool,
 }
 
 impl Projectiles {
+    #[cfg(test)]
     pub fn get(
         &mut self,
         fs: &AssetFs,
@@ -156,6 +190,20 @@ impl Projectiles {
         source: u64,
         motion: Option<(i32, i32)>,
     ) -> Option<&Sprite> {
+        self.get_at(fs, rules, art, pal, source, motion, 0)
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn get_at(
+        &mut self,
+        fs: &AssetFs,
+        rules: &Rules,
+        art: &IniFile,
+        pal: &Palette,
+        source: u64,
+        motion: Option<(i32, i32)>,
+        tick: u64,
+    ) -> Option<&Sprite> {
         if self.bodies.len() >= MAX_SOURCES && !self.bodies.contains_key(&source) {
             return None;
         }
@@ -164,8 +212,17 @@ impl Projectiles {
             .entry(source)
             .or_insert_with(|| Body::load(fs, rules, art, source))
             .as_ref()?;
-        let frame = body.frame(motion)?;
+        let frame = body.frame(motion, tick)?;
         let key = (source, frame);
+        if body.anim_palette && !self.anim_pal_tried {
+            self.anim_pal_tried = true;
+            self.anim_pal = fs.read("ANIM.PAL").and_then(Palette::parse);
+        }
+        let pal = if body.anim_palette {
+            self.anim_pal.as_ref()?
+        } else {
+            pal
+        };
         if !self.frames.contains_key(&key) {
             let sprite = (|| {
                 let shp = ShpFile::parse(fs.read(&body.file)?).ok()?;
@@ -212,6 +269,8 @@ mod tests {
         let body = Body {
             file: String::new(),
             rotating: true,
+            animated: 0,
+            anim_palette: false,
         };
         for (motion, frame) in [
             ((-1, -1), 0),
@@ -221,15 +280,28 @@ mod tests {
             ((i32::MIN, i32::MIN), 0),
             ((i32::MAX, i32::MAX), 16),
         ] {
-            assert_eq!(body.frame(Some(motion)), Some(frame));
+            assert_eq!(body.frame(Some(motion), 0), Some(frame));
         }
         for frame in 0..32 {
-            assert_eq!(body.frame(Some(motion(frame))), Some(frame));
+            assert_eq!(body.frame(Some(motion(frame)), 0), Some(frame));
         }
-        assert_eq!(body.frame(None), None);
-        assert_eq!(body.frame(Some((0, 0))), None);
-        assert_eq!(body.frame(Some((-100_001, -100_000))), Some(0));
-        assert_eq!(body.frame(Some((-100_000, -100_001))), Some(0));
+        assert_eq!(body.frame(None, 0), None);
+        assert_eq!(body.frame(Some((0, 0)), 0), None);
+        assert_eq!(body.frame(Some((-100_001, -100_000)), 0), Some(0));
+        assert_eq!(body.frame(Some((-100_000, -100_001)), 0), Some(0));
+        let animated = Body {
+            file: String::new(),
+            rotating: false,
+            animated: 7,
+            anim_palette: false,
+        };
+        for tick in 0..14u64 {
+            assert_eq!(animated.frame(None, tick), Some((tick % 7) as usize));
+        }
+        assert_eq!(
+            animated.frame(None, u64::MAX),
+            Some((u64::MAX % 7) as usize)
+        );
     }
 
     #[test]
@@ -426,6 +498,121 @@ mod tests {
         }
         assert_eq!(cache.bodies.len(), 128);
         println!("120MM.SHP: 24x24, one frame, exact UNITTEM.PAL body, no shadow-half assumption");
+    }
+
+    #[test]
+    fn retail_animated_bodies_match_every_source_frame_and_cycle_by_tick() {
+        let dir = std::path::PathBuf::from(std::env::var("HOME").unwrap_or_default())
+            .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+        if !dir.is_dir() {
+            return;
+        }
+        let fs = AssetFs::open(&dir).unwrap();
+        let ini = |name| IniFile::parse(&String::from_utf8_lossy(fs.read(name).unwrap()));
+        let art = ini("ARTMD.INI");
+        // These weapons are not referenced by installed technos. Register
+        // their unchanged retail chains on existing technos for the test.
+        let mut rules_ini = ini("RULESMD.INI");
+        rules_ini.merge_from(&IniFile::parse(
+            "[FV]\nPrimary=CyCannon\n[MTNK]\nPrimary=Grenade\n[HTNK]\nPrimary=RPGTower\n[GGI]\nPrimary=EMPulseWeapon\n",
+        ));
+        let rules = Rules::load(&rules_ini, &art);
+        let unit_pal = Palette::parse(fs.read("UNITTEM.PAL").unwrap()).unwrap();
+        let anim_pal = Palette::parse(fs.read("ANIM.PAL").unwrap()).unwrap();
+        let mut cache = Projectiles::default();
+        for (weapon, file, size, animated, use_anim_pal) in [
+            ("CyCannon", "TORPEDO.SHP", (9, 9), 3usize, true),
+            ("Grenade", "DISCUS.SHP", (8, 5), 7, false),
+            ("RPGTower", "CANISTER.SHP", (9, 8), 15, false),
+            ("EMPulseWeapon", "PULSBALL.SHP", (16, 18), 23, true),
+        ] {
+            let source = rules.weapons.get(weapon).unwrap().source_id();
+            let shp = ShpFile::parse(fs.read(file).unwrap()).unwrap();
+            assert_eq!((shp.width, shp.height), size, "{weapon}");
+            assert_eq!(shp.frames.len(), animated * 2, "{weapon}");
+            assert!(
+                shp.frames[animated..].iter().all(|f| f.is_empty()),
+                "{weapon}"
+            );
+            let pal = if use_anim_pal { &anim_pal } else { &unit_pal };
+            for tick in 0..(animated as u64 * 2) {
+                let frame = (tick % animated as u64) as usize;
+                let expected: Vec<_> = shp
+                    .decode_frame_canvas(frame)
+                    .unwrap()
+                    .into_iter()
+                    .flat_map(|i| if i == 0 { [0; 4] } else { pal.rgba(i) })
+                    .collect();
+                let sprite = cache
+                    .get_at(&fs, &rules, &art, &unit_pal, source, None, tick)
+                    .unwrap_or_else(|| panic!("{weapon} tick {tick}"));
+                assert_eq!(sprite.rgba, expected, "{weapon} frame {frame}");
+                assert_eq!(
+                    (sprite.ax, sprite.ay),
+                    (i32::from(size.0) / 2, i32::from(size.1) / 2),
+                    "{weapon}"
+                );
+            }
+            println!("{weapon}: {file} {size:?} {animated} animated frames, anim_palette={use_anim_pal}, all source pixels match");
+        }
+        assert!(cache.frames.len() <= MAX_FRAMES);
+    }
+
+    #[test]
+    fn animated_layouts_reject_mixed_or_nonempty_shadow_halves() {
+        let dir =
+            std::env::temp_dir().join(format!("openyr-animated-bounds-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let rules = Rules::load(
+            &IniFile::parse(
+                "[VehicleTypes]\n0=T\n[T]\nPrimary=G\n[G]\nProjectile=P\n[P]\nImage=SAFE\n",
+            ),
+            &IniFile::parse(""),
+        );
+        let source = rules.weapons.get("G").unwrap().source_id();
+        // Frame headers mark a frame empty through a zero data offset.
+        let fixture = |count: u16, empty: &[usize]| {
+            let mut data = Vec::new();
+            for n in [0u16, 2, 2, count] {
+                data.extend(n.to_le_bytes());
+            }
+            for i in 0..count {
+                for n in [0u16, 0, 1, 1] {
+                    data.extend(n.to_le_bytes());
+                }
+                for n in [1u32, 0, 0] {
+                    data.extend(n.to_le_bytes());
+                }
+                data.extend(
+                    if empty.contains(&(i as usize)) {
+                        0u32
+                    } else {
+                        8 + u32::from(count) * 24
+                    }
+                    .to_le_bytes(),
+                );
+            }
+            data.push(1);
+            data
+        };
+        for (count, empty, valid) in [
+            (6u16, vec![3usize, 4, 5], true),
+            (4, vec![2, 3], true),
+            (6, vec![3, 4], false),
+            (6, vec![0, 3, 4, 5], false),
+            (5, vec![3, 4], false),
+            (2, vec![1], false),
+            (6, vec![], false),
+        ] {
+            std::fs::write(dir.join("SAFE.SHP"), fixture(count, &empty)).unwrap();
+            let fs = AssetFs::open(&dir).unwrap();
+            assert_eq!(
+                Body::load(&fs, &rules, &IniFile::parse("[SAFE]\n"), source).is_some(),
+                valid,
+                "count {count} empty {empty:?}"
+            );
+        }
+        std::fs::remove_dir_all(dir).unwrap();
     }
 }
 

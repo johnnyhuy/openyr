@@ -1094,7 +1094,7 @@ impl App {
                 if let Some(bank) = bank.as_mut() {
                     let (sprite, position) = match art {
                         WorldArt::Projectile(source, motion) => (
-                            bank.get_projectile_directed(source, motion),
+                            bank.get_projectile_directed_at(source, motion, tick),
                             (footprint.x, footprint.y),
                         ),
                         WorldArt::Effect(effect) => (
