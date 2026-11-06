@@ -33,7 +33,7 @@ red attack or unavailable, with text distinguishing those last two cases.
 
 These colors, shapes, text and duration are native policies. They have not
 been calibrated against original-game acknowledgements. Radar orders,
-structure services, placement feedback, persistent target/hover highlighting
+structure services, placement feedback, persistent ordered-target highlighting
 and physical macOS/Retina input remain under #97/#98 and related UI issues.
 No original code or additional artwork is used by this slice.
 
@@ -47,3 +47,29 @@ are stepped; the resulting simulation hash matches the same commands applied
 without feedback. `OPENYR_ORDER_PROOF=<external-dir> cargo test -p yr-app --bin
 openyr order_feedback:: -- --nocapture` exports shared-compositor frames and
 tick/hash/command receipts. The PNGs contain retail art and stay outside git.
+
+
+Hover previews are separate from the two-second order notice. In an active
+world viewport, green corner brackets identify the owned unit that the shared
+resolver can select. Red brackets identify the enemy unit or building that the
+selected armed units can attack. Shift-only additive selection suppresses the
+attack preview, matching the actual click route; Control+Shift retains attack
+resolution. Empty/stale/unarmed selections do not advertise an attack.
+
+Each composition resolves the current pointer and current entity position. No
+hover id is retained across movement, destruction, match replacement or saves.
+Focus loss, invalid/margin/sidebar pointers, menus, finished matches, mouse
+presses/drags, edge-scroll arrows and placement/service modes suppress previews.
+The existing selected-unit marker remains independent. Brackets follow the
+height-aware ground anchor and footprint extent at the current map zoom, with
+six-pixel corner strokes clipped to the world viewport. They draw above world
+art and below the sidebar, tooltips and cursor.
+
+This is a native visibility policy for #97. The colors, footprint brackets and
+immediate appearance are not calibrated original-game output. Persistent
+ordered-target highlights, service/placement previews and physical Retina input
+remain open. Retail hover tests compare preview ids with actual select/attack
+click results at three window sizes and three zooms, cover inactive/modal/drag
+and unavailable-selection guards, and compare complete match save bytes before
+and after pointer-only interaction. Optional `OPENYR_HOVER_PROOF=<external-dir>`
+exports isolated before/after overlays and integrated compositor images.

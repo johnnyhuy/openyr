@@ -149,3 +149,13 @@ clocks and full-canvas visibility at each edge. Retail pixel checks cover
 all sixteen source canvases with independent SHP/palette decoding. Exports
 contain retail art and stay outside git. Physical Retina/focus exercises and
 original-game comparisons remain in #98.
+
+
+## Native hover previews
+
+World select/attack cursor states also drive the native corner-bracket preview
+in `yr-app/src/hover_feedback.rs`. It uses the resolved selection id or actual
+attack-command target, with the same Shift-only selection routing as clicks.
+No cursor frame, hotspot, cadence, parser or asset format changed. Bracket
+appearance is a native policy documented in `docs/order-feedback.md`, pending
+original observation. Service and placement previews remain separate work.

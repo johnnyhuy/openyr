@@ -599,6 +599,12 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       Retail start/loading, selection, pause/resume, save-byte invariance and
       Linux live before/after captures cover 640x480 and 1000x700; map zoom is
       preserved. Physical Retina delivery remains open under #97.
+- [x] Preview selectable and attackable world targets (#97): green/red native
+      corner brackets use the existing cursor/click resolver and current entity
+      ground anchors. Focus/menu/gesture/command-mode guards, Shift routing,
+      compact layouts, unavailable attackers and complete save-byte invariance
+      are checked. Original appearance, persistent ordered-target highlights
+      and physical Retina input remain open (`docs/order-feedback.md`).
 - [ ] Complete world interaction and desktop UX (#97): consistent selection,
       supported control groups/hotkeys, hover/target/order feedback, bounded
       camera movement and configurable edge scrolling. Clear held input on
