@@ -526,3 +526,156 @@ fn retail_projectile_trailers_follow_flight_and_rebuild_after_load() {
         std::fs::remove_dir_all(root).unwrap();
     }
 }
+
+#[test]
+fn retail_animated_projectile_cycles_and_rebuilds_after_load() {
+    let Some((mut app, cx, cy, _kind, _)) = missile_app() else {
+        return;
+    };
+    let output = std::env::var_os("OPENYR_ANIMATED_PROJECTILE_PROOF").map(PathBuf::from);
+    if let Some(out) = &output {
+        std::fs::create_dir_all(out).unwrap();
+    }
+    let fs = yr_assets::AssetFs::open(std::path::Path::new(&app.gamedir)).unwrap();
+    // Grenade is not referenced by an installed techno. Register its
+    // unchanged retail chain through a map override, as in the trailer proof.
+    let overrides = "\n[FV]\nPrimary=Grenade\n";
+    let root = std::env::temp_dir().join(format!("openyr-animated-flight-{}", std::process::id()));
+    std::fs::create_dir_all(&root).unwrap();
+    let mut map = fs.read("EB1.MMX").unwrap().to_vec();
+    map.extend(overrides.as_bytes());
+    let map_path = root.join("animated-fixture.mmx");
+    std::fs::write(&map_path, map).unwrap();
+    app.map_name = map_path.to_str().unwrap().into();
+    app.session = Some(app.load_session().unwrap());
+    app.sprites = load_sprites(&app.gamedir, &app.map_name);
+    let kind = app
+        .session
+        .as_ref()
+        .unwrap()
+        .kinds
+        .iter()
+        .position(|k| k == "FV")
+        .unwrap() as u16;
+    let mut rules_ini =
+        yr_formats::IniFile::parse(&String::from_utf8_lossy(fs.read("RULESMD.INI").unwrap()));
+    rules_ini.merge_from(&yr_formats::IniFile::parse(overrides));
+    let rules = yr_rules::Rules::load(
+        &rules_ini,
+        &yr_formats::IniFile::parse(&String::from_utf8_lossy(fs.read("ARTMD.INI").unwrap())),
+    );
+    let weapon = yr_sim::WeaponSpec::from_rules(&rules, "Grenade").unwrap();
+    let source = weapon.source.unwrap();
+    // The DISCUS sheet cycles seven body frames; consecutive ticks differ.
+    {
+        let mut bank = app.sprites.as_ref().unwrap().borrow_mut();
+        let first = bank
+            .get_projectile_directed_at(source, None, 0)
+            .unwrap()
+            .rgba
+            .clone();
+        let mut distinct = 1;
+        for tick in 1..7u64 {
+            let frame = bank
+                .get_projectile_directed_at(source, None, tick)
+                .unwrap()
+                .rgba
+                .clone();
+            distinct += usize::from(frame != first);
+        }
+        assert!(distinct > 1, "animated frames cycle over ticks");
+        assert_eq!(
+            bank.get_projectile_directed_at(source, None, 7)
+                .unwrap()
+                .rgba,
+            first,
+            "frame wraps after the body count"
+        );
+    }
+    let grid = app.session.as_ref().unwrap().sim.terrain().unwrap().clone();
+    app.session.as_mut().unwrap().sim = yr_sim::Sim::new(42);
+    app.session.as_mut().unwrap().sim.set_terrain(grid);
+    app.session.as_mut().unwrap().outcome = Outcome::Ongoing;
+    app.effects = Default::default();
+    app.animations = Default::default();
+    let spawn = |x, y, weapon| Command::Spawn {
+        kind,
+        x: Fix::from_int(x),
+        y: Fix::from_int(y),
+        loco: yr_sim::terrain::Loco::Track,
+        speed: Fix::from_raw(32),
+        hp: 2000,
+        armor: 0,
+        weapon,
+    };
+    app.pending.extend([
+        spawn(i32::from(cx) - 2, i32::from(cy), Some(weapon)),
+        Command::AssignOwner {
+            id: 1,
+            owner: yr_sim::OWNER_PLAYER,
+        },
+        spawn(i32::from(cx) + 1, i32::from(cy), None),
+        Command::AssignOwner {
+            id: 2,
+            owner: yr_sim::OWNER_ENEMY,
+        },
+        Command::Attack { id: 1, target: 2 },
+    ]);
+    app.tick_session();
+    assert_eq!(app.session.as_ref().unwrap().sim.projectiles().len(), 1);
+    app.pending.push(Command::Destroy { id: 1 });
+    let mut frames = Vec::new();
+    for step in 0..12 {
+        app.tick_session();
+        let session = app.session.as_ref().unwrap();
+        if session.sim.projectiles().is_empty() {
+            break;
+        }
+        let tick = session.sim.tick();
+        let hash = session.sim.state_hash();
+        let save = yr_app::snapshot::encode(session).unwrap();
+        let visible = compose(&app);
+        assert_eq!(compose(&app), visible, "redraws do not advance the cycle");
+        let original = app.session.as_ref().unwrap().sim.clone();
+        let mut hidden = serde_json::to_value(&original).unwrap();
+        for p in hidden["projectiles"].as_array_mut().unwrap() {
+            p["origin"] = serde_json::Value::Null;
+        }
+        app.session.as_mut().unwrap().sim = serde_json::from_value(hidden).unwrap();
+        let baseline = compose(&app);
+        app.session.as_mut().unwrap().sim = original;
+        let changed = visible
+            .as_chunks::<4>()
+            .0
+            .iter()
+            .zip(baseline.as_chunks::<4>().0)
+            .filter(|(a, b)| a != b)
+            .count();
+        assert!(changed > 0, "animated body is visible at tick {tick}");
+        assert_eq!(app.session.as_ref().unwrap().sim.state_hash(), hash);
+        assert_eq!(
+            yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap(),
+            save
+        );
+        yr_app::snapshot::restore(app.session.as_mut().unwrap(), &save).unwrap();
+        app.sprites = load_sprites(&app.gamedir, &app.map_name);
+        assert_eq!(
+            compose(&app),
+            visible,
+            "saved flight reconstructs the frame at tick {tick}"
+        );
+        if let Some(out) = &output {
+            for (label, pixels) in [("visible", &visible), ("hidden", &baseline)] {
+                std::fs::write(
+                    out.join(format!("discus-{label}-t{tick:03}.png")),
+                    yr_render::png::encode_rgba(WIN_W, WIN_H, pixels),
+                )
+                .unwrap();
+            }
+            std::fs::write(out.join(format!("state-t{tick:03}.json")), serde_json::to_vec_pretty(&serde_json::json!({"tick":tick,"hash":format!("{hash:016x}"),"changed_pixels":changed,"step":step})).unwrap()).unwrap();
+        }
+        frames.push(visible);
+        println!("step {step}: tick {tick}, {changed} animated body pixels, hash {hash:016x}");
+    }
+    assert!(frames.len() >= 7, "flight spans a full DISCUS cycle");
+}

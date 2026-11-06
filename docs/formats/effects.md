@@ -731,3 +731,47 @@ OPENYR_PARTICLE_PROOF=/tmp/openyr-particle-trailers cargo test -p yr-app project
 The proof directory contains the temporary retail map, in-flight snapshots,
 visible/hidden shared-compositor frames and tick/hash/particle receipts.
 It contains EA artwork and stays outside git.
+
+## Animated projectile bodies
+
+Retail rules resolve four weapons to non-rotating projectile sheets with
+more than one body frame. Each sheet carries its body frames in the first
+half and an entirely empty second half, the same shadow-slot layout used
+by infantry sheets. These are observations from the installed archives,
+without original engine source inspection.
+
+| Weapon | Projectile | Image | Canvas | Body frames | AnimPalette |
+| --- | --- | --- | --- | --- | --- |
+| CyCannon | ProtonBlast | TORPEDO | 9x9 | 3 | yes |
+| Grenade | Lobbed | DISCUS | 8x5 | 7 | no |
+| RPGTower | Lobbed2 | CANISTER | 9x8 | 15 | no |
+| EMPulseWeapon | PulsPr | PULSBALL | 16x18 | 23 | yes |
+
+The native renderer now accepts this layout for non-rotating bodies.
+Odd counts, a body frame missing from the first half, any nonempty frame
+in the second half, oversized canvases and voxel or animated-flagged art
+remain unsupported and draw no guessed body. Sheets declaring
+`AnimPalette=yes` decode with `ANIM.PAL`; the rest keep the theater unit
+palette. Canvas-center anchors, cache bounds and world painter order are
+unchanged from static bodies.
+
+The frame cycles from the absolute simulation tick, one body frame per
+tick, wrapping after the first-half count. This phase is reconstructible
+after a load with no saved presentation state, no simulation change and
+no RNG use, following the same policy as trailer emission. One frame per
+tick is a provisional cadence. Original playback rate, launch-relative
+phase, rotation, height and lighting remain unverified in #102.
+Source-pixel agreement does not establish original playback parity.
+
+CyCannon, RPGTower and EMPulseWeapon are not referenced by installed
+technos, so the retail source test registers their unchanged chains on
+existing technos. The controlled EB1 compositor fixture registers the
+retail Grenade chain on an IFV through a temporary map override, destroys
+the shooter in flight and compares visible and provenance-hidden frames
+at identical hashes. Fresh-cache restores reproduce the frame at each
+tick. Voxel projectile bodies remain unimplemented.
+
+```sh
+cargo test -p yr-render animated -- --nocapture
+OPENYR_ANIMATED_PROJECTILE_PROOF=/tmp/openyr-animated-projectiles cargo test -p yr-app --bin openyr retail_animated_projectile -- --nocapture
+```
