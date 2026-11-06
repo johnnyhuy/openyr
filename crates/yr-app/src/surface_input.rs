@@ -94,7 +94,9 @@ impl App {
             (MouseButton::Right, ElementState::Pressed)
                 if self.service_mode != ServiceMode::None =>
             {
+                self.order_feedback.clear();
                 self.service_mode = ServiceMode::None;
+                self.view.dirty = true;
             }
             (MouseButton::Right, ElementState::Pressed) if self.placing.is_some() => {
                 self.placing = None;

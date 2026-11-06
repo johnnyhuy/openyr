@@ -79,3 +79,16 @@ launcher started `RA2MD.exe` and `gamemd.exe` during this run, but native app
 inspection timed out with `timeoutReached`; no original-game capture or
 interaction was obtained. This slice proves decoded assets and native
 behavior, not full UI or animation parity.
+
+
+## Native input acknowledgements
+
+The native UI now reports queued repair, repair-cancellation and sale requests
+using the same two-second feedback strip/marker as tactical orders. Unavailable
+targets display a short explanation. The text follows the actual service
+command, including active-job cancellation, rather than inferring success from
+the cursor alone. The service mode and already queued commands keep their
+existing behavior. Right-click mode cancellation on world/sidebar clears the
+notice and requests a redraw. See `docs/order-feedback.md` for guards and proof.
+No recipe, pricing, cadence, save schema, cursor asset or format changed; the
+notice appearance is native policy pending original-game calibration.

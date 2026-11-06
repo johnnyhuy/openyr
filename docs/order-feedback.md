@@ -32,8 +32,7 @@ boundary independently of world zoom. Green means move, gold attack-move and
 red attack or unavailable, with text distinguishing those last two cases.
 
 These colors, shapes, text and duration are native policies. They have not
-been calibrated against original-game acknowledgements. Structure services,
-placement feedback, persistent ordered-target highlighting
+been calibrated against original-game acknowledgements. Placement feedback, persistent ordered-target highlighting
 and physical macOS/Retina input remain under #97/#98 and related UI issues.
 No original code or additional artwork is used by this slice.
 
@@ -94,3 +93,32 @@ produces identical complete snapshots. Optional
 input geometry and a controlled powered-radar save for live checks; these stay
 outside git. The fixture disables AI only for observation. Radar acknowledgement
 appearance and timing remain native policy pending original-game calibration.
+
+
+Repair/sell clicks use the command resolved by the existing service policy.
+A repair start, repair cancellation or sale request displays its corresponding
+order-sent text and a green target marker. An unavailable target displays
+"Cannot repair here" or "Cannot sell here" with a red ground marker. These are
+acknowledgements of queued requests, not promises of completed repairs, refunds
+or command acceptance on a later tick. A sold/removed building loses its entity
+marker while the short message can remain until expiry. The service mode stays
+active as before; right-click cancellation on the world or sidebar clears the
+mode and notice without discarding already queued commands or selection.
+
+The existing two-second notice lifecycle, fixed UI-pixel marker and measured
+font rendering apply. Focus loss and menu entry clear the notice. Inactive,
+modal or stale post-resize clicks cannot create a service notice or command.
+No repair recipe, price, cadence, ownership/eligibility rule, command ordering
+or save field changes. Original wrench/sale animation, sound loops and
+acknowledgement styling remain uncalibrated under #86/#97/#98.
+
+Retail tests use a controlled half-health GAPOWR snapshot with AI disabled for
+observation. At three layouts and three zooms, guarded repair/sell input
+matches the existing cursor resolver and command sequence, preserves selection,
+zoom and complete save bytes, and retains queued commands through cancellation.
+Equivalent live/reference command steps yield identical complete snapshots
+after presentation events are consumed. Full-health/enemy targets, active-job
+cancellation, expiry, focus/menu/resize guards and sidebar cancellation are
+checked. `OPENYR_SERVICE_ORDER_PROOF=<external-dir>` exports shared compositions
+and the controlled native save for live checks; the save stays outside proof
+uploads and all derived images stay off main.

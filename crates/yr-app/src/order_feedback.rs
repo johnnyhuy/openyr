@@ -88,6 +88,48 @@ fn order_text(name: &str, count: usize) -> String {
 }
 
 impl App {
+    pub(super) fn acknowledge_service_order(
+        &mut self,
+        command: Option<&Command>,
+        cell: (f32, f32),
+        now: Instant,
+    ) {
+        let (text, marker) = match command {
+            Some(Command::Repair { id, spec }) => (
+                if spec.is_some() {
+                    "Repair order sent"
+                } else {
+                    "Cancel repair order sent"
+                },
+                (Target::Entity(*id), PLAYER_COL),
+            ),
+            Some(Command::Sell { id, .. }) => {
+                ("Sell order sent", (Target::Entity(*id), PLAYER_COL))
+            }
+            None => {
+                let text = match self.service_mode {
+                    ServiceMode::Repair => "Cannot repair here",
+                    ServiceMode::Sell => "Cannot sell here",
+                    ServiceMode::None => return,
+                };
+                (
+                    text,
+                    (
+                        Target::Ground(cell.0.floor() + 0.5, cell.1.floor() + 0.5),
+                        ENEMY_COL,
+                    ),
+                )
+            }
+            _ => return,
+        };
+        self.groups.interrupt();
+        self.order_feedback.0 = Some(Notice {
+            text: text.into(),
+            marker: Some(marker),
+            at: now,
+        });
+    }
+
     pub(super) fn acknowledge_radar_order(
         &mut self,
         commands: &[Command],
@@ -237,3 +279,6 @@ mod tests;
 
 #[cfg(test)]
 mod radar_tests;
+
+#[cfg(test)]
+mod service_tests;
