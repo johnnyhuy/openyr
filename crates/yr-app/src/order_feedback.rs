@@ -88,6 +88,26 @@ fn order_text(name: &str, count: usize) -> String {
 }
 
 impl App {
+    pub(super) fn acknowledge_radar_order(
+        &mut self,
+        commands: &[Command],
+        cell: (f32, f32),
+        attack_move: bool,
+        now: Instant,
+    ) {
+        self.groups.interrupt();
+        self.order_feedback.record(
+            if attack_move {
+                Kind::AttackMove
+            } else {
+                Kind::Move
+            },
+            commands,
+            cell,
+            now,
+        );
+    }
+
     pub(super) fn acknowledge_order(
         &mut self,
         action: &yr_app::interaction::Action,
@@ -214,3 +234,6 @@ impl App {
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod radar_tests;

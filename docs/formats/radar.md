@@ -117,3 +117,16 @@ artifacts and must never enter git. Source assets remain on the user's
 retail install. No original engine source or original binary instructions
 were used. Original transition cadence, exact minimap colors/scale,
 visibility and input behavior still require oracle observations under #86.
+
+
+## Native order acknowledgements
+
+Powered radar orders now reuse the world-order feedback text and destination
+marker (`docs/order-feedback.md`). This presentation-only addition preserves the
+existing move/attack-move command sequence, selection, zoom and camera position.
+Camera-only radar navigation and right-click cancellation clear the notice.
+The text counts submitted command requests, not confirmed arrival. Destinations
+outside the world viewport do not pan the camera. The two-second notice and its
+colors/shape are native policies; original radar acknowledgement timing and
+appearance have not been measured. Headless input now uses the cached actual
+framebuffer size through the same target/navigation helpers as the live window.

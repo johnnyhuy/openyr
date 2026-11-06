@@ -32,8 +32,8 @@ boundary independently of world zoom. Green means move, gold attack-move and
 red attack or unavailable, with text distinguishing those last two cases.
 
 These colors, shapes, text and duration are native policies. They have not
-been calibrated against original-game acknowledgements. Radar orders,
-structure services, placement feedback, persistent ordered-target highlighting
+been calibrated against original-game acknowledgements. Structure services,
+placement feedback, persistent ordered-target highlighting
 and physical macOS/Retina input remain under #97/#98 and related UI issues.
 No original code or additional artwork is used by this slice.
 
@@ -73,3 +73,24 @@ click results at three window sizes and three zooms, cover inactive/modal/drag
 and unavailable-selection guards, and compare complete match save bytes before
 and after pointer-only interaction. Optional `OPENYR_HOVER_PROOF=<external-dir>`
 exports isolated before/after overlays and integrated compositor images.
+
+
+Powered-radar move and attack-move orders reuse the same message, destination
+marker and two-second expiry as world orders. The notice counts the command
+requests submitted by the existing radar path; it does not promise pathfinding
+success or change its selected-id command sequence. The marker uses the snapped
+command destination and terrain-height projection. Offscreen destinations leave
+the acknowledgement text visible without moving the camera. Radar orders keep
+selection and map zoom. Empty-selection radar navigation and right-click radar
+cancellation clear the notice; inactive, opening/unpowered and modal radar
+input produces no new order notice. Other existing notice cleanup still applies.
+
+Radar tests use normal retail production/placement to enable AMRADR, then drive
+the shared guarded pointer route at 640x480, 1000x700 and 1280x800, with three
+map zooms. Commands, selection, order-time camera position and complete match
+save bytes are compared. Stepping the same command with and without feedback
+produces identical complete snapshots. Optional
+`OPENYR_RADAR_ORDER_PROOF=<external-dir>` exports visible/expired compositions,
+input geometry and a controlled powered-radar save for live checks; these stay
+outside git. The fixture disables AI only for observation. Radar acknowledgement
+appearance and timing remain native policy pending original-game calibration.
