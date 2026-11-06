@@ -41,7 +41,8 @@ impl App {
         self.camera.edge_armed = !self.menu.visible();
         self.view.dirty = true;
         if self.menu.visible() {
-            let local = Layout::for_state(&self.menu, WIN_W, WIN_H).local(position);
+            let size = self.camera_size();
+            let local = Layout::for_state(&self.menu, size.0, size.1).local(position);
             if self.menu.front && self.menu.page == Page::Skirmish {
                 if let Some((x, _)) = local {
                     self.menu.setup.drag_to(x);

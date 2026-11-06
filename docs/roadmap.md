@@ -593,6 +593,12 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       checks at 1600x1000 and 1920x1200 verify ignored margin wheels and working
       in-frame wheels; retail selection and complete save bytes are checked.
       Physical Mac Retina/input checks remain open (`docs/window-input.md`).
+- [x] Keep compact clients usable (#224): bounded logical framebuffers shrink
+      with the window down to the requested 640x480 logical minimum. Drawing,
+      menu/slider hits, sidebar and world camera use the same dimensions.
+      Retail start/loading, selection, pause/resume, save-byte invariance and
+      Linux live before/after captures cover 640x480 and 1000x700; map zoom is
+      preserved. Physical Retina delivery remains open under #97.
 - [ ] Complete world interaction and desktop UX (#97): consistent selection,
       supported control groups/hotkeys, hover/target/order feedback, bounded
       camera movement and configurable edge scrolling. Clear held input on

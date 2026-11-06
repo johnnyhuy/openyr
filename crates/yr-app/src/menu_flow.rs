@@ -136,7 +136,8 @@ impl App {
         stepped
     }
     pub(super) fn menu_mouse(&mut self, state: ElementState, button: MouseButton) {
-        let layout = Layout::for_state(&self.menu, WIN_W, WIN_H);
+        let size = self.camera_size();
+        let layout = Layout::for_state(&self.menu, size.0, size.1);
         if self.menu.front && self.menu.page == Page::Skirmish && self.menu.setup.popup.is_some() {
             if state == ElementState::Pressed {
                 if button == MouseButton::Left {
@@ -601,8 +602,10 @@ impl App {
                         }
                     }
                 }
+                let size = self.camera_size();
                 if let Some(map) = &self.map {
-                    self.view.center_map(map, (WIN_W - SIDEBAR_W, WIN_H));
+                    self.view
+                        .center_map(map, (size.0.saturating_sub(SIDEBAR_W), size.1));
                 }
                 self.menu.set(Page::Closed);
             }
