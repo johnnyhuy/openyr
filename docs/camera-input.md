@@ -45,7 +45,8 @@ modal and gesture guards, and compares complete match save bytes before/after.
 camera::tests::retail_camera_handlers -- --nocapture` exports shared-compositor
 frames and camera/tick/hash receipts outside git. The off-raster request frame
 shows the old unrestricted camera behavior before the new redraw constraint.
-Physical macOS input, display resizing and Retina delivery remain in #97;
+Linux resized-window margin routing is checked in [window-input.md](window-input.md).
+Physical macOS input and Retina delivery remain in #97;
 original cursor calibration remains in #98. Native static green/slashed
 edge arrows now use the same guarded, bounds-aware direction as camera motion
 (`docs/formats/cursors.md`). A partially blocked corner moves along its
