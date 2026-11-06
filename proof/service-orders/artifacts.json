@@ -1,0 +1,462 @@
+[
+  {
+    "file": "live-1280x800-cancel-repair.png",
+    "size": 1454980,
+    "sha256": "cd909779a9f4077a6ee2eff53ac720604e018f68329044c386806d8ab93961b4",
+    "rgba_sha256": "1923d29fde9989367621d53f2d772eaf4c81e03c098f530302047091649999a5",
+    "dimensions": [
+      1280,
+      800
+    ]
+  },
+  {
+    "file": "live-1280x800-damaged.png",
+    "size": 1460901,
+    "sha256": "7d7211bc736002c1063751d3f98e1b423245ac41d952eb93e9c9d14daf930b5f",
+    "rgba_sha256": "66489cc22afe986c4445c33a7c991d66773a594a3b34fc44428935ac3e00588a",
+    "dimensions": [
+      1280,
+      800
+    ]
+  },
+  {
+    "file": "live-1280x800-expired.png",
+    "size": 1460596,
+    "sha256": "1920ae2707174ec219f6cd648c9d2329a4630f3aa47c873c0443c4c2c3be3356",
+    "rgba_sha256": "e6c3c225440330deba36c3c8c3236b6a8dd7b8edc2a5e6452221da1ff5f09025",
+    "dimensions": [
+      1280,
+      800
+    ]
+  },
+  {
+    "file": "live-1280x800-repair.png",
+    "size": 1456343,
+    "sha256": "65e56ed083c6dd5d73d99a2a56836ebb3baca91c296e8abb94290cf41705e895",
+    "rgba_sha256": "d0948f21339930c4a909cc4ac27faa98941e35b097668fd8503ab6e5d068d987",
+    "dimensions": [
+      1280,
+      800
+    ]
+  },
+  {
+    "file": "live-1280x800-right-cancelled.png",
+    "size": 1461077,
+    "sha256": "cdf9e5e4fce6fa91efe12e8bf19a047578e87f6e358e1c9bd4a48477e9d4a77f",
+    "rgba_sha256": "d7a633897e8f8da9dd6726f477a2c7fe77186c6a37d67ce0524d036c7b5e4e17",
+    "dimensions": [
+      1280,
+      800
+    ]
+  },
+  {
+    "file": "live-1280x800-sell.png",
+    "size": 1456866,
+    "sha256": "7d803bcae51ac0af78f9f7dee418891465afe09838bad2054e8720cb7bbefab8",
+    "rgba_sha256": "8b1280a27966901cd9e92c73e5fc13f1dbe91deab7731d68bc58af530d131a2a",
+    "dimensions": [
+      1280,
+      800
+    ]
+  },
+  {
+    "file": "live-1280x800-unavailable-repair.png",
+    "size": 1458030,
+    "sha256": "4ec7def5eea2c854797ce3a26ec2d5dfadd5ca39be5318a519cdd466e23433e2",
+    "rgba_sha256": "4f49efd5f495a12576c4e0d5888399877e8ff443e5cd16a730a11df8d87e32fa",
+    "dimensions": [
+      1280,
+      800
+    ]
+  },
+  {
+    "file": "live-1280x800-unavailable-sell.png",
+    "size": 1456078,
+    "sha256": "de42363d98c083d2ca37fd72853fab914d2457da10b274d1d134627f70f3b523",
+    "rgba_sha256": "8402c05b4926fa7694ca4eaa52e42fbcc63092a9ace0c7b653e61d305a9d8586",
+    "dimensions": [
+      1280,
+      800
+    ]
+  },
+  {
+    "file": "live-640x480-cancel-repair.png",
+    "size": 470882,
+    "sha256": "3eee0b1ffaf2c480ff1751d41e57f46770d2a1ca3c1cbb0ec113e1c54da1a66f",
+    "rgba_sha256": "cf6ea35597407c00aaf9d05c7fd311344df98d9f314154cf41d9494835ebc8f9",
+    "dimensions": [
+      640,
+      480
+    ]
+  },
+  {
+    "file": "live-640x480-damaged.png",
+    "size": 475187,
+    "sha256": "6eb2d5137d28429747dc9eb8487e7f37948bf80242972db495ecb9296af22f23",
+    "rgba_sha256": "1d3b1086f4fb9bd6fc484fa9b5e832c2f39536b0c1a762c8016fb39fc09c399d",
+    "dimensions": [
+      640,
+      480
+    ]
+  },
+  {
+    "file": "live-640x480-expired.png",
+    "size": 475250,
+    "sha256": "a3caaa2739789998e83233e615b7b312ab6b81aa690fba9d59792c6b0ee2399d",
+    "rgba_sha256": "f332ee2ed6f33195bfbcee9abb8f0c3d34d7d513ad717f1002f5b1440086c841",
+    "dimensions": [
+      640,
+      480
+    ]
+  },
+  {
+    "file": "live-640x480-repair.png",
+    "size": 471953,
+    "sha256": "ef9aaef402dd9a41b733ad790235d0b2c2ecd0e9e3539b38d6d942c3e769330e",
+    "rgba_sha256": "20a37b9986f1f5c841e07df84aef5795e58a251a8e157bc80f8d5e62da6b759b",
+    "dimensions": [
+      640,
+      480
+    ]
+  },
+  {
+    "file": "live-640x480-right-cancelled.png",
+    "size": 475162,
+    "sha256": "22a03f622f1a46e53337ff86a0c2b539c5f71367edac684e5a1124aa6533b162",
+    "rgba_sha256": "b0b991987a426a2106a95ce7643b0e8c5a139ad73544f0715eac4b8aa4ee02b3",
+    "dimensions": [
+      640,
+      480
+    ]
+  },
+  {
+    "file": "live-640x480-sell.png",
+    "size": 473648,
+    "sha256": "dc353d5a60fe69355eff79bc97b63f57e51f33d72a8c816bc2b8e678ef4294f2",
+    "rgba_sha256": "0abb38ebf07944773cf66d802708212783cbdacc4e9949b422198572ef8010da",
+    "dimensions": [
+      640,
+      480
+    ]
+  },
+  {
+    "file": "live-640x480-unavailable-repair.png",
+    "size": 472217,
+    "sha256": "91183a0040813cd903c072cd8dd298c2ec2cf6f582038de24a0bade49d3c0b37",
+    "rgba_sha256": "1595ab2a0018b03423c7599ece708427984f010ccf80d8ae27e222578fe8a8d9",
+    "dimensions": [
+      640,
+      480
+    ]
+  },
+  {
+    "file": "live-640x480-unavailable-sell.png",
+    "size": 473084,
+    "sha256": "c7471b6afcda865f82672387ec14780d80a633396e52746fc6c3bf1e4d7d0f2e",
+    "rgba_sha256": "d2dde1fe06aacbe204ac7d123a3965fa4a6cc94b960eade6d43e62a5602c0e8e",
+    "dimensions": [
+      640,
+      480
+    ]
+  },
+  {
+    "file": "compositor-1000x700-cancel-repair-expired.png",
+    "size": 1030349,
+    "sha256": "066e460a90ac9052ab4d19f7f2e86689962e69ac8b00f450a407c649dced2bc1",
+    "rgba_sha256": "a3c4135382dd4c859eebe7d9385073f54724916ec8cbe3c4f48f01726f4170a5",
+    "dimensions": [
+      1000,
+      700
+    ]
+  },
+  {
+    "file": "compositor-1000x700-cancel-repair-visible.png",
+    "size": 1025749,
+    "sha256": "e1ae5724a3595e8f56a0de13471d256205338e6349c422f5bf23899b5ffb15b9",
+    "rgba_sha256": "45a854e551db5ed34e792ae673aaced47d5e67deacec7c7f7a019f7bb466d08f",
+    "dimensions": [
+      1000,
+      700
+    ]
+  },
+  {
+    "file": "compositor-1000x700-repair-expired.png",
+    "size": 1030135,
+    "sha256": "a922af315c6f9b39ed01dfdd989b53a529e53d2578a424bb05a4bea7269f1322",
+    "rgba_sha256": "2bc0448c1c0ea418bf082f2cab6b05cc92a5113cc7d1747beed51d40027abc9b",
+    "dimensions": [
+      1000,
+      700
+    ]
+  },
+  {
+    "file": "compositor-1000x700-repair-visible.png",
+    "size": 1026770,
+    "sha256": "9ad49508f3288b90caa4d76aeca8203ea7b95b74995e39999c4d9e5fa5a4b8cc",
+    "rgba_sha256": "0b1d5495d8f018270dc2145501251d532f83c86dabbe9679b2cbaf462fdaac5f",
+    "dimensions": [
+      1000,
+      700
+    ]
+  },
+  {
+    "file": "compositor-1000x700-sell-expired.png",
+    "size": 1030674,
+    "sha256": "d2e88aa50482c77583e3fc27cfece03c8445066d99f714fc1165564a7e5562a0",
+    "rgba_sha256": "c7f9cb95caa7b941fb5bdeed3bb7e853db06f72fd0fc804f063e4e46eed140a8",
+    "dimensions": [
+      1000,
+      700
+    ]
+  },
+  {
+    "file": "compositor-1000x700-sell-visible.png",
+    "size": 1028034,
+    "sha256": "75ffe150efab09ba2b0a5f56cea213d710ca565fb762b90c26d7e56f2e76fd6c",
+    "rgba_sha256": "10e2e43eaaeb36587f1fa50852a680162388696bb20941eb3ac58784c1b2d087",
+    "dimensions": [
+      1000,
+      700
+    ]
+  },
+  {
+    "file": "compositor-1000x700-unavailable-repair-expired.png",
+    "size": 1027632,
+    "sha256": "dade155da27c5213042410704263ea1ef0438d3d9e83d0d7d1c1aa6a006113a1",
+    "rgba_sha256": "79125ee116d9827deebbb6c080f47843c4f88266acd1b726157bda9c1fb205ed",
+    "dimensions": [
+      1000,
+      700
+    ]
+  },
+  {
+    "file": "compositor-1000x700-unavailable-repair-visible.png",
+    "size": 1024475,
+    "sha256": "3cfc42172d1b532ecfe20edd8bf5afd31bc130ab66bd0374c9d300d88d5a63e2",
+    "rgba_sha256": "3e9b58230df516c97a94c6ef1b1b4ace9b5d59f4f8ee8ed24e6785b50e7d4ae3",
+    "dimensions": [
+      1000,
+      700
+    ]
+  },
+  {
+    "file": "compositor-1000x700-unavailable-sell-expired.png",
+    "size": 1027677,
+    "sha256": "f179e3566d9a7d8d3ecc249cab9d9bd7b9b36ad5f9fca1c016a1f2a1c92736e2",
+    "rgba_sha256": "4fd44b45d5a797d2d953117632784d4382e303517b4b255db91e20f3f260ede5",
+    "dimensions": [
+      1000,
+      700
+    ]
+  },
+  {
+    "file": "compositor-1000x700-unavailable-sell-visible.png",
+    "size": 1025001,
+    "sha256": "382c9d76e5076cd44641e63a2ad5a6c65fa7b7861c457c8bed7e0a1d1bae8ce5",
+    "rgba_sha256": "d45fe1022792c854ad9877087370bd9700acd548d408f0a7992769c968f61eeb",
+    "dimensions": [
+      1000,
+      700
+    ]
+  },
+  {
+    "file": "compositor-1280x800-cancel-repair-expired.png",
+    "size": 1458449,
+    "sha256": "a384fb6422b3f2a1ae73754dc89dd0f0f97e654a1afc8cd4227b98c004d69bd9",
+    "rgba_sha256": "479f8891ca99154d8dd30d176fb3b637a91e97ffa90574cc773d5744ab9299d3",
+    "dimensions": [
+      1280,
+      800
+    ]
+  },
+  {
+    "file": "compositor-1280x800-cancel-repair-visible.png",
+    "size": 1453035,
+    "sha256": "68e853ab640ce977720b02d59615a1338f5f1f5f68dcb0e0520ba61e955afa40",
+    "rgba_sha256": "b15cbba5451a898d3877b259d936f4f44a67795eb9aa39d67bd83d1a3642d9ff",
+    "dimensions": [
+      1280,
+      800
+    ]
+  },
+  {
+    "file": "compositor-1280x800-repair-expired.png",
+    "size": 1458491,
+    "sha256": "d443419e45fb6179bb62ae154a6ea92ea75668c50c588f4bb3df781ba91610dc",
+    "rgba_sha256": "125a69a6918c2a268319c5c9d8186c6300efad9b2e8da3df3436fae3e937c89c",
+    "dimensions": [
+      1280,
+      800
+    ]
+  },
+  {
+    "file": "compositor-1280x800-repair-visible.png",
+    "size": 1454547,
+    "sha256": "228dc10b500492d43b6ab46afdc2c15804df76e056a95aef4a0b39cf2396f0b4",
+    "rgba_sha256": "e704dcdbe78a30cf3130e99e41635a22d389fa78b9d19eb4b46eef89d24b3f2a",
+    "dimensions": [
+      1280,
+      800
+    ]
+  },
+  {
+    "file": "compositor-1280x800-sell-expired.png",
+    "size": 1458058,
+    "sha256": "1390f9789fb24f451ecd44b442ab783645375a93661a84918bf727c4e4475769",
+    "rgba_sha256": "633674fb9f9302e02c57250b52d30dec820bd547cf3a1cb5659cfba34835077c",
+    "dimensions": [
+      1280,
+      800
+    ]
+  },
+  {
+    "file": "compositor-1280x800-sell-visible.png",
+    "size": 1455108,
+    "sha256": "8887aef3ca04b7b4cea922a56b6777886d2d03db699d2e44fc9c4e39372d4105",
+    "rgba_sha256": "a71a3feb24543bdf6a2775cbb2b7d735bfe4c5fb13840d6a8427681f4323f18b",
+    "dimensions": [
+      1280,
+      800
+    ]
+  },
+  {
+    "file": "compositor-1280x800-unavailable-repair-expired.png",
+    "size": 1414187,
+    "sha256": "d0e3244642a45e02082f875a673b1ad7eab3d5648a55662418a0b390345ea89a",
+    "rgba_sha256": "1a3cd7c456e2eb5d8e868f4afa17fd295ad18c39d4fc48c1e52f46d1c82b76d4",
+    "dimensions": [
+      1280,
+      800
+    ]
+  },
+  {
+    "file": "compositor-1280x800-unavailable-repair-visible.png",
+    "size": 1413375,
+    "sha256": "62b6f81dd6cb9a7ad1a75c21066d0317b12ba05347ffc8a2444e6761b69b9c3d",
+    "rgba_sha256": "54054d229c550d5be9425a673eca9fcc359319d52487e7c98ab713555a1de475",
+    "dimensions": [
+      1280,
+      800
+    ]
+  },
+  {
+    "file": "compositor-1280x800-unavailable-sell-expired.png",
+    "size": 1414257,
+    "sha256": "771309a0b4192908a3f41e4acae3e25f6c8827ec1dc73e671d98aa1129c87523",
+    "rgba_sha256": "4a707ef619f1fe935df1106e8480bf0d30d9f127b0a4588f35fa09062228da14",
+    "dimensions": [
+      1280,
+      800
+    ]
+  },
+  {
+    "file": "compositor-1280x800-unavailable-sell-visible.png",
+    "size": 1414002,
+    "sha256": "1ec8d74e191dadf39cd5eff8e8fb1ffb2e6e93a72ef6efbe6cce28f11495e138",
+    "rgba_sha256": "7e96b7c894fdc0028db9c081e63dd78f96d0e52a21cab0ab39c35834f15ed02c",
+    "dimensions": [
+      1280,
+      800
+    ]
+  },
+  {
+    "file": "compositor-640x480-cancel-repair-expired.png",
+    "size": 478154,
+    "sha256": "2a6906fe011622fc19feba64730bd2f7bff7f6712b632a1ac2394e17d7b829b4",
+    "rgba_sha256": "e655adf9af2af90af286a7f91f7269be3b1672eb29dde90e6134cdccddcf6e7d",
+    "dimensions": [
+      640,
+      480
+    ]
+  },
+  {
+    "file": "compositor-640x480-cancel-repair-visible.png",
+    "size": 473414,
+    "sha256": "46b052764df1020be3f8a8255a2f8ce067b09fcf4eb86d8d9e668c3b8dd1120a",
+    "rgba_sha256": "ea89e135e62fba232d3c3455c0e76ec4b56ba456b831cd3c1865440f421b9e79",
+    "dimensions": [
+      640,
+      480
+    ]
+  },
+  {
+    "file": "compositor-640x480-repair-expired.png",
+    "size": 478091,
+    "sha256": "5c6cb895b869ea2c948ee3388371c0c20b899c11f5831a0e20ebfb6063067198",
+    "rgba_sha256": "77a3de419c9bc15921c82b2894e9cddfdb248929ebac6f3ce6779829e618e0cf",
+    "dimensions": [
+      640,
+      480
+    ]
+  },
+  {
+    "file": "compositor-640x480-repair-visible.png",
+    "size": 474922,
+    "sha256": "feab15da19b4c4862c5758648b096cc2cacbf30e84754e569efb9dcb138da0bb",
+    "rgba_sha256": "b45087d031d3364840e87223da8daa276d7fa0af5d54215e369573c44063bd5a",
+    "dimensions": [
+      640,
+      480
+    ]
+  },
+  {
+    "file": "compositor-640x480-sell-expired.png",
+    "size": 478298,
+    "sha256": "3c83c99d43acac36077716e338b2d5797841c89568d9ee633e2b383890155097",
+    "rgba_sha256": "43be57beacef40aa067e254e0b56299d02b25fe08cb220bb92e3a2dd512c0af6",
+    "dimensions": [
+      640,
+      480
+    ]
+  },
+  {
+    "file": "compositor-640x480-sell-visible.png",
+    "size": 475702,
+    "sha256": "943cb49e2aef4cb1d54b13bc4c6ce3ba3dd05a81e58b18a740666ffa05d83e1c",
+    "rgba_sha256": "83a68e07f4667843d38a44a9b6b183082e49d1fd68f902b4f581fbdcf2b3690a",
+    "dimensions": [
+      640,
+      480
+    ]
+  },
+  {
+    "file": "compositor-640x480-unavailable-repair-expired.png",
+    "size": 465558,
+    "sha256": "19466ebb91f8e3f5d9f735eba2b83de6e69701ccc223027b6874627d15d86b29",
+    "rgba_sha256": "285c144a36afe7c0ac8e9b135f098e055a0dec1f4549a7b6bba13832700c9a1a",
+    "dimensions": [
+      640,
+      480
+    ]
+  },
+  {
+    "file": "compositor-640x480-unavailable-repair-visible.png",
+    "size": 461108,
+    "sha256": "3c5208ea65030df36f84d4e8cb327326c7c24de5354780dd7ee48c5f811cc277",
+    "rgba_sha256": "d789d40bcced287f5d1cc9a212c323447948e92d1a3650fb49f5d3477c9f7dec",
+    "dimensions": [
+      640,
+      480
+    ]
+  },
+  {
+    "file": "compositor-640x480-unavailable-sell-expired.png",
+    "size": 465417,
+    "sha256": "2c1d3b498303867426eaa888f51ae553fd3744a22fcd69dcbc7f954960f256c4",
+    "rgba_sha256": "8875720ba126cc74c7ec94400f884404ea711faeb7174778a24f078361aa726e",
+    "dimensions": [
+      640,
+      480
+    ]
+  },
+  {
+    "file": "compositor-640x480-unavailable-sell-visible.png",
+    "size": 461790,
+    "sha256": "7919286e3c183702b4f8c15283789289183213b5f5dc25c59c2e1d6790dcd043",
+    "rgba_sha256": "2b3ed14789de27a91697e3c58284c8d59220672c0785f1d72f793576f60a26eb",
+    "dimensions": [
+      640,
+      480
+    ]
+  }
+]
