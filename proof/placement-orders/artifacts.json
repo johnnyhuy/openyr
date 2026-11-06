@@ -1,0 +1,262 @@
+[
+  {
+    "file": "live-1280x800-invalid-expired.png",
+    "size": 1485360,
+    "sha256": "18f73da6b7e12ec9490106d827260c6ac590cc9db85c2acd1946c2d0278281a8",
+    "rgba_sha256": "de16e112e697d49173fe3282cb545dcf3eefeb38f1edb042c0f3597e7b57cc97",
+    "dimensions": [
+      1280,
+      800
+    ]
+  },
+  {
+    "file": "live-1280x800-invalid-visible.png",
+    "size": 1482414,
+    "sha256": "8f10b3444785f1a8f49e59f02651f72979b509c1eaa6b1b669dae6639e4a64c3",
+    "rgba_sha256": "e589a1a9f37bbaf25e867c59d88ff9c05a3530e2dd36e75a155774c8907aa3d8",
+    "dimensions": [
+      1280,
+      800
+    ]
+  },
+  {
+    "file": "live-1280x800-ready.png",
+    "size": 1486255,
+    "sha256": "c6f8795998d1f995a72541713e1699317c341d2b3d9010adc6e96b5dcc80b7b6",
+    "rgba_sha256": "2d16bfd4a76a25beb632e58270bc27d80dd455175c58070df53d621a375c0fc0",
+    "dimensions": [
+      1280,
+      800
+    ]
+  },
+  {
+    "file": "live-1280x800-right-cancelled.png",
+    "size": 1485132,
+    "sha256": "52b06722f40d0d66639aeeb21c93f1521c3524b8ef5027b50780f209506fd96c",
+    "rgba_sha256": "70b754cab0182ffa200122c549450373d7b98c7791c23b844412d558d6f09596",
+    "dimensions": [
+      1280,
+      800
+    ]
+  },
+  {
+    "file": "live-1280x800-valid-expired.png",
+    "size": 1516267,
+    "sha256": "5813a339cbcac53809ec967acda0771543e326085eaeacf03d6faa771511df96",
+    "rgba_sha256": "2054df54b2a6988e9fa9ec2ef20f6d5c931b10cf3a038878a78df205ed1fdf6d",
+    "dimensions": [
+      1280,
+      800
+    ]
+  },
+  {
+    "file": "live-1280x800-valid-ghost.png",
+    "size": 1513581,
+    "sha256": "a680476d10b12f904184fab62d03bd1849613d338a0e6b593510675ce6b1ab77",
+    "rgba_sha256": "2d00f1f99f12a1f63a5840a0d5199fc8f9f1fbb822a161429c6727ddad26dc66",
+    "dimensions": [
+      1280,
+      800
+    ]
+  },
+  {
+    "file": "live-1280x800-valid-visible.png",
+    "size": 1511146,
+    "sha256": "bf7487c858f6e641ed3b03eb9a8977034cf3d7af3cea41fe65d07140e59448b7",
+    "rgba_sha256": "75e00f2006e3b5b691a1747bdffbf4a4028f04b5e02504318265421d7b56f96b",
+    "dimensions": [
+      1280,
+      800
+    ]
+  },
+  {
+    "file": "live-640x480-invalid-expired.png",
+    "size": 487190,
+    "sha256": "4c80a421efbda595f06f0fe9059d1c36b69ced9dfe7c8a6fe47327681254234a",
+    "rgba_sha256": "75a45e9a9e962e33c7fc9ba0f4c01511a7cc7b2a0e84cfd233e2b87aea3cca57",
+    "dimensions": [
+      640,
+      480
+    ]
+  },
+  {
+    "file": "live-640x480-invalid-visible.png",
+    "size": 483388,
+    "sha256": "039def3230ed245452d4d1fa248f990c71352d150dbd2987fa6ecdf52aef0f96",
+    "rgba_sha256": "40a16ae5d35511925e8b48e02b8c4ef0d1b9bdfccaae829ea20539ca1d1f4db9",
+    "dimensions": [
+      640,
+      480
+    ]
+  },
+  {
+    "file": "live-640x480-ready.png",
+    "size": 485784,
+    "sha256": "8a7162022d76c1050c2f5e604a8550774616c60a87217c6c6470560e2109dd1d",
+    "rgba_sha256": "06a62f121c80d61fda1260db879bb68f99d867371188f46f40779fc2763ae840",
+    "dimensions": [
+      640,
+      480
+    ]
+  },
+  {
+    "file": "live-640x480-right-cancelled.png",
+    "size": 485615,
+    "sha256": "8539dce3a846f3f40a884872a6438ea996b18dd229bd33f61e1080e406a3280b",
+    "rgba_sha256": "4822e92ad521d7167ef72aa396a2a8e1069a065d3f72c579cb66085ca801b899",
+    "dimensions": [
+      640,
+      480
+    ]
+  },
+  {
+    "file": "live-640x480-valid-expired.png",
+    "size": 514900,
+    "sha256": "bb40d4d8ac4bc2d812cdfc87dc0ef7751668cb1a95cd1e8726ebafaa3ff6c46d",
+    "rgba_sha256": "1ac3546ec975d3a717e9bd002cffcac9178c7f562549942ac5a2a06a8672cb47",
+    "dimensions": [
+      640,
+      480
+    ]
+  },
+  {
+    "file": "live-640x480-valid-ghost.png",
+    "size": 513735,
+    "sha256": "7644cc6a7a567bc08643167c8a6ddef33f277c8cad31a6652b6d2b037aca2e68",
+    "rgba_sha256": "d17f586dfd3fd03dd5961bdf68d799b154c7e7cf3318fc250860e5512804464c",
+    "dimensions": [
+      640,
+      480
+    ]
+  },
+  {
+    "file": "live-640x480-valid-visible.png",
+    "size": 509142,
+    "sha256": "f4dfeb414fcda39cc6e45556517482910c6463d76779ccea3e312cb01137d4b4",
+    "rgba_sha256": "f0bdcfc6a9b974272f32ec188f952868b04b113e92e9c3a0adf6aee02b3d5dc2",
+    "dimensions": [
+      640,
+      480
+    ]
+  },
+  {
+    "file": "compositor-1000x700-invalid-expired.png",
+    "size": 1034168,
+    "sha256": "7685d191f33d5d01d5ec616adf26ad29cd846f61c6e3f9007caf35058a0da7e3",
+    "rgba_sha256": "e9654065a3f0b963ee4ef808d2f1041dfe88a2a587182f646063ccae744f3fa5",
+    "dimensions": [
+      1000,
+      700
+    ]
+  },
+  {
+    "file": "compositor-1000x700-invalid-visible.png",
+    "size": 1030379,
+    "sha256": "cdf050c99573dc8d6300eb3ffc15abaaa9c6184e7f8b0337975b22802be1576c",
+    "rgba_sha256": "02410caa185bce7a3c69b6ff6032340c3740df3454d6f81270db7dceddc7dd16",
+    "dimensions": [
+      1000,
+      700
+    ]
+  },
+  {
+    "file": "compositor-1000x700-valid-expired.png",
+    "size": 1090186,
+    "sha256": "a27adaaa97a7e05683f9b42ebb8c07c32ed3ae69669d4d70101bbda1ca264461",
+    "rgba_sha256": "af43cbbe35fe67a61e289af3394e7df3a21207ee722db9dbc7384b792d6d652d",
+    "dimensions": [
+      1000,
+      700
+    ]
+  },
+  {
+    "file": "compositor-1000x700-valid-visible.png",
+    "size": 1085871,
+    "sha256": "aa4f4979273383f50aacf69a10c63a145221ff19df7badcf24a3ec0e477752e7",
+    "rgba_sha256": "f223b9a2e5a4867d814aac1149197648cbc2fa3c85bf905214c3f149d9088005",
+    "dimensions": [
+      1000,
+      700
+    ]
+  },
+  {
+    "file": "compositor-1280x800-invalid-expired.png",
+    "size": 1481718,
+    "sha256": "9eb3fb7fdc95fed091ae373418aa9bcbaf9213a67e094f5bf2df67101d113762",
+    "rgba_sha256": "22d4429dbc5a5d6df0754768701594821a910e412e675fdbe79953e9d9da0ada",
+    "dimensions": [
+      1280,
+      800
+    ]
+  },
+  {
+    "file": "compositor-1280x800-invalid-visible.png",
+    "size": 1478373,
+    "sha256": "0cd2d70686ac2f977665b9919fe47bc2d40635009d211278e3c6a1d63fa2e3d2",
+    "rgba_sha256": "755eb2bc568a21b1ed747b50cc38a1a5374d02084f665c59f23679dd05f2d216",
+    "dimensions": [
+      1280,
+      800
+    ]
+  },
+  {
+    "file": "compositor-1280x800-valid-expired.png",
+    "size": 1511369,
+    "sha256": "b48d59148c742f1580974361f6f8fc191e747482526dba9b3fecfc7065413e6f",
+    "rgba_sha256": "3c05c35541aabc5724d6405db2ae81d9a895071fe7a10c091bf425358ba1926a",
+    "dimensions": [
+      1280,
+      800
+    ]
+  },
+  {
+    "file": "compositor-1280x800-valid-visible.png",
+    "size": 1506167,
+    "sha256": "9dad0e066323177cd57f711de575f6ff93645f16bd326f15e2f70a5ebca8a5ab",
+    "rgba_sha256": "769492de4e9c7b765c813feff16f2030b262e4e7a5d03535dad5f2a6adf5eb71",
+    "dimensions": [
+      1280,
+      800
+    ]
+  },
+  {
+    "file": "compositor-640x480-invalid-expired.png",
+    "size": 487870,
+    "sha256": "a4638bbbedabee969efbfd585082ac024a2d3b49b11beefb35213b8a0998fba8",
+    "rgba_sha256": "506a1cd7a3d36c074b173a8495bee3b1e95c8c9726d6373aa3fddaf52274a670",
+    "dimensions": [
+      640,
+      480
+    ]
+  },
+  {
+    "file": "compositor-640x480-invalid-visible.png",
+    "size": 484614,
+    "sha256": "e18fe5f4b87dae40f5beac5ed40d50b510639e1c78a49ea308444ee0a9121dce",
+    "rgba_sha256": "2e396479fc54cdc9401bfad4a29d81210265a8c625d884e8e297812914b260ee",
+    "dimensions": [
+      640,
+      480
+    ]
+  },
+  {
+    "file": "compositor-640x480-valid-expired.png",
+    "size": 509587,
+    "sha256": "b2f69afa00de9d6d58b4b8506c4c8638059d8d7a3bf218d85fd6686ef11f9fd1",
+    "rgba_sha256": "1ce7aca06e600a25abaa5fc0f8b9132947eb397bee664ef4ba88411889d5421f",
+    "dimensions": [
+      640,
+      480
+    ]
+  },
+  {
+    "file": "compositor-640x480-valid-visible.png",
+    "size": 504201,
+    "sha256": "a3774e48fe6101fdc99c0d922cb5c550a0a0e822b417d74c2714e27f9346f47f",
+    "rgba_sha256": "79f3b7c0eee13b03e8063016bccca15fd0be07b57df6022352f29cf3d9625c0b",
+    "dimensions": [
+      640,
+      480
+    ]
+  }
+]

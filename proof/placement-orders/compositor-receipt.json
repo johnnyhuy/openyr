@@ -1,0 +1,25 @@
+{
+  "hash": "222605513369c98a",
+  "invalid_ground": [
+    2100.0,
+    1685.0
+  ],
+  "invalid_origin": [
+    83,
+    76
+  ],
+  "map_size": [
+    3780,
+    2115
+  ],
+  "slot": 6,
+  "tick": 505,
+  "valid_ground": [
+    2340.0,
+    1625.0
+  ],
+  "valid_origin": [
+    85,
+    70
+  ]
+}
