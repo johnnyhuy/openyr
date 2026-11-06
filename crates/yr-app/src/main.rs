@@ -419,19 +419,15 @@ impl App {
     }
 
     fn radar_target(&self, pos: (f64, f64)) -> Option<(f32, f32)> {
-        let width = self.pixels.as_ref()?.texture().width();
-        self.session.as_ref()?.radar.target(width, pos)
+        self.session
+            .as_ref()?
+            .radar
+            .target(self.camera_size().0, pos)
     }
 
     fn radar_pan(&mut self, cell: (f32, f32)) {
-        let Some(pixels) = &self.pixels else {
-            return;
-        };
-        let viewport = (
-            pixels.texture().width().saturating_sub(SIDEBAR_W),
-            pixels.texture().height(),
-        );
-        self.center_world_at(cell, viewport);
+        let size = self.camera_size();
+        self.center_world_at(cell, (size.0.saturating_sub(SIDEBAR_W), size.1));
     }
 
     fn center_world_at(&mut self, cell: (f32, f32), viewport: (u32, u32)) {
@@ -455,15 +451,22 @@ impl App {
             self.radar_pan(cell);
         } else {
             let (x, y) = Self::cell_leptons(cell);
-            for &id in &self.selected {
-                self.pending.push(if self.attack_move {
-                    Command::AttackMove { id, x, y }
-                } else {
-                    Command::Move { id, x, y }
-                });
-            }
+            let commands: Vec<_> = self
+                .selected
+                .iter()
+                .map(|&id| {
+                    if self.attack_move {
+                        Command::AttackMove { id, x, y }
+                    } else {
+                        Command::Move { id, x, y }
+                    }
+                })
+                .collect();
+            self.acknowledge_radar_order(&commands, cell, self.attack_move, Instant::now());
+            self.pending.extend(commands);
             self.attack_move = false;
         }
+        self.view.dirty = true;
     }
 
     fn toggle_service(&mut self, mode: ServiceMode) {
@@ -590,6 +593,7 @@ impl App {
     fn sidebar_right_press(&mut self, size: (u32, u32)) {
         self.service_mode = ServiceMode::None;
         if self.radar_target(self.cursor).is_some() {
+            self.order_feedback.clear();
             self.selected.clear();
             self.attack_move = false;
             self.placing = None;

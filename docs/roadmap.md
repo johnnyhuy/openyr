@@ -584,7 +584,7 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       with eligible unit counts, unavailable-action messages, fixed UI-pixel
       geometry, target tracking and two-second expiry. Focus/modal/selection
       cleanup and complete save-byte/sim-hash invariance are checked in
-      `docs/order-feedback.md`. Original appearance/timing, radar/service
+      `docs/order-feedback.md`. Original appearance/timing, service
       acknowledgements and physical desktop input remain open.
 - [x] Reject pointer input in physical window margins (#223, #97): failed
       framebuffer mappings, focus loss, resize/DPI changes and enter/leave
@@ -605,6 +605,13 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       compact layouts, unavailable attackers and complete save-byte invariance
       are checked. Original appearance, persistent ordered-target highlights
       and physical Retina input remain open (`docs/order-feedback.md`).
+- [x] Acknowledge powered-radar orders (#97): move/attack-move requests reuse
+      native world-order text and snapped destination markers without changing
+      commands, selection, zoom or order-time camera position. Navigation and
+      cancellation clear the notice. Retail pointer routes, three compact/default
+      layouts, three zooms, disabled/modal/focus guards and complete snapshot
+      equivalence are checked (`docs/order-feedback.md`). Original calibration
+      and physical Mac/Retina input remain open.
 - [ ] Complete world interaction and desktop UX (#97): consistent selection,
       supported control groups/hotkeys, hover/target/order feedback, bounded
       camera movement and configurable edge scrolling. Clear held input on
