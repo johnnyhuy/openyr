@@ -99,7 +99,9 @@ impl App {
                 self.view.dirty = true;
             }
             (MouseButton::Right, ElementState::Pressed) if self.placing.is_some() => {
+                self.order_feedback.clear();
                 self.placing = None;
+                self.view.dirty = true;
             }
             (MouseButton::Left, ElementState::Pressed) => self.left_press(),
             (MouseButton::Left, ElementState::Released) => self.left_release(),

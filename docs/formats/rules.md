@@ -105,6 +105,14 @@ Audio: `EVA_ConstructionComplete` when it finishes, and the sound named by
 `[AudioVisual] BuildingSlam=` (`PlaceBuilding`, sample `uplace`) when it goes
 down.
 
+The native UI now acknowledges queued placement requests with text and a
+footprint-center marker. Invalid locations show an unavailable message while
+retaining the READY item and placement mode. These are presentation-only
+policies (`docs/order-feedback.md`); footprint, adjacency, payment, command
+ordering and save rules above are unchanged. A notice does not promise that a
+later simulation tick can still accept the requested location. Original
+acknowledgement appearance/timing remains uncalibrated under #97.
+
 ## Harvester docking
 
 The retail `GAREFN` art foundation is 4x3. Testing adjacency to the

@@ -619,6 +619,13 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       and zooms preserve command/save behavior; equivalent stepped snapshots
       match. Appearance/timing and physical Mac/Retina input remain unverified
       (`docs/order-feedback.md`, `docs/formats/structure-services.md`).
+- [x] Acknowledge structure-placement requests (#97): queued requests show
+      native text and footprint-center markers; invalid clicks retain READY
+      state and placement mode. Cancellation, stale modes and pointer guards
+      preserve queued work. Retail cameo/world routes at three layouts and
+      zooms retain command/save behavior and equivalent stepped snapshots.
+      Original appearance/timing and physical Mac/Retina input remain open
+      (`docs/order-feedback.md`, `docs/formats/rules.md`).
 - [ ] Complete world interaction and desktop UX (#97): consistent selection,
       supported control groups/hotkeys, hover/target/order feedback, bounded
       camera movement and configurable edge scrolling. Clear held input on

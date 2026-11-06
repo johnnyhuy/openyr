@@ -510,13 +510,23 @@ impl App {
     /// Left-click on the map while placing: put the structure down when
     /// the ghost is green, otherwise keep placing.
     fn try_place(&mut self) {
-        let Some((slot, origin, true)) = self.placement_target() else {
+        if self.placing.is_none() {
+            return;
+        }
+        let Some(cell) = self.window_to_cell(self.cursor) else {
             return;
         };
-        if let Some(cmd) = self.session.as_ref().and_then(|s| s.place(slot, origin)) {
-            self.pending.push(cmd);
+        let command = self.placement_target().and_then(|(slot, origin, valid)| {
+            valid
+                .then(|| self.session.as_ref()?.place(slot, origin))
+                .flatten()
+        });
+        self.acknowledge_placement_order(command.as_ref(), cell, Instant::now());
+        if command.is_some() {
             self.placing = None;
         }
+        self.pending.extend(command);
+        self.view.dirty = true;
     }
 
     /// Left-click on a cameo: start placing a finished structure, else

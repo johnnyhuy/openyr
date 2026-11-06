@@ -88,6 +88,44 @@ fn order_text(name: &str, count: usize) -> String {
 }
 
 impl App {
+    pub(super) fn acknowledge_placement_order(
+        &mut self,
+        command: Option<&Command>,
+        cell: (f32, f32),
+        now: Instant,
+    ) {
+        let (text, point, color) = match command {
+            Some(Command::PlaceProduced { kind, x, y }) => {
+                let (w, h) = self
+                    .session
+                    .as_ref()
+                    .and_then(|s| s.buildables.get(usize::from(*kind)))
+                    .and_then(|b| b.footprint())
+                    .unwrap_or((1, 1));
+                (
+                    "Placement order sent",
+                    (
+                        f32::from(*x) + f32::from(w) / 2.0,
+                        f32::from(*y) + f32::from(h) / 2.0,
+                    ),
+                    PLAYER_COL,
+                )
+            }
+            None if self.placing.is_some() => (
+                "Cannot place here",
+                (cell.0.floor() + 0.5, cell.1.floor() + 0.5),
+                ENEMY_COL,
+            ),
+            _ => return,
+        };
+        self.groups.interrupt();
+        self.order_feedback.0 = Some(Notice {
+            text: text.into(),
+            marker: Some((Target::Ground(point.0, point.1), color)),
+            at: now,
+        });
+    }
+
     pub(super) fn acknowledge_service_order(
         &mut self,
         command: Option<&Command>,
@@ -282,3 +320,6 @@ mod radar_tests;
 
 #[cfg(test)]
 mod service_tests;
+
+#[cfg(test)]
+mod placement_tests;
