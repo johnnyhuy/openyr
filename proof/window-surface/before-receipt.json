@@ -1,0 +1,36 @@
+[
+  {
+    "size": [
+      1600,
+      1000
+    ],
+    "list_rect": [
+      740,
+      330,
+      912,
+      665
+    ],
+    "margin_preserves_list": false,
+    "valid_wheel_changes_list": true,
+    "initial_list_sha256": "f132bf846e4538d1c2e2b80d17ed8f28c398aaba32909f003653595212e1ab65",
+    "margin_list_sha256": "a412a7868c3ee216f35db30f86f413ed5fec77ecca3ba7d235d2ab72d9a8c27c",
+    "valid_list_sha256": "e74b7368ed3bc9391f4fb4a31921aed3e4cbd1ef0e060d3a04b37745b2800d1d"
+  },
+  {
+    "size": [
+      1920,
+      1200
+    ],
+    "list_rect": [
+      900,
+      430,
+      1072,
+      765
+    ],
+    "margin_preserves_list": false,
+    "valid_wheel_changes_list": true,
+    "initial_list_sha256": "e74b7368ed3bc9391f4fb4a31921aed3e4cbd1ef0e060d3a04b37745b2800d1d",
+    "margin_list_sha256": "ed945c8805664bf91899bf3fbdfbb8f537526be0466d1807ce23eb69d8e0c343",
+    "valid_list_sha256": "ca14979af6be82d9c6f76d879568ebeb4414e37d59cf86cfe9c8d21f249b3109"
+  }
+]
