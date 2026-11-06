@@ -1,0 +1,36 @@
+[
+  {
+    "size": [
+      1280,
+      800
+    ],
+    "radar": [
+      1195.0,
+      119.0
+    ],
+    "move_glyph_pixels": 491,
+    "attack_move_glyph_pixels": 642,
+    "move_matches_shared": true,
+    "attack_matches_shared": true,
+    "expired_glyph_pixels": 0,
+    "cancelled_glyph_pixels": 0,
+    "navigation_glyph_pixels": 0
+  },
+  {
+    "size": [
+      640,
+      480
+    ],
+    "radar": [
+      555.0,
+      119.0
+    ],
+    "move_glyph_pixels": 491,
+    "attack_move_glyph_pixels": 642,
+    "move_matches_shared": true,
+    "attack_matches_shared": true,
+    "expired_glyph_pixels": 0,
+    "cancelled_glyph_pixels": 0,
+    "navigation_glyph_pixels": 0
+  }
+]
