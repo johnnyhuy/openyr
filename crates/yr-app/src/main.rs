@@ -484,12 +484,13 @@ impl App {
         let Some(cell) = self.window_to_cell(self.cursor) else {
             return;
         };
-        if let Some(command) = self.session.as_ref().and_then(|session| {
+        let command = self.session.as_ref().and_then(|session| {
             self.service_mode
                 .command(session, (cell.0.floor() as i32, cell.1.floor() as i32))
-        }) {
-            self.pending.push(command);
-        }
+        });
+        self.acknowledge_service_order(command.as_ref(), cell, Instant::now());
+        self.pending.extend(command);
+        self.view.dirty = true;
     }
 
     /// Footprint origin and validity for the structure being placed,
@@ -591,6 +592,10 @@ impl App {
     }
 
     fn sidebar_right_press(&mut self, size: (u32, u32)) {
+        if self.service_mode != ServiceMode::None {
+            self.order_feedback.clear();
+            self.view.dirty = true;
+        }
         self.service_mode = ServiceMode::None;
         if self.radar_target(self.cursor).is_some() {
             self.order_feedback.clear();
