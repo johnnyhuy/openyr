@@ -1,3 +1,0 @@
-    Blocking waiting for file lock on build directory
-    Checking yr-app v0.1.0 (/workspace/openyr-run-20261106/crates/yr-app)
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 10.56s
