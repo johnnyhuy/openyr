@@ -775,3 +775,37 @@ tick. Voxel projectile bodies remain unimplemented.
 cargo test -p yr-render animated -- --nocapture
 OPENYR_ANIMATED_PROJECTILE_PROOF=/tmp/openyr-animated-projectiles cargo test -p yr-app --bin openyr retail_animated_projectile -- --nocapture
 ```
+
+## Voxel projectile bodies
+
+Retail rules resolve two weapons to `Voxel=yes` projectile art. These
+are observations from the installed archives, without original engine
+source inspection.
+
+| Weapon | Projectile | Image | Model |
+| --- | --- | --- | --- |
+| BlimpBomb, BlimpBombE | BlimpBombP | ZBOMB | ZBOMB.VXL/.HVA |
+| SubTorpedo, BoomerTorpedo (plus Elite variants) | Torpedo | SUBT | SUBT.VXL/.HVA |
+
+The native renderer now draws these through the shared voxel
+projection used for vehicles, with three presentation differences.
+Projectile bodies have no owner, so the palette remap range keeps its
+authored colours instead of tinting toward a house. Facing follows the
+projected flight step continuously, back-projected to a cell angle
+with the same inversion as voxel unit octants; a stationary body faces
+screen-down as a provisional policy. HVA poses follow the absolute
+simulation tick through the existing per-part pose selection, so a
+fresh cache after a load reconstructs the same sprite with no saved
+presentation state.
+
+Models and decoded sprites share the existing bounded caches (128
+sources, 64 frames). A voxel body whose VXL does not parse draws
+nothing, matching the optional-art policy for SHP bodies. Voxel
+lighting remains the geometry-derived approximation used for
+vehicles. Original facing, spin, altitude and lighting semantics
+remain unverified in #102. Source-model agreement does not establish
+original playback parity.
+
+```sh
+cargo test -p yr-render voxel -- --nocapture
+```

@@ -723,7 +723,7 @@ fn infantry_stand_frame(octant: u8) -> usize {
 /// `draw_voxel` facing for a screen octant: back-project the octant's
 /// screen direction to a cell-space angle and offset it to the
 /// renderer's model rotation (model +x faces `(facing + 32)` in 256ths).
-fn voxel_facing(octant: u8) -> u16 {
+pub(crate) fn voxel_facing(octant: u8) -> u16 {
     let a = f32::from(octant) * std::f32::consts::TAU / 8.0;
     // Screen direction (sx, sy) = (sin a, -cos a); invert the iso map
     // sx = (c - s) * 30, sy = (c + s) * 15.

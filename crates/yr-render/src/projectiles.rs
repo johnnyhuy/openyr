@@ -83,6 +83,10 @@ struct Body {
     // empty shadow slot observed in retail animated projectile sheets.
     animated: usize,
     anim_palette: bool,
+    // Uppercase VXL stem for `Voxel=yes` bodies (retail ZBOMB, SUBT).
+    // SHP fields are unused for these; the model loads through the
+    // bounded voxel cache in `Projectiles`.
+    voxel_image: Option<String>,
 }
 
 impl Body {
@@ -101,12 +105,26 @@ impl Body {
             return None;
         }
         let section = art.section(image);
-        // Animated and voxel bodies require separate frame/pose policies.
-        if ["Animates", "Voxel"]
-            .iter()
-            .any(|key| section.and_then(|s| s.get_bool(key)) == Some(true))
-        {
+        // Animated SHP bodies require a separate frame policy.
+        if section.and_then(|s| s.get_bool("Animates")) == Some(true) {
             return None;
+        }
+        if section.and_then(|s| s.get_bool("Voxel")) == Some(true) {
+            let image = section.and_then(|s| s.get("Image")).unwrap_or(image);
+            if !safe_image(image) {
+                return None;
+            }
+            let stem = image.to_ascii_uppercase();
+            // A voxel body that does not parse draws nothing, matching
+            // the optional-art policy for SHP bodies.
+            crate::voxels::VoxelModel::load(fs, &stem)?;
+            return Some(Self {
+                file: String::new(),
+                rotating: false,
+                animated: 0,
+                anim_palette: false,
+                voxel_image: Some(stem),
+            });
         }
         let rotating = section.and_then(|s| s.get_bool("Rotates")) == Some(true);
         let image = section.and_then(|s| s.get("Image")).unwrap_or(image);
@@ -144,6 +162,7 @@ impl Body {
             rotating,
             animated,
             anim_palette,
+            voxel_image: None,
         })
     }
 
@@ -161,20 +180,45 @@ impl Body {
         if dx == 0 && dy == 0 {
             return None;
         }
-        // Project the actual axis-clamped sim step, not the shooter's facing
-        // or an unclamped target vector. Sheets run counterclockwise from up.
-        let sx = f64::from(dx) - f64::from(dy);
-        let sy = (f64::from(dx) + f64::from(dy)) / 2.0;
-        let phase = (-sx).atan2(-sy).rem_euclid(std::f64::consts::TAU);
-        Some((phase * 32.0 / std::f64::consts::TAU).round() as usize % 32)
+        Some(direction_frame(dx, dy))
+    }
+
+    /// Voxel facing for the projected flight step: back-project the
+    /// screen direction to a continuous cell angle, using the same
+    /// inversion as the octant mapping for voxel units. Without a
+    /// step, falling bodies face screen-down as a provisional policy.
+    fn voxel_facing(motion: Option<(i32, i32)>) -> u16 {
+        let (dx, dy) = match motion {
+            Some((dx, dy)) if dx != 0 || dy != 0 => (f64::from(dx), f64::from(dy)),
+            _ => return crate::sprites::voxel_facing(4),
+        };
+        let (sx, sy) = (dx - dy, (dx + dy) / 2.0);
+        let (c, s) = (sx / 60.0 + sy / 30.0, sy / 30.0 - sx / 60.0);
+        let cell = s.atan2(c).rem_euclid(std::f64::consts::TAU);
+        let units = (cell * 256.0 / std::f64::consts::TAU).round() as i32;
+        ((units - 32).rem_euclid(256)) as u16
     }
 }
+
+/// Project the actual axis-clamped sim step, not the shooter's facing
+/// or an unclamped target vector. Sheets run counterclockwise from up.
+fn direction_frame(dx: i32, dy: i32) -> usize {
+    let sx = f64::from(dx) - f64::from(dy);
+    let sy = (f64::from(dx) + f64::from(dy)) / 2.0;
+    let phase = (-sx).atan2(-sy).rem_euclid(std::f64::consts::TAU);
+    (phase * 32.0 / std::f64::consts::TAU).round() as usize % 32
+}
+
+type VoxelKey = (u64, u16, Vec<usize>);
 
 #[derive(Default)]
 pub(crate) struct Projectiles {
     bodies: HashMap<u64, Option<Body>>,
     frames: HashMap<(u64, usize), Option<Sprite>>,
     order: VecDeque<(u64, usize)>,
+    voxel_models: HashMap<u64, Option<crate::voxels::VoxelModel>>,
+    voxel_frames: HashMap<VoxelKey, Option<Sprite>>,
+    voxel_order: VecDeque<VoxelKey>,
     anim_pal: Option<Palette>,
     anim_pal_tried: bool,
 }
@@ -212,6 +256,9 @@ impl Projectiles {
             .entry(source)
             .or_insert_with(|| Body::load(fs, rules, art, source))
             .as_ref()?;
+        if let Some(stem) = body.voxel_image.clone() {
+            return self.get_voxel(fs, source, &stem, motion, tick, pal);
+        }
         let frame = body.frame(motion, tick)?;
         let key = (source, frame);
         if body.anim_palette && !self.anim_pal_tried {
@@ -250,6 +297,46 @@ impl Projectiles {
         }
         self.frames.get(&key)?.as_ref()
     }
+
+    fn get_voxel(
+        &mut self,
+        fs: &AssetFs,
+        source: u64,
+        stem: &str,
+        motion: Option<(i32, i32)>,
+        tick: u64,
+        pal: &Palette,
+    ) -> Option<&Sprite> {
+        if self.voxel_models.len() >= MAX_SOURCES && !self.voxel_models.contains_key(&source) {
+            return None;
+        }
+        let facing = Body::voxel_facing(motion);
+        // Resolve poses before borrowing the model cache mutably below.
+        let poses = {
+            let model = self
+                .voxel_models
+                .entry(source)
+                .or_insert_with(|| crate::voxels::VoxelModel::load(fs, stem))
+                .as_ref()?;
+            model.frames_at(tick)
+        };
+        let key: VoxelKey = (source, facing, poses);
+        if !self.voxel_frames.contains_key(&key) {
+            let sprite = self.voxel_models.get(&source).and_then(|m| {
+                m.as_ref().and_then(|model| {
+                    crate::voxels::animated_sprite_unremapped(model, facing, &key.2, pal)
+                })
+            });
+            if self.voxel_frames.len() >= MAX_FRAMES {
+                if let Some(old) = self.voxel_order.pop_front() {
+                    self.voxel_frames.remove(&old);
+                }
+            }
+            self.voxel_order.push_back(key.clone());
+            self.voxel_frames.insert(key.clone(), sprite);
+        }
+        self.voxel_frames.get(&key)?.as_ref()
+    }
 }
 
 #[cfg(test)]
@@ -271,6 +358,7 @@ mod tests {
             rotating: true,
             animated: 0,
             anim_palette: false,
+            voxel_image: None,
         };
         for (motion, frame) in [
             ((-1, -1), 0),
@@ -294,6 +382,7 @@ mod tests {
             rotating: false,
             animated: 7,
             anim_palette: false,
+            voxel_image: None,
         };
         for tick in 0..14u64 {
             assert_eq!(animated.frame(None, tick), Some((tick % 7) as usize));
@@ -498,6 +587,93 @@ mod tests {
         }
         assert_eq!(cache.bodies.len(), 128);
         println!("120MM.SHP: 24x24, one frame, exact UNITTEM.PAL body, no shadow-half assumption");
+    }
+
+    #[test]
+    fn voxel_facing_mirrors_directional_sheet_octants() {
+        // The eight cell-step directions give eight distinct facings.
+        let facings: std::collections::BTreeSet<u16> = [
+            (-1, -1),
+            (0, -1),
+            (1, 0),
+            (1, 1),
+            (0, 1),
+            (-1, 1),
+            (-1, 0),
+            (1, -1),
+        ]
+        .into_iter()
+        .map(|m| Body::voxel_facing(Some(m)))
+        .collect();
+        assert_eq!(facings.len(), 8);
+        assert_eq!(
+            Body::voxel_facing(None),
+            crate::sprites::voxel_facing(4),
+            "stationary voxel bodies face screen-down"
+        );
+        assert_eq!(
+            Body::voxel_facing(Some((0, 0))),
+            crate::sprites::voxel_facing(4)
+        );
+        // North and south are exact opposites under the voxel camera.
+        let north = Body::voxel_facing(Some((-1, -1)));
+        let south = Body::voxel_facing(Some((1, 1)));
+        assert_eq!((south + 256 - north) % 256, 128);
+    }
+
+    #[test]
+    fn retail_voxel_bodies_match_independent_models_at_every_octant() {
+        let dir = std::path::PathBuf::from(std::env::var("HOME").unwrap_or_default())
+            .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+        if !dir.is_dir() {
+            return;
+        }
+        let fs = AssetFs::open(&dir).unwrap();
+        let ini = |name| IniFile::parse(&String::from_utf8_lossy(fs.read(name).unwrap()));
+        let art = ini("ARTMD.INI");
+        let rules = Rules::load(&ini("RULESMD.INI"), &art);
+        let pal = Palette::parse(fs.read("UNITTEM.PAL").unwrap()).unwrap();
+        let mut cache = Projectiles::default();
+        for (weapon, stem) in [("BlimpBomb", "ZBOMB"), ("SubTorpedo", "SUBT")] {
+            let source = rules.weapons.get(weapon).unwrap().source_id();
+            let model = crate::voxels::VoxelModel::load(&fs, stem).unwrap();
+            // Every screen octant, plus the stationary fallback.
+            let motions: [Option<(i32, i32)>; 9] = [
+                Some((-1, -1)),
+                Some((0, -1)),
+                Some((1, 0)),
+                Some((1, 1)),
+                Some((0, 1)),
+                Some((-1, 1)),
+                Some((-1, 0)),
+                Some((1, -1)),
+                None,
+            ];
+            for motion in motions {
+                let facing = Body::voxel_facing(motion);
+                let expected = crate::voxels::animated_sprite_unremapped(
+                    &model,
+                    facing,
+                    &model.frames_at(0),
+                    &pal,
+                )
+                .unwrap();
+                let sprite = cache.get(&fs, &rules, &art, &pal, source, motion).unwrap();
+                assert_eq!(
+                    (sprite.w, sprite.h, sprite.ax, sprite.ay),
+                    (expected.w, expected.h, expected.ax, expected.ay),
+                    "{weapon} motion {motion:?}"
+                );
+                assert_eq!(sprite.rgba, expected.rgba, "{weapon} motion {motion:?}");
+                assert!(
+                    sprite.rgba.as_chunks::<4>().0.iter().any(|p| p[3] != 0),
+                    "{weapon} draws visible pixels"
+                );
+            }
+            println!("{weapon}: {stem}.VXL voxel body matches at 8 octants plus fallback");
+        }
+        assert!(cache.voxel_models.len() <= MAX_SOURCES);
+        assert!(cache.voxel_frames.len() <= MAX_FRAMES);
     }
 
     #[test]
