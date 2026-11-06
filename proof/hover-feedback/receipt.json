@@ -1,0 +1,38 @@
+[
+  {
+    "size": [
+      1280,
+      800
+    ],
+    "target": [
+      556.0,
+      400.0
+    ],
+    "remaining_pan": [
+      0.0,
+      0.5
+    ],
+    "hover_green": 44,
+    "away_green": 0,
+    "unfocused_green": 0,
+    "restored_green": 44
+  },
+  {
+    "size": [
+      640,
+      480
+    ],
+    "target": [
+      236.0,
+      240.0
+    ],
+    "remaining_pan": [
+      0.0,
+      0.5
+    ],
+    "hover_green": 44,
+    "away_green": 0,
+    "unfocused_green": 0,
+    "restored_green": 44
+  }
+]
