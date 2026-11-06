@@ -32,7 +32,7 @@ boundary independently of world zoom. Green means move, gold attack-move and
 red attack or unavailable, with text distinguishing those last two cases.
 
 These colors, shapes, text and duration are native policies. They have not
-been calibrated against original-game acknowledgements. Placement feedback, persistent ordered-target highlighting
+been calibrated against original-game acknowledgements. Persistent ordered-target highlighting
 and physical macOS/Retina input remain under #97/#98 and related UI issues.
 No original code or additional artwork is used by this slice.
 
@@ -122,3 +122,31 @@ cancellation, expiry, focus/menu/resize guards and sidebar cancellation are
 checked. `OPENYR_SERVICE_ORDER_PROOF=<external-dir>` exports shared compositions
 and the controlled native save for live checks; the save stays outside proof
 uploads and all derived images stay off main.
+
+
+Structure-placement clicks now reuse the same brief feedback lifecycle. A
+queued `PlaceProduced` request displays "Placement order sent" and a green
+marker at the requested footprint center. Rejected clicks display "Cannot
+place here" and a red marker at the clicked cell. Placement rules, READY queue
+ownership, existing command ordering and automatic exit from placement mode
+after a queued request are unchanged. The notice acknowledges a request, not
+confirmation that the simulation accepted it on its next tick.
+
+A rejected click retains the READY item and placement mode. World right-click
+cancellation clears the mode/notice and redraws immediately without removing
+already queued work or selection. Existing focus/menu cleanup and pointer
+invalidation prevent inactive/modal/stale clicks from queuing orders. Even an
+outdated placement slot or a mode whose READY item disappeared cannot announce
+a queued placement. Markers use the existing terrain-height projection and
+fixed UI-pixel geometry; their appearance and two-second lifetime are native
+policy pending original-game calibration.
+
+Retail placement tests produce a GAPOWR normally, then exercise READY cameo
+pickup and world clicks at three layouts and zooms. Occupied ground rejects
+placement; accepted commands match the unchanged session resolver and consume
+the READY item only when stepped. Complete save bytes, selection, zoom, queued
+command prefixes and equivalent post-step snapshots are checked alongside
+cancellation, expiry, stale-mode and focus/menu/resize guards.
+`OPENYR_PLACEMENT_ORDER_PROOF=<external-dir>` exports shared images and a
+controlled native READY save with AI disabled for live observation. The save
+stays outside proof uploads; derived art stays off main.
