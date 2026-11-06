@@ -1,0 +1,130 @@
+[
+  {
+    "file": "after-640x480-main.png",
+    "size": [
+      640,
+      480
+    ],
+    "page": "main"
+  },
+  {
+    "file": "after-640x480-skirmish.png",
+    "size": [
+      640,
+      480
+    ],
+    "page": "skirmish"
+  },
+  {
+    "file": "after-640x480-chooser.png",
+    "size": [
+      640,
+      480
+    ],
+    "page": "chooser"
+  },
+  {
+    "file": "after-640x480-match.png",
+    "size": [
+      640,
+      480
+    ],
+    "page": "match"
+  },
+  {
+    "file": "after-640x480-pause.png",
+    "size": [
+      640,
+      480
+    ],
+    "page": "pause"
+  },
+  {
+    "file": "after-640x480-resumed.png",
+    "size": [
+      640,
+      480
+    ],
+    "page": "resumed"
+  },
+  {
+    "file": "after-640x480-vehicles.png",
+    "size": [
+      640,
+      480
+    ],
+    "page": "vehicles"
+  },
+  {
+    "file": "after-640x480-world-pan.png",
+    "size": [
+      640,
+      480
+    ],
+    "page": "world-pan"
+  },
+  {
+    "file": "after-1000x700-main.png",
+    "size": [
+      1000,
+      700
+    ],
+    "page": "main"
+  },
+  {
+    "file": "after-1000x700-skirmish.png",
+    "size": [
+      1000,
+      700
+    ],
+    "page": "skirmish"
+  },
+  {
+    "file": "after-1000x700-chooser.png",
+    "size": [
+      1000,
+      700
+    ],
+    "page": "chooser"
+  },
+  {
+    "file": "after-1000x700-match.png",
+    "size": [
+      1000,
+      700
+    ],
+    "page": "match"
+  },
+  {
+    "file": "after-1000x700-pause.png",
+    "size": [
+      1000,
+      700
+    ],
+    "page": "pause"
+  },
+  {
+    "file": "after-1000x700-resumed.png",
+    "size": [
+      1000,
+      700
+    ],
+    "page": "resumed"
+  },
+  {
+    "file": "after-1000x700-vehicles.png",
+    "size": [
+      1000,
+      700
+    ],
+    "page": "vehicles"
+  },
+  {
+    "file": "after-1000x700-world-pan.png",
+    "size": [
+      1000,
+      700
+    ],
+    "page": "world-pan"
+  }
+]
