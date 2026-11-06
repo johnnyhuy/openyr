@@ -100,7 +100,7 @@ fn edge_direction(cursor: (f64, f64), viewport: (u32, u32)) -> (f32, f32) {
 
 impl App {
     pub(super) fn camera_size(&self) -> (u32, u32) {
-        self.pixels.as_ref().map_or((WIN_W, WIN_H), |p| {
+        self.pixels.as_ref().map_or(self.frame_size, |p| {
             (p.texture().width(), p.texture().height())
         })
     }

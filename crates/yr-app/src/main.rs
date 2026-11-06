@@ -29,6 +29,7 @@ mod production_tests;
 #[cfg(test)]
 mod scrolling_tests;
 mod surface_input;
+mod window_size;
 
 use pixels::{Pixels, SurfaceTexture};
 use std::collections::BTreeSet;
@@ -97,6 +98,7 @@ impl View {
 }
 
 struct App {
+    frame_size: (u32, u32),
     gamedir: String,
     map_name: String,
     scale: u32,
@@ -598,7 +600,7 @@ impl App {
     }
 
     fn in_sidebar(&self, pos: (f64, f64)) -> bool {
-        let width = self.pixels.as_ref().map_or(WIN_W, |p| p.texture().width());
+        let width = self.camera_size().0;
         pos.0 >= f64::from(width.saturating_sub(SIDEBAR_W))
     }
 
@@ -1443,7 +1445,8 @@ impl ApplicationHandler for App {
         }
         let attrs = Window::default_attributes()
             .with_title(format!("OpenYR: {}", self.map_name))
-            .with_inner_size(LogicalSize::new(WIN_W, WIN_H));
+            .with_inner_size(LogicalSize::new(WIN_W, WIN_H))
+            .with_min_inner_size(LogicalSize::new(640, 480));
         let window = match el.create_window(attrs) {
             Ok(window) => std::sync::Arc::new(window),
             Err(e) => {
@@ -1454,7 +1457,10 @@ impl ApplicationHandler for App {
         };
         let size = window.inner_size();
         let surface = SurfaceTexture::new(size.width.max(1), size.height.max(1), window.clone());
-        let pixels = match Pixels::new(WIN_W, WIN_H, surface) {
+        let frame =
+            window_size::frame_for_surface((size.width, size.height), window.scale_factor())
+                .unwrap_or((1, 1));
+        let pixels = match Pixels::new(frame.0, frame.1, surface) {
             Ok(pixels) => pixels,
             Err(e) => {
                 self.startup_error = Some(format!("cannot create display surface: {e}"));
@@ -1462,6 +1468,7 @@ impl ApplicationHandler for App {
                 return;
             }
         };
+        self.frame_size = frame;
         if let Ok(fs) = yr_assets::AssetFs::open(std::path::Path::new(&self.gamedir)) {
             self.menu_art = yr_app::menu::Art::load(&fs);
             self.loading_art = yr_app::loading::Art::load(&fs);
@@ -1483,7 +1490,8 @@ impl ApplicationHandler for App {
         match yr_render::render_map(&self.gamedir, &self.map_name, self.scale) {
             Ok(map) => {
                 println!("OpenYR: rendered {}", map.summary);
-                self.view.center_map(&map, (WIN_W - SIDEBAR_W, WIN_H));
+                self.view
+                    .center_map(&map, (frame.0.saturating_sub(SIDEBAR_W), frame.1));
                 self.map = Some(map);
                 self.sprites = load_sprites(&self.gamedir, &self.map_name);
             }
@@ -1548,16 +1556,29 @@ impl ApplicationHandler for App {
                 el.exit();
             }
             WindowEvent::Resized(size) => {
-                self.invalidate_pointer();
-                if let Some(p) = &mut self.pixels {
-                    let _ = p.resize_surface(size.width.max(1), size.height.max(1));
-                    self.view.dirty = true;
+                let scale = self
+                    .window
+                    .as_ref()
+                    .map_or(1.0, |window| window.scale_factor());
+                if let Err(error) = self.resize_window((size.width, size.height), scale) {
+                    eprintln!("OpenYR: display resize failed ({error})");
+                }
+            }
+            WindowEvent::ScaleFactorChanged { scale_factor, .. } => {
+                if let Some(window) = &self.window {
+                    let size = window.inner_size();
+                    if let Err(error) = self.resize_window((size.width, size.height), scale_factor)
+                    {
+                        eprintln!("OpenYR: display scale change failed ({error})");
+                    }
+                } else {
+                    self.invalidate_pointer();
                 }
             }
             WindowEvent::Focused(focused) => self.focus_changed(focused),
-            WindowEvent::CursorEntered { .. }
-            | WindowEvent::CursorLeft { .. }
-            | WindowEvent::ScaleFactorChanged { .. } => self.invalidate_pointer(),
+            WindowEvent::CursorEntered { .. } | WindowEvent::CursorLeft { .. } => {
+                self.invalidate_pointer()
+            }
             WindowEvent::ModifiersChanged(m) => {
                 self.shift = m.state().shift_key();
                 self.control = m.state().control_key();
@@ -1678,6 +1699,7 @@ fn load_sprites(
 
 fn new_app(gamedir: String, map_name: String, scale: u32) -> App {
     App {
+        frame_size: (WIN_W, WIN_H),
         gamedir,
         map_name,
         scale,

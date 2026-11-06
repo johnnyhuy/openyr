@@ -1,8 +1,11 @@
 # Window and framebuffer input
 
-The native window presents a fixed 1280x800 framebuffer. Window resizing and
-DPI scaling change its physical presentation through `pixels`; map zoom is a
-separate framebuffer-space camera setting. Input arrives in physical window
+The native window starts at 1280x800 logical pixels and requests a 640x480
+logical minimum. Its framebuffer follows the client logical dimensions, capped
+at 1280x800 and bounded by physical pixels. This lets compact clients draw the
+complete menu and sidebar instead of cropping a fixed framebuffer. Larger
+clients retain the existing integer-scaled presentation through `pixels`. Map
+zoom is a separate framebuffer-space camera setting. Input arrives in physical window
 coordinates and must pass `Pixels::window_pos_to_pixel` before menu, sidebar,
 radar or world handlers run.
 
@@ -47,8 +50,24 @@ or game process memory is inspected.
 
 This verifies Linux resized-window routing and rendering. Shared invalidation-handler checks do not establish physical macOS Retina delivery, focus behavior
 or pointer confinement. Those checks and original cursor cadence/hotspots remain
-open under #97/#98. Framebuffer dimensions and UI scaling policy are unchanged.
+open under #97/#98. The historical margin check above covers #223.
 
-Compact 640x480 and 1000x700 clients expose a separate fixed-framebuffer
-cropping problem, tracked in #224. Those pixels are not physical margins,
-and the failed initial margin experiment is not used as proof for #223.
+## Compact clients (#224)
+
+Resize and DPI events update both the physical surface and bounded logical
+framebuffer. Zero-sized minimized clients keep their last usable buffer;
+invalid scale factors do not allocate. Drawing, menu clicks and slider drags,
+sidebar hits and camera centering share the actual framebuffer dimensions,
+including while the renderer temporarily owns the pixel buffer. Resize clears
+old gestures and preserves map zoom. Forced clients below the requested minimum
+remain bounded, but the supported usable minimum is 640x480 logical pixels.
+
+Tests cover fractional and doubled scales, extreme dimensions, minimization,
+menu activation/dragging and zoom preservation. Retail EB1 checks at 640x480,
+1000x700 and 1280x800 traverse start/loading, select a sidebar category and an
+owned world unit, then pause/resume through the guarded pointer handlers.
+Complete match save bytes remain unchanged. Shared-compositor images document
+each stage. Live Linux X11 before/after captures at 640x480 and 1000x700 verify
+that the complete menus are visible and reachable through real pointer events.
+Synthetic doubled-scale checks do not verify a physical Retina display. Native
+macOS resize/DPI delivery remains a follow-up under #97.
