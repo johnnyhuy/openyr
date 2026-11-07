@@ -118,8 +118,10 @@ fn retail_saved_load_success_is_visible_only_after_committing_the_match() {
         let mut without = vec![0; with.len()];
         app.compose_at(&mut without, w, h, now);
         let differences: Vec<_> = with
-            .chunks_exact(4)
-            .zip(without.chunks_exact(4))
+            .as_chunks::<4>()
+            .0
+            .iter()
+            .zip(without.as_chunks::<4>().0)
             .enumerate()
             .filter_map(|(i, (a, b))| (a != b).then_some((i as u32 % w, i as u32 / w)))
             .collect();
