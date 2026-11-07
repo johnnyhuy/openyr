@@ -42,6 +42,7 @@ The issue list is the backlog of record. Keep it honest in both directions.
 A PR with no screenshot, GIF, video, or terminal recording is an incomplete slice.
 
 - Capture in this order, falling through on failure without retrying a known-blocked path: live `screencapture -x` → `screencapture -V` recording → headless `--frames` (always available, same draw code as the window) → `script`/`asciinema` for non-visual slices.
+- Build runtime proof with `python3 scripts/proof_build.py build --output .tmp/proof-build-<unique-name>` from a clean committed tree. Run via `python3 scripts/proof_build.py run --receipt <output>/receipt.json -- <arguments>`. This isolates Cargo targets and rejects changed source/executables (#238); see `docs/runtime-proof.md`. A successful shared-target build alone does not establish executable provenance.
 - Headless capture: `cargo run --release -- <gamedir> EB1.MMX --frames <dir> 300 900 1500 2400`. Choose ticks that actually show the change.
 - The frames contain EA artwork, so **never commit them**. Upload to a draft release (`gh release create <tag> --draft` then `gh release upload`) and link from the PR body. `proof/<slice>/` on a PR branch is the fallback only, and must be dropped before merge.
 - PR body order: what changed → exact verification commands and their pass/fail results → proof images with tick numbers or timestamps → reviewer notes. Write it to a file under `.tmp/` and use `gh pr edit <n> --body-file`.

@@ -21,9 +21,10 @@ Johnny on 2026-10-31.
       failed before any steps ran. Local retail/window verification also
       exercises Apple Silicon.
 
-- [ ] Guard shared-target runtime proof against stale executables (#238).
-      Record source/executable provenance and reproduce cross-worktree reuse;
-      use isolated artifacts or explicitly rebuild the app before runtime proof.
+- [x] Guard runtime proof against shared-target executable reuse (#238).
+      A bounded Cargo/worktree fixture reproduces stale output. Isolated builds
+      record source tree, Cargo command and executable size/SHA256; verified
+      runs reject changed source or executables (`docs/runtime-proof.md`).
 
 ## M1: Asset layer (done 2026-10-17; open items carried forward)
 
