@@ -198,3 +198,89 @@ fn retail_dialog_and_control_pixels_use_the_scoped_source_palettes() {
         }
     }
 }
+
+#[test]
+fn selected_save_name_replacement_filtering_and_navigation_keep_filename_rules() {
+    let mut state = State::default();
+    state.set(Page::Save);
+    state.name = "Old checkpoint".into();
+    state.name_selected = true;
+    state.text("/\\:\n\t");
+    assert_eq!(state.name, "Old checkpoint");
+    assert!(
+        state.name_selected,
+        "invalid text must not consume selection"
+    );
+    state.text(&"界".repeat(100));
+    assert_eq!(state.name.chars().count(), 48);
+    assert!(!state.name_selected);
+    state.name_selected = true;
+    state.backspace_name();
+    assert!(state.name.is_empty());
+    state.text("new checkpoint");
+    assert_eq!(
+        save_name(&state.name).as_deref(),
+        Some("new checkpoint.oyrsave")
+    );
+    state.name_selected = true;
+    state.navigate(1);
+    assert!(!state.name_selected);
+    state.slots.push(Slot {
+        name: "saved slot".into(),
+        path: "saved slot.oyrsave".into(),
+    });
+    state.name_selected = true;
+    state.select_slot(0);
+    assert!(!state.name_selected);
+    assert_eq!(state.name, "saved slot");
+    state.name_selected = true;
+    state.set(Page::Pause);
+    state.backspace_name();
+    state.text("ignored");
+    assert_eq!(state.name, "saved slot");
+    assert!(!state.name_selected);
+}
+
+#[test]
+fn save_name_selection_is_visible_only_inside_the_editor_at_three_sizes() {
+    let dir = std::path::PathBuf::from(std::env::var("HOME").unwrap_or_default())
+        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    let retail = dir
+        .is_dir()
+        .then(|| Art::load(&yr_assets::AssetFs::open(&dir).unwrap()));
+    for art in std::iter::once(Art::default()).chain(retail) {
+        let mut state = State::default();
+        state.set(Page::Save);
+        state.name = format!("{}界", "W".repeat(47));
+        for (width, height) in [(640, 480), (800, 600), (1280, 800)] {
+            let layout = Layout::for_state(&state, width, height);
+            let mut plain = vec![0; (width * height * 4) as usize];
+            draw(&mut plain, width, height, &art, &state, (-1.0, -1.0));
+            state.name_selected = true;
+            let mut selected = vec![0; plain.len()];
+            draw(&mut selected, width, height, &art, &state, (-1.0, -1.0));
+            let mut changed = 0;
+            for (index, (a, b)) in plain
+                .as_chunks::<4>()
+                .0
+                .iter()
+                .zip(selected.as_chunks::<4>().0.iter())
+                .enumerate()
+            {
+                if a != b {
+                    changed += 1;
+                    let p = layout
+                        .local(((index as u32 % width) as f64, (index as u32 / width) as f64))
+                        .unwrap();
+                    assert!(
+                        (38..layout.width as i32 - 206).contains(&p.0) && (414..444).contains(&p.1)
+                    );
+                    assert_eq!(b, [32, 56, 88, 255]);
+                }
+            }
+            assert!(changed > 1000);
+            assert_eq!(state.name.chars().count(), 48);
+            state.name_selected = false;
+        }
+    }
+}
