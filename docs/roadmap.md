@@ -635,6 +635,12 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       three layouts/zooms, position updates and complete snapshot invariance are
       checked. No commands, combat or save fields change. Original appearance
       and physical Mac/Retina input remain open (`docs/order-feedback.md`).
+- [x] Keep pause-menu recovery diagnostics readable (#234, #96, #97): measured
+      word wrapping preserves paragraphs and long tokens without the prior
+      400-character cutoff. Shared input/draw geometry supports keyboard and
+      wheel scrolling at compact/default sizes while Back/Escape, frozen ticks
+      and complete saved-match bytes remain intact (`docs/formats/menus.md`).
+      Original layout calibration and physical Mac/Retina checks remain open.
 - [ ] Complete world interaction and desktop UX (#97): consistent selection,
       supported control groups/hotkeys, hover/target/order feedback, bounded
       camera movement and configurable edge scrolling. Clear held input on

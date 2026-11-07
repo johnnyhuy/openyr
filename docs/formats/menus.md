@@ -106,6 +106,25 @@ files and compare complete encoded retail match bytes before and after deletion.
 `OPENYR_DELETE_PROOF=<directory>` exports front/pause selection, confirmation,
 success, stale-file error and empty-list frames through the shared compositor.
 
+Pause recovery messages (#234) now share the front menu's measured word wrapping.
+The text rectangle begins at local `(40,72)`, ends 40 pixels before the sidebar,
+and stops 48 pixels above the authored canvas bottom. Rows use the greater of
+font line height, glyph canvas height and 20 pixels, plus four pixels of spacing.
+This is native layout policy, not original-game calibration. Explicit paragraph
+breaks and complete long tokens remain reachable; tokens split only at Unicode
+character boundaries. The prior 50-character rows and 400-character cutoff no
+longer apply to recovery diagnostics.
+
+Up/Down, Page Up/Down, Home/End and the wheel scroll overflowing messages.
+Input and drawing use the same active pause-canvas dimensions and font metrics;
+resize clamps the visible offset. The footer reports the visible line range.
+Back/Escape keep the existing recovery destination and menus keep the match
+paused. Named-save targets, simulation snapshots and save formats are unchanged.
+`OPENYR_RECOVERY_PROOF=<directory>` exports first/last pages at three sizes from
+the real-handler regression, using a controlled overflowing diagnostic after a
+real save failure. Front-menu message geometry and existing pixel checks remain
+unchanged. Physical Mac/Retina checks remain in #97.
+
 Controls persist actual mute and world zoom in
 `~/Library/Application Support/OpenYR/interface.json`, through a sibling
 file and rename. Reads are limited to 16 KiB with strict fields and zoom bounds.

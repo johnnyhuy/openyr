@@ -222,7 +222,7 @@ impl App {
         self.menu_key_code(code, event.text.as_deref(), event.repeat);
     }
     pub(super) fn menu_key_code(&mut self, code: KeyCode, text: Option<&str>, repeat: bool) {
-        if self.menu.front && matches!(self.menu.page, Page::Message { .. }) {
+        if matches!(self.menu.page, Page::Message { .. }) {
             let delta = match code {
                 KeyCode::ArrowDown => Some(1),
                 KeyCode::ArrowUp => Some(-1),
@@ -362,7 +362,10 @@ impl App {
         self.reset_menu_clock();
     }
     pub(super) fn menu_scroll(&mut self, delta: i32) {
-        if !yr_app::frontend::scroll_message(&self.front_art, &mut self.menu, delta) {
+        let size = self.camera_size();
+        if !yr_app::frontend::scroll_message(&self.front_art, &mut self.menu, delta)
+            && !yr_app::menu::scroll_message(&self.menu_art, &mut self.menu, size, delta)
+        {
             self.menu.scroll_by(delta);
         }
         self.reset_menu_clock();

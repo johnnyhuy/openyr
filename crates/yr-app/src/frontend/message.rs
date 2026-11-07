@@ -9,43 +9,14 @@ pub(super) const TOP: i32 = 72;
 pub(super) const WIDTH: i32 = 568;
 const BOTTOM: i32 = 544;
 
-pub(super) fn line_step(face: Typeface<'_>) -> i32 {
-    let ink_height = face.0.map_or(8, |f| f.lines as i32);
-    face.line_height().max(ink_height).max(20) + 4
-}
+pub(super) use crate::menu::message::line_step;
 
 pub(super) fn visible_lines(face: Typeface<'_>) -> usize {
     ((BOTTOM - TOP) / line_step(face)) as usize
 }
 
-/// Borrow each line without copying or truncating the diagnostic. A long
-/// token splits only at a Unicode character boundary, using painted advances.
 pub(super) fn lines<'a>(face: Typeface<'a>, text: &'a str) -> impl Iterator<Item = &'a str> {
-    text.split('\n').flat_map(move |paragraph| {
-        let mut rest = Some(paragraph.trim());
-        std::iter::from_fn(move || {
-            let text = rest.take()?;
-            let mut width = 0;
-            let mut word_break = None;
-            for (at, ch) in text.char_indices() {
-                width += face.advance(ch);
-                let painted_width = width - i32::from(face.glyph(ch).is_some());
-                if painted_width > WIDTH {
-                    let end = if ch.is_whitespace() {
-                        at
-                    } else {
-                        word_break.unwrap_or(at)
-                    };
-                    rest = Some(text[end..].trim_start());
-                    return Some(text[..end].trim_end());
-                }
-                if ch.is_whitespace() && at > 0 {
-                    word_break = Some(at);
-                }
-            }
-            Some(text)
-        })
-    })
+    crate::menu::message::lines(face, text, WIDTH)
 }
 
 pub(super) fn viewport(face: Typeface<'_>, text: &str, requested: usize) -> (usize, usize, usize) {
