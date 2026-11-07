@@ -54,7 +54,7 @@ playable baseline. [Known limits and observations](docs/formats/front-menu.md).
 ## Build and launch
 
 Use [mise](https://mise.jdx.dev/getting-started.html) to install the project tools.
-Rust follows `rust-toolchain.toml` (stable with `rustfmt` and `clippy`);
+Rust follows `rust-toolchain.toml` (stable with `rustfmt`, `clippy` and LLVM tools);
 `mise.toml` selects Python 3.13 and defines the development tasks. Git is also
 required. Linux contributors also need
 `pkg-config` and ALSA development headers, such as `libasound2-dev` on Debian/Ubuntu.
