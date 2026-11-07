@@ -80,6 +80,8 @@ class ProofBuildTests(unittest.TestCase):
         receipt_a = self.build(self.a, "proof-a")
         receipt_b = self.build(self.b, "proof-b")
         original = (receipt_a.parent / "program").read_bytes()
+        self.git(self.a, "commit", "--allow-empty", "-qm", "same source tree")
+        self.assertEqual(proof.verify(self.a, receipt_a), receipt_a.parent / "program")
         with self.assertRaisesRegex(proof.ProofError, "source tree differs"):
             proof.verify(self.a, receipt_b)
         shutil.copyfile(receipt_b.parent / "program", receipt_a.parent / "program")
