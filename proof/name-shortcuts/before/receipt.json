@@ -1,0 +1,93 @@
+{
+  "build": {
+    "format": "openyr-proof-build-v1",
+    "source": {
+      "commit": "cca8a809f851fdef72c37577d81ed64c0fcf6075",
+      "tree": "814199a5215e5aa6c0d9881424de0b2aa09e93e5"
+    },
+    "package": "yr-app",
+    "binary": "openyr",
+    "profile": "release",
+    "cargo": "cargo 1.99.1 (5f94df478 2026-08-27)",
+    "command": [
+      "/workspace/.cargo/bin/cargo",
+      "build",
+      "--manifest-path",
+      "/workspace/openyr-mise-demo-20261107/Cargo.toml",
+      "--package",
+      "yr-app",
+      "--bin",
+      "openyr",
+      "--release",
+      "--locked",
+      "--target-dir",
+      "/workspace/openyr-mise-demo-20261107/.tmp/runtime-llvm-final/target-wght75nz",
+      "--message-format=json-render-diagnostics"
+    ],
+    "sha256": "d2647c285a80153fbf1d6d50188f7a90baea0245bb2e9d66ad9df1cde1ff161e",
+    "bytes": 14066688
+  },
+  "platform": "Linux Xorg/XTest, silent video; no physical Mac/Retina/audio/original runtime",
+  "runs": [
+    {
+      "kind": "save",
+      "size": [
+        640,
+        480
+      ],
+      "modifier": "Control_L",
+      "selected_pixels": 0,
+      "saved_name": "oldcheckpointacnewcheckpoint.oyrsave",
+      "roundtrip_identical": true,
+      "sha256": "2d7743c6eae86b7fe37d945508bb495c474b4ef27780f3e7e7ea8f4447221eb9"
+    },
+    {
+      "kind": "save",
+      "size": [
+        640,
+        480
+      ],
+      "modifier": "Super_L",
+      "selected_pixels": 0,
+      "saved_name": "oldcheckpointacnewcheckpoint.oyrsave",
+      "roundtrip_identical": true,
+      "sha256": "2d7743c6eae86b7fe37d945508bb495c474b4ef27780f3e7e7ea8f4447221eb9"
+    },
+    {
+      "kind": "save",
+      "size": [
+        1280,
+        800
+      ],
+      "modifier": "Control_L",
+      "selected_pixels": 0,
+      "saved_name": "oldcheckpointacnewcheckpoint.oyrsave",
+      "roundtrip_identical": true,
+      "sha256": "56cccb194e57e30361a3065f37b9e746016cfe35303af7119d4a367e53dfca55"
+    },
+    {
+      "kind": "save",
+      "size": [
+        1280,
+        800
+      ],
+      "modifier": "Super_L",
+      "selected_pixels": 0,
+      "saved_name": "oldcheckpointacnewcheckpoint.oyrsave",
+      "roundtrip_identical": true,
+      "sha256": "56cccb194e57e30361a3065f37b9e746016cfe35303af7119d4a367e53dfca55"
+    },
+    {
+      "kind": "player",
+      "row": 0,
+      "modifier": "Super_L",
+      "selected_pixels": 0
+    },
+    {
+      "kind": "player",
+      "row": 1,
+      "modifier": "Super_L",
+      "selected_pixels": 0
+    }
+  ]
+}
