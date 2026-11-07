@@ -28,7 +28,9 @@ Johnny on 2026-10-31.
 
 - [x] Use mise for project Rust/Python tools, local development tasks and CI;
       retain `rust-toolchain.toml` as the Rust toolchain source of truth.
-      Publish native screenshots and video demos separately from engine source.
+      Showcase in-game features with Markdown tables, screenshots and looping
+      GIFs (#251), hosted separately from source, and explain engine/content
+      licensing and the clean-room method.
 
 ## M1: Asset layer (done 2026-10-17; open items carried forward)
 

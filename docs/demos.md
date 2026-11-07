@@ -1,13 +1,26 @@
 # Game demonstrations
 
-The README links native screenshots and two H.264 MP4 clips. They are a live
-Linux Xorg capture of the Main Menu, Single Player, Skirmish, country/map loading,
-EB1 sandbox, keyboard zoom and pause/resume. The full uninterrupted video is
-linked beside them. Screenshot timestamps, source tree, executable SHA256 and
-FFprobe metadata are in the pinned capture receipt; asset hashes and byte counts
-are in its manifest. The display is 1280x800 and the recording requests 30 fps.
-Input was delivered through XTest, not a physical mouse/keyboard. The clips are
-silent because the cloud session has no audio device.
+The README embeds screenshots and four looping GIFs in a feature table. GIFs
+use existing verified native Linux recordings, with aspect-preserving downscaling,
+8 fps sampling and a 128-color palette. They are real game-window sequences,
+not generated illustrations. `conversion.json` in the pinned GIF proof records
+the input file SHA256, FFmpeg command, start/duration, dimensions and output
+hash/size. The [GIF conversion manifest](https://github.com/johnnyhuy/openyr/tree/1d3c9840cfa1293881ee093db9aec3e72a253235/proof/readme-features) is pinned separately from source. The original captures retain their own source/build receipts.
+
+| GIF | Source recording | Interval |
+| --- | --- | --- |
+| Main menu | Native demo, source `11379ae` | 0-4 seconds |
+| Loading | Native demo, source `11379ae` | 12-22 seconds |
+| World camera | Native demo, source `11379ae` | 23-30 seconds |
+| Save name | Name-shortcut fix, source `99968fa` | 0-5.5 seconds |
+
+The original demo/capture receipt is retained in
+[the native demo proof](https://github.com/johnnyhuy/openyr/tree/c7deba4c12ab133026c00570e4a2c78d7fa3fa65/proof/native-demo).
+The Save sequence and its receipt are retained in
+[the name-shortcut proof](https://github.com/johnnyhuy/openyr/tree/346aeb37c82a332d87ab9755f3094ac5c6f8cff8/proof/name-shortcuts).
+The display was 1280x800 with synthetic XTest input. GIFs have no audio and do
+not establish physical Mac/Retina behavior or original-game timing parity.
+The README uses ordinary image URLs instead of MP4 playback links.
 
 ## Make a fresh demo
 
@@ -30,9 +43,11 @@ and game data to your machine. It is an evidence script, not a portable runner.
 
 FFmpeg's `x11grab` input records the desktop region; ImageMagick's `import -window`
 records the app window. Check the native window size and origin before selecting
-the video region. Use H.264, yuv420p and MP4 faststart for browser playback. Keep
+the video region. Keep
 the full recording, event timestamps and FFprobe duration/dimensions, and inspect
-representative stills before publishing. Stills and split clips are not evidence
+representative stills before publishing. To embed animation in Markdown, convert
+a short interval to a looping GIF and verify its frames, MIME type and public
+image URL. Stills and GIFs are not evidence
 of original-game runtime timing or physical Mac/Retina behavior.
 
 ## Publish without adding game assets to main
