@@ -275,7 +275,7 @@ fn save_name_selection_is_visible_only_inside_the_editor_at_three_sizes() {
                     assert!(
                         (38..layout.width as i32 - 206).contains(&p.0) && (414..444).contains(&p.1)
                     );
-                    assert_eq!(b, [32, 56, 88, 255]);
+                    assert_eq!(*b, [32, 56, 88, 255]);
                 }
             }
             assert!(changed > 1000);
