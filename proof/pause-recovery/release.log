@@ -1,0 +1,9 @@
+   Compiling yr-formats v0.1.0 (/workspace/openyr-save-feedback-20261107/crates/yr-formats)
+   Compiling yr-rules v0.1.0 (/workspace/openyr-save-feedback-20261107/crates/yr-rules)
+   Compiling yr-assets v0.1.0 (/workspace/openyr-save-feedback-20261107/crates/yr-assets)
+   Compiling yr-sim v0.1.0 (/workspace/openyr-save-feedback-20261107/crates/yr-sim)
+   Compiling yr-render v0.1.0 (/workspace/openyr-save-feedback-20261107/crates/yr-render)
+   Compiling yr-app v0.1.0 (/workspace/openyr-save-feedback-20261107/crates/yr-app)
+   Compiling sim-bench v0.1.0 (/workspace/openyr-save-feedback-20261107/tools/sim-bench)
+   Compiling mix-dump v0.1.0 (/workspace/openyr-save-feedback-20261107/tools/mix-dump)
+    Finished `release` profile [optimized] target(s) in 33.57s

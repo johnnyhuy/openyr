@@ -1,0 +1,29 @@
+{
+  "binary_sha256": "bd127be041e49e06c429c00a24e9b8ebd65e20f532f18ad2ff326ae2c4ea73ff",
+  "runs": [
+    {
+      "size": [
+        640,
+        480
+      ],
+      "save_sha256": "8a010468995effea3d707ca74a0fbe09685faee46a7c18ecadb681ed29bb6b81",
+      "target_characters": 3685,
+      "first_matches_home": true,
+      "frame_frozen": true,
+      "end_changes_text": true,
+      "escape_returns": true
+    },
+    {
+      "size": [
+        1280,
+        800
+      ],
+      "save_sha256": "8a010468995effea3d707ca74a0fbe09685faee46a7c18ecadb681ed29bb6b81",
+      "target_characters": 3686,
+      "first_matches_home": true,
+      "frame_frozen": true,
+      "end_changes_text": true,
+      "escape_returns": true
+    }
+  ]
+}

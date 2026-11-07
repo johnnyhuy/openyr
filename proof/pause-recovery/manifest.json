@@ -1,0 +1,172 @@
+[
+  {
+    "name": "README.md",
+    "size": 1765,
+    "sha256": "b684c61353f8fd3cbdf717c26ba6a9359ab71e0b2f9d1d27579cd09bf8500aa8"
+  },
+  {
+    "name": "baseline-regression.log",
+    "size": 1404,
+    "sha256": "53d1e218b5c39ae38e52b7066f24cbd682558aa13eefea5f8d6fef90ff67c841"
+  },
+  {
+    "name": "capture.py",
+    "size": 4088,
+    "sha256": "459780005bbfb3d5098dc3f8c308d0c76799cda959538cb2fa5feb2197006937"
+  },
+  {
+    "name": "clippy.log",
+    "size": 776,
+    "sha256": "14d26e18adec2fd8639ca6c6adf086d3e7f0975f570fccbe4166bf45f54da961"
+  },
+  {
+    "name": "comparison.png",
+    "size": 197994,
+    "sha256": "a12e41228beaf600403bab223666bd93be2f69935e7f6ee45e05509bee13734f"
+  },
+  {
+    "name": "compositor-1280x800-first.png",
+    "size": 4097178,
+    "sha256": "bdb53dc93690daa92ccf45d5dfd72a5b7e2706a3e44ce833be08207f53271572"
+  },
+  {
+    "name": "compositor-1280x800-first.txt",
+    "size": 10238,
+    "sha256": "4bac046fc9f1fcf004f488226017455d8822f9aad92aeac44946febfb9cc7638"
+  },
+  {
+    "name": "compositor-1280x800-last.png",
+    "size": 4097178,
+    "sha256": "54fb301e988f2a9eba65a3252997acf516236783df235c96ab96ca777a6048f4"
+  },
+  {
+    "name": "compositor-1280x800-last.txt",
+    "size": 10239,
+    "sha256": "79219d787e8fb6635b82302c2663d534c38ad8b3db9f2c3d37aa3d09837532c1"
+  },
+  {
+    "name": "compositor-640x480-first.png",
+    "size": 1229438,
+    "sha256": "cc4c6d3183b8cf4acd81d6a8e67825c5014d6b5c1a6534fce3663ff7e3fc0c55"
+  },
+  {
+    "name": "compositor-640x480-first.txt",
+    "size": 10238,
+    "sha256": "4bac046fc9f1fcf004f488226017455d8822f9aad92aeac44946febfb9cc7638"
+  },
+  {
+    "name": "compositor-640x480-last.png",
+    "size": 1229438,
+    "sha256": "f15667e869e7f48fec5904bd8c0091ff19627a73e97a762652a39167ead05355"
+  },
+  {
+    "name": "compositor-640x480-last.txt",
+    "size": 10240,
+    "sha256": "934937fc96dc9a6d4faf79cfe0732a1f087cd7c63c8fcaea9d0893e2d3cb5028"
+  },
+  {
+    "name": "compositor-800x600-first.png",
+    "size": 1920813,
+    "sha256": "b6ef7c1c020950101d575d698bb0a2ba258ae67c4da990b9ab00c38d7d92eb6a"
+  },
+  {
+    "name": "compositor-800x600-first.txt",
+    "size": 10238,
+    "sha256": "4bac046fc9f1fcf004f488226017455d8822f9aad92aeac44946febfb9cc7638"
+  },
+  {
+    "name": "compositor-800x600-last.png",
+    "size": 1920813,
+    "sha256": "72f584024466a97008bdba94d3b4316ff0501b877ed8d8cabaa23d0451af1d3a"
+  },
+  {
+    "name": "compositor-800x600-last.txt",
+    "size": 10239,
+    "sha256": "02838cd3fbc290fbe7e11f142f8501ff6d1f81fc2b21cb1ddb0c4153c37b640b"
+  },
+  {
+    "name": "fmt.log",
+    "size": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "handler.log",
+    "size": 609,
+    "sha256": "34420a7c60f47fa4ad202e1e515acb891483812b8db9e047feb847280edad47c"
+  },
+  {
+    "name": "live-1280x800-back-to-save.png",
+    "size": 177625,
+    "sha256": "c29b7dffd54eb8054e28770a527e4bc7115c9ff562656654c8e426d506ceae11"
+  },
+  {
+    "name": "live-1280x800-first.png",
+    "size": 332591,
+    "sha256": "6e895180c10600015a76e86eb58af9103e00f31888b8435f6a92dae015f307eb"
+  },
+  {
+    "name": "live-1280x800-frozen.png",
+    "size": 332591,
+    "sha256": "6e895180c10600015a76e86eb58af9103e00f31888b8435f6a92dae015f307eb"
+  },
+  {
+    "name": "live-1280x800-home.png",
+    "size": 332591,
+    "sha256": "6e895180c10600015a76e86eb58af9103e00f31888b8435f6a92dae015f307eb"
+  },
+  {
+    "name": "live-1280x800-last.png",
+    "size": 332051,
+    "sha256": "f0ceede192bd923aad4c57508e2606e01bdeca3f177be3d3a731afea59924de1"
+  },
+  {
+    "name": "live-640x480-back-to-save.png",
+    "size": 96852,
+    "sha256": "dc3c054d8fe0658f8c2d53869ff1636f3ba1b82c4b01f62ae34df664e0e1ef4e"
+  },
+  {
+    "name": "live-640x480-first.png",
+    "size": 160747,
+    "sha256": "e4ac7bb1a2183af969984e85ccc5f8ac5086ac996b7242d96af3814c2a2a81c8"
+  },
+  {
+    "name": "live-640x480-frozen.png",
+    "size": 160747,
+    "sha256": "e4ac7bb1a2183af969984e85ccc5f8ac5086ac996b7242d96af3814c2a2a81c8"
+  },
+  {
+    "name": "live-640x480-home.png",
+    "size": 160747,
+    "sha256": "e4ac7bb1a2183af969984e85ccc5f8ac5086ac996b7242d96af3814c2a2a81c8"
+  },
+  {
+    "name": "live-640x480-last.png",
+    "size": 160569,
+    "sha256": "9112e07a87baf9311389de86ae4d323f096f480e136b9e8642e2eb213edf25e9"
+  },
+  {
+    "name": "live-receipt.json",
+    "size": 723,
+    "sha256": "6fd37716a270f00fccedcc025005d84766c12ff6374e5f585412dbe25451b1e0"
+  },
+  {
+    "name": "release.log",
+    "size": 767,
+    "sha256": "6747ace37f0aa83a9976b0626f996347051a9fb982c5b135524ba833c596bfc1"
+  },
+  {
+    "name": "source.json",
+    "size": 577,
+    "sha256": "684e896e4dcd8071abc6367fe61b1fbf8af2a9f6c5ebf78d45adece0696ea7b5"
+  },
+  {
+    "name": "workspace-test.log",
+    "size": 40409,
+    "sha256": "23cb3fcc35a4bb1af0eaf89ba87c33d7b4058149cf856dadf1ecd76449f4b667"
+  },
+  {
+    "name": "xorg.conf",
+    "size": 415,
+    "sha256": "2b8327cf598f157ffa656492fc1138c4ea33ca4525f81bef3e1c24086e43dd0e"
+  }
+]

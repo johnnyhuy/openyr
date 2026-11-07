@@ -1,0 +1,10 @@
+   Compiling yr-app v0.1.0 (/workspace/openyr-save-feedback-20261107/crates/yr-app)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 7.37s
+     Running unittests src/main.rs (/workspace/openyr/target/debug/deps/openyr-8539b05c03c1d83a)
+
+running 1 test
+Pause recovery: real >400-byte save error, full diagnostic navigation at three layouts, Escape recovery and complete saved-match bytes preserved.
+test menu_flow::tests::retail_pause_recovery_scrolling_keeps_the_match_and_routes_inputs ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 77 filtered out; finished in 2.89s
+
