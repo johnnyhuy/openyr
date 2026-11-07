@@ -1,0 +1,68 @@
+{
+  "build": {
+    "format": "openyr-proof-build-v1",
+    "source": {
+      "commit": "db4924d489cfd958fd73253427084a9394827d1e",
+      "tree": "d1949ceea32471d58ce2d43431236a35aa88ddf6"
+    },
+    "package": "yr-app",
+    "binary": "openyr",
+    "profile": "release",
+    "cargo": "cargo 1.99.1 (5f94df478 2026-08-27)",
+    "command": [
+      "/workspace/.cargo/bin/cargo",
+      "build",
+      "--manifest-path",
+      "/workspace/openyr-load-success-20261107/Cargo.toml",
+      "--package",
+      "yr-app",
+      "--bin",
+      "openyr",
+      "--release",
+      "--locked",
+      "--target-dir",
+      "/workspace/openyr-load-success-20261107/.tmp/runtime-final/target-363oxq57",
+      "--message-format=json-render-diagnostics"
+    ],
+    "sha256": "f0ceb0fb657c4535d1b38dfb9ae9d865a6a5d885b5124e290f47d463441d61fd",
+    "bytes": 14065512
+  },
+  "runs": [
+    {
+      "phase": "before",
+      "size": [
+        640,
+        480
+      ],
+      "field_rect": [
+        38,
+        414,
+        434,
+        444
+      ],
+      "suffix_changes_visible": false,
+      "retype_reproduces_pixels": true,
+      "saved_name": "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWB.oyrsave",
+      "sha256": "711fc4297e802460363572e9929a6dde6857540d3b25e273c27be587caadfc75",
+      "roundtrip_identical": true
+    },
+    {
+      "phase": "before",
+      "size": [
+        1280,
+        800
+      ],
+      "field_rect": [
+        166,
+        430,
+        946,
+        460
+      ],
+      "suffix_changes_visible": true,
+      "retype_reproduces_pixels": true,
+      "saved_name": "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWB.oyrsave",
+      "sha256": "711fc4297e802460363572e9929a6dde6857540d3b25e273c27be587caadfc75",
+      "roundtrip_identical": true
+    }
+  ]
+}

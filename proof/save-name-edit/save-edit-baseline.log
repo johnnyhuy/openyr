@@ -1,0 +1,27 @@
+   Compiling yr-formats v0.1.0 (/workspace/openyr-chooser-projection-20261107/crates/yr-formats)
+   Compiling yr-rules v0.1.0 (/workspace/openyr-chooser-projection-20261107/crates/yr-rules)
+   Compiling yr-assets v0.1.0 (/workspace/openyr-chooser-projection-20261107/crates/yr-assets)
+   Compiling yr-sim v0.1.0 (/workspace/openyr-chooser-projection-20261107/crates/yr-sim)
+   Compiling yr-render v0.1.0 (/workspace/openyr-chooser-projection-20261107/crates/yr-render)
+   Compiling yr-app v0.1.0 (/workspace/openyr-chooser-projection-20261107/crates/yr-app)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 7.15s
+     Running unittests src/lib.rs (/workspace/openyr/target/debug/deps/yr_app-3d65909a3deb91c6)
+
+running 1 test
+test menu::tests::long_save_names_keep_the_edited_suffix_visible ... FAILED
+
+failures:
+
+---- menu::tests::long_save_names_keep_the_edited_suffix_visible stdout ----
+
+thread 'menu::tests::long_save_names_keep_the_edited_suffix_visible' (137282) panicked at crates/yr-app/src/menu/tests.rs:17:13:
+the last edited character must remain visible at 640x480
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    menu::tests::long_save_names_keep_the_edited_suffix_visible
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 101 filtered out; finished in 0.07s
+
+error: test failed, to rerun pass `-p yr-app --lib`

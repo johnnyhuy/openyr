@@ -1,0 +1,207 @@
+[
+  {
+    "name": "README.md",
+    "size": 2073,
+    "sha256": "d63fa8f378d0611ee46d3eb89fc948fd80cf5ab29be8eba1e5608adc39e43098"
+  },
+  {
+    "name": "after-receipt.json",
+    "size": 1768,
+    "sha256": "75b782f57aa620e9e3cdb77bbd3394031e9805da9690db92644859b0add86646"
+  },
+  {
+    "name": "before-receipt.json",
+    "size": 1759,
+    "sha256": "50aeb84b1c3f08b591b331eb891da2671dd1e06813ac3840b7b7df9682a09e9a"
+  },
+  {
+    "name": "build-receipt.json",
+    "size": 793,
+    "sha256": "c1e1243f71e6aa7fa33d84d60b04e1d2f8f019770299914c1a54c4c995dab777"
+  },
+  {
+    "name": "capture.py",
+    "size": 4912,
+    "sha256": "c4b179df523828534f84d1e973067cab0b34e3f14f3d1f44213328f28d7b3565"
+  },
+  {
+    "name": "clippy.log",
+    "size": 816,
+    "sha256": "3ea7080453adaca670490f432bd6a2e430e6698e12f3c2297c39fd2cdaa1d51e"
+  },
+  {
+    "name": "comparison.png",
+    "size": 5309,
+    "sha256": "0a62688a26db93b688fa47870f4a138ca7df0ce10ee12d16e768552022a43b7c"
+  },
+  {
+    "name": "field-after-1280x800-backspace.png",
+    "size": 251,
+    "sha256": "337da3f221e35297a39ad7b2b34f1556dfba11ad4b5bb75fd78198eaffde9e37"
+  },
+  {
+    "name": "field-after-1280x800-name-A.png",
+    "size": 270,
+    "sha256": "4724036a73f656f3faac813b002cae6aa2100b40b8e1413d23f859253e532608"
+  },
+  {
+    "name": "field-after-1280x800-name-B-again.png",
+    "size": 287,
+    "sha256": "e87f7a7901ffd2fad56ae3ecb0d80f7268c761f1776fb14be0d5ee2d399ad0e4"
+  },
+  {
+    "name": "field-after-1280x800-name-B.png",
+    "size": 287,
+    "sha256": "e87f7a7901ffd2fad56ae3ecb0d80f7268c761f1776fb14be0d5ee2d399ad0e4"
+  },
+  {
+    "name": "field-after-1280x800-saved.png",
+    "size": 11676,
+    "sha256": "d2c155de91cd3e8fa4ee6f627c5098f2c1e76a201273ece31a9744ba087641b0"
+  },
+  {
+    "name": "field-after-640x480-backspace.png",
+    "size": 212,
+    "sha256": "6d5fb2b1ec6002e022b63f634cb49f689dffa0465eecac07aca855e766d97535"
+  },
+  {
+    "name": "field-after-640x480-name-A.png",
+    "size": 228,
+    "sha256": "2b5adde37adbedc025a96366c5054d9480eb6d619fb244e0fd346614c00d7ca7"
+  },
+  {
+    "name": "field-after-640x480-name-B-again.png",
+    "size": 251,
+    "sha256": "93d0b3ee3ebc35345f7ae8003c7d3dcf23337f9651cc83822d89a403b99e23a8"
+  },
+  {
+    "name": "field-after-640x480-name-B.png",
+    "size": 251,
+    "sha256": "93d0b3ee3ebc35345f7ae8003c7d3dcf23337f9651cc83822d89a403b99e23a8"
+  },
+  {
+    "name": "field-after-640x480-saved.png",
+    "size": 3133,
+    "sha256": "fcf5a7d6cb7c62ae50ad9bd97f44bee1f9d28f807b89392814ddc053f838eac7"
+  },
+  {
+    "name": "field-before-1280x800-backspace.png",
+    "size": 251,
+    "sha256": "337da3f221e35297a39ad7b2b34f1556dfba11ad4b5bb75fd78198eaffde9e37"
+  },
+  {
+    "name": "field-before-1280x800-name-A.png",
+    "size": 270,
+    "sha256": "4724036a73f656f3faac813b002cae6aa2100b40b8e1413d23f859253e532608"
+  },
+  {
+    "name": "field-before-1280x800-name-B-again.png",
+    "size": 287,
+    "sha256": "e87f7a7901ffd2fad56ae3ecb0d80f7268c761f1776fb14be0d5ee2d399ad0e4"
+  },
+  {
+    "name": "field-before-1280x800-name-B.png",
+    "size": 287,
+    "sha256": "e87f7a7901ffd2fad56ae3ecb0d80f7268c761f1776fb14be0d5ee2d399ad0e4"
+  },
+  {
+    "name": "field-before-1280x800-saved.png",
+    "size": 11676,
+    "sha256": "d2c155de91cd3e8fa4ee6f627c5098f2c1e76a201273ece31a9744ba087641b0"
+  },
+  {
+    "name": "field-before-640x480-backspace.png",
+    "size": 187,
+    "sha256": "1ad8f3b9b8c8670ed47dc0e1b98bef2b425fba561e48a2e731c0670b59a3c7d2"
+  },
+  {
+    "name": "field-before-640x480-name-A.png",
+    "size": 187,
+    "sha256": "1ad8f3b9b8c8670ed47dc0e1b98bef2b425fba561e48a2e731c0670b59a3c7d2"
+  },
+  {
+    "name": "field-before-640x480-name-B-again.png",
+    "size": 187,
+    "sha256": "1ad8f3b9b8c8670ed47dc0e1b98bef2b425fba561e48a2e731c0670b59a3c7d2"
+  },
+  {
+    "name": "field-before-640x480-name-B.png",
+    "size": 187,
+    "sha256": "1ad8f3b9b8c8670ed47dc0e1b98bef2b425fba561e48a2e731c0670b59a3c7d2"
+  },
+  {
+    "name": "field-before-640x480-saved.png",
+    "size": 3133,
+    "sha256": "fcf5a7d6cb7c62ae50ad9bd97f44bee1f9d28f807b89392814ddc053f838eac7"
+  },
+  {
+    "name": "fmt.log",
+    "size": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "full-after-640x480-name-A.png",
+    "size": 96566,
+    "sha256": "21bc86d1179ddde0856095120dd8cc9445d647d96a303f0be23af1defff6c5dd"
+  },
+  {
+    "name": "full-after-640x480-name-B.png",
+    "size": 96561,
+    "sha256": "438181005b9b2b74401fe7dd1bdffc2c2cf551a9fa0d6925df86c859a5a46726"
+  },
+  {
+    "name": "full-after-640x480-saved.png",
+    "size": 147747,
+    "sha256": "1db334b87b9471dc1c97dc4557d7db6bc71ee746e155b0b7ab30cebfabc60791"
+  },
+  {
+    "name": "full-before-640x480-name-A.png",
+    "size": 96529,
+    "sha256": "3a9777e152eb0f767ae4c2ffb205711a025edfab12e9c0c6700dc205f440ca09"
+  },
+  {
+    "name": "full-before-640x480-name-B.png",
+    "size": 96529,
+    "sha256": "3a9777e152eb0f767ae4c2ffb205711a025edfab12e9c0c6700dc205f440ca09"
+  },
+  {
+    "name": "full-before-640x480-saved.png",
+    "size": 147747,
+    "sha256": "1db334b87b9471dc1c97dc4557d7db6bc71ee746e155b0b7ab30cebfabc60791"
+  },
+  {
+    "name": "runtime-build.log",
+    "size": 5852,
+    "sha256": "37690b7ea061babc92a1ff265119b24894542a0934d1a7c5c736fb0d92ae11ca"
+  },
+  {
+    "name": "save-edit-baseline.log",
+    "size": 1403,
+    "sha256": "65344109299aa65dff80db594461c7ca257719b51b7f857b4744fd5735193ba2"
+  },
+  {
+    "name": "save-edit-targeted.log",
+    "size": 1205,
+    "sha256": "42248f133c5f709bbb8f02c769cbd5037eb55da411c69dcae35eead6a93d75bd"
+  },
+  {
+    "name": "save-handler.log",
+    "size": 745,
+    "sha256": "045960f9d20c3a16ac88ba3319c75e1b3a8fb61e3f701ca04b0f0615a46fd93a"
+  },
+  {
+    "name": "source.json",
+    "size": 300,
+    "sha256": "ace7f5cd187f4d0c14065dc687ee67d182e4110ba50968425a8ee37594dbbeac"
+  },
+  {
+    "name": "workspace-test.log",
+    "size": 42019,
+    "sha256": "4a7c0c17493a383de7711cef9805cf4eafba06f23196956e79cec1e32a72dbb5"
+  },
+  {
+    "name": "xorg.conf",
+    "size": 415,
+    "sha256": "2b8327cf598f157ffa656492fc1138c4ea33ca4525f81bef3e1c24086e43dd0e"
+  }
+]

@@ -1,0 +1,13 @@
+{
+  "source_commit": "29f689750c6ba83141337df25013dbd843e69349",
+  "tested_tree": "1e8354cf7e68fa38c3a26d790a72c65c1129085e",
+  "workspace": {
+    "passed": 464,
+    "failed": 0,
+    "ignored": 1,
+    "suites": 26
+  },
+  "clippy": "passed",
+  "fmt": "passed",
+  "readme_local_links": "all resolve"
+}
