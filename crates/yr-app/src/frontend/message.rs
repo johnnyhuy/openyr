@@ -42,6 +42,14 @@ pub fn scroll_message(art: &Art, state: &mut State, delta: i32) -> bool {
     true
 }
 
+/// Front confirmations keep their own font and authored text region.
+pub fn scroll_confirmation(art: &Art, state: &mut State, size: (u32, u32), delta: i32) -> bool {
+    if !state.front {
+        return false;
+    }
+    crate::menu::confirmation::scroll(art.font.as_ref(), state, size, delta)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

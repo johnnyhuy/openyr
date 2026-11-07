@@ -246,6 +246,15 @@ The actual-handler regression checks front loading, pause loading across maps,
 cancellation, malformed files, absent map assets and mismatched setup hashes.
 The broader original chooser and setup layout remain in #96.
 
+## Saved-file confirmations
+
+Load/Delete confirmation pages show the pending target's full quoted basename,
+including the extension, with measured wrapping and scrollable overflow (#253).
+They share filename escaping and layout with the pause flow while retaining
+the front font and 800x600 shell transform. Arrows/Tab still select the buttons;
+Page Up/Down, Home/End and wheel input scroll the name. Delete defaults to No,
+and cancellation retains its selection and file. See [confirmation policy](menus.md).
+
 ## Recovery message layout
 
 Front recovery messages use a 568-pixel text width at `(32,72)` inside the

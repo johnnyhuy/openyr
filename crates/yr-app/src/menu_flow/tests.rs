@@ -1070,3 +1070,116 @@ fn retail_name_shortcut_save_preserves_complete_match_bytes() {
         std::fs::write(out.join("fixture.oyrsave"), saved).unwrap();
     }
 }
+
+#[test]
+fn confirmation_scrolling_preserves_button_navigation_and_decline() {
+    for front in [false, true] {
+        let mut app = new_app(String::new(), "EB1.MMX".into(), 1);
+        app.menu.front = front;
+        app.menu.set(Page::Confirm(Intent::Delete(
+            format!("{}.oyrsave", "W".repeat(3000)).into(),
+        )));
+        app.menu.focus = 1;
+        for key in [KeyCode::PageDown, KeyCode::End] {
+            app.menu_key_code(key, None, false);
+            assert!(app.menu.message_scroll > 0);
+            assert_eq!(app.menu.focus, 1);
+        }
+        app.menu_key_code(KeyCode::ArrowUp, None, false);
+        assert_eq!(app.menu.focus, 0);
+        app.menu_key_code(KeyCode::ArrowDown, None, false);
+        assert_eq!(app.menu.focus, 1);
+        app.menu_key_code(KeyCode::Home, None, false);
+        assert_eq!(app.menu.message_scroll, 0);
+        app.menu_scroll(i32::MAX);
+        assert!(app.menu.message_scroll > 0);
+        app.menu_key_code(KeyCode::Enter, None, true);
+        assert!(matches!(app.menu.page, Page::Confirm(_)));
+        app.menu_key_code(KeyCode::Enter, None, false);
+        assert_eq!(
+            app.menu.page,
+            Page::Delete,
+            "Enter still chooses the default No"
+        );
+        assert_eq!(app.menu.message_scroll, 0);
+        assert!(app.pending.is_empty() && app.load_job.is_none());
+    }
+}
+
+#[test]
+fn retail_confirmation_targets_preserve_save_load_delete_and_match_bytes() {
+    let dir = PathBuf::from(std::env::var("HOME").unwrap_or_default())
+        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    if !dir.is_dir() {
+        return;
+    }
+    for front in [false, true] {
+        let temp = Scratch::new();
+        let mut app = new_app(dir.to_string_lossy().into(), "EB1.MMX".into(), 1);
+        app.save_path = temp.0.join("quicksave.oyrsave");
+        app.session = Some(app.load_session().unwrap());
+        app.session.as_mut().unwrap().sim.step(&[]);
+        let first = yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap();
+        let a = temp.0.join(format!("{}A.oyrsave", "W".repeat(47)));
+        std::fs::write(&a, &first).unwrap();
+        app.session.as_mut().unwrap().sim.step(&[]);
+        let second = yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap();
+        let b = temp.0.join(format!("{}B.oyrsave", "W".repeat(200)));
+        std::fs::write(&b, &second).unwrap();
+        app.session.as_mut().unwrap().sim.step(&[]);
+        let live = yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap();
+        app.menu.front = front;
+        if !front {
+            app.open_menu(Page::Save);
+            app.menu.name = a.file_stem().unwrap().to_string_lossy().into();
+            app.apply_menu_effect(yr_app::menu::Effect::RequestSave);
+            assert_eq!(app.menu.page, Page::Confirm(Intent::Save(a.clone())));
+            assert!(!app.advance_clock(Instant::now() + Duration::from_secs(3600)));
+            app.menu_key_code(KeyCode::Escape, None, false);
+            assert_eq!(std::fs::read(&a).unwrap(), first);
+            app.apply_menu_effect(yr_app::menu::Effect::RequestSave);
+            app.menu_key_code(KeyCode::Enter, None, false);
+            assert_eq!(std::fs::read(&a).unwrap(), live);
+        }
+        app.open_menu(Page::Load);
+        let index = app.menu.slots.iter().position(|s| s.path == b).unwrap();
+        app.menu.select_slot(index);
+        app.apply_menu_effect(yr_app::menu::Effect::RequestLoad);
+        assert_eq!(app.menu.page, Page::Confirm(Intent::Load(b.clone())));
+        app.menu_key_code(KeyCode::Escape, None, false);
+        assert_eq!(
+            yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap(),
+            live
+        );
+        assert_eq!(std::fs::read(&b).unwrap(), second);
+        app.apply_menu_effect(yr_app::menu::Effect::RequestLoad);
+        app.menu_key_code(KeyCode::Enter, None, false);
+        finish_load(&mut app);
+        assert_eq!(app.save_path, b);
+        assert_eq!(
+            yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap(),
+            second
+        );
+        app.menu.front = front;
+        app.open_menu(Page::Delete);
+        let index = app.menu.slots.iter().position(|s| s.path == a).unwrap();
+        app.menu.select_slot(index);
+        app.apply_menu_effect(yr_app::menu::Effect::RequestDelete);
+        assert_eq!(app.menu.page, Page::Confirm(Intent::Delete(a.clone())));
+        assert_eq!(app.menu.focus, 1);
+        app.menu_key_code(KeyCode::Enter, None, false);
+        assert!(a.is_file());
+        app.apply_menu_effect(yr_app::menu::Effect::RequestDelete);
+        app.menu_key_code(KeyCode::Escape, None, false);
+        assert!(a.is_file());
+        app.apply_menu_effect(yr_app::menu::Effect::RequestDelete);
+        click(&mut app, Button::Accept);
+        assert!(!a.exists());
+        assert_eq!(std::fs::read(&b).unwrap(), second);
+        assert_eq!(
+            yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap(),
+            second
+        );
+        assert!(app.pending.is_empty());
+    }
+}
