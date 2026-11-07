@@ -82,6 +82,137 @@ fn finish_load(app: &mut App) {
 }
 
 #[test]
+fn retail_quicksave_clears_modal_input_on_success_and_failure() {
+    let dir = PathBuf::from(std::env::var("HOME").unwrap_or_default())
+        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    if !dir.is_dir() {
+        return;
+    }
+    let temp = Scratch::new();
+    let mut app = new_app(dir.to_string_lossy().into(), "EB1.MMX".into(), 1);
+    app.session = Some(app.load_session().unwrap());
+    app.session.as_mut().unwrap().sim.set_ai(None);
+    app.map = Some(yr_render::render_map(&app.gamedir, &app.map_name, 1).unwrap());
+    app.menu_art = yr_app::menu::Art::load(&yr_assets::AssetFs::open(&dir).unwrap());
+    let id = app
+        .session
+        .as_ref()
+        .unwrap()
+        .sim
+        .units()
+        .iter()
+        .find(|u| u.owner == yr_sim::OWNER_PLAYER && u.hp > 0)
+        .unwrap()
+        .id;
+    let saved = yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap();
+    let blocked = temp.0.join("not-a-directory");
+    std::fs::write(&blocked, b"keep").unwrap();
+    for failed in [false, true] {
+        for mode in ["attack-move", "repair", "sell", "placement"] {
+            app.menu.set(Page::Closed);
+            app.pointer.focused = true;
+            app.selected = [id].into();
+            app.control = true;
+            app.group_key(
+                KeyCode::Digit1,
+                ElementState::Pressed,
+                false,
+                Instant::now(),
+            );
+            assert!(app.groups.message(Instant::now()).is_some());
+            app.pending = vec![Command::Stop { id }];
+            let pending = app.pending.clone();
+            app.attack_move = mode == "attack-move";
+            app.placing = (mode == "placement").then_some(0);
+            app.service_mode = match mode {
+                "repair" => ServiceMode::Repair,
+                "sell" => ServiceMode::Sell,
+                _ => ServiceMode::None,
+            };
+            app.shift = true;
+            app.control = true;
+            app.keys = [KeyCode::ArrowRight, KeyCode::KeyA].into();
+            app.left_down = Some((200.0, 200.0));
+            app.right_down = Some((200.0, 200.0));
+            app.right_panning = true;
+            app.radar_drag = true;
+            let old_target = temp.0.join("previous.oyrsave");
+            app.save_path = old_target.clone();
+            let path = if failed {
+                blocked.join("save.oyrsave")
+            } else {
+                temp.0.join(format!("{mode}.oyrsave"))
+            };
+            // This is the same entry point as the live F5 handler.
+            app.save_menu_path(path.clone());
+            assert!(matches!(app.menu.page, Page::Message { .. }));
+            assert!(
+                !app.attack_move && app.placing.is_none() && app.service_mode == ServiceMode::None,
+                "quicksave must cancel {mode} on both save outcomes"
+            );
+            assert!(!app.shift && !app.control && app.keys.is_empty());
+            assert!(app.left_down.is_none() && app.right_down.is_none());
+            assert!(!app.right_panning && !app.radar_drag);
+            assert!(app.groups.message(Instant::now()).is_none());
+            assert_eq!(app.selected, [id].into());
+            assert_eq!(app.pending, pending);
+            assert_eq!(
+                yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap(),
+                saved
+            );
+            assert!(!app.advance_clock(Instant::now() + Duration::from_secs(3600)));
+            if failed {
+                assert_eq!(app.save_path, old_target);
+                assert_eq!(std::fs::read(&blocked).unwrap(), b"keep");
+            } else {
+                assert_eq!(app.save_path, path);
+                assert_eq!(std::fs::read(&path).unwrap(), saved);
+            }
+            if let Some(out) = std::env::var_os("OPENYR_QUICKSAVE_PROOF") {
+                let out = PathBuf::from(out);
+                std::fs::create_dir_all(&out).unwrap();
+                if !failed && mode == "attack-move" {
+                    std::fs::write(out.join("fixture.oyrsave"), &saved).unwrap();
+                }
+                for (w, h) in [(640, 480), (1280, 800)] {
+                    let mut frame = vec![0; (w * h * 4) as usize];
+                    app.compose(&mut frame, w, h);
+                    std::fs::write(
+                        out.join(format!("{w}x{h}-{mode}-failed-{failed}.png")),
+                        yr_render::png::encode_rgba(w, h, &frame),
+                    )
+                    .unwrap();
+                }
+            }
+            app.menu_key_code(KeyCode::Escape, None, false);
+            assert_eq!(app.menu.page, if failed { Page::Save } else { Page::Pause });
+            if failed {
+                app.menu_key_code(KeyCode::Escape, None, false);
+            }
+            app.menu_key_code(KeyCode::Escape, None, false);
+            assert!(!app.menu.visible());
+            app.left_release();
+            app.right_release();
+            assert_eq!(app.pending, pending, "stale releases cannot add an order");
+            assert_eq!(app.selected, [id].into());
+            app.selected.clear();
+            app.group_key(
+                KeyCode::Digit1,
+                ElementState::Pressed,
+                false,
+                Instant::now(),
+            );
+            assert_eq!(
+                app.selected,
+                [id].into(),
+                "assigned teams survive menu entry"
+            );
+        }
+    }
+    println!("Quicksave success/failure clears four modes and held gestures, preserves selection/teams, pending orders and full save bytes; Escape recovery and stale releases passed.");
+}
+
+#[test]
 fn retail_pause_recovery_scrolling_keeps_the_match_and_routes_inputs() {
     let dir = PathBuf::from(std::env::var("HOME").unwrap_or_default())
         .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
