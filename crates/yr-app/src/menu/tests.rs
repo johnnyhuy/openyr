@@ -52,6 +52,130 @@ fn names_geometry_and_small_surface_hits_are_bounded() {
 }
 
 #[test]
+fn long_save_name_suffix_and_caret_paint_at_compact_and_default_sizes() {
+    let art = Art::default();
+    let frame_for = |name: &str, w: u32, h: u32| {
+        let mut state = State::default();
+        state.set(Page::Save);
+        state.name = name.to_string();
+        let mut frame = vec![0; (w * h * 4) as usize];
+        draw(&mut frame, w, h, &art, &state, (-1.0, -1.0));
+        assert_eq!(state.name, name, "drawing must not mutate the stored name");
+        frame
+    };
+    for (w, h) in [(640, 480), (1024, 768)] {
+        let a = format!("{}A", "W".repeat(47));
+        let b = format!("{}B", "W".repeat(47));
+        assert!(
+            frame_for(&a, w, h) != frame_for(&b, w, h),
+            "final letter must paint at {w}x{h}"
+        );
+        let backspaced = "W".repeat(47);
+        assert!(
+            frame_for(&a, w, h) != frame_for(&backspaced, w, h),
+            "backspacing the final letter must paint at {w}x{h}"
+        );
+        assert_eq!(
+            frame_for("short", w, h),
+            frame_for("short", w, h),
+            "short names keep stable painting at {w}x{h}"
+        );
+        if let Some(out) = std::env::var_os("OPENYR_SAVE_NAME_PROOF") {
+            let out = std::path::PathBuf::from(out);
+            std::fs::create_dir_all(&out).unwrap();
+            for (label, name) in [("a", a.as_str()), ("b", b.as_str())] {
+                std::fs::write(
+                    out.join(format!("save-name-{w}x{h}-{label}.png")),
+                    yr_render::png::encode_rgba(w, h, &frame_for(name, w, h)),
+                )
+                .unwrap();
+            }
+        }
+    }
+}
+
+#[test]
+fn save_edit_display_keeps_suffix_caret_and_hidden_prefix_marker() {
+    use crate::sidebar::text::Typeface;
+    let face = Typeface(None);
+    assert_eq!(super::draw::fit_edit(face, "", 362), "|");
+    assert_eq!(super::draw::fit_edit(face, "short", 362), "short|");
+    let a = format!("{}A", "W".repeat(47));
+    let shown_a = super::draw::fit_edit(face, &a, 362);
+    assert!(shown_a.starts_with("..."), "{shown_a}");
+    assert!(shown_a.ends_with("A|"), "{shown_a}");
+    assert!(face.width(&shown_a) <= 362, "{shown_a}");
+    assert_eq!(
+        save_name(&a).as_deref(),
+        Some(format!("{a}.oyrsave").as_str())
+    );
+    let b = format!("{}B", "W".repeat(47));
+    assert!(super::draw::fit_edit(face, &b, 362).ends_with("B|"));
+    assert_ne!(shown_a, super::draw::fit_edit(face, &b, 362));
+    let unicode = format!("{}e\u{301}\u{754c}Z", "W".repeat(47));
+    let shown = super::draw::fit_edit(face, &unicode, 362);
+    assert!(shown.ends_with("Z|"), "{shown}");
+    assert!(face.width(&shown) <= 362, "{shown}");
+    let mut state = State::default();
+    state.set(Page::Save);
+    state.text(&"W".repeat(47));
+    state.text("A");
+    assert_eq!(state.name.chars().count(), 48);
+    state.text("B");
+    assert_eq!(state.name.chars().count(), 48, "input limit stays at 48");
+    state.name.pop();
+    assert_eq!(state.name, "W".repeat(47));
+    assert!(super::draw::fit_edit(face, &state.name, 362).ends_with("W|"));
+    state.text("\u{754c}");
+    assert!(super::draw::fit_edit(face, &state.name, 362).ends_with("\u{754c}|"));
+    assert_eq!(
+        save_name(&state.name).as_deref(),
+        Some(format!("{}.oyrsave", state.name).as_str())
+    );
+}
+
+#[test]
+fn retail_save_edit_display_and_frames_keep_suffix_at_compact_and_default_sizes() {
+    use crate::sidebar::text::Typeface;
+    let dir = std::path::PathBuf::from(std::env::var("HOME").unwrap_or_default())
+        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    if !dir.is_dir() {
+        eprintln!("skip: retail install not present");
+        return;
+    }
+    let fs = yr_assets::AssetFs::open(&dir).unwrap();
+    let art = Art::load(&fs);
+    let face = Typeface(art.font.as_ref());
+    for width in [362, 746] {
+        let a = format!("{}A", "W".repeat(47));
+        let shown = super::draw::fit_edit(face, &a, width);
+        assert!(shown.ends_with("A|"), "{shown}");
+        assert!(face.width(&shown) <= width, "{shown} at {width}");
+        if face.width(&format!("{a}|")) > width {
+            assert!(shown.starts_with("..."), "{shown}");
+        } else {
+            assert_eq!(shown, format!("{a}|"));
+        }
+    }
+    let frame_for = |name: &str, w: u32, h: u32| {
+        let mut state = State::default();
+        state.set(Page::Save);
+        state.name = name.to_string();
+        let mut frame = vec![0; (w * h * 4) as usize];
+        draw(&mut frame, w, h, &art, &state, (-1.0, -1.0));
+        frame
+    };
+    for (w, h) in [(640, 480), (1024, 768)] {
+        let a = format!("{}A", "W".repeat(47));
+        let b = format!("{}B", "W".repeat(47));
+        assert!(
+            frame_for(&a, w, h) != frame_for(&b, w, h),
+            "retail final letter must paint at {w}x{h}"
+        );
+    }
+}
+
+#[test]
 fn slot_listing_stays_bounded_and_never_follows_symlinks() {
     let path = std::env::temp_dir().join(format!(
         "openyr-menu-slots-{}-{}",

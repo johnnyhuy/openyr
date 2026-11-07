@@ -69,6 +69,8 @@ preserving selection. Map orders, camera scrolling and world hotkeys do not
 receive modal input. Left press/release must hit the same enabled control;
 focus loss clears the pending press. Tab selects controls. On Load, arrows
 select slots and scroll the list. Save accepts a bounded filename component.
+An over-wide Save name keeps its suffix and caret visible in the field, with
+three dots marking the hidden prefix. The stored filename stays complete.
 Right-click and Escape return, decline a confirmation or resume as appropriate.
 Won/Lost screens require restart or quit.
 

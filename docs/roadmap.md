@@ -451,6 +451,11 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       without catch-up and isolate map input. Shared-compositor proof and
       source-pixel checks are described in `docs/formats/menus.md`. Exact
       oracle calibration, non-Allied skins and delete remain in #96.
+- [x] Keep long Save name edits visible (#243): measured suffix fitting keeps
+      the name end and caret in the pause Save field, with three dots marking
+      a hidden prefix. Short names, Unicode boundaries, the 48 character limit
+      and the complete stored filename stay intact at compact and default
+      canvases, with fallback and retail fonts (`docs/formats/menus.md`).
 - [x] Animated front menu and match entry (#110, #112): native retail Bink
       playback, shell/warning art, single-player navigation, authored map preview,
       supported EB1 setup, saved matches, actual options and data-folder action.

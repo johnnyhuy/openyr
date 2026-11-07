@@ -192,6 +192,51 @@ fn retail_saved_load_success_is_visible_only_after_committing_the_match() {
 }
 
 #[test]
+fn retail_long_save_name_saves_under_complete_filename_with_unchanged_bytes() {
+    let dir = PathBuf::from(std::env::var("HOME").unwrap_or_default())
+        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    if !dir.is_dir() {
+        eprintln!("skip: retail install not present");
+        return;
+    }
+    let temp = Scratch::new();
+    let mut app = new_app(dir.to_string_lossy().into(), "EB1.MMX".into(), 1);
+    app.save_path = temp.0.join("quicksave.oyrsave");
+    app.preferences_path = Some(temp.0.join("interface.json"));
+    app.session = Some(app.load_session().unwrap());
+    app.menu_art = yr_app::menu::Art::load(&yr_assets::AssetFs::open(&dir).unwrap());
+    let expected = yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap();
+    app.open_menu(Page::Pause);
+    click(&mut app, Button::Save);
+    assert_eq!(app.menu.page, Page::Save);
+    app.menu.name.clear();
+    let long_a = format!("{}A", "W".repeat(47));
+    app.menu_key_code(KeyCode::KeyW, Some(long_a.as_str()), false);
+    assert_eq!(app.menu.name, long_a);
+    app.menu_key_code(KeyCode::Backspace, None, false);
+    assert_eq!(app.menu.name, "W".repeat(47));
+    app.menu_key_code(KeyCode::KeyB, Some("B"), false);
+    assert!(app.menu.name.ends_with('B'));
+    app.menu_key_code(KeyCode::Backspace, None, false);
+    app.menu_key_code(KeyCode::KeyA, Some("A"), false);
+    assert_eq!(app.menu.name, long_a);
+    click(&mut app, Button::Save);
+    let saved = temp.0.join(format!("{long_a}.oyrsave"));
+    assert!(saved.is_file(), "save must use the complete stored name");
+    assert_eq!(std::fs::read(&saved).unwrap(), expected);
+    assert_eq!(app.menu.name, long_a, "saving keeps the full stored name");
+    assert!(app.menu.slots.iter().any(|slot| slot.name == long_a));
+    let short = temp.0.join("short.oyrsave");
+    app.save_menu_path(short.clone());
+    assert_eq!(
+        std::fs::read(&short).unwrap(),
+        expected,
+        "filename choice must not change match bytes"
+    );
+    println!("Long save name saved under its complete filename with unchanged match bytes.");
+}
+
+#[test]
 fn retail_quicksave_clears_modal_input_on_success_and_failure() {
     let dir = PathBuf::from(std::env::var("HOME").unwrap_or_default())
         .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");

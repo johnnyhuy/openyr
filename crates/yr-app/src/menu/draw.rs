@@ -181,9 +181,9 @@ pub fn draw(
             c.rect((38, 414), (world - 76, 30), [0, 0, 0, 255]);
             c.text(
                 (48, 420),
-                &fit(c.face, &format!("{}|", state.name), world - 110),
+                &fit_edit(c.face, &state.name, world - 110),
                 YELLOW,
-                50,
+                usize::MAX,
             );
         }
     }
@@ -317,6 +317,29 @@ pub fn draw(
             }
         }
     }
+}
+
+/// Display text for the Save name field. The caret sits at the end of the
+/// stored name, so an over-wide name keeps its suffix and caret and marks
+/// the hidden prefix with three dots. Short names return unchanged.
+/// Measured with the same advances used to paint, on char boundaries.
+pub(super) fn fit_edit(face: Typeface<'_>, name: &str, width: i32) -> String {
+    let full = format!("{name}|");
+    if face.width(&full) <= width {
+        return full;
+    }
+    let budget = width - face.width("...|");
+    let mut used: i32 = 0;
+    let mut start = name.len();
+    for (index, ch) in name.char_indices().rev() {
+        let advance = face.advance(ch);
+        if used.saturating_add(advance) > budget {
+            break;
+        }
+        used += advance;
+        start = index;
+    }
+    format!("...{}|", &name[start..])
 }
 
 fn fit(face: Typeface<'_>, text: &str, width: i32) -> String {
