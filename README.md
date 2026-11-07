@@ -10,6 +10,27 @@ OpenYR is a **pre-alpha playable sandbox**. The native menu and match flow work,
 but original-game parity and the full game rules are still in progress. See the
 [roadmap](docs/roadmap.md) for verified slices and remaining work.
 
+## See it run
+
+Native OpenYR with retail data, captured at 1280x800 on Linux. Click either
+video link to watch the recorded flow.
+
+[Watch menu, Skirmish and loading (24 seconds)](https://github.com/johnnyhuy/openyr/blob/c7deba4c12ab133026c00570e4a2c78d7fa3fa65/proof/native-demo/start-flow.mp4?raw=true)
+| [Watch world zoom and pause/resume (12 seconds)](https://github.com/johnnyhuy/openyr/blob/c7deba4c12ab133026c00570e4a2c78d7fa3fa65/proof/native-demo/match-pause.mp4?raw=true)
+
+![OpenYR native main menu](https://github.com/johnnyhuy/openyr/raw/c7deba4c12ab133026c00570e4a2c78d7fa3fa65/proof/native-demo/main-menu.png)
+
+![OpenYR EB1 sandbox and Allied base after zooming out](https://github.com/johnnyhuy/openyr/raw/c7deba4c12ab133026c00570e4a2c78d7fa3fa65/proof/native-demo/overview.png)
+
+[Skirmish setup](https://github.com/johnnyhuy/openyr/blob/c7deba4c12ab133026c00570e4a2c78d7fa3fa65/proof/native-demo/skirmish.png) | [Loading screen](https://github.com/johnnyhuy/openyr/blob/c7deba4c12ab133026c00570e4a2c78d7fa3fa65/proof/native-demo/loading.png)
+| [Pause menu](https://github.com/johnnyhuy/openyr/blob/c7deba4c12ab133026c00570e4a2c78d7fa3fa65/proof/native-demo/pause.png) | [Full recording and capture receipt](https://github.com/johnnyhuy/openyr/blob/c7deba4c12ab133026c00570e4a2c78d7fa3fa65/proof/native-demo)
+
+These demos show source `11379ae`, including the engine from PR #244. Video is
+silent; no physical Mac, Retina or audio-device check was performed. Captures
+show OpenYR's current behavior and do not establish original-game timing parity.
+Derived media is pinned separately from the source tree; running the game still
+requires your own install. See [recording and provenance](docs/demos.md).
+
 ## What works
 
 | Area | Current implementation |
