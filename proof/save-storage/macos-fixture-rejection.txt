@@ -1,0 +1,9 @@
+Initial CI job: https://github.com/johnnyhuy/openyr/actions/runs/42425644638/job/128563219757
+Source: 74e21a4cb7abebf9415af520d3e05afdbecf4e13
+The initial-file creation at storage/tests.rs:32 ran before write(&path, after).
+
+2026-11-07T23:33:29.0474890Z test snapshot::storage::tests::non_utf8_target_does_not_expand_the_temporary_name ... FAILED
+2026-11-07T23:33:35.3822290Z thread 'snapshot::storage::tests::non_utf8_target_does_not_expand_the_temporary_name' (17479) panicked at crates/yr-app/src/snapshot/storage/tests.rs:32:35:
+2026-11-07T23:33:35.3824100Z called `Result::unwrap()` on an `Err` value: Os { code: 92, kind: Uncategorized, message: "Illegal byte sequence" }
+
+The fixture now uses cfg(target_os = "linux"). The ASCII/Unicode and other storage tests remain enabled on macOS.
