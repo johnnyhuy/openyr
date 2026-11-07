@@ -106,8 +106,17 @@ reached its 180-second observation deadline (exit 7). A separate observation
 of that same live process found zero windows (exit 4). Wine reported that
 its explorer window driver could not load. Both original configuration files
 still had their original SHA256 values. The processes were not restarted
-because of the deadline. Repeatable startup remains open in #148; the
-successful earlier session does not establish that every startup works.
+because of the deadline.
+
+Startup was restored on 2026-11-07 in a session attached to the logged-in
+macOS GUI. `verify` passed all synthetic checks. Two consecutive `launch`
+runs each verified the Main Menu page (`GUI:MainMenu`, 800x600 client) with
+matching launcher and target parent PIDs, in about 34 and 32 seconds. Between
+the launches the game stayed usable for about 45 minutes, was observed on
+the Main Menu, Single Player and Skirmish pages, and exited cleanly through
+its own confirmation dialog. A game started from a shell without GUI access
+or without permission to bind the wineserver socket proves nothing about the
+prefix. Run this tool from a GUI-attached terminal. This closes #148.
 
 The installed third-party display wrapper accepted a per-process
 `CNC_DDRAW_CONFIG_FILE` path. A copied configuration selecting GDI/windowed
@@ -123,7 +132,9 @@ use fullscreen while the wrapper controls windowed output. An earlier `-win`
 experiment also failed; it is not a recommended recovery step.
 
 Fresh public UI measurements established Skirmish's 145x113 preview client
-at `(644,37)`. Original renderer crops then calibrated its black background,
+at `(644,37)`. The 2026-11-07 restored session re-measured the same preview
+control (id 1128) at the same geometry on the Skirmish page, so #144 can
+resume from a live reference again. Original renderer crops then calibrated its black background,
 landscape/portrait fitting and sampling. See
 [front-preview.md](../../docs/formats/front-preview.md). Those measurements
 resolve #144 and #151; the earlier eleven pixels alone were insufficient.
