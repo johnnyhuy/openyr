@@ -9,6 +9,57 @@ pub(super) struct Target {
 }
 
 impl App {
+    fn current_attack_targets(&self) -> BTreeSet<u32> {
+        let Some(session) = &self.session else {
+            return BTreeSet::new();
+        };
+        if !self.pointer.focused
+            || self.menu.visible()
+            || session.outcome != Outcome::Ongoing
+            || self.placing.is_some()
+            || self.service_mode != ServiceMode::None
+        {
+            return BTreeSet::new();
+        }
+        session
+            .sim
+            .units()
+            .iter()
+            .filter(|u| {
+                self.selected.contains(&u.id)
+                    && u.owner == yr_sim::OWNER_PLAYER
+                    && u.hp > 0
+                    && u.weapon.is_some_and(|w| w.damage > 0)
+            })
+            .filter_map(|u| u.attack)
+            .filter(|id| {
+                session
+                    .sim
+                    .units()
+                    .iter()
+                    .any(|u| u.id == *id && u.hp > 0 && u.owner != yr_sim::OWNER_PLAYER)
+                    || session
+                        .sim
+                        .buildings()
+                        .iter()
+                        .any(|b| b.id == *id && b.hp > 0 && b.owner != yr_sim::OWNER_PLAYER)
+            })
+            .collect()
+    }
+
+    pub(super) fn draw_attack_targets(&self, frame: &mut [u8], size: (u32, u32)) {
+        for id in self.current_attack_targets() {
+            self.draw_target_brackets(
+                frame,
+                size,
+                Target {
+                    id,
+                    color: ENEMY_COL,
+                },
+            );
+        }
+    }
+
     fn hover_target(&self, size: (u32, u32)) -> Option<Target> {
         if !self.pointer.active(size, self.cursor)
             || self.menu.visible()
@@ -50,6 +101,10 @@ impl App {
         let Some(target) = self.hover_target(size) else {
             return;
         };
+        self.draw_target_brackets(frame, size, target);
+    }
+
+    fn draw_target_brackets(&self, frame: &mut [u8], size: (u32, u32), target: Target) {
         let (Some(map), Some(session)) = (&self.map, &self.session) else {
             return;
         };
@@ -139,3 +194,6 @@ fn draw_brackets(
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod current_tests;

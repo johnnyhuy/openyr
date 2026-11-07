@@ -1216,6 +1216,7 @@ impl App {
             );
         }
         self.draw_order_marker(frame, (fw, fh), now);
+        self.draw_attack_targets(frame, (fw, fh));
         self.draw_hover_target(frame, (fw, fh));
         if let Some(session) = &self.session {
             sidebar::draw(frame, fw, fh, session, self.sidebar_view, self.placing);
