@@ -1,0 +1,33 @@
+Script started on 2026-11-07 23:33:51+00:00 [COMMAND="bash /workspace/scratch/save-storage-proof/record.sh" <not executed on terminal>]
+74e21a4cb7abebf9415af520d3e05afdbecf4e13
+95e6b421620cdda9e55e335434440a093112ba28
+Verified: /workspace/openyr-save-safety-20261107-2150/.tmp/save-proof-257/program
+Verified: /workspace/openyr-save-safety-20261107-2150/.tmp/save-proof-257/program
+openyr [<gamedir> [<map> [scale]]] [--load <file>] [--save <file>] [--ticks <end-tick>] [--frames <dir> <tick>...] [--passive]
+
+Without arguments, OpenYR finds your retail install and opens the main menu.
+Set OPENYR_GAMEDIR to override the remembered or standard install.
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.09s
+     Running unittests src/lib.rs (/workspace/openyr/target/debug/deps/yr_app-3d65909a3deb91c6)
+
+running 7 tests
+test snapshot::storage::tests::legal_254_byte_unicode_target_can_be_saved_and_replaced ... Valid 254-byte Unicode destination: new save and atomic replacement preserve exact bytes.
+ok
+test snapshot::storage::tests::legal_255_byte_ascii_target_can_be_saved_and_replaced ... Valid 255-byte ASCII destination: new save and atomic replacement preserve exact bytes.
+ok
+test snapshot::storage::tests::non_utf8_target_does_not_expand_the_temporary_name ... Valid non-UTF-8 Unix basename: no lossy temporary-name expansion or changed destination.
+ok
+test snapshot::storage::tests::occupied_symlink_candidates_are_not_followed ... Temporary symlink collision is skipped without modifying its target.
+ok
+test snapshot::storage::tests::occupied_temporary_candidates_are_never_truncated_and_retries_are_bounded ... Occupied candidates remain intact, collisions retry, and exhaustion returns after 32 attempts.
+ok
+test snapshot::storage::tests::rename_failure_removes_only_the_owned_temporary_file ... Failed replacement preserves destination/unrelated files and removes only its own temporary sibling.
+ok
+test snapshot::storage::tests::temporary_candidate_cannot_publish_the_destination_before_replacement ... A destination matching the internal naming pattern remains absent until replacement.
+ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 109 filtered out; finished in 0.01s
+
+50416e0918233decc3aacfd60dc3d9381dd447314108c6bc0e649cdf545a9e11  /workspace/openyr/target/debug/deps/yr_app-3d65909a3deb91c6
+
+Script done on 2026-11-07 23:33:51+00:00 [COMMAND_EXIT_CODE="0"]
