@@ -1,0 +1,9 @@
+    Checking yr-formats v0.1.0 (/workspace/openyr-proof-build-20261107/crates/yr-formats)
+    Checking yr-rules v0.1.0 (/workspace/openyr-proof-build-20261107/crates/yr-rules)
+    Checking yr-assets v0.1.0 (/workspace/openyr-proof-build-20261107/crates/yr-assets)
+    Checking yr-sim v0.1.0 (/workspace/openyr-proof-build-20261107/crates/yr-sim)
+    Checking yr-render v0.1.0 (/workspace/openyr-proof-build-20261107/crates/yr-render)
+    Checking sim-bench v0.1.0 (/workspace/openyr-proof-build-20261107/tools/sim-bench)
+    Checking yr-app v0.1.0 (/workspace/openyr-proof-build-20261107/crates/yr-app)
+    Checking mix-dump v0.1.0 (/workspace/openyr-proof-build-20261107/tools/mix-dump)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 4.70s
