@@ -1,0 +1,42 @@
+{
+  "README.md": {
+    "bytes": 1811,
+    "sha256": "09f60cf3ee99d65df974288fd3b7b2cb02292edb37e2948ada2cd3c26c56c5bf"
+  },
+  "before-guard.log": {
+    "bytes": 1971,
+    "sha256": "0fc30d650b53e95f4c47ebc0a6207cd75aa75b762e0d2bc6b73052f32b751ad1"
+  },
+  "build-receipt.json": {
+    "bytes": 784,
+    "sha256": "d4ffb4561b3482956dd87b6db46d4d3a3d1092db828024d55a693bfd98e353ad"
+  },
+  "record.sh": {
+    "bytes": 552,
+    "sha256": "e4e1ad0a6fbbc2d863b6b48d3c0400232b039ba687b30e4eef56d69c867081fd"
+  },
+  "render.py": {
+    "bytes": 1314,
+    "sha256": "02e7ca475e1c9f3723914aa4287bc4bfc46df53f96c36482ca5457e387d571f4"
+  },
+  "terminal.gif": {
+    "bytes": 157539,
+    "sha256": "0f68229d5371bb47e0b3bc6ab2c393168f6966acb5b4ed62fcc7efe2cf51f36e"
+  },
+  "terminal.png": {
+    "bytes": 87115,
+    "sha256": "e9fdc979dcbf9a03fce20b7db3738e3fc028fa8a34b3da7575e5fff1952e9015"
+  },
+  "terminal.timing": {
+    "bytes": 255,
+    "sha256": "66fc2dea78b9bf9c1c93e56da3a9dd89d46aecefa334a242a4b9dee2d041ea14"
+  },
+  "terminal.typescript": {
+    "bytes": 1937,
+    "sha256": "1eac8d6d4e77f31eead371925be3a3798abc1d011bd65f6d1d64f0bcf70621b2"
+  },
+  "workspace-check.log": {
+    "bytes": 50054,
+    "sha256": "cb72c84045ba0e20a781cd5e93aed92ac6b4c8079b6ac60c93a6a5dccf7b9d1a"
+  }
+}
