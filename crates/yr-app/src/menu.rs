@@ -3,9 +3,11 @@
 mod art;
 mod draw;
 pub mod maps;
+pub(crate) mod message;
 pub mod setup;
 pub use art::Art;
 pub use draw::draw;
+pub use message::scroll_message;
 use std::path::PathBuf;
 
 #[derive(Debug, Clone, PartialEq, Eq)]

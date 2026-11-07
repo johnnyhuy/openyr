@@ -1,4 +1,4 @@
-use super::{Art, Button, Layout, Page, State};
+use super::{message, Art, Button, Layout, Page, State};
 use crate::sidebar::{text::Typeface, Canvas};
 const YELLOW: [u8; 4] = [255, 232, 0, 255];
 const WHITE: [u8; 4] = [220, 232, 240, 255];
@@ -109,7 +109,7 @@ pub fn draw(
         Page::Loading => ("Loading", String::new()),
         Page::Result(true) => (art.label("TXT_VICTORIOUS", "Victory"), String::new()),
         Page::Result(false) => (art.label("TXT_SCENARIO_LOST", "Defeat"), String::new()),
-        Page::Message { text, .. } => ("OpenYR", text.clone()),
+        Page::Message { .. } => ("OpenYR", String::new()),
         Page::Closed
         | Page::Main
         | Page::SinglePlayer
@@ -120,16 +120,36 @@ pub fn draw(
     let title = fit(c.face, title, world - 48);
     let x = (world - c.face.width(&title)) / 2;
     c.text((x, 28), &title, YELLOW, 160);
-    for (i, line) in detail
-        .chars()
-        .take(400)
-        .collect::<Vec<_>>()
-        .chunks(50)
-        .take(8)
-        .enumerate()
-    {
-        let line: String = line.iter().collect();
-        c.text((40, 72 + i as i32 * 22), &line, WHITE, 50);
+    if let Page::Message { text, .. } = &state.page {
+        let region = message::Region::pause(layout);
+        let (first, rows, _) = region.viewport(c.face, text, state.message_scroll);
+        for (i, line) in message::lines(c.face, text, region.width)
+            .skip(first)
+            .take(rows)
+            .enumerate()
+        {
+            c.text(
+                (
+                    region.left,
+                    region.top + i as i32 * message::line_step(c.face),
+                ),
+                line,
+                WHITE,
+                usize::MAX,
+            );
+        }
+    } else {
+        for (i, line) in detail
+            .chars()
+            .take(400)
+            .collect::<Vec<_>>()
+            .chunks(50)
+            .take(8)
+            .enumerate()
+        {
+            let line: String = line.iter().collect();
+            c.text((40, 72 + i as i32 * 22), &line, WHITE, 50);
+        }
     }
     if state.page == Page::Loading {
         for (text, y) in [
@@ -243,7 +263,8 @@ pub fn draw(
         }
     }
     let focused = hovered.or_else(|| state.buttons().get(state.focus).map(|b| b.0));
-    let status = match state.page {
+    let message_status;
+    let status = match &state.page {
         Page::Pause => match focused {
             Some(Button::Controls) => {
                 art.label("STT:OptionInternetGameControls", "Adjust controls")
@@ -261,6 +282,20 @@ pub fn draw(
         Page::Delete => "Select a saved match to delete. The current match stays in memory.",
         Page::Loading => "Escape cancels this load and keeps the current match.",
         Page::Result(_) => "Choose restart or quit.",
+        Page::Message { text, .. } => {
+            let region = message::Region::pause(layout);
+            let (first, rows, count) = region.viewport(c.face, text, state.message_scroll);
+            if count > rows {
+                message_status = format!(
+                    "Lines {}-{} of {count}. Up/Down or wheel scroll; Escape returns.",
+                    first + 1,
+                    (first + rows).min(count)
+                );
+                &message_status
+            } else {
+                "Escape returns. Tab selects controls."
+            }
+        }
         _ => "Escape returns. Tab and arrow keys select controls.",
     };
     c.text(

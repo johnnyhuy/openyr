@@ -82,6 +82,97 @@ fn finish_load(app: &mut App) {
 }
 
 #[test]
+fn retail_pause_recovery_scrolling_keeps_the_match_and_routes_inputs() {
+    let dir = PathBuf::from(std::env::var("HOME").unwrap_or_default())
+        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    if !dir.is_dir() {
+        return;
+    }
+    let temp = Scratch::new();
+    let mut app = new_app(dir.to_string_lossy().into(), "EB1.MMX".into(), 1);
+    app.session = Some(app.load_session().unwrap());
+    app.map = Some(yr_render::render_map(&app.gamedir, &app.map_name, 1).unwrap());
+    app.menu_art = yr_app::menu::Art::load(&yr_assets::AssetFs::open(&dir).unwrap());
+    let saved = yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap();
+    let original_target = temp.0.join("quicksave.oyrsave");
+    app.save_path = original_target.clone();
+    let mut blocked = temp.0.clone();
+    for _ in 0..5 {
+        blocked.push("diagnostic-folder-with-a-long-name-".repeat(3));
+    }
+    blocked.push("directory.oyrsave");
+    std::fs::create_dir_all(&blocked).unwrap();
+    app.save_menu_path(blocked.clone());
+    let Page::Message { text, .. } = &app.menu.page else {
+        panic!("failed save must expose a recovery message")
+    };
+    assert!(text.len() > 400);
+    assert_eq!(app.save_path, original_target);
+    // Exercise an overflowing diagnostic independently of OS error wording.
+    let diagnostic = format!(
+        "{text}\n\n{}\nEND: select another save or return to the match.",
+        "The current match is still in memory. ".repeat(250)
+    );
+    for size in [(640, 480), (800, 600), (1280, 800)] {
+        app.frame_size = size;
+        app.menu.message(diagnostic.clone(), Page::Save);
+        app.pointer_moved((100.0, 100.0));
+        capture_recovery(&app, "first");
+        app.menu_key_code(KeyCode::ArrowDown, None, false);
+        assert_eq!(app.menu.message_scroll, 1);
+        app.pointer_wheel(MouseScrollDelta::LineDelta(0.0, -1.0));
+        assert!(app.menu.message_scroll > 1);
+        app.menu_key_code(KeyCode::PageDown, None, true);
+        app.menu_key_code(KeyCode::End, None, false);
+        let end = app.menu.message_scroll;
+        assert!(end > 10);
+        capture_recovery(&app, "last");
+        app.menu_key_code(KeyCode::End, None, true);
+        assert_eq!(app.menu.message_scroll, end);
+        app.menu_key_code(KeyCode::PageUp, None, false);
+        assert!(app.menu.message_scroll < end);
+        app.menu_key_code(KeyCode::Home, None, false);
+        assert_eq!(app.menu.message_scroll, 0);
+        app.menu_key_code(KeyCode::ArrowUp, None, true);
+        assert_eq!(app.menu.message_scroll, 0);
+        assert!(!app.advance_clock(Instant::now() + Duration::from_secs(3600)));
+        app.menu_key_code(KeyCode::Escape, None, false);
+        assert_eq!(app.menu.page, Page::Save);
+        assert!(app.pending.is_empty());
+        assert_eq!(
+            yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap(),
+            saved
+        );
+    }
+    assert!(blocked.is_dir());
+    println!("Pause recovery: real >400-byte save error, full diagnostic navigation at three layouts, Escape recovery and complete saved-match bytes preserved.");
+}
+
+fn capture_recovery(app: &App, name: &str) {
+    let Some(out) = std::env::var_os("OPENYR_RECOVERY_PROOF") else {
+        return;
+    };
+    let out = PathBuf::from(out);
+    std::fs::create_dir_all(&out).unwrap();
+    let (w, h) = app.camera_size();
+    let mut frame = vec![0; (w * h * 4) as usize];
+    app.compose(&mut frame, w, h);
+    std::fs::write(
+        out.join(format!("{w}x{h}-{name}.png")),
+        yr_render::png::encode_rgba(w, h, &frame),
+    )
+    .unwrap();
+    std::fs::write(
+        out.join(format!("{w}x{h}-{name}.txt")),
+        format!(
+            "scroll={}\npage={:?}\n",
+            app.menu.message_scroll, app.menu.page
+        ),
+    )
+    .unwrap();
+}
+
+#[test]
 fn preferences_are_bounded_and_errors_remain_recoverable() {
     let temp = Scratch::new();
     let path = temp.0.join("interface.json");
