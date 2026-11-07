@@ -1,7 +1,0 @@
-   Compiling yr-formats v0.1.0 (/workspace/openyr-quicksave-before-20261107/crates/yr-formats)
-   Compiling yr-rules v0.1.0 (/workspace/openyr-quicksave-before-20261107/crates/yr-rules)
-   Compiling yr-assets v0.1.0 (/workspace/openyr-quicksave-before-20261107/crates/yr-assets)
-   Compiling yr-sim v0.1.0 (/workspace/openyr-quicksave-before-20261107/crates/yr-sim)
-   Compiling yr-render v0.1.0 (/workspace/openyr-quicksave-before-20261107/crates/yr-render)
-   Compiling yr-app v0.1.0 (/workspace/openyr-quicksave-before-20261107/crates/yr-app)
-    Finished `release` profile [optimized] target(s) in 31.37s
