@@ -1,0 +1,22 @@
+   Compiling yr-app v0.1.0 (/workspace/openyr-menu-confirmation-20261108/crates/yr-app)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.89s
+     Running unittests src/lib.rs (/workspace/openyr/target/debug/deps/yr_app-3d65909a3deb91c6)
+
+running 1 test
+test menu::tests::confirmations_distinguish_their_target_save_files ... FAILED
+
+failures:
+
+---- menu::tests::confirmations_distinguish_their_target_save_files stdout ----
+
+thread 'menu::tests::confirmations_distinguish_their_target_save_files' (190410) panicked at crates/yr-app/src/menu/tests.rs:299:13:
+confirmation must identify the target file at 640x480
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    menu::tests::confirmations_distinguish_their_target_save_files
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 105 filtered out; finished in 0.06s
+
+error: test failed, to rerun pass `-p yr-app --lib`

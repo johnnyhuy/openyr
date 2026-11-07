@@ -1,0 +1,12 @@
+   Compiling yr-app v0.1.0 (/workspace/openyr-menu-confirmation-20261108/crates/yr-app)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.26s
+     Running unittests src/lib.rs (/workspace/openyr/target/debug/deps/yr_app-3d65909a3deb91c6)
+
+running 4 tests
+test menu::confirmation::tests::filename_labels_quote_the_basename_without_exposing_directories ... ok
+test menu::confirmation::tests::filename_wrapping_preserves_unicode_spaces_and_every_reachable_line ... ok
+test menu::tests::confirmations_distinguish_their_target_save_files ... ok
+test menu::confirmation::tests::confirmation_targets_wrap_inside_both_skins_with_fallback_and_retail_fonts ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 105 filtered out; finished in 14.84s
+

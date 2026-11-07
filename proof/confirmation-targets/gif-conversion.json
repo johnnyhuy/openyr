@@ -1,0 +1,19 @@
+{
+  "command": [
+    "ffmpeg",
+    "-v",
+    "error",
+    "-y",
+    "-i",
+    "/workspace/scratch/confirmation-targets-20261108/publish/after/confirmations.mp4",
+    "-filter_complex_threads",
+    "1",
+    "-filter_complex",
+    "fps=8,scale=640:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=128:stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=3:diff_mode=rectangle",
+    "-loop",
+    "0",
+    "/workspace/scratch/confirmation-targets-20261108/publish/confirmation-flow.gif"
+  ],
+  "input_sha256": "22e8a80bd1b4af35684e61ee3e5ea69a734a1aaf268323749843b38bd084be23",
+  "output_sha256": "442a169fe36cd28dd11c1791a2c4bffdc4a32be7f38b700e58f2f0d95d4c522d"
+}

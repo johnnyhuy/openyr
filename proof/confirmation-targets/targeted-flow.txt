@@ -1,0 +1,11 @@
+   Compiling yr-app v0.1.0 (/workspace/openyr-menu-confirmation-20261108/crates/yr-app)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 7.24s
+     Running unittests src/main.rs (/workspace/openyr/target/debug/deps/openyr-8539b05c03c1d83a)
+
+running 3 tests
+test menu_flow::tests::confirmation_scrolling_preserves_button_navigation_and_decline ... ok
+test menu_flow::tests::delete_slots_requires_confirmation_and_refreshes_scrolling_in_both_flows ... ok
+test menu_flow::tests::retail_confirmation_targets_preserve_save_load_delete_and_match_bytes ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 87 filtered out; finished in 5.24s
+

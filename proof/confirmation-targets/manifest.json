@@ -1,0 +1,182 @@
+{
+  "xorg.conf": {
+    "bytes": 415,
+    "sha256": "2b8327cf598f157ffa656492fc1138c4ea33ca4525f81bef3e1c24086e43dd0e"
+  },
+  "comparison.png": {
+    "bytes": 726960,
+    "sha256": "9aa5d4a914a59aefa7e2548005cc3be0f1cc7e270f09cc7996a6c8d01133ea3b"
+  },
+  "gif-conversion.json": {
+    "bytes": 675,
+    "sha256": "aabfdf8d1f9fc623a39e03f82b7cb1512431af17a5ba2810998c21ae626d062d"
+  },
+  "capture.py": {
+    "bytes": 6362,
+    "sha256": "c7440ed19a7d10676e3753cc046f33897b41b6f5cfe7f7630aa332f7dfa248eb"
+  },
+  "regression-before.txt": {
+    "bytes": 943,
+    "sha256": "a64e423ef98236f09e6c69518fa71ca7e75f97d393e725a38e5ae07b13c758d2"
+  },
+  "targeted-lib.txt": {
+    "bytes": 772,
+    "sha256": "66718b55006413a637731c438ddf7d51d4dd666a7bec5d5f91e99cbc9f50f2df"
+  },
+  "check.txt": {
+    "bytes": 51266,
+    "sha256": "67d2ffeae125667a4c7b32489bb88a7a5706710bfd4843f1751ac329c864d047"
+  },
+  "targeted-flow.txt": {
+    "bytes": 668,
+    "sha256": "c5acf7242e6794dd6e1ce1fc00fd05e98c5d510d9a55e5c459c7740a31dba65d"
+  },
+  "confirmation-flow.gif": {
+    "bytes": 727813,
+    "sha256": "442a169fe36cd28dd11c1791a2c4bffdc4a32be7f38b700e58f2f0d95d4c522d"
+  },
+  "README.md": {
+    "bytes": 2484,
+    "sha256": "6ba16c9fd1dceb62ddb1fd09eb7ec08f982b270d90b12701342bc8e3c967ae5d"
+  },
+  "build-receipt.json": {
+    "bytes": 785,
+    "sha256": "bda50b46153c3a5547b4e380f86e637d3ef0d0f7e52ea9265741625dc869e714"
+  },
+  "after/video-metadata.json": {
+    "bytes": 2212,
+    "sha256": "552c42a0a01ea006d44f62e201aee530c410328289ee78715772536b07030ae1"
+  },
+  "after/1280-pause-delete-long.png": {
+    "bytes": 295353,
+    "sha256": "56677b30bb44150254bc73b6b914d54ae383d90427891250bf327c537044dec2"
+  },
+  "after/1280-pause-load.png": {
+    "bytes": 293607,
+    "sha256": "0223397dd087d16a200ae38d267db62e9f2e18999f5e58ae5a4aa90b9a9189d7"
+  },
+  "after/640-front-load.png": {
+    "bytes": 148369,
+    "sha256": "c7a757972a19ae5fe56d3a46ad24054cb0a991c96410876ecc6125040aaba405"
+  },
+  "after/confirmations.mp4": {
+    "bytes": 572019,
+    "sha256": "22e8a80bd1b4af35684e61ee3e5ea69a734a1aaf268323749843b38bd084be23"
+  },
+  "after/640-pause-load.png": {
+    "bytes": 149566,
+    "sha256": "fbc35670d4d971540a71677626af833cc99415de50fbd13f4e419a30fa6a8e71"
+  },
+  "after/640-pause-overwrite.png": {
+    "bytes": 149677,
+    "sha256": "64fde3291d092e0a33811fbeff89124d0b47198de9f50bc4afc6dc9bfb1e8e60"
+  },
+  "after/1280-save-editor.png": {
+    "bytes": 177906,
+    "sha256": "075c119bd63b667d47c910e505a1414572574d198b3b4792017b36cf1da8eb99"
+  },
+  "after/1280-pause-overwrite.png": {
+    "bytes": 293658,
+    "sha256": "9d5281d0407b9e1734e652f23157f0fe6fb725a86bdead06b14ff65190e4f304"
+  },
+  "after/640-pause-delete-long.png": {
+    "bytes": 155467,
+    "sha256": "a370cb8b5469262deb2713bbcd545dd7c1c4042a77a4e266cb0e05ec65b4c2e3"
+  },
+  "after/640-save-editor.png": {
+    "bytes": 96924,
+    "sha256": "42c56dcd8648b7c5d3db26347a7fcf5eafef54faf9364d29cc27f3999fe15654"
+  },
+  "after/640-front-delete-declined.png": {
+    "bytes": 107507,
+    "sha256": "8cbdc757d43269f513b8625336ccdffa5d0c6e517ac50c1b31e90c52862463f2"
+  },
+  "after/1280-front-delete-declined.png": {
+    "bytes": 166368,
+    "sha256": "0f06f31f07188c30a306de5f5f9e5a8b3261a2c625d16ab9d9fdcb0f89128564"
+  },
+  "after/receipt.json": {
+    "bytes": 3400,
+    "sha256": "2b56e6bc203aaf75aa91189b5c8dcce11cb784f978e89c32fd4c20d7e1b7af33"
+  },
+  "after/1280-front-load.png": {
+    "bytes": 226850,
+    "sha256": "83357f6c5e76ea1e96682cd5b4fa16223ccd063dc0a7ddaf9f269fdfcaf4bf9f"
+  },
+  "after/640-front-delete-long.png": {
+    "bytes": 149482,
+    "sha256": "8e0a6ef6009ec27a04005758aa9c67565618b86cccdfb050b02bf62bf3c128da"
+  },
+  "after/1280-front-delete-long.png": {
+    "bytes": 228288,
+    "sha256": "07ae39736ef7d76599d8dbedf9a703f67174d50dc2833be62e6f99ddb1dab0f9"
+  },
+  "before/video-metadata.json": {
+    "bytes": 2213,
+    "sha256": "c7da13cd00a2ec9c126681c9de9a70f1e974587d42f4ac7b89189aea7a9589e6"
+  },
+  "before/1280-pause-delete-long.png": {
+    "bytes": 293623,
+    "sha256": "8f8163b1b45697a471998026439922fc771501cefd7bb5546158cae1a924fd87"
+  },
+  "before/1280-pause-load.png": {
+    "bytes": 293128,
+    "sha256": "00ba875afbfe3d9452dbe0289cb31f540e8633622da9790b1b1fe9f756feef82"
+  },
+  "before/640-front-load.png": {
+    "bytes": 147623,
+    "sha256": "95e5fc27087b7c2439f02d4db537dc6cfe8bbcfe2863541891a8ac2c5fef3f92"
+  },
+  "before/confirmations.mp4": {
+    "bytes": 563961,
+    "sha256": "f7f3ce1aaf95a42bc1e18da4452095806b3cfb76c28dc9f9125a7b3fc2548c6d"
+  },
+  "before/640-pause-load.png": {
+    "bytes": 148877,
+    "sha256": "060b4bd3612c6d1a4d9168c8269707c31527f1bf31a21ecd9aa0df73cf85a812"
+  },
+  "before/640-pause-overwrite.png": {
+    "bytes": 148958,
+    "sha256": "87c8de85ea34cef0a8648e5282577268c904133e1ff7aa95f217edc0276dbab3"
+  },
+  "before/1280-save-editor.png": {
+    "bytes": 177906,
+    "sha256": "075c119bd63b667d47c910e505a1414572574d198b3b4792017b36cf1da8eb99"
+  },
+  "before/1280-pause-overwrite.png": {
+    "bytes": 293185,
+    "sha256": "12480da0a88ef2ddc2f0bfb2d12b9bfbaa54dddf32c88645f9dcf85047ec7eae"
+  },
+  "before/640-pause-delete-long.png": {
+    "bytes": 149851,
+    "sha256": "1403fad454a4a425f750013a30ab5fa1bb6737dcc0e80d458bb056c0b8652339"
+  },
+  "before/640-save-editor.png": {
+    "bytes": 96924,
+    "sha256": "42c56dcd8648b7c5d3db26347a7fcf5eafef54faf9364d29cc27f3999fe15654"
+  },
+  "before/640-front-delete-declined.png": {
+    "bytes": 107507,
+    "sha256": "8cbdc757d43269f513b8625336ccdffa5d0c6e517ac50c1b31e90c52862463f2"
+  },
+  "before/1280-front-delete-declined.png": {
+    "bytes": 166262,
+    "sha256": "d2c5fe42bc83c9b1a81105630ffd8fb496e4034894812020459f9e0c89ea1ace"
+  },
+  "before/receipt.json": {
+    "bytes": 3404,
+    "sha256": "a5a925c0a848e219cd26975a83744e85a63e0967d8aff0fff4048ffd5ab90ad3"
+  },
+  "before/1280-front-load.png": {
+    "bytes": 226208,
+    "sha256": "3c6f6ccda9a0d2eacfb303db776e6cb8aaa5bb55a50a3505e1aa48a0cd4a47f6"
+  },
+  "before/640-front-delete-long.png": {
+    "bytes": 148168,
+    "sha256": "b1f93145cd06077600c80656f8eb9fab79aa3e6c8ebc39443d3cda3d0b5765c4"
+  },
+  "before/1280-front-delete-long.png": {
+    "bytes": 226576,
+    "sha256": "a64bcf5e7f53d71c05555e157f419e79b0e560aff8dcb4b62794c17d95b3a052"
+  }
+}
