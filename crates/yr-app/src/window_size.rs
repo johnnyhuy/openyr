@@ -13,6 +13,7 @@ pub(super) fn frame_for_surface(physical: (u32, u32), scale: f64) -> Option<(u32
 
 impl App {
     pub(super) fn resize_window(&mut self, physical: (u32, u32), scale: f64) -> Result<(), String> {
+        self.order_feedback.clear();
         self.invalidate_pointer();
         let Some(frame) = frame_for_surface(physical, scale) else {
             return Ok(());

@@ -629,6 +629,11 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       zooms retain command/save behavior and equivalent stepped snapshots.
       Original appearance/timing and physical Mac/Retina input remain open
       (`docs/order-feedback.md`, `docs/formats/rules.md`).
+- [x] Acknowledge sidebar production requests (#97): queued builds, holds,
+      resumes, cancellations and occupied-queue clicks show native text through
+      the shared two-second notice, and READY pickup announces placement.
+      Retail cameo routes preserve queued commands and complete pre-step save
+      bytes. Original appearance and timing remain open (`docs/order-feedback.md`).
 - [x] Show selected units' current attack targets (#97): deduplicated native
       brackets follow living hostile targets from existing sim state, independent
       of pointer hover or brief notices. Selection/context/removal/restoration,

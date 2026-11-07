@@ -168,6 +168,37 @@ impl App {
         });
     }
 
+    pub(super) fn acknowledge_production_order(
+        &mut self,
+        command: Option<&Command>,
+        right: bool,
+        now: Instant,
+    ) {
+        let text = match command {
+            Some(Command::Produce { .. }) => "Build order sent",
+            Some(Command::HoldProduce { held: true, .. }) => "Production held",
+            Some(Command::HoldProduce { held: false, .. }) => "Production resumed",
+            Some(Command::CancelProduce { .. }) => "Build order cancelled",
+            None if !right => "Cannot build here",
+            _ => return,
+        };
+        self.groups.interrupt();
+        self.order_feedback.0 = Some(Notice {
+            text: text.into(),
+            marker: None,
+            at: now,
+        });
+    }
+
+    pub(super) fn acknowledge_placement_start(&mut self, now: Instant) {
+        self.groups.interrupt();
+        self.order_feedback.0 = Some(Notice {
+            text: "Select a location to place the structure".into(),
+            marker: None,
+            at: now,
+        });
+    }
+
     pub(super) fn acknowledge_radar_order(
         &mut self,
         commands: &[Command],
@@ -314,6 +345,9 @@ impl App {
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod production_tests;
 
 #[cfg(test)]
 mod radar_tests;
