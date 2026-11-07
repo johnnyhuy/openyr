@@ -213,6 +213,157 @@ fn retail_hover_previews_match_clicks_and_guard_lifecycle_without_changing_saves
     assert!(app.hover_target((640, 480)).is_none());
 }
 
+#[test]
+fn retail_service_hover_previews_match_clicks_without_changing_saves() {
+    let directory = PathBuf::from(std::env::var("HOME").unwrap_or_default())
+        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    if !directory.is_dir() {
+        return;
+    }
+    let mut app = new_app(directory.to_string_lossy().into(), "EB1.MMX".into(), 1);
+    app.session = Some(app.load_session().unwrap());
+    app.session.as_mut().unwrap().sim.set_ai(None);
+    app.map = Some(yr_render::render_map(&app.gamedir, &app.map_name, 1).unwrap());
+    app.sprites = load_sprites(&app.gamedir, &app.map_name);
+    let session = app.session.as_ref().unwrap();
+    let plant = session
+        .sim
+        .buildings()
+        .iter()
+        .find(|b| b.owner == yr_sim::OWNER_PLAYER && session.kinds[b.kind as usize] == "GAPOWR")
+        .unwrap()
+        .id;
+    let enemy = session
+        .sim
+        .buildings()
+        .iter()
+        .find(|b| b.owner == yr_sim::OWNER_ENEMY)
+        .unwrap()
+        .id;
+    let full = yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap();
+    // Damage the plant through the public validated snapshot format.
+    let sim = &mut app.session.as_mut().unwrap().sim;
+    let bytes = sim.save_bytes().unwrap();
+    let mut json: serde_json::Value = serde_json::from_slice(&bytes[12..]).unwrap();
+    for building in json["buildings"].as_array_mut().unwrap() {
+        if building["id"] == plant {
+            building["hp"] = (building["max_hp"].as_i64().unwrap() / 2).into();
+        }
+    }
+    let mut bytes = bytes[..12].to_vec();
+    bytes.extend(serde_json::to_vec(&json).unwrap());
+    *sim = yr_sim::Sim::from_save_bytes(&bytes).unwrap();
+    let damaged = yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap();
+
+    for size in [(640, 480), (1000, 700), (1280, 800)] {
+        app.resize_window(size, 1.0).unwrap();
+        for zoom in [0.5, 1.0, 2.0] {
+            app.view.zoom = zoom;
+            // Full health: repair is unavailable, sell is available.
+            yr_app::snapshot::restore(app.session.as_mut().unwrap(), &full).unwrap();
+            point_at(&mut app, plant, size);
+            app.service_mode = ServiceMode::Repair;
+            assert_eq!(
+                app.hover_target(size),
+                Some(Target {
+                    id: plant,
+                    color: ENEMY_COL
+                }),
+                "full-health repair preview {size:?} zoom {zoom}"
+            );
+            assert!(app.world_action(app.cursor).unwrap().commands.is_empty());
+            app.service_mode = ServiceMode::Sell;
+            assert_eq!(
+                app.hover_target(size),
+                Some(Target {
+                    id: plant,
+                    color: PLAYER_COL
+                })
+            );
+            assert_eq!(app.world_action(app.cursor).unwrap().commands.len(), 1);
+            // Damaged: both modes are available.
+            yr_app::snapshot::restore(app.session.as_mut().unwrap(), &damaged).unwrap();
+            point_at(&mut app, plant, size);
+            for mode in [ServiceMode::Repair, ServiceMode::Sell] {
+                app.service_mode = mode;
+                assert_eq!(
+                    app.hover_target(size),
+                    Some(Target {
+                        id: plant,
+                        color: PLAYER_COL
+                    }),
+                    "damaged {mode:?} preview {size:?} zoom {zoom}"
+                );
+                let commands = app.world_action(app.cursor).unwrap().commands;
+                assert_eq!(commands.len(), 1);
+                assert!(
+                    matches!(commands[0], Command::Repair { id, .. } | Command::Sell { id, .. } if id == plant)
+                );
+            }
+            if zoom == 1.0 {
+                app.service_mode = ServiceMode::Repair;
+                proof(&mut app, size, "service-repair");
+            }
+            // Enemy buildings are never serviceable.
+            point_at(&mut app, enemy, size);
+            for mode in [ServiceMode::Repair, ServiceMode::Sell] {
+                app.service_mode = mode;
+                assert_eq!(
+                    app.hover_target(size),
+                    Some(Target {
+                        id: enemy,
+                        color: ENEMY_COL
+                    })
+                );
+                assert!(app.world_action(app.cursor).unwrap().commands.is_empty());
+            }
+            app.service_mode = ServiceMode::None;
+        }
+    }
+    let size = app.camera_size();
+    yr_app::snapshot::restore(app.session.as_mut().unwrap(), &damaged).unwrap();
+    point_at(&mut app, plant, size);
+    app.service_mode = ServiceMode::Repair;
+    assert!(app.hover_target(size).is_some());
+    for guard in 0..6 {
+        match guard {
+            0 => app.pointer.focused = false,
+            1 => app.pointer.inside = false,
+            2 => app.menu.set(yr_app::menu::Page::Pause),
+            3 => app.left_down = Some(app.cursor),
+            4 => app.placing = Some(0),
+            5 => app.session.as_mut().unwrap().outcome = Outcome::Won,
+            _ => unreachable!(),
+        }
+        assert!(app.hover_target(size).is_none(), "service guard {guard}");
+        app.pointer.focused = true;
+        app.pointer.inside = true;
+        app.menu.set(yr_app::menu::Page::Closed);
+        app.left_down = None;
+        app.placing = None;
+        app.session.as_mut().unwrap().outcome = Outcome::Ongoing;
+    }
+    // A unit under the pointer shows no service preview.
+    let unit = app
+        .session
+        .as_ref()
+        .unwrap()
+        .sim
+        .units()
+        .iter()
+        .find(|u| u.owner == yr_sim::OWNER_PLAYER)
+        .unwrap()
+        .id;
+    point_at(&mut app, unit, size);
+    assert!(app.hover_target(size).is_none());
+    app.service_mode = ServiceMode::None;
+    assert!(app.pending.is_empty());
+    assert_eq!(
+        yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap(),
+        damaged
+    );
+}
+
 fn point_at(app: &mut App, id: u32, size: (u32, u32)) {
     let sim = &app.session.as_ref().unwrap().sim;
     let (x, y) = sim

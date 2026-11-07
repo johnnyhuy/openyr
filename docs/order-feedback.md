@@ -65,7 +65,7 @@ six-pixel corner strokes clipped to the world viewport. They draw above world
 art and below the sidebar, tooltips and cursor.
 
 This is a native visibility policy for #97. The colors, footprint brackets and
-immediate appearance are not calibrated original-game output. Original target-highlight calibration, service/placement hover previews and
+immediate appearance are not calibrated original-game output. Original target-highlight calibration and
 physical Retina input remain open. Retail hover tests compare preview ids with actual select/attack
 click results at three window sizes and three zooms, cover inactive/modal/drag
 and unavailable-selection guards, and compare complete match save bytes before
@@ -203,3 +203,28 @@ complete match bytes unchanged; equivalent Stop steps keep snapshots identical.
 controlled stationary durable-target save for live checks. The fixture disables
 AI and uses ordinary native spawn/attack commands; its save stays outside proof
 uploads and derived art stays off main.
+
+
+Repair and sell modes now preview the building under the pointer. Green
+corner brackets use the same footprint extent as the other hover previews
+when the shared service resolver would queue a command for that building,
+including cancelling an active repair. Red brackets mark a building the
+resolver rejects, such as a full-health repair target or an enemy structure.
+Ground, units and empty cells show no service preview. The placement ghost
+already covers placement-mode hovering, so no extra placement bracket is
+drawn.
+
+The preview is recomputed from the current pointer cell on each composition.
+No building id is retained across movement, destruction or match replacement.
+Focus loss, menus, finished matches, mouse presses and drags, edge-scroll
+arrows and placement mode suppress it. Current attack-target brackets stay
+hidden while a service mode is active, as before. Reading the preview queues
+no command and changes no simulation or save state.
+
+This is a native visibility policy for #97, not measured original-game
+output. Retail tests damage a GAPOWR through the public snapshot format,
+then check both modes against the actual click commands at three layouts
+and three zooms, covering full-health, damaged and enemy buildings, a unit
+under the pointer, lifecycle guards and complete save-byte invariance.
+Optional OPENYR_HOVER_PROOF=<external-dir> exports before, preview and
+composed frames for the repair case at each layout.

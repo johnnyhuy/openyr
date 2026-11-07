@@ -645,6 +645,12 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       three layouts/zooms, position updates and complete snapshot invariance are
       checked. No commands, combat or save fields change. Original appearance
       and physical Mac/Retina input remain open (`docs/order-feedback.md`).
+- [x] Preview repair and sell targets (#97): green or red corner brackets
+      follow the shared service resolver in repair/sell modes, covering
+      full-health, damaged and enemy buildings at three layouts and zooms.
+      Pointer-only checks keep complete save bytes unchanged, via
+      [docs/order-feedback.md](order-feedback.md). Original appearance and
+      physical Mac/Retina input remain open.
 - [x] Keep pause-menu recovery diagnostics readable (#234, #96, #97): measured
       word wrapping preserves paragraphs and long tokens without the prior
       400-character cutoff. Shared input/draw geometry supports keyboard and
