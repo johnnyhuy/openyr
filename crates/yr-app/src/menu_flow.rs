@@ -561,6 +561,7 @@ impl App {
                 save_path,
                 sprites,
             }) => {
+                let restored = save_path.is_some();
                 self.menu.front = false;
                 self.movie = None;
                 self.front_preview = None;
@@ -612,6 +613,13 @@ impl App {
                         .center_map(map, (size.0.saturating_sub(SIDEBAR_W), size.1));
                 }
                 self.menu.set(Page::Closed);
+                if restored {
+                    self.order_feedback.loaded(
+                        &self.save_path,
+                        self.session.as_ref().unwrap().sim.tick(),
+                        Instant::now(),
+                    );
+                }
             }
             Err(e) => self.menu.message(e, back),
         }

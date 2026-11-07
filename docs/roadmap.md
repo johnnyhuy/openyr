@@ -662,6 +662,11 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       modifiers, gestures and transient recall feedback. Selection, assigned
       teams, queued orders and full saved-match bytes remain intact; recovery
       and stale releases are checked (`docs/formats/menus.md`).
+- [x] Confirm successful saved-match menu loads (#97, #96): the world feedback
+      strip shows the restored tick and bounded save name after commit. Failures,
+      cancellation, restart and fresh setup do not announce a saved load. Retail
+      async handler/compositor checks preserve complete save bytes at three sizes
+      (`docs/formats/menus.md`); original text/timing and physical input remain open.
 - [ ] Complete world interaction and desktop UX (#97): consistent selection,
       supported control groups/hotkeys, hover/target/order feedback, bounded
       camera movement and configurable edge scrolling. Clear held input on
