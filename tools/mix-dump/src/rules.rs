@@ -7,7 +7,7 @@ use std::io::Write;
 use std::path::Path;
 use yr_assets::AssetFs;
 use yr_formats::{CsfFile, IniFile};
-use yr_rules::{Armor, Rules, Severity, TechnoType};
+use yr_rules::{Armor, Rules, Severity, SoundData, SuperWeaponType, TechnoType};
 
 pub fn cmd_rules(args: &[&str], stdout: &mut dyn Write) -> crate::CommandResult {
     let (dir, ids) = args
@@ -20,32 +20,104 @@ pub fn cmd_rules(args: &[&str], stdout: &mut dyn Write) -> crate::CommandResult 
     };
     let (rules_ini, art_ini) = (ini("RULESMD.INI")?, ini("ARTMD.INI")?);
     let rules = Rules::load(&rules_ini, &art_ini);
+    // Sound data is optional so partial installs still dump their rules.
+    let sound = fs
+        .read("SOUNDMD.INI")
+        .map(|d| SoundData::load(&IniFile::parse(&String::from_utf8_lossy(d))));
     let csf = fs.read("RA2MD.CSF").and_then(|d| CsfFile::parse(d).ok());
 
     if ids.is_empty() {
-        summary(&rules, stdout)?;
+        summary(&rules, sound.as_ref(), stdout)?;
         return Ok(());
     }
     for id in ids {
-        let t = rules
-            .techno(id)
-            .ok_or_else(|| format!("{id}: not a registered techno type"))?;
-        techno(&fs, &rules, &rules_ini, &art_ini, csf.as_ref(), t, stdout)?;
+        if let Some(t) = rules.techno(id) {
+            techno(&fs, &rules, &rules_ini, &art_ini, csf.as_ref(), t, stdout)?;
+        } else if let Some(sw) = rules.superweapons.get(id) {
+            superweapon(sw, &rules_ini, stdout)?;
+        } else if let Some(ev) = sound.as_ref().and_then(|s| s.events.get(id)) {
+            writeln!(stdout, "{id}: sound event #{}", ev.index)?;
+            writeln!(stdout, "  sounds    {}", ev.sounds.join(" "))?;
+            writeln!(stdout, "  control   {}", ev.control.join(" "))?;
+            writeln!(
+                stdout,
+                "  volume {}  priority {}  type {}",
+                opt(&ev.volume),
+                opt(&ev.priority),
+                ev.event_type.join(" ")
+            )?;
+            writeln!(stdout)?;
+        } else {
+            return Err(
+                format!("{id}: not a registered techno, superweapon or sound event").into(),
+            );
+        }
     }
     Ok(())
 }
 
-fn summary(rules: &Rules, stdout: &mut dyn Write) -> crate::CommandResult {
+fn superweapon(
+    sw: &SuperWeaponType,
+    rules_ini: &IniFile,
+    stdout: &mut dyn Write,
+) -> crate::CommandResult {
+    writeln!(stdout, "{}: {}", sw.id, sw.name.as_deref().unwrap_or("?"))?;
+    writeln!(
+        stdout,
+        "  type {}  action {}  powered {}  recharge {} min  timer {}  shell-off {}",
+        opt(&sw.kind),
+        opt(&sw.action),
+        opt(&sw.is_powered),
+        opt(&sw.recharge_time),
+        opt(&sw.show_timer),
+        opt(&sw.disableable_from_shell)
+    )?;
+    writeln!(
+        stdout,
+        "  image {}  weapon {}  range {}  line {}  pre-dep {}",
+        opt(&sw.sidebar_image),
+        opt(&sw.weapon_type),
+        opt(&sw.range),
+        opt(&sw.line_multiplier),
+        opt(&sw.pre_dependent)
+    )?;
+    if let Some(sec) = rules_ini.section(&sw.id) {
+        writeln!(stdout, "  rulesmd.ini [{}]:", sec.name)?;
+        for (k, v) in &sec.entries {
+            writeln!(stdout, "    {k}={v}")?;
+        }
+    }
+    writeln!(stdout)?;
+    Ok(())
+}
+
+fn summary(
+    rules: &Rules,
+    sound: Option<&SoundData>,
+    stdout: &mut dyn Write,
+) -> crate::CommandResult {
     writeln!(stdout,
-        "infantry {}  vehicles {}  aircraft {}  buildings {}  weapons {}  warheads {}  projectiles {}",
+        "infantry {}  vehicles {}  aircraft {}  buildings {}  weapons {}  warheads {}  projectiles {}  supers {}",
         rules.infantry.len(),
         rules.vehicles.len(),
         rules.aircraft.len(),
         rules.buildings.len(),
         rules.weapons.len(),
         rules.warheads.len(),
-        rules.projectiles.len()
+        rules.projectiles.len(),
+        rules.superweapons.len()
     )?;
+    match sound {
+        Some(s) => writeln!(
+            stdout,
+            "sounds    {} events ({} with sections)  default volume {}  limit {}",
+            s.events.len(),
+            s.events.iter().filter(|e| e.defined).count(),
+            opt(&s.defaults.volume),
+            opt(&s.defaults.limit)
+        )?,
+        None => writeln!(stdout, "sounds    (SOUNDMD.INI not found)")?,
+    }
     writeln!(
         stdout,
         "globals   build_speed {}  refund {}  houses {}  skirmish money {} (units {})",
@@ -64,6 +136,16 @@ fn summary(rules: &Rules, stdout: &mut dyn Write) -> crate::CommandResult {
             Severity::Note => "note",
         };
         writeln!(stdout, "  {sev}  [{}] {}", i.section, i.message)?;
+    }
+    if let Some(s) = sound {
+        writeln!(stdout, "\nsound issues ({}):", s.issues.len())?;
+        for i in &s.issues {
+            let sev = match i.severity {
+                Severity::Warning => "warn",
+                Severity::Note => "note",
+            };
+            writeln!(stdout, "  {sev}  [{}] {}", i.section, i.message)?;
+        }
     }
     Ok(())
 }

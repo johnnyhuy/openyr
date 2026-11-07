@@ -132,11 +132,47 @@ These checks and the saved integer timer are part of the simulation.
 `Sim::refinery_unloading` reads elapsed ticks for presentation without
 advancing state or changing its hash. The snapshot layout is unchanged.
 
+## Superweapons
+
+`Rules::load` registers superweapons from `[SuperWeaponTypes]`, then any
+extra ID granted by a building through `SuperWeapon=` (`TechnoType.super_weapon`).
+Retail registers 12, all with sections. The `[IonCannonSpecial]` section
+exists in the file but is commented out of the list and granted by nothing,
+so it stays unregistered. `SuperWeaponType` keeps the retail keys typed
+where the reading is unambiguous (`RechargeTime=` minutes and `Range=` cells
+as exact decimals, first-character booleans, `WeaponType=`/`PreDependent=`
+as references) and verbatim where the engine meaning is unverified
+(`Type=`, `Action=`, voice and sound names). Retail `PreDependent=ChronoSphere`
+on `[ChronoWarpSpecial]` names no registered superweapon; the value is kept
+as written. A listed or granted superweapon without a section is a warning.
+Nothing fires a superweapon yet; charging, targeting and effects remain
+simulation work. Known answers live in `crates/yr-rules/tests/retail.rs`
+(`NAMISL` grants `NukeSpecial`, `GACSPH` grants `ChronoSphereSpecial`,
+`GADUMY` grants `ChronoWarpSpecial`). Inspect with
+`mix-dump rules <gamedir> [NukeSpecial]`.
+
+## Sound data (soundmd.ini)
+
+`SoundData::load` reads `soundmd.ini` separately from the rules pair. Events
+register from `[SoundList]` in list order, then sections the list never
+names. Retail gives 819 events, all with sections: `KirovVoiceDie` is
+listed twice and kept once, and `[GuardianGiUnDeploy]` is reachable only
+as an unlisted section. `[Defaults]` supplies fallback volume, limit,
+range, minimum volume, priority and `Type=` tokens. Per event, `Sounds=`
+keeps its file stems verbatim (including the leading `$` marker, whose
+playback meaning is unverified), `Control=`/`Type=` stay token lists, and
+`Delay=`/`FShift=` keep the first and last integer written (one value
+reads as both bounds). One retail section spells `MinVol=` instead of
+`MinVolume=`; both spellings load. This is data only: the live audio path
+still resolves its cues through `EVAMD.INI` and the audio bank, and wiring
+these events into playback is follow-up work. Inspect with
+`mix-dump rules <gamedir> [GISelect]`.
+
 ## Not yet modelled
 
 - Ares-style `Inherit=`/`+=` (not vanilla).
-- Engine defaults per key, `[General]`/`[CombatDamage]` globals, countries,
-  superweapons, animations, terrain/overlay types, and map-specific sections.
+- Engine defaults per key, animations, terrain/overlay types, and
+  map-specific sections.
 
 ## Radar presentation flags
 

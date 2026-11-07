@@ -60,7 +60,11 @@ Johnny on 2026-10-31.
 - [x] `mix-dump rules <gamedir> <ID>`: resolved unit, weapon chain, damage table, art provenance
 - [x] INI fidelity: header text after `]` (MirageWH), first-char booleans, map merge
 - [x] `[General]`/`[CombatDamage]` globals, houses/countries, skirmish defaults
-- [ ] Superweapons, `soundmd.ini`
+- [x] Superweapons, `soundmd.ini` (typed data): 12 retail superweapons
+      register from `[SuperWeaponTypes]` plus building `SuperWeapon=` grants,
+      and 819 sound events plus `[Defaults]` load through `SoundData`.
+      Charging, firing, effects and playback wiring remain future work
+      (`docs/formats/rules.md`).
 - [ ] Engine defaults per key, verified against the Wine oracle
 - [ ] Name database: close the remaining ~12% (RA2-only VXLs, PCX, audio)
 

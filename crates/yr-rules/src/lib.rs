@@ -124,6 +124,8 @@ pub struct TechnoType {
     pub elite_secondary: Option<String>,
     /// `Weapon1`..`WeaponN` (IFV-style and multi-weapon units).
     pub weapons: Vec<String>,
+    /// Building `SuperWeapon=`: the superweapon this structure grants.
+    pub super_weapon: Option<String>,
     /// `Image=`, defaulting to the ID.
     pub image: String,
     pub art: Option<ArtInfo>,
@@ -191,6 +193,128 @@ impl WarheadType {
     /// (ModEnc "Verses"; to be confirmed against the oracle).
     pub fn verse(&self, armor: Armor) -> Decimal {
         self.verses.map_or(Decimal::ONE, |v| v[armor.index()])
+    }
+}
+
+/// A superweapon from `[SuperWeaponTypes]` (plus any granted by a building
+/// through `SuperWeapon=`). Behaviour fields stay verbatim where the engine
+/// meaning is unverified; nothing here fires a superweapon yet.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SuperWeaponType {
+    pub id: String,
+    pub defined: bool,
+    /// CSF label for the display name, e.g. `Name:Nuke`.
+    pub ui_name: Option<String>,
+    pub name: Option<String>,
+    /// `Type=` engine behaviour key, verbatim (e.g. `MultiMissile`).
+    pub kind: Option<String>,
+    /// `Action=` cursor/action key, verbatim.
+    pub action: Option<String>,
+    pub is_powered: Option<bool>,
+    /// `RechargeTime=` in minutes, exact decimal.
+    pub recharge_time: Option<Decimal>,
+    pub show_timer: Option<bool>,
+    pub disableable_from_shell: Option<bool>,
+    pub sidebar_image: Option<String>,
+    /// `WeaponType=`: weapon delivered by missile-style superweapons.
+    pub weapon_type: Option<String>,
+    /// `Range=` in cells.
+    pub range: Option<Decimal>,
+    pub line_multiplier: Option<i64>,
+    pub pre_click: Option<bool>,
+    pub post_click: Option<bool>,
+    /// `PreDependent=`: superweapon that must be charged first.
+    pub pre_dependent: Option<String>,
+    pub recharge_voice: Option<String>,
+    pub charging_voice: Option<String>,
+    pub impatient_voice: Option<String>,
+    pub suspend_voice: Option<String>,
+    /// `SpecialSound=` / `StartSound=` sound-event names, verbatim.
+    pub special_sound: Option<String>,
+    pub start_sound: Option<String>,
+    pub flash_sidebar_tab_frames: Option<i64>,
+    pub ai_defend_against: Option<bool>,
+}
+
+/// Fallback values from `soundmd.ini` `[Defaults]`.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct SoundDefaults {
+    pub min_volume: Option<i64>,
+    /// `Range=` in cells.
+    pub range: Option<Decimal>,
+    pub volume: Option<i64>,
+    pub limit: Option<i64>,
+    /// `Type=` delivery tokens, whitespace separated in the file.
+    pub event_type: Vec<String>,
+    pub priority: Option<String>,
+}
+
+/// One `soundmd.ini` sound event. `sounds` keeps the file stems verbatim,
+/// including the leading `$` some entries carry; the playback meaning of
+/// that marker is unverified. Numeric ranges keep the first and last value
+/// written in the file (a single value reads as both bounds).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SoundEvent {
+    pub id: String,
+    /// Position in registration order (`[SoundList]` first).
+    pub index: usize,
+    /// False when listed but without a section (engine defaults only).
+    pub defined: bool,
+    pub sounds: Vec<String>,
+    /// `Control=` tokens, e.g. `random interrupt`.
+    pub control: Vec<String>,
+    pub volume: Option<i64>,
+    pub priority: Option<String>,
+    /// `Type=` delivery tokens, whitespace separated in the file.
+    pub event_type: Vec<String>,
+    /// `Range=` in cells.
+    pub range: Option<Decimal>,
+    pub limit: Option<i64>,
+    /// `Delay=` bounds in milliseconds.
+    pub delay_ms: Option<(i64, i64)>,
+    /// `FShift=` percent bounds.
+    pub fshift: Option<(i64, i64)>,
+    pub vshift: Option<i64>,
+    pub min_volume: Option<i64>,
+    pub loop_count: Option<i64>,
+    pub attack: Option<i64>,
+    pub decay: Option<i64>,
+}
+
+/// Typed `soundmd.ini`: the `[SoundList]` registry plus `[Defaults]`.
+#[derive(Debug, Clone, Default)]
+pub struct SoundData {
+    pub events: Registry<SoundEvent>,
+    pub defaults: SoundDefaults,
+    pub issues: Vec<Issue>,
+}
+
+impl SoundData {
+    pub fn load(sound: &IniFile) -> SoundData {
+        let mut out = SoundData::default();
+        let mut ids = type_list(sound, "SoundList", &mut out.issues);
+        // Sections the list never names still resolve by ID, as with
+        // weapons that exist when referenced.
+        for sec in &sound.sections {
+            if !sec.name.eq_ignore_ascii_case("SoundList")
+                && !sec.name.eq_ignore_ascii_case("Defaults")
+                && !ids.iter().any(|id| id.eq_ignore_ascii_case(&sec.name))
+            {
+                ids.push(sec.name.clone());
+            }
+        }
+        for (index, id) in ids.into_iter().enumerate() {
+            let event = load_sound_event(sound, &id, index, &mut out.issues);
+            if !out.events.insert(&id, event) {
+                out.issues.push(issue(
+                    Severity::Note,
+                    "SoundList",
+                    format!("{id} listed twice; first kept"),
+                ));
+            }
+        }
+        out.defaults = load_sound_defaults(sound);
+        out
     }
 }
 
@@ -333,6 +457,7 @@ pub struct Rules {
     pub weapons: Registry<WeaponType>,
     pub warheads: Registry<WarheadType>,
     pub projectiles: Registry<ProjectileType>,
+    pub superweapons: Registry<SuperWeaponType>,
     pub globals: Globals,
     pub skirmish: SkirmishDefaults,
     pub houses: Registry<House>,
@@ -410,6 +535,23 @@ impl Rules {
                     ));
                 }
                 out.projectiles.insert(&id, p);
+            }
+        }
+
+        // Superweapons: the [SuperWeaponTypes] list, then any granted by
+        // buildings through `SuperWeapon=` (ChronoWarpSpecial only arrives
+        // this way in retail).
+        let mut super_ids = type_list(rules, "SuperWeaponTypes", &mut out.issues);
+        super_ids.extend(
+            TechnoKind::ALL
+                .iter()
+                .flat_map(|&k| out.registry(k).iter())
+                .filter_map(|t| t.super_weapon.clone()),
+        );
+        for id in super_ids {
+            if !out.superweapons.contains(&id) {
+                let sw = load_superweapon(rules, &id, &mut out.issues);
+                out.superweapons.insert(&id, sw);
             }
         }
         out.globals = load_globals(rules);
@@ -615,6 +757,7 @@ fn load_techno(
         elite_primary: reference(sec, "ElitePrimary"),
         elite_secondary: reference(sec, "EliteSecondary"),
         weapons,
+        super_weapon: reference(sec, "SuperWeapon"),
         image,
         art: art_info,
     }
@@ -686,6 +829,110 @@ fn load_projectile(rules: &IniFile, id: &str) -> ProjectileType {
         anti_air: flag("AA"),
         anti_ground: flag("AG"),
         image: reference(sec, "Image"),
+    }
+}
+
+fn load_superweapon(rules: &IniFile, id: &str, issues: &mut Vec<Issue>) -> SuperWeaponType {
+    let sec = rules.section(id);
+    if sec.is_none() {
+        issues.push(issue(
+            Severity::Warning,
+            id,
+            "superweapon has no section".into(),
+        ));
+    }
+    let flag = |k: &str| sec.and_then(|s| s.get_bool(k));
+    SuperWeaponType {
+        id: id.to_string(),
+        defined: sec.is_some(),
+        ui_name: string(sec, "UIName"),
+        name: string(sec, "Name"),
+        kind: string(sec, "Type"),
+        action: string(sec, "Action"),
+        is_powered: flag("IsPowered"),
+        recharge_time: dec(sec, "RechargeTime"),
+        show_timer: flag("ShowTimer"),
+        disableable_from_shell: flag("DisableableFromShell"),
+        sidebar_image: reference(sec, "SidebarImage"),
+        weapon_type: reference(sec, "WeaponType"),
+        range: dec(sec, "Range"),
+        line_multiplier: int(sec, "LineMultiplier"),
+        pre_click: flag("PreClick"),
+        post_click: flag("PostClick"),
+        pre_dependent: reference(sec, "PreDependent"),
+        recharge_voice: reference(sec, "RechargeVoice"),
+        charging_voice: reference(sec, "ChargingVoice"),
+        impatient_voice: reference(sec, "ImpatientVoice"),
+        suspend_voice: reference(sec, "SuspendVoice"),
+        special_sound: reference(sec, "SpecialSound"),
+        start_sound: reference(sec, "StartSound"),
+        flash_sidebar_tab_frames: int(sec, "FlashSidebarTabFrames"),
+        ai_defend_against: flag("AIDefendAgainst"),
+    }
+}
+
+/// Whitespace-separated tokens of `key` (sound `Control=`/`Type=`/`Sounds=`).
+fn tokens(sec: Option<&IniSection>, key: &str) -> Vec<String> {
+    sec.and_then(|s| s.get(key))
+        .map(|v| v.split_whitespace().map(str::to_string).collect())
+        .unwrap_or_default()
+}
+
+/// First and last integer written for `key`; one value reads as both bounds.
+fn int_bounds(sec: Option<&IniSection>, key: &str) -> Option<(i64, i64)> {
+    let values: Vec<i64> = sec
+        .and_then(|s| s.get(key))?
+        .split_whitespace()
+        .filter_map(|t| t.parse().ok())
+        .collect();
+    Some((*values.first()?, *values.last()?))
+}
+
+fn load_sound_event(
+    sound: &IniFile,
+    id: &str,
+    index: usize,
+    issues: &mut Vec<Issue>,
+) -> SoundEvent {
+    let sec = sound.section(id);
+    if sec.is_none() {
+        issues.push(issue(
+            Severity::Note,
+            id,
+            "listed in [SoundList] but has no section".into(),
+        ));
+    }
+    SoundEvent {
+        id: id.to_string(),
+        index,
+        defined: sec.is_some(),
+        sounds: tokens(sec, "Sounds"),
+        control: tokens(sec, "Control"),
+        volume: int(sec, "Volume"),
+        priority: string(sec, "Priority"),
+        event_type: tokens(sec, "Type"),
+        range: dec(sec, "Range"),
+        limit: int(sec, "Limit"),
+        delay_ms: int_bounds(sec, "Delay"),
+        fshift: int_bounds(sec, "FShift"),
+        vshift: int(sec, "VShift").or_else(|| int(sec, "Vshift")),
+        // One retail section spells the key `MinVol=`; accept both.
+        min_volume: int(sec, "MinVolume").or_else(|| int(sec, "MinVol")),
+        loop_count: int(sec, "Loop"),
+        attack: int(sec, "Attack"),
+        decay: int(sec, "Decay"),
+    }
+}
+
+fn load_sound_defaults(sound: &IniFile) -> SoundDefaults {
+    let sec = sound.section("Defaults");
+    SoundDefaults {
+        min_volume: int(sec, "MinVolume"),
+        range: dec(sec, "Range"),
+        volume: int(sec, "Volume"),
+        limit: int(sec, "Limit"),
+        event_type: tokens(sec, "Type"),
+        priority: string(sec, "Priority"),
     }
 }
 
@@ -796,6 +1043,7 @@ mod tests {
 3=HTNK
 [AircraftTypes]
 [BuildingTypes]
+1=GACSPH
 [Warheads]
 1=AP
 [E1]
@@ -834,6 +1082,52 @@ Verses=100%,80%
 [Cannon]
 Image=120mm
 AG=yes
+[SuperWeaponTypes]
+1=NukeSpecial
+2=GhostSpecial
+[GACSPH]
+SuperWeapon=ChronoWarpSpecial
+[NukeSpecial]
+UIName=Name:Nuke
+Name=N U K E !!!
+Type=MultiMissile
+Action=Nuke
+IsPowered=true
+RechargeTime=10
+ShowTimer=yes
+DisableableFromShell=yes
+SidebarImage=NukeIcon
+WeaponType=NukeCarrier
+Range=7
+LineMultiplier=2
+RechargeVoice=00-I154
+[ChronoWarpSpecial]
+Type=ChronoWarp
+PostClick=yes
+PreDependent=ChronoSphereSpecial
+IsPowered=false
+RechargeTime=1
+";
+
+    const SOUND: &str = "\
+[Defaults]
+MinVolume=50
+Range=10
+Volume=80
+Limit=5
+Type= NORMAL SCREEN UNSHROUD
+Priority=NORMAL
+[SoundList]
+1=GISelect
+2=GhostSound
+3=GISelect
+[GISelect]
+Sounds= $igisea $igiseb
+Control= random
+Volume=85
+Delay= 400
+FShift= -5 5
+VShift=10
 ";
 
     const ART: &str = "[HTNK]\nVoxel=yes\nCameo=HTNKICON\n[GTNK]\nVoxel=yes\n";
@@ -903,5 +1197,53 @@ AG=yes
             r.warheads.get("SA").unwrap().verse(Armor::Flak),
             Decimal::ONE
         );
+    }
+
+    #[test]
+    fn superweapons_from_list_and_building_grants() {
+        let r = load();
+        let ids: Vec<&str> = r.superweapons.iter().map(|s| s.id.as_str()).collect();
+        assert_eq!(ids, ["NukeSpecial", "GhostSpecial", "ChronoWarpSpecial"]);
+        let nuke = r.superweapons.get("nukespecial").unwrap();
+        assert!(nuke.defined);
+        assert_eq!(nuke.kind.as_deref(), Some("MultiMissile"));
+        assert_eq!(nuke.weapon_type.as_deref(), Some("NukeCarrier"));
+        assert_eq!(nuke.recharge_time, Decimal::parse("10"));
+        assert_eq!(nuke.is_powered, Some(true));
+        assert_eq!(nuke.range.map(|d| d.to_leptons()), Some(1792));
+        assert!(!r.superweapons.get("GhostSpecial").unwrap().defined);
+        assert!(r.issues.iter().any(|i| i.severity == Severity::Warning
+            && i.section == "GhostSpecial"
+            && i.message.contains("superweapon has no section")));
+        // The building grant registers ChronoWarpSpecial and resolves back.
+        assert_eq!(
+            r.techno("GACSPH").unwrap().super_weapon.as_deref(),
+            Some("ChronoWarpSpecial")
+        );
+        let warp = r.superweapons.get("ChronoWarpSpecial").unwrap();
+        assert_eq!(warp.pre_dependent.as_deref(), Some("ChronoSphereSpecial"));
+        assert_eq!(warp.post_click, Some(true));
+    }
+
+    #[test]
+    fn sound_events_defaults_and_missing_sections() {
+        let s = SoundData::load(&IniFile::parse(SOUND));
+        assert_eq!(s.events.len(), 2); // GISelect listed twice, kept once.
+        let gi = s.events.get("giselect").unwrap();
+        assert!(gi.defined);
+        assert_eq!(gi.sounds, ["$igisea", "$igiseb"]);
+        assert_eq!(gi.control, ["random"]);
+        assert_eq!(gi.volume, Some(85));
+        assert_eq!(gi.delay_ms, Some((400, 400)));
+        assert_eq!(gi.fshift, Some((-5, 5)));
+        assert_eq!(gi.vshift, Some(10));
+        assert!(!s.events.get("GhostSound").unwrap().defined);
+        assert!(s.issues.iter().any(|i| i.section == "GhostSound"
+            && i.message
+                .contains("listed in [SoundList] but has no section")));
+        assert_eq!(s.defaults.volume, Some(80));
+        assert_eq!(s.defaults.limit, Some(5));
+        assert_eq!(s.defaults.event_type, ["NORMAL", "SCREEN", "UNSHROUD"]);
+        assert_eq!(s.defaults.priority.as_deref(), Some("NORMAL"));
     }
 }
