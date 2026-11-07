@@ -5,6 +5,10 @@ been released (EA's February 2025 source release covered Generals/Zero Hour,
 Renegade, Tiberian Dawn and Red Alert 1, **not** Tiberian Sun or Red Alert 2/YR).
 Everything here is built by observation and documentation.
 
+OpenYR is independent and unofficial, with no affiliation with or endorsement
+from Electronic Arts or Westwood Studios. Reverse-engineering precedents are
+context for the project's method, not a license from the original rights holder.
+
 ## Rules
 
 1. **No EA assets in this repository.** No art, audio, video, maps, INI files, or
@@ -44,8 +48,12 @@ blessing for RA2/YR reimplementations.
 ## Publishing
 
 The repository is public and distributes engine code only. Users supply their
-own retail data. Derived screenshots and videos are demonstrations, hosted
+own retail data. Derived screenshots and GIFs are demonstrations, hosted
 separately from the final source tree; they do not grant rights to game assets.
+The original artwork, audio, maps, rules and trademarks retain their existing
+ownership. The engine's GPLv3 license does not relicense that content or grant
+permission to redistribute it. A user-owned install supplies the required data;
+OpenYR does not include a copy of the game or its original implementation.
 
 ## Licence
 

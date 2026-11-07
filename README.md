@@ -2,54 +2,35 @@
 
 [![CI](https://github.com/johnnyhuy/openyr/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/johnnyhuy/openyr/actions/workflows/ci.yml)
 
-A native Rust rewrite of **Command & Conquer: Red Alert 2: Yuri's Revenge**, with
-macOS as the primary target. OpenYR reads the original Westwood game data from
-your legally owned install. No EA assets or original executable code are included.
+A native Rust rewrite of **Command & Conquer: Red Alert 2: Yuri's Revenge**,
+with macOS as the primary target. OpenYR reads data from your legally owned game
+install. It is a pre-alpha playable sandbox; full game and visual parity are
+still in progress.
 
-OpenYR is a **pre-alpha playable sandbox**. The native menu and match flow work,
-but original-game parity and the full game rules are still in progress. See the
-[roadmap](docs/roadmap.md) for verified slices and remaining work.
+## Features
 
-## See it run
+| Feature | In game | Preview |
+| --- | --- | --- |
+| Main menu | Animated retail shell, Single Player, settings and return from a match. | <img src="https://raw.githubusercontent.com/johnnyhuy/openyr/1d3c9840cfa1293881ee093db9aec3e72a253235/proof/readme-features/main-menu.gif" alt="Animated OpenYR main menu" width="320"> |
+| Skirmish setup | Installed map catalog, two participants, nine Allied/Soviet countries, colors, start positions, teams, credits, starting units and speed. | <img src="https://raw.githubusercontent.com/johnnyhuy/openyr/c7deba4c12ab133026c00570e4a2c78d7fa3fa65/proof/native-demo/skirmish.png" alt="Skirmish player and map setup" width="320"> |
+| Match loading | Country artwork, selected-map preview, progress and cancellation before entering the battlefield. | <img src="https://raw.githubusercontent.com/johnnyhuy/openyr/1d3c9840cfa1293881ee093db9aec3e72a253235/proof/readme-features/loading.gif" alt="Skirmish setup, country loading screen and match entry" width="320"> |
+| Battlefield | Retail terrain, SHP/VXL units and building animations, with camera pan, zoom and optional edge scrolling. | <img src="https://raw.githubusercontent.com/johnnyhuy/openyr/1d3c9840cfa1293881ee093db9aec3e72a253235/proof/readme-features/world-camera.gif" alt="Native battlefield zoom and pause controls" width="320"> |
+| Saved matches | Named save/load/delete, F5/F9, overwrite confirmation, recovery and Ctrl/Command+A name editing. | <img src="https://raw.githubusercontent.com/johnnyhuy/openyr/1d3c9840cfa1293881ee093db9aec3e72a253235/proof/readme-features/save-name.gif" alt="Selecting and replacing a save name, then saving the match" width="320"> |
 
-Native OpenYR with retail data, captured at 1280x800 on Linux. Click either
-video link to watch the recorded flow.
-
-[Watch menu, Skirmish and loading (24 seconds)](https://github.com/johnnyhuy/openyr/blob/c7deba4c12ab133026c00570e4a2c78d7fa3fa65/proof/native-demo/start-flow.mp4?raw=true)
-| [Watch world zoom and pause/resume (12 seconds)](https://github.com/johnnyhuy/openyr/blob/c7deba4c12ab133026c00570e4a2c78d7fa3fa65/proof/native-demo/match-pause.mp4?raw=true)
-
-![OpenYR native main menu](https://github.com/johnnyhuy/openyr/raw/c7deba4c12ab133026c00570e4a2c78d7fa3fa65/proof/native-demo/main-menu.png)
-
-![OpenYR EB1 sandbox and Allied base after zooming out](https://github.com/johnnyhuy/openyr/raw/c7deba4c12ab133026c00570e4a2c78d7fa3fa65/proof/native-demo/overview.png)
-
-[Skirmish setup](https://github.com/johnnyhuy/openyr/blob/c7deba4c12ab133026c00570e4a2c78d7fa3fa65/proof/native-demo/skirmish.png) | [Loading screen](https://github.com/johnnyhuy/openyr/blob/c7deba4c12ab133026c00570e4a2c78d7fa3fa65/proof/native-demo/loading.png)
-| [Pause menu](https://github.com/johnnyhuy/openyr/blob/c7deba4c12ab133026c00570e4a2c78d7fa3fa65/proof/native-demo/pause.png) | [Full recording and capture receipt](https://github.com/johnnyhuy/openyr/blob/c7deba4c12ab133026c00570e4a2c78d7fa3fa65/proof/native-demo)
-
-These demos show source `11379ae`, including the engine from PR #244. Video is
-silent; no physical Mac, Retina or audio-device check was performed. Captures
-show OpenYR's current behavior and do not establish original-game timing parity.
-Derived media is pinned separately from the source tree; running the game still
-requires your own install. See [recording and provenance](docs/demos.md).
-
-## What works
-
-| Area | Current implementation |
+| System | Implemented behavior |
 | --- | --- |
-| Menus | Animated main menu, Single Player, Battle map chooser, saved matches, options, loading and recovery |
-| Match setup | Two participants, nine Allied/Soviet countries, colors, authored starts, opposing teams, Short Game and speed presets |
-| World interaction | Selection, control groups, camera pan/zoom, optional edge scrolling, contextual cursors and order feedback |
-| Simulation | Deterministic movement, combat, harvesting, economy, production, structure placement, repair/sell and basic skirmish AI |
-| Saves | Named save/load/delete, F5/F9, compatibility checks, atomic writes and visible recovery; long save-name edits keep the caret visible |
-| Rendering | Retail terrain, SHP/VXL units, building/infantry animation and an expanding set of combat effects |
-| Audio | Theme music, voices, weapon reports and EVA; device recovery and mute controls |
-| Data tools | MIX/VFS, strings, rules, images, models and audio inspection; typed superweapon and sound-event definitions |
+| Selection and orders | Click/box selection, control groups, attack-move, contextual cursors, target brackets and order feedback. |
+| Combat and economy | Deterministic movement, weapon damage, harvesting, owner credits and basic skirmish AI. |
+| Production and structures | Unit/building queues, hold/resume/cancel, READY placement, repair and sell. |
+| Sidebar | Retail cameos, per-category scrolling, powered radar and a live power meter. |
+| Audio | Theme music, unit voices, weapon reports, EVA, mute and device recovery. |
+| Saves | Compatibility checks, atomic writes, saved setup restoration and visible success/error feedback. |
 
-The chooser uses the installed map catalog; gameplay remains a limited sandbox.
-EB1.MMX is the main regression/demo map. Superweapon charging/firing, country
-special abilities, broader modes and original AI behavior remain unfinished.
-Original menu/animation timing, full effects and physical macOS/Retina input
-verification also remain open. Addon packs and roguelite work follow the core
-playable baseline. [Known limits and observations](docs/formats/front-menu.md).
+Superweapon activation, country special abilities, broader game modes, original
+AI and remaining effects are unfinished. Original animation timing and physical
+Mac/Retina input verification also remain open. EB1.MMX is the main regression
+map; addon and roguelite work follow the core playable baseline. See the
+[roadmap](docs/roadmap.md) and [menu observations](docs/formats/front-menu.md).
 
 ## Build and launch
 
@@ -185,9 +166,21 @@ mise exec -- cargo run --release --locked -p mix-dump -- scan /path/to/RA2/*.mix
 | `tools/` | Inspection and simulation tools |
 | `docs/` | Architecture, roadmap, format observations and research |
 
-## Legal and method
+## License and game content
 
-OpenYR uses a clean-room method based on public behavior and supplied asset
-formats. See [legal notes](docs/legal.md), [architecture](docs/architecture.md) and
-[research](docs/research/). Original game assets, executables and derived captures
-belong outside the source tree.
+OpenYR is an independent, unofficial project, unaffiliated with and not endorsed
+by Electronic Arts or Westwood Studios. Red Alert 2 and Yuri's Revenge were not
+part of EA's 2025 source-code release. This project implements a new native
+engine; it does not distribute the original game's source or executable code.
+
+| Part | License and ownership |
+| --- | --- |
+| OpenYR engine | [GNU GPLv3](LICENSE). The engine's source license does not grant rights to the original game content. |
+| Game data | Original artwork, music, voices, maps, rules and other retail files remain the property of their respective rights holders. Supply your own legally owned install; these files are not bundled. |
+| Screenshots and GIFs | Illustrations of OpenYR using retail data, hosted separately from the merged source tree. Depicted game content retains its original ownership and is not relicensed under the engine's GPL. |
+| Implementation method | Clean-room work based on documented asset formats and public behavior observations. No original executable implementation or process-memory copying, and no transplanted code from YRpp, Phobos, Ares or XCC. |
+
+The project takes other C&C reimplementations as engineering precedents, not as
+permission from a rights holder. See the [legal context and precedents](docs/legal.md),
+[dependency licenses](docs/third-party.md), [architecture](docs/architecture.md)
+and [capture provenance](docs/demos.md).
