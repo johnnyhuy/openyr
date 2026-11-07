@@ -698,6 +698,12 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       dispatch tests verify temporary-save preservation, deliberate deletion,
       name/navigation guards and normal shortcuts (`docs/window-input.md`).
       Physical Mac/Retina delivery remains unverified.
+- [x] Save filesystem-valid long external filenames (#257, #96, #97): bounded
+      exclusive sibling names no longer append to or lossily expand the target.
+      Actual-file regressions cover ASCII/Unicode/Linux byte names, occupied
+      candidates, symlinks and failed-rename cleanup without changing encoded
+      save bytes or simulation. Retail reconstruction and physical Mac checks
+      remain outside this storage slice (`docs/formats/save.md`).
 - [ ] Complete world interaction and desktop UX (#97): consistent selection,
       supported control groups/hotkeys, hover/target/order feedback, bounded
       camera movement and configurable edge scrolling. Clear held input on

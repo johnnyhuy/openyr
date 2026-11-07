@@ -2,8 +2,10 @@
 
 use crate::match_config::MatchConfig;
 use crate::session::{Outcome, Session, StartOptions};
-use std::io::{Read, Write};
+use std::io::Read;
 use std::path::{Path, PathBuf};
+
+mod storage;
 
 const MAGIC: &[u8; 8] = b"OYRMATCH";
 const HEADER: usize = 37;
@@ -280,30 +282,7 @@ fn load_bytes(gamedir: &str, map_name: &str, path: &Path, bytes: &[u8]) -> Resul
 /// Replace a save only after all bytes reach a sibling temporary file.
 pub fn save(session: &Session, path: &Path) -> Result<(), String> {
     let bytes = encode(session)?;
-    let parent = path
-        .parent()
-        .filter(|p| !p.as_os_str().is_empty())
-        .unwrap_or(Path::new("."));
-    std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
-    let name = path
-        .file_name()
-        .ok_or("save path has no filename")?
-        .to_string_lossy();
-    let temp = parent.join(format!(".{name}.{}.pending", std::process::id()));
-    let mut file = std::fs::OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .open(&temp)
-        .map_err(|e| format!("cannot create {}: {e}", temp.display()))?;
-    let result = (|| {
-        file.write_all(&bytes)?;
-        file.sync_all()?;
-        std::fs::rename(&temp, path)
-    })();
-    if let Err(e) = result {
-        let _ = std::fs::remove_file(temp);
-        return Err(format!("cannot save {}: {e}", path.display()));
-    }
+    storage::write(path, &bytes)?;
     println!(
         "OpenYR: saved {} at tick {}, hash {:016x}, {:?}",
         path.display(),
