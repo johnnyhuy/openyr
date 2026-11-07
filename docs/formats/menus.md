@@ -76,6 +76,14 @@ Visible menus stop sim ticks. Every transition clears elapsed-time accumulation;
 resuming starts a fresh clock without replaying paused wall time. Drawing does
 not mutate the simulation. Music may continue while the match is paused.
 
+F5 uses the same input cleanup as normal menu entry when either its save result
+or an error opens a message (#237). Placement, repair/sell and attack-move modes,
+held modifiers, pointer gestures and transient team-recall feedback are cancelled.
+Selection, assigned teams and already-queued valid commands remain intact. A
+failed save retains its previous quicksave target. Dismissing the result cannot
+reactivate a mode or turn an earlier button release into a new order. This is
+native modal-isolation behavior, not a claim about original-game shortcuts.
+
 Save writes through the existing atomic snapshot envelope. Named saves stay
 beside the current quicksave path, with overwrite confirmation. Load requires
 confirmation before discarding the current match. One worker prepares the

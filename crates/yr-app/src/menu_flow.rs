@@ -64,14 +64,9 @@ impl App {
         self.last_tick = Instant::now();
         self.view.dirty = true;
     }
-    pub(super) fn open_menu(&mut self, page: Page) {
+    fn clear_menu_input(&mut self) {
         self.groups.interrupt();
         self.order_feedback.clear();
-        if page != Page::Loading {
-            if let Some(job) = &mut self.load_job {
-                job.cancel();
-            }
-        }
         self.cancel_pointer_action();
         self.keys.clear();
         self.shift = false;
@@ -79,6 +74,14 @@ impl App {
         self.attack_move = false;
         self.placing = None;
         self.service_mode = ServiceMode::None;
+    }
+    pub(super) fn open_menu(&mut self, page: Page) {
+        self.clear_menu_input();
+        if page != Page::Loading {
+            if let Some(job) = &mut self.load_job {
+                job.cancel();
+            }
+        }
         self.menu.zoom = (self.view.zoom * 100.0).round().clamp(25.0, 400.0) as u16;
         if matches!(
             page,
@@ -495,7 +498,6 @@ impl App {
         self.menu.message(message, Page::Delete);
     }
     pub(super) fn save_menu_path(&mut self, path: PathBuf) {
-        self.order_feedback.clear();
         let Some(session) = &self.session else {
             return;
         };
@@ -509,8 +511,7 @@ impl App {
             }
             Err(e) => self.menu.message(e, Page::Save),
         }
-        self.cancel_pointer_action();
-        self.keys.clear();
+        self.clear_menu_input();
         self.reset_menu_clock();
     }
     pub(super) fn start_menu_load(&mut self, path: Option<PathBuf>) {

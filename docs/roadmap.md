@@ -11,7 +11,7 @@ the sidebar work in #86 and repair/sell in #94 before addon/roguelite work or
 declaring the continuation schedule complete. This scope was confirmed by
 Johnny on 2026-10-31.
 
-## M0: Research and repo (done)
+## M0: Research and repo (baseline done)
 
 - Precedent study: `docs/research/`
 - Repo, licence, method: `docs/legal.md`
@@ -20,6 +20,10 @@ Johnny on 2026-10-31.
       (#184), retaining all checks after hosted arm64 runner acquisition
       failed before any steps ran. Local retail/window verification also
       exercises Apple Silicon.
+
+- [ ] Guard shared-target runtime proof against stale executables (#238).
+      Record source/executable provenance and reproduce cross-worktree reuse;
+      use isolated artifacts or explicitly rebuild the app before runtime proof.
 
 ## M1: Asset layer (done 2026-10-17; open items carried forward)
 
@@ -646,6 +650,11 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       wheel scrolling at compact/default sizes while Back/Escape, frozen ticks
       and complete saved-match bytes remain intact (`docs/formats/menus.md`).
       Original layout calibration and physical Mac/Retina checks remain open.
+- [x] Clear command modes when F5 opens a save result (#237, #96, #97):
+      success and failure share ordinary menu input cleanup, cancelling modes,
+      modifiers, gestures and transient recall feedback. Selection, assigned
+      teams, queued orders and full saved-match bytes remain intact; recovery
+      and stale releases are checked (`docs/formats/menus.md`).
 - [ ] Complete world interaction and desktop UX (#97): consistent selection,
       supported control groups/hotkeys, hover/target/order feedback, bounded
       camera movement and configurable edge scrolling. Clear held input on
