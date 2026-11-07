@@ -23,8 +23,8 @@ issuing an additional order.
 
 Notices last two seconds of monotonic presentation time. The latest tactical
 order replaces the previous one. Selection, team shortcuts, right-click
-cancellation, Escape, service/sidebar/radar actions, focus loss and menu entry
-clear it. Match replacement and returning to the front menu also clear it.
+cancellation, Escape, service/sidebar/radar actions, focus loss, window resize
+and menu entry clear it. Match replacement and returning to the front menu also clear it.
 Expiry requests a redraw even if the simulation has not advanced. The text
 uses the existing GAME.FNT feedback strip inside the world viewport. Markers
 are drawn below sidebar/tooltips/cursors and keep a fixed 28x14 pixel outer
@@ -149,6 +149,30 @@ cancellation, expiry, stale-mode and focus/menu/resize guards.
 `OPENYR_PLACEMENT_ORDER_PROOF=<external-dir>` exports shared images and a
 controlled native READY save with AI disabled for live observation. The save
 stays outside proof uploads; derived art stays off main.
+
+
+Sidebar production clicks now reuse the same brief feedback lifecycle. A
+queued build displays "Build order sent". Holding the factory head displays
+"Production held", resuming it displays "Production resumed", and cancelling
+displays "Build order cancelled". A left-click that queues nothing because
+prerequisites are unmet or the construction queue is occupied displays
+"Cannot build here". Picking up a READY structure displays "Select a location
+to place the structure" until the existing placement acknowledgement takes
+over on the world click. Right-clicks that hold or cancel nothing stay silent.
+The notices carry no world marker, since the cameo itself is the target.
+
+Production rules, queue ordering, payment, refunds and saved state are
+unchanged. The notice acknowledges the queued request, not completion of the
+build. Existing focus, menu and pointer cleanup still clears it, and expiry
+requests a redraw. Appearance and timing remain native policy pending
+original-game calibration under #86 and #97.
+
+Retail tests queue, hold, resume and cancel a Rhino on EB1 through the
+sidebar handlers, compare the queued commands and pre-step save bytes, cover
+the occupied construction queue and READY pickup, and check expiry.
+`OPENYR_PRODUCTION_ORDER_PROOF=<external-dir>` exports shared-compositor
+frames and tick, hash, message and pending-command receipts. The frames
+contain retail art and stay outside git.
 
 
 Selected living owned armed units now show red corner brackets around their

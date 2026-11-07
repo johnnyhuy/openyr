@@ -532,31 +532,33 @@ impl App {
     /// Left-click on a cameo: start placing a finished structure, else
     /// resume held work or queue the slot.
     fn sidebar_click(&mut self, slot: usize) {
-        self.order_feedback.clear();
         self.service_mode = ServiceMode::None;
         let Some(session) = self.session.as_ref() else {
+            self.order_feedback.clear();
             return;
         };
         if session.ready_structure() == Some(slot) {
             self.placing = Some(slot);
-        } else if let Some(cmd) = session.production_click(slot, false, &self.pending) {
-            self.pending.push(cmd);
+            self.acknowledge_placement_start(Instant::now());
+        } else {
+            let cmd = session.production_click(slot, false, &self.pending);
+            self.acknowledge_production_order(cmd.as_ref(), false, Instant::now());
+            self.pending.extend(cmd);
         }
+        self.view.dirty = true;
     }
 
     fn sidebar_right_click(&mut self, slot: usize) {
-        self.order_feedback.clear();
         self.service_mode = ServiceMode::None;
         if self.placing == Some(slot) {
             self.placing = None;
         }
-        if let Some(cmd) = self
+        let cmd = self
             .session
             .as_ref()
-            .and_then(|s| s.production_click(slot, true, &self.pending))
-        {
-            self.pending.push(cmd);
-        }
+            .and_then(|s| s.production_click(slot, true, &self.pending));
+        self.acknowledge_production_order(cmd.as_ref(), true, Instant::now());
+        self.pending.extend(cmd);
         self.view.dirty = true;
     }
 
