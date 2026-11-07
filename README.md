@@ -1,64 +1,53 @@
 # OpenYR
 
-A native, reverse-engineered rewrite of **Command & Conquer: Red Alert 2: Yuri's Revenge** for modern macOS (Apple Silicon first). Long-term goal: a faithful, moddable engine that runs the original game assets natively, no Wine, so we can ship patches, quality-of-life fixes and new units.
+[![CI](https://github.com/johnnyhuy/openyr/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/johnnyhuy/openyr/actions/workflows/ci.yml)
 
-> Working name. This is a from-scratch engine in Rust that reads the original Westwood data files (MIX/CSF/INI/SHP/VXL/…). It ships **no EA assets**; you supply your own legally owned game install.
+A native Rust rewrite of **Command & Conquer: Red Alert 2: Yuri's Revenge**, with
+macOS as the primary target. OpenYR reads the original Westwood game data from
+your legally owned install. No EA assets or original executable code are included.
 
-## Why
+OpenYR is a **pre-alpha playable sandbox**. The native menu and match flow work,
+but original-game parity and the full game rules are still in progress. See the
+[roadmap](docs/roadmap.md) for verified slices and remaining work.
 
-Wine runs YR on macOS, but it is a compatibility layer: resolution, input, colour depth and modding are all capped by a 2001-era Windows binary. A native engine gives:
+## What works
 
-- modern macOS: Retina/integer scaling, real fullscreen, Metal, gamepads, no Rosetta
-- a moddable codebase: data-driven units (including new ones), scripted QoL patches
-- a foundation for content additions (e.g. RA3-style units with new art and audio)
+| Area | Current implementation |
+| --- | --- |
+| Menus | Animated main menu, Single Player, Battle map chooser, saved matches, options, loading and recovery |
+| Match setup | Two participants, nine Allied/Soviet countries, colors, authored starts, opposing teams, Short Game and speed presets |
+| World interaction | Selection, control groups, camera pan/zoom, optional edge scrolling, contextual cursors and order feedback |
+| Simulation | Deterministic movement, combat, harvesting, economy, production, structure placement, repair/sell and basic skirmish AI |
+| Saves | Named save/load/delete, F5/F9, compatibility checks, atomic writes and visible recovery; long save-name edits keep the caret visible |
+| Rendering | Retail terrain, SHP/VXL units, building/infantry animation and an expanding set of combat effects |
+| Audio | Theme music, voices, weapon reports and EVA; device recovery and mute controls |
+| Data tools | MIX/VFS, strings, rules, images, models and audio inspection; typed superweapon and sound-event definitions |
 
-## Status
+The chooser uses the installed map catalog; gameplay remains a limited sandbox.
+EB1.MMX is the main regression/demo map. Superweapon charging/firing, country
+special abilities, broader modes and original AI behavior remain unfinished.
+Original menu/animation timing, full effects and physical macOS/Retina input
+verification also remain open. Addon packs and roguelite work follow the core
+playable baseline. [Known limits and observations](docs/formats/front-menu.md).
 
-Pre-alpha playable sandbox on retail data. See [docs/roadmap.md](docs/roadmap.md).
+## Build and launch
 
-| Area | State |
-|---|---|
-| MIX archive reader (incl. encrypted headers) | done |
-| CSF string tables | done |
-| INI rules parser | done |
-| PAL colour tables | done |
-| SHP / VXL / HVA / TMP readers | done (whole retail corpus decodes) |
-| MIX name recovery (~88% of entries) | done |
-| `mix-dump` inspection CLI (`scan`, nested `extract`) | done |
-| PCX images | done |
-| Audio (AUD, sound bank, IMA WAV; bit-exact vs ffmpeg) | done |
-| `yr-assets` VFS (engine lookup order) | done |
-| Typed rules: technos, weapons, warheads (M2) | in progress |
-| Renderer (M3) | map and live retail art, animation polish pending |
-| Simulation | movement, combat, economy, production, basic AI skirmish |
-| macOS app | live window, selection/orders, unit production sidebar |
-| Audio playback | retail theme, voices, weapon reports and EVA via CoreAudio |
-
-## Layout
-
-```
-crates/yr-formats/   pure parsers for Westwood file formats (no I/O side effects)
-crates/yr-assets/    VFS over a game install: MIX cascade in engine lookup order
-crates/yr-rules/     typed game data from rulesmd.ini / artmd.ini
-tools/mix-dump/      CLI to list/extract MIX archives from a game install
-docs/                architecture, roadmap, format specs, research notes
-```
-
-## Building
+Use current stable Rust with `rustfmt` and `clippy`. Python 3.9+ and Git are needed
+for the runtime-proof helper and development checks. Linux contributors also need
+`pkg-config` and ALSA development headers, such as `libasound2-dev` on Debian/Ubuntu.
+A desktop display is needed for the interactive window; headless runs can use
+`--ticks` or `--frames`.
 
 ```sh
-cargo build --workspace
-cargo test --workspace
+cargo build --workspace --locked
+OPENYR_GAMEDIR="/path/to/RA2" cargo run --release --locked
 ```
 
-The workspace defaults to `yr-app`, so `cargo run` launches `openyr`.
-Use `--workspace` to build or test every crate, and `-p mix-dump` or
-`-p sim-bench` to run an inspection tool or the simulation benchmark.
-
-Tests read the real game archives from `~/Games/RA2YR/prefix/drive_c/Westwood/RA2`
-when present (skipped otherwise), so they double as a parity check against retail data.
-
-## Using your own game data
+Launch without game arguments to open the main menu. `OPENYR_GAMEDIR` selects
+an install explicitly. On macOS, OpenYR also discovers the usual
+`~/Games/RA2YR/prefix/drive_c/Westwood/RA2` location or offers a folder picker and
+remembers your choice. Select the game-data folder containing the MIX archives,
+not the Windows executable. See [game-data discovery and packaging](docs/macos-app.md).
 
 On macOS, build a Finder-launchable app:
 
@@ -67,84 +56,108 @@ On macOS, build a Finder-launchable app:
 open target/OpenYR.app
 ```
 
-Double-click `OpenYR.app` for later launches. It opens the animated main menu using the
-retail install at `~/Games/RA2YR/prefix/drive_c/Westwood/RA2`. If that folder
-is absent, choose your own game folder in the macOS picker; OpenYR remembers
-it. The app contains no game assets. `cargo run --release` also works without
-arguments. See [macOS packaging](docs/macos-app.md) for preferences, logs and
-custom locations.
+For later launches, double-click the app. Its package contains the engine and
+launcher; it reads your game data from the selected install.
 
-Single Player opens saved matches or the supported EB1 skirmish setup with its
-authored map preview. Options includes mute, world zoom and Game Data Folder.
-Abort and match results offer Main Menu. Broader match choices are unavailable.
-See [front-menu observations](docs/formats/front-menu.md).
-
-Launch a match with your own install:
+Start the EB1 sandbox directly with explicit arguments:
 
 ```sh
-cargo run --release -- "/path/to/RA2" EB1.MMX
+cargo run --release --locked -- "/path/to/RA2" EB1.MMX
 ```
 
-Left-click or drag to select. With units selected, left-click to order.
-Ctrl+1-9 assigns unit teams; 1-9 recalls them, Shift+number adds a team to
-the selection, and two presses center the view. [Team behavior](docs/control-groups.md).
-Right-click cancels; right-drag pans. Hold Ctrl+Shift or press A, then left-click to
-attack-move, S to stop, H to harvest, and M to mute/unmute. The sidebar
-queues units with left-click, holds with right-click and cancels with a second
-right-click. Left-click resumes held work. Arrow keys or
-right-drag pan; the wheel zooms; Escape opens pause. Audio starts automatically and
-missing samples or an unavailable output device leave the match running.
+The workspace defaults to `yr-app`. Use `-p mix-dump` for asset inspection or
+`-p sim-bench` for the simulation benchmark.
 
-Escape cancels an active command, then opens the in-match pause screen. It
-provides named save/load, overwrite/discard confirmation, restart, quit and
-controls for mute and world zoom. Paused time does not catch up on resume.
-Tab selects controls; arrows select saved matches on Load.
+## Controls and saved matches
 
-F5 saves the last completed sim tick with visible feedback; F9 asks before
-restoring it. The default
-file is `~/Library/Application Support/OpenYR/quicksave.oyrsave`. To open a
-saved match, use `--load <file>`; F5/F9 then use that file. Art, camera,
-selection, animation clocks and audio are rebuilt on load.
+| Input | Action |
+| --- | --- |
+| Left-click / drag | Select units or box-select; click a destination/target to order selected units |
+| Right-click | Cancel the current mode or selection |
+| Right-drag / arrow keys | Pan the camera |
+| Mouse wheel | Zoom the world; scroll lists/sidebar where applicable |
+| Ctrl+1-9 / 1-9 | Assign / recall a team; Shift+number adds it, double recall centers the camera |
+| A, then click / Ctrl+Shift+click | Attack-move |
+| S / H | Stop / harvest with eligible selected units |
+| K / L | Repair / sell mode |
+| M | Toggle mute |
+| Escape | Cancel an active command, then open Pause |
+| F5 / F9 | Save / confirm loading the active quicksave target |
 
-Save and resume a headless match with absolute sim ticks:
+Left-click a sidebar item to build, resume held work or pick up a READY structure.
+Right-click holds production; a second right-click cancels it. Menus pause the
+simulation without catch-up on resume. Tab selects controls, and arrows navigate
+saved-match lists. Edge scrolling is optional in Controls.
+
+Pause provides named saves, load/delete, restart and return to Main Menu.
+Saved matches are also available from Single Player. The default F5/F9 file is
+`~/Library/Application Support/OpenYR/quicksave.oyrsave`; loading a named match
+makes that file the new target. Successful menu loads confirm the save name and
+restored tick. Failures retain the current match with a recovery route.
 
 ```sh
-cargo run --release -- "/path/to/RA2" EB1.MMX --ticks 900 --save /tmp/match.oyrsave
-cargo run --release -- "/path/to/RA2" EB1.MMX --load /tmp/match.oyrsave --ticks 3000
-cargo run --release -- "/path/to/RA2" EB1.MMX --load /tmp/match.oyrsave
+cargo run --release --locked -- "/path/to/RA2" EB1.MMX --ticks 900 --save /tmp/match.oyrsave
+cargo run --release --locked -- "/path/to/RA2" EB1.MMX --load /tmp/match.oyrsave --ticks 3000
+cargo run --release --locked -- "/path/to/RA2" EB1.MMX --load /tmp/match.oyrsave
 ```
 
-`--save <file>` without ticks writes the starting state headlessly. Combine
-`--frames` with `--save` or `--load` for proof captures. The saved seed,
-map/rules compatibility fingerprint and full sim state travel together;
-incompatible versions or game data fail with a clear error. Save files
-contain data derived from the retail install, so keep them outside git.
-See [the save format](docs/formats/save.md) and [menu observations and limits](docs/formats/menus.md).
+Ticks are absolute: the second command resumes the saved state through tick 3000.
+`--save` without ticks writes the starting state headlessly. Explicit CLI launches
+bypass the front menu. Keep saves outside Git because they contain retail-derived
+data. See [save compatibility](docs/formats/save.md), [menu behavior](docs/formats/menus.md)
+and [team controls](docs/control-groups.md).
 
-To capture a scripted match without a window:
+## Development and proof
 
 ```sh
-cargo run --release -- "/path/to/RA2" EB1.MMX --frames /tmp/openyr-proof 450 1350 2250 3000
-# Observe the computer against a passive player:
-cargo run --release -- "/path/to/RA2" EB1.MMX --frames /tmp/openyr-passive 1351 2251 4500 --passive
+cargo test --workspace --locked
+cargo clippy --workspace --all-targets --locked -- -D warnings
+cargo fmt --all --check
+python3 -m unittest discover -s scripts -p 'test_*.py' -v
 ```
 
-This writes PNG frames, `audio.wav` and `audio-cues.tsv`. They contain retail
-art and sound, so keep them outside the repository.
+Retail tests use `~/Games/RA2YR/prefix/drive_c/Westwood/RA2` when available and
+self-skip without it. CI checks the code on macOS without retail data; that is
+separate from physical Mac, Retina or audio-device verification.
 
-Point the inspection tools at the same install:
+For runtime proof, commit your source and use a new isolated output directory:
 
 ```sh
-cargo run -p mix-dump -- list "/path/to/RA2/langmd.mix"
-cargo run -p mix-dump -- extract "/path/to/RA2/ra2md.mix" RULESMD.INI out/
-cargo run -p mix-dump -- extract "/path/to/RA2/ra2.mix" LOCAL.MIX/HTNK.VXL out/
-cargo run --release -p mix-dump -- scan /path/to/RA2/*.mix   # census + names
-cargo run --release -p mix-dump -- render \
-  /path/to/RA2/ra2.mix:SNOW.MIX/GACNST.SHP /path/to/RA2/ra2.mix:CACHE.MIX/UNITSNO.PAL gacnst.png
+python3 scripts/proof_build.py build --output .tmp/proof-build-001
+python3 scripts/proof_build.py run --receipt .tmp/proof-build-001/receipt.json -- \
+  "/path/to/RA2" EB1.MMX --frames /tmp/openyr-proof 300 900 1500
 ```
 
-## Legal
+The helper records source and executable hashes and refuses changed artifacts.
+This avoids stale executables from shared Cargo target directories. Frame exports
+include PNGs, `audio.wav` and `audio-cues.tsv`; keep retail-derived outputs outside
+Git. [Runtime proof instructions](docs/runtime-proof.md) and [contributor rules](AGENTS.md)
+cover verification and publishing evidence.
 
-See [docs/legal.md](docs/legal.md). Short version: clean-room method, no EA code or
-assets in this repository, user-supplied assets only. Precedent (re3, DevilutionX,
-OpenRCT2, Thyme) is summarised in `docs/research/`.
+Inspect your own assets with `mix-dump`:
+
+```sh
+cargo run --locked -p mix-dump -- list "/path/to/RA2/langmd.mix"
+cargo run --locked -p mix-dump -- rules "/path/to/RA2" NukeSpecial
+cargo run --release --locked -p mix-dump -- scan /path/to/RA2/*.mix
+```
+
+## Repository layout
+
+| Path | Purpose |
+| --- | --- |
+| `crates/yr-formats` | Bounded format parsing |
+| `crates/yr-assets` | Game-install VFS and archive lookup |
+| `crates/yr-rules` | Typed rules and supporting game data |
+| `crates/yr-sim` | Deterministic integer simulation |
+| `crates/yr-render` | Retail map and object rendering |
+| `crates/yr-app` | Native window, menus, input, audio and match flow |
+| `tools/` | Inspection and simulation tools |
+| `docs/` | Architecture, roadmap, format observations and research |
+
+## Legal and method
+
+OpenYR uses a clean-room method based on public behavior and supplied asset
+formats. See [legal notes](docs/legal.md), [architecture](docs/architecture.md) and
+[research](docs/research/). Original game assets, executables and derived captures
+belong outside the source tree.
