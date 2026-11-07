@@ -167,8 +167,22 @@ the state schema or tick semantics change. Versions 1 through 3 are readable;
 the older provenance fields default as above. Sparse-grid setup changes are
 checked separately by the match wrapper. Unsupported versions are rejected.
 
-The app writes and syncs a sibling temporary file, then renames it over
-the destination. An encoding/write failure leaves the old save intact.
+The app writes and syncs an exclusively created sibling temporary file, then
+renames it over the destination. Its short ASCII basename is
+`.openyr-save.<pid>.<process counter>.pending`, independent of the target's
+basename (#257). Valid long ASCII/Unicode names and non-UTF-8 Unix names do not
+expand during temporary-file creation. The process counter is app-side I/O
+bookkeeping, not simulation state or RNG.
+
+Up to 32 candidate names are tried per write. Occupied files, directories and
+symlinks are left untouched; the destination's own basename is also skipped.
+Other creation errors fail immediately. Write/sync/rename failures attempt to
+remove only the newly created temporary path. Existing pending files are never
+reused or cleaned up as a side effect of saving. This retains the existing
+same-directory rename policy and does not add directory fsync or change the
+on-disk match format. Asset-independent storage tests exercise actual long-name
+creation/replacement, collision exhaustion, symlinks and rename-failure cleanup.
+An encoding/write failure leaves the old save intact.
 Failed loads leave the running match intact. A successful live load
 discards pending UI orders and rebuilds animation/audio state. Music
 restarts; camera, selection and effect playback positions are not saved.
