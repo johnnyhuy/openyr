@@ -94,6 +94,22 @@ queued commands and selection are discarded. The loaded slot becomes the
 F5/F9 target. Restart rebuilds the same map with the same seed. Quit exits the
 app; Main Menu discards the match through the explicit abort choice.
 
+A committed saved-match load from the front or pause flow briefly shows
+`Match loaded (tick N): <save name>` in the existing world feedback strip (#97).
+Only the filename stem is shown: controls are removed, outer whitespace is
+trimmed and the name is capped at 48 characters. The restored tick precedes the
+name so compact layouts retain it when measured fitting clips a long label.
+The notice begins after the prepared match and presentation are committed;
+loading progress, failures, cancelled workers, restart and fresh setup do not
+report a saved load. Explicit CLI startup still bypasses menu feedback.
+
+The confirmation has no marker and shares the existing two-second monotonic
+notice lifetime and cleanup/replacement rules. It adds no modal or simulation
+pause. This text and timing are native policy, not original-game calibration.
+Complete restored save bytes remain unchanged. `OPENYR_LOAD_SUCCESS_PROOF`
+exports matched notice/cleared compositions at three sizes from the real
+retail-backed asynchronous loader regression.
+
 Delete Game opens a separate saved-match list from Pause or the Load page.
 Mouse selection, arrows and wheel scrolling use the same slot geometry as Load.
 Delete stays unavailable until a slot is selected. Confirmation names the save,

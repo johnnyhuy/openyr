@@ -7,6 +7,12 @@ eligible living owned units. An unavailable action submits no commands and
 shows a red marker with a short explanation. Selecting units produces no order
 acknowledgement.
 
+Successful menu loads of saved matches also use the feedback strip. They show
+the restored tick and bounded filename stem, with no tactical marker, only after
+the worker result commits. Failure, cancellation, restart and fresh setup do not
+report success. The notice shares the two-second expiry and lifecycle cleanup;
+it changes no commands, simulation or save data (`docs/formats/menus.md`).
+
 Move markers use the requested destination, including terrain height. The
 pathfinder can substitute a nearby standable goal; the marker does not promise
 arrival at the exact cell. Attack markers follow the target's current ground

@@ -1,4 +1,4 @@
-//! Brief native acknowledgements of submitted tactical orders, outside the sim.
+//! Brief native match and tactical acknowledgements, outside the simulation.
 
 use super::*;
 use yr_app::cursor::Kind;
@@ -21,6 +21,27 @@ struct Notice {
 pub(super) struct Feedback(Option<Notice>);
 
 impl Feedback {
+    pub(super) fn loaded(&mut self, path: &std::path::Path, tick: u64, now: Instant) {
+        let name: String = path
+            .file_stem()
+            .unwrap_or_default()
+            .to_string_lossy()
+            .chars()
+            .filter(|ch| !ch.is_control())
+            .take(48)
+            .collect();
+        let name = if name.trim().is_empty() {
+            "match"
+        } else {
+            name.trim()
+        };
+        self.0 = Some(Notice {
+            text: format!("Match loaded (tick {tick}): {name}"),
+            marker: None,
+            at: now,
+        });
+    }
+
     pub(super) fn clear(&mut self) {
         self.0 = None;
     }

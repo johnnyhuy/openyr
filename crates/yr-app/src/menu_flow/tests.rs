@@ -82,6 +82,114 @@ fn finish_load(app: &mut App) {
 }
 
 #[test]
+fn retail_saved_load_success_is_visible_only_after_committing_the_match() {
+    let dir = PathBuf::from(std::env::var("HOME").unwrap_or_default())
+        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    if !dir.is_dir() {
+        return;
+    }
+    let temp = Scratch::new();
+    let mut app = new_app(dir.to_string_lossy().into(), "EB1.MMX".into(), 1);
+    app.session = Some(app.load_session().unwrap());
+    let saved = yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap();
+    let path = temp.0.join("Checkpoint 07.oyrsave");
+    std::fs::write(&path, &saved).unwrap();
+    app.start_menu_load(Some(path.clone()));
+    assert!(app.order_feedback.message(Instant::now()).is_none());
+    finish_load(&mut app);
+    assert!(!app.menu.visible());
+    assert_eq!(app.save_path, path);
+    assert_eq!(
+        app.order_feedback.message(Instant::now()),
+        Some("Match loaded (tick 1): Checkpoint 07")
+    );
+    assert_eq!(
+        yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap(),
+        saved
+    );
+    assert!(app.selected.is_empty() && app.pending.is_empty());
+    let now = Instant::now();
+    for size in [(640, 480), (800, 600), (1280, 800)] {
+        let (w, h) = size;
+        app.frame_size = size;
+        let mut with = vec![0; (w * h * 4) as usize];
+        app.compose_at(&mut with, w, h, now);
+        let notice = std::mem::take(&mut app.order_feedback);
+        let mut without = vec![0; with.len()];
+        app.compose_at(&mut without, w, h, now);
+        let differences: Vec<_> = with
+            .chunks_exact(4)
+            .zip(without.chunks_exact(4))
+            .enumerate()
+            .filter_map(|(i, (a, b))| (a != b).then_some((i as u32 % w, i as u32 / w)))
+            .collect();
+        assert!(
+            !differences.is_empty(),
+            "load confirmation must actually paint"
+        );
+        assert!(differences
+            .iter()
+            .all(|&(x, y)| x < w - SIDEBAR_W && y < 64));
+        if let Some(out) = std::env::var_os("OPENYR_LOAD_SUCCESS_PROOF") {
+            let out = PathBuf::from(out);
+            std::fs::create_dir_all(&out).unwrap();
+            for (label, frame) in [("notice", &with), ("cleared", &without)] {
+                std::fs::write(
+                    out.join(format!("{w}x{h}-{label}.png")),
+                    yr_render::png::encode_rgba(w, h, frame),
+                )
+                .unwrap();
+            }
+            std::fs::write(out.join("fixture.oyrsave"), &saved).unwrap();
+        }
+        app.order_feedback = notice;
+        assert_eq!(
+            yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap(),
+            saved
+        );
+    }
+    app.open_menu(Page::Pause);
+    assert!(app.order_feedback.message(Instant::now()).is_none());
+    // A failed load cannot report success or replace the retained match.
+    let corrupt = temp.0.join("Damaged.oyrsave");
+    std::fs::write(&corrupt, b"damaged").unwrap();
+    app.start_menu_load(Some(corrupt));
+    finish_load(&mut app);
+    assert!(matches!(app.menu.page, Page::Message { .. }));
+    assert!(app.order_feedback.message(Instant::now()).is_none());
+    assert_eq!(
+        yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap(),
+        saved
+    );
+    app.start_menu_load(Some(path.clone()));
+    app.apply_menu_effect(Effect::CancelLoad);
+    finish_load(&mut app);
+    assert!(app.order_feedback.message(Instant::now()).is_none());
+    assert_eq!(
+        yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap(),
+        saved
+    );
+    // Restart/new setup uses the same prepared-match path without a saved slot.
+    app.start_menu_load(None);
+    finish_load(&mut app);
+    assert!(app.order_feedback.message(Instant::now()).is_none());
+    app.menu.front = true;
+    app.menu.set(Page::Load);
+    app.apply_menu_effect(Effect::Commit(Intent::Load(path)));
+    finish_load(&mut app);
+    assert!(!app.menu.front && !app.menu.visible());
+    assert_eq!(
+        app.order_feedback.message(Instant::now()),
+        Some("Match loaded (tick 1): Checkpoint 07")
+    );
+    assert_eq!(
+        yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap(),
+        saved
+    );
+    println!("Pause/front saved load confirmation painted at three sizes after commit; failure/cancel/restart stayed silent; complete restored save bytes unchanged.");
+}
+
+#[test]
 fn retail_quicksave_clears_modal_input_on_success_and_failure() {
     let dir = PathBuf::from(std::env::var("HOME").unwrap_or_default())
         .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");

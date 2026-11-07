@@ -1,6 +1,23 @@
 use super::*;
 
 #[test]
+fn load_notice_bounds_names_omits_paths_and_uses_the_existing_expiry() {
+    let now = Instant::now();
+    let mut feedback = Feedback::default();
+    let path = PathBuf::from("/private/saves").join(format!("{}\n.oyrsave", "界".repeat(1000)));
+    feedback.loaded(&path, u64::MAX, now);
+    assert_eq!(
+        feedback.message(now).unwrap(),
+        format!("Match loaded (tick {}): {}", u64::MAX, "界".repeat(48))
+    );
+    assert!(feedback.0.as_ref().unwrap().marker.is_none());
+    assert!(feedback.message(now + LIFETIME).is_none());
+    assert!(feedback.expire(now + LIFETIME));
+    feedback.loaded(std::path::Path::new(""), 1, now);
+    assert_eq!(feedback.message(now), Some("Match loaded (tick 1): match"));
+}
+
+#[test]
 fn notice_expiry_and_inactive_keyboard_input_do_not_submit_commands() {
     let now = Instant::now();
     let mut feedback = Feedback::default();
