@@ -284,3 +284,25 @@ fn save_name_selection_is_visible_only_inside_the_editor_at_three_sizes() {
         }
     }
 }
+
+#[test]
+fn confirmations_distinguish_their_target_save_files() {
+    let art = Art::default();
+    for (width, height) in [(640, 480), (800, 600), (1280, 800)] {
+        for action in [Intent::Save, Intent::Load, Intent::Delete] {
+            let render = |end| {
+                let mut state = State::default();
+                state.set(Page::Confirm(action(
+                    format!("{}{}.oyrsave", "W".repeat(47), end).into(),
+                )));
+                let mut frame = vec![0; (width * height * 4) as usize];
+                draw(&mut frame, width, height, &art, &state, (-1.0, -1.0));
+                frame
+            };
+            assert!(
+                render('A') != render('B'),
+                "confirmation must identify the target file at {width}x{height}"
+            );
+        }
+    }
+}

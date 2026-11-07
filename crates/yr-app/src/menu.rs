@@ -1,6 +1,8 @@
 //! Modal in-match UI. Asset observations and limits: formats/menus.md.
 
 mod art;
+pub(crate) mod confirmation;
+pub use confirmation::scroll_confirmation;
 mod draw;
 pub mod maps;
 pub(crate) mod message;

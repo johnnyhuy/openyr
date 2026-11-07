@@ -1,4 +1,4 @@
-use super::{message, Art, Button, Layout, Page, State};
+use super::{confirmation, message, Art, Button, Layout, Page, State};
 use crate::sidebar::{text::Typeface, Canvas};
 const YELLOW: [u8; 4] = [255, 232, 0, 255];
 const WHITE: [u8; 4] = [220, 232, 240, 255];
@@ -97,15 +97,9 @@ pub fn draw(
             String::new(),
         ),
         Page::Confirm(super::Intent::Load(_)) => ("Replace the current match?", String::new()),
-        Page::Confirm(super::Intent::Delete(path)) => (
-            "Delete this saved match permanently?",
-            path.file_stem()
-                .unwrap_or_default()
-                .to_string_lossy()
-                .chars()
-                .take(48)
-                .collect(),
-        ),
+        Page::Confirm(super::Intent::Delete(_)) => {
+            ("Delete this saved match permanently?", String::new())
+        }
         Page::Loading => ("Loading", String::new()),
         Page::Result(true) => (art.label("TXT_VICTORIOUS", "Victory"), String::new()),
         Page::Result(false) => (art.label("TXT_SCENARIO_LOST", "Defeat"), String::new()),
@@ -120,7 +114,9 @@ pub fn draw(
     let title = fit(c.face, title, world - 48);
     let x = (world - c.face.width(&title)) / 2;
     c.text((x, 28), &title, YELLOW, 160);
-    if let Page::Message { text, .. } = &state.page {
+    if let Page::Confirm(intent) = &state.page {
+        confirmation::draw(&mut c, layout, intent, state.message_scroll);
+    } else if let Page::Message { text, .. } = &state.page {
         let region = message::Region::pause(layout);
         let (first, rows, _) = region.viewport(c.face, text, state.message_scroll);
         for (i, line) in message::lines(c.face, text, region.width)
@@ -290,6 +286,10 @@ pub fn draw(
         Page::Delete => "Select a saved match to delete. The current match stays in memory.",
         Page::Loading => "Escape cancels this load and keeps the current match.",
         Page::Result(_) => "Choose restart or quit.",
+        Page::Confirm(intent) => {
+            message_status = confirmation::status(c.face, layout, intent, state.message_scroll);
+            &message_status
+        }
         Page::Message { text, .. } => {
             let region = message::Region::pause(layout);
             let (first, rows, count) = region.viewport(c.face, text, state.message_scroll);

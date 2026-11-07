@@ -685,6 +685,12 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       Unicode/input bounds, retail/fallback editor pixels and complete saved
       match bytes are checked. Clipboard and physical Mac input remain outside
       this native editing slice (`docs/formats/menus.md`).
+- [x] Identify target files in Save/Load/Delete confirmations (#253, #96, #97).
+      Quoted basenames retain long suffixes, escaped controls and spaces within
+      measured, scrollable text regions in both skins. Button defaults and
+      navigation, cancellation, complete retail match/save bytes and existing
+      backend validation remain intact (`docs/formats/menus.md`). Original dialog
+      calibration and physical Mac/Retina input remain open.
 - [ ] Complete world interaction and desktop UX (#97): consistent selection,
       supported control groups/hotkeys, hover/target/order feedback, bounded
       camera movement and configurable edge scrolling. Clear held input on

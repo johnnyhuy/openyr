@@ -130,7 +130,7 @@ The notice begins after the prepared match and presentation are committed;
 loading progress, failures, cancelled workers, restart and fresh setup do not
 report a saved load. Explicit CLI startup still bypasses menu feedback.
 
-The confirmation has no marker and shares the existing two-second monotonic
+That load notice has no marker and shares the existing two-second monotonic
 notice lifetime and cleanup/replacement rules. It adds no modal or simulation
 pause. This text and timing are native policy, not original-game calibration.
 Complete restored save bytes remain unchanged. `OPENYR_LOAD_SUCCESS_PROOF`
@@ -156,6 +156,34 @@ No simulation state or save schema changes. The handler tests use temporary
 files and compare complete encoded retail match bytes before and after deletion.
 `OPENYR_DELETE_PROOF=<directory>` exports front/pause selection, confirmation,
 success, stale-file error and empty-list frames through the shared compositor.
+
+## Saved-file confirmation targets
+
+Save overwrite, Load and Delete confirmations show the quoted target basename,
+including `.oyrsave` (#253). They derive it from the pending intent's actual path,
+not the truncated slot-list label. Long external save names keep their complete
+suffix. Parent directories stay hidden; quotes, backslashes and nonprinting
+characters are escaped for display without changing the actual file path.
+
+A shared renderer measures character advances and wraps only at Unicode
+character boundaries, preserving spaces. Pause text starts at `(40,72)` in its
+existing body region. Front text starts at `(32,112)` below the question, within
+a 568x432 region. Both skins use their own font for drawing and scrolling.
+Overflow uses the wheel, Page Up/Down and Home/End; the footer reports its visible
+line range. Page changes reset scrolling and resized views clamp it.
+
+Arrows and Tab retain button navigation. Enter still requires a deliberate
+press, and Delete still defaults to No. Escape, right-click and No retain their
+existing return paths. Merely displaying or scrolling a confirmation neither
+changes slots nor reads/writes/removes a save. Save/load/delete validation, atomic
+writes, simulation and save schemas are unchanged. This is native confirmation
+safety, not original-game dialog calibration or physical Mac/Retina evidence.
+
+Fallback/retail compositor checks cover both skins at 640x480, 800x600 and
+1280x800, including names with identical prefixes, long suffixes, Unicode,
+repeated spaces and escaped controls. Actual-handler checks retain keyboard
+choices and compare complete retail match/file bytes through overwrite decline
+and accept, load decline and accept, and delete decline and accept.
 
 Pause recovery messages (#234) now share the front menu's measured word wrapping.
 The text rectangle begins at local `(40,72)`, ends 40 pixels before the sidebar,

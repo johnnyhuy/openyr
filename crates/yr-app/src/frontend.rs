@@ -5,7 +5,7 @@ mod message;
 mod setup;
 pub use art::Art;
 pub use draw::{draw, Scene};
-pub use message::scroll_message;
+pub use message::{scroll_confirmation, scroll_message};
 #[cfg(test)]
 mod tests;
 #[cfg(test)]

@@ -145,17 +145,9 @@ pub fn draw(frame: &mut [u8], width: u32, height: u32, art: &Art, scene: Scene<'
                 crate::menu::Intent::Load(_) => "Load this saved match?",
             };
             centered(&mut c, 0, 80, 632, text, YELLOW);
-            if let crate::menu::Intent::Delete(path) = intent {
-                centered(
-                    &mut c,
-                    0,
-                    112,
-                    632,
-                    &path.file_stem().unwrap_or_default().to_string_lossy(),
-                    WHITE,
-                );
-            }
+            crate::menu::confirmation::draw(&mut c, l, intent, s.message_scroll);
         }
+
         Page::Exit => centered(&mut c, 0, 380, 632, "Exit OpenYR?", YELLOW),
         Page::Loading => {
             centered(&mut c, 0, 80, 632, "Loading", YELLOW);
@@ -290,6 +282,10 @@ pub fn draw(frame: &mut [u8], width: u32, height: u32, art: &Art, scene: Scene<'
         Page::Delete => "Select a saved match to delete. Arrows select; Escape returns.",
         Page::ChooseMap => "Select a Battle map. Enter uses it; Escape keeps the current map.",
         Page::Loading => "Escape cancels and returns.",
+        Page::Confirm(intent) => {
+            message_status = crate::menu::confirmation::status(c.face, l, intent, s.message_scroll);
+            &message_status
+        }
         Page::Message { text, .. } => {
             let (first, rows, count) = message::viewport(c.face, text, s.message_scroll);
             if count > rows {

@@ -234,10 +234,11 @@ impl App {
             self.reset_menu_clock();
             return;
         }
-        if matches!(self.menu.page, Page::Message { .. }) {
+        let confirming = matches!(self.menu.page, Page::Confirm(_));
+        if confirming || matches!(self.menu.page, Page::Message { .. }) {
             let delta = match code {
-                KeyCode::ArrowDown => Some(1),
-                KeyCode::ArrowUp => Some(-1),
+                KeyCode::ArrowDown if !confirming => Some(1),
+                KeyCode::ArrowUp if !confirming => Some(-1),
                 KeyCode::PageDown => Some(10),
                 KeyCode::PageUp => Some(-10),
                 KeyCode::Home => Some(i32::MIN),
@@ -375,7 +376,9 @@ impl App {
     }
     pub(super) fn menu_scroll(&mut self, delta: i32) {
         let size = self.camera_size();
-        if !yr_app::frontend::scroll_message(&self.front_art, &mut self.menu, delta)
+        if !yr_app::frontend::scroll_confirmation(&self.front_art, &mut self.menu, size, delta)
+            && !yr_app::menu::scroll_confirmation(&self.menu_art, &mut self.menu, size, delta)
+            && !yr_app::frontend::scroll_message(&self.front_art, &mut self.menu, delta)
             && !yr_app::menu::scroll_message(&self.menu_art, &mut self.menu, size, delta)
         {
             self.menu.scroll_by(delta);
