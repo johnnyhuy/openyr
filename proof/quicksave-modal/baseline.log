@@ -1,0 +1,25 @@
+   Compiling yr-formats v0.1.0 (/workspace/openyr-load-confirmation-20261107/crates/yr-formats)
+   Compiling yr-rules v0.1.0 (/workspace/openyr-load-confirmation-20261107/crates/yr-rules)
+   Compiling yr-assets v0.1.0 (/workspace/openyr-load-confirmation-20261107/crates/yr-assets)
+   Compiling yr-sim v0.1.0 (/workspace/openyr-load-confirmation-20261107/crates/yr-sim)
+   Compiling yr-render v0.1.0 (/workspace/openyr-load-confirmation-20261107/crates/yr-render)
+   Compiling yr-app v0.1.0 (/workspace/openyr-load-confirmation-20261107/crates/yr-app)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 10.91s
+     Running unittests src/main.rs (/workspace/openyr/target/debug/deps/openyr-8539b05c03c1d83a)
+
+running 1 test
+OpenYR: saved /tmp/openyr-menu-flow-104911-1794043879821177534/attack-move.oyrsave at tick 1, hash 82aa984bad88351e, Ongoing
+
+thread 'menu_flow::tests::retail_quicksave_clears_modal_input_on_success_and_failure' (104912) panicked at crates/yr-app/src/menu_flow/tests.rs:132:13:
+quicksave must cancel attack-move on both save outcomes
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test menu_flow::tests::retail_quicksave_clears_modal_input_on_success_and_failure ... FAILED
+
+failures:
+
+failures:
+    menu_flow::tests::retail_quicksave_clears_modal_input_on_success_and_failure
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 80 filtered out; finished in 1.68s
+
+error: test failed, to rerun pass `-p yr-app --bin openyr`

@@ -1,0 +1,13 @@
+# Quicksave modal-input proof
+
+F5 previously opened its result message without the complete input cleanup used by ordinary menu entry. The new regression fails on main 9c7ab29 because attack-move remains armed after saving. Success and failure now cancel placement, repair/sell and attack-move modes, held modifiers, gestures and transient team feedback. Selection, assigned teams, already-queued orders and encoded match bytes remain intact.
+
+The retail handler regression covers all four modes and both filesystem outcomes. It dismisses each result, checks frozen time, replays stale releases, recalls an assigned team and compares complete snapshots and successful save-file bytes. Failure preserves the old save target and the blocking file. Generated match saves are excluded from the proof bundle.
+
+Live capture builds an unmodified main 9c7ab29 baseline and the changed release. Both run the same generated retail-backed save on Linux. Xorg, the native app, public XTest input and ImageMagick capture share one task session. K/L arm repair/sell. F5 saves successfully, or fails after its generated target is replaced with a directory. Escape returns through the result and pause pages to the world.
+
+The exact authored control rectangle is compared before arming and after resuming. All eight baseline cases resume with the armed pixels. The corresponding changed-release cases must reproduce neutral pixels. These checks cover repair/sell, success/failure and 640x480/1280x800 windows. All control-region crops and receipts are retained, with representative full-window captures. Placement, attack-move, held input, selection, teams, pending orders and full-save invariance are covered by handler tests rather than claimed as live observations.
+
+The controls are native retail-backed rendering, not original-game comparison. No physical Mac, Retina, audio-device or original-runtime checks ran. Known permission-blocked macOS screencapture paths, rejected original-runtime launches and the earlier HTTP-401 release-upload route were skipped. This uses the authorized branch-proof fallback: all proof files are removed before squash merge, and the final source tree must equal the tested tree.
+
+The first changed-release attempt caught an unchanged shared executable. Cargo returned success without rebuilding the app after the baseline build. The attempt failed its live assertion and is retained as live-after-stale.log. The app's release artifacts were then explicitly cleaned and rebuilt; the executable hash changed. The repeated live comparison uses that rebuilt binary. #238 tracks a bounded reproduction and general build-provenance guard. No stale proof is accepted as a pass.

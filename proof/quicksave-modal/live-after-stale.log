@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "/workspace/scratch/quicksave-modal-20261107/capture.py", line 59, in <module>
+    assert matches_neutral==(phase=='after'),(phase,w,name,matches_neutral)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ('after', 640, 'repair-failed-False', False)
