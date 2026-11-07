@@ -15,17 +15,27 @@ impl ServiceMode {
         *self = if *self == mode { Self::None } else { mode };
     }
 
+    /// The building whose footprint contains the cell, if any.
+    pub fn target(self, session: &Session, cell: (i32, i32)) -> Option<u32> {
+        session
+            .sim
+            .buildings()
+            .iter()
+            .find(|b| {
+                cell.0 >= i32::from(b.cell.0)
+                    && cell.1 >= i32::from(b.cell.1)
+                    && cell.0 < i32::from(b.cell.0) + i32::from(b.size.0)
+                    && cell.1 < i32::from(b.cell.1) + i32::from(b.size.1)
+            })
+            .map(|b| b.id)
+    }
+
     pub fn command(self, session: &Session, cell: (i32, i32)) -> Option<yr_sim::Command> {
-        let b = session.sim.buildings().iter().find(|b| {
-            cell.0 >= i32::from(b.cell.0)
-                && cell.1 >= i32::from(b.cell.1)
-                && cell.0 < i32::from(b.cell.0) + i32::from(b.size.0)
-                && cell.1 < i32::from(b.cell.1) + i32::from(b.size.1)
-        })?;
+        let id = self.target(session, cell)?;
         match self {
             Self::None => None,
-            Self::Repair => session.repair(b.id),
-            Self::Sell => session.sell(b.id),
+            Self::Repair => session.repair(id),
+            Self::Sell => session.sell(id),
         }
     }
 }

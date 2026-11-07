@@ -91,6 +91,8 @@ pub struct Action {
     pub cursor: Kind,
     pub commands: Vec<Command>,
     pub select: Option<u32>,
+    /// Building under the pointer in a repair/sell mode, if any.
+    pub service_target: Option<u32>,
 }
 
 impl Action {
@@ -99,6 +101,7 @@ impl Action {
             cursor,
             commands: Vec::new(),
             select: None,
+            service_target: None,
         }
     }
 }
@@ -119,6 +122,7 @@ pub fn at(
             _ => Kind::NoSell,
         };
         let mut action = Action::new(kind);
+        action.service_target = service.target(session, cell);
         action.commands.extend(command);
         return action;
     }

@@ -69,13 +69,23 @@ impl App {
             || self.right_panning
             || self.radar_drag
             || self.placing.is_some()
-            || self.service_mode != ServiceMode::None
             || self.edge_cursor(size).is_some()
             || self.session.as_ref()?.outcome != Outcome::Ongoing
         {
             return None;
         }
         let action = self.world_action(self.cursor)?;
+        if self.service_mode != ServiceMode::None {
+            let id = action.service_target?;
+            return Some(Target {
+                id,
+                color: if action.commands.is_empty() {
+                    ENEMY_COL
+                } else {
+                    PLAYER_COL
+                },
+            });
+        }
         if let Some(id) = action.select {
             return Some(Target {
                 id,
