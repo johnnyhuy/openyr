@@ -170,7 +170,7 @@ checked separately by the match wrapper. Unsupported versions are rejected.
 The app writes and syncs an exclusively created sibling temporary file, then
 renames it over the destination. Its short ASCII basename is
 `.openyr-save.<pid>.<process counter>.pending`, independent of the target's
-basename (#257). Valid long ASCII/Unicode names and non-UTF-8 Unix names do not
+basename (#257). Valid long ASCII/Unicode names and non-UTF-8 Linux names do not
 expand during temporary-file creation. The process counter is app-side I/O
 bookkeeping, not simulation state or RNG.
 
@@ -182,6 +182,9 @@ reused or cleaned up as a side effect of saving. This retains the existing
 same-directory rename policy and does not add directory fsync or change the
 on-disk match format. Asset-independent storage tests exercise actual long-name
 creation/replacement, collision exhaustion, symlinks and rename-failure cleanup.
+The non-UTF-8 filename case runs on Linux: macOS CI rejected the fixture's
+initial file creation with EILSEQ, before the storage function ran. That is a
+filesystem limitation, not a bypass of the ASCII/Unicode replacement checks.
 An encoding/write failure leaves the old save intact.
 Failed loads leave the running match intact. A successful live load
 discards pending UI orders and rebuilds animation/audio state. Music

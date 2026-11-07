@@ -700,7 +700,7 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       Physical Mac/Retina delivery remains unverified.
 - [x] Save filesystem-valid long external filenames (#257, #96, #97): bounded
       exclusive sibling names no longer append to or lossily expand the target.
-      Actual-file regressions cover ASCII/Unicode/Unix byte names, occupied
+      Actual-file regressions cover ASCII/Unicode/Linux byte names, occupied
       candidates, symlinks and failed-rename cleanup without changing encoded
       save bytes or simulation. Retail reconstruction and physical Mac checks
       remain outside this storage slice (`docs/formats/save.md`).

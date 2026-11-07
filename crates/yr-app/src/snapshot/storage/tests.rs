@@ -56,7 +56,7 @@ fn legal_254_byte_unicode_target_can_be_saved_and_replaced() {
     );
 }
 
-#[cfg(unix)]
+#[cfg(target_os = "linux")]
 #[test]
 fn non_utf8_target_does_not_expand_the_temporary_name() {
     use std::os::unix::ffi::OsStringExt;
@@ -64,7 +64,7 @@ fn non_utf8_target_does_not_expand_the_temporary_name() {
     name.extend_from_slice(b".oyrsave");
     roundtrip(OsString::from_vec(name));
     println!(
-        "Valid non-UTF-8 Unix basename: no lossy temporary-name expansion or changed destination."
+        "Valid non-UTF-8 Linux basename: no lossy temporary-name expansion or changed destination."
     );
 }
 
