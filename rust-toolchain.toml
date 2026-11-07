@@ -1,2 +1,5 @@
 [toolchain]
 channel = "stable"
+profile = "minimal"
+# The Win32 observation helper's bundled linker needs LLVM's runtime on macOS.
+components = ["rustfmt", "clippy", "llvm-tools"]

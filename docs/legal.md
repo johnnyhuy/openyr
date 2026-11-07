@@ -43,10 +43,9 @@ blessing for RA2/YR reimplementations.
 
 ## Publishing
 
-This repo is currently **local and private**. Publishing is a deliberate decision
-to take later: keep it private until M3+ shows the shape of the work, then publish
-engine code only (it already excludes assets). Not legal advice, just the
-precautionary posture adopted from the precedents.
+The repository is public and distributes engine code only. Users supply their
+own retail data. Derived screenshots and videos are demonstrations, hosted
+separately from the final source tree; they do not grant rights to game assets.
 
 ## Licence
 

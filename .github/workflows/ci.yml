@@ -20,19 +20,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Rust (stable, rustfmt + clippy)
-        uses: dtolnay/rust-toolchain@stable
+      - name: Install project tools
+        uses: jdx/mise-action@v3
         with:
-          components: rustfmt, clippy
+          version: 2026.11.3
 
       - name: Test proof build provenance
-        run: python3 -m unittest discover -s scripts -p 'test_*.py' -v
+        run: mise run test:proof
 
       - name: Cache cargo build
         uses: Swatinem/rust-cache@v2
 
       - name: Format
-        run: cargo fmt --all -- --check
+        run: mise run fmt
 
       - name: Build public Win32 observation helpers
         run: |
@@ -46,8 +46,8 @@ jobs:
         run: python3 -m unittest discover -s tools/wine-oracle -p 'test_*.py' -v
 
       - name: Clippy (warnings denied)
-        run: cargo clippy --workspace --all-targets -- -D warnings
+        run: mise run clippy
 
       - name: Test
         # Retail-corpus tests self-skip: CI has no game install (never commit assets).
-        run: cargo test --workspace
+        run: mise run test

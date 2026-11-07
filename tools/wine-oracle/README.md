@@ -21,6 +21,9 @@ header/preview crops and source hashes when publishing pixel evidence.
 
 Python 3, Apple clang, the active Rust toolchain's `lld-link`, and the existing
 Wine prefix are required. No Windows SDK or original binary analysis is used.
+`mise install` includes Rust's LLVM tools, which supply the bundled linker's
+runtime library on macOS. `mise exec -- python3 tools/wine-oracle/oracle.py ...`
+uses the project tools without requiring shell activation.
 The build generates its own kernel32 import library from public API names.
 The required CI job compiles every helper using an empty temporary prefix;
 the synthetic runtime verification requires the local Wine installation.

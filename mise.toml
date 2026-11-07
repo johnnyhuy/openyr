@@ -1,0 +1,45 @@
+[settings]
+idiomatic_version_file_enable_tools = ["rust"]
+
+[tools]
+python = "3.13"
+
+[tasks.build]
+description = "Build every workspace crate"
+run = "cargo build --workspace --locked"
+
+[tasks.run]
+description = "Launch OpenYR (set OPENYR_GAMEDIR or pass game arguments)"
+run = "cargo run --release --locked --"
+
+[tasks.test]
+description = "Run workspace tests (retail tests self-skip without data)"
+run = "cargo test --workspace --locked"
+
+[tasks.clippy]
+description = "Check every target with warnings denied"
+run = "cargo clippy --workspace --all-targets --locked -- -D warnings"
+
+[tasks.fmt]
+description = "Check Rust formatting"
+run = "cargo fmt --all --check"
+
+[tasks."test:proof"]
+description = "Test isolated runtime-build provenance"
+run = "python3 -m unittest discover -s scripts -p 'test_*.py' -v"
+
+[tasks.check]
+description = "Run the required local Rust and proof checks"
+depends = ["fmt", "clippy", "test", "test:proof"]
+
+[tasks."proof:build"]
+description = "Build isolated runtime proof; pass --output with a new directory"
+run = "python3 scripts/proof_build.py build"
+
+[tasks."proof:run"]
+description = "Run verified proof; pass --receipt and game arguments after --"
+run = "python3 scripts/proof_build.py run"
+
+[tasks.package]
+description = "Build the native macOS app bundle (macOS only)"
+run = "./scripts/package-macos.sh"
