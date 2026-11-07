@@ -121,6 +121,7 @@ struct App {
     attack_move: bool,
     shift: bool,
     control: bool,
+    super_key: bool,
     cursor: (f64, f64),
     pointer: yr_app::cursor::Presence,
     left_down: Option<(f64, f64)>,
@@ -364,6 +365,8 @@ impl App {
     fn focus_changed(&mut self, focused: bool) {
         self.pointer.focused = focused;
         if !focused {
+            self.menu.name_selected = false;
+            self.menu.setup.name_selected = false;
             self.menu.refresh_heading();
             self.groups.interrupt();
             self.order_feedback.clear();
@@ -371,6 +374,7 @@ impl App {
             self.keys.clear();
             self.shift = false;
             self.control = false;
+            self.super_key = false;
             self.placing = None;
             self.service_mode = ServiceMode::None;
             self.attack_move = false;
@@ -1606,6 +1610,7 @@ impl ApplicationHandler for App {
             WindowEvent::ModifiersChanged(m) => {
                 self.shift = m.state().shift_key();
                 self.control = m.state().control_key();
+                self.super_key = m.state().super_key();
             }
             WindowEvent::MouseInput { state, button, .. } => self.pointer_button(state, button),
             WindowEvent::CursorMoved { position, .. } => {
@@ -1749,6 +1754,7 @@ fn new_app(gamedir: String, map_name: String, scale: u32) -> App {
         attack_move: false,
         shift: false,
         control: false,
+        super_key: false,
         cursor: (0.0, 0.0),
         pointer: yr_app::cursor::Presence {
             inside: false,

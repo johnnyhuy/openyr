@@ -207,6 +207,12 @@ Native startup and
 load center the world viewport using its actual zoom, excluding the sidebar
 (#114).
 
+Player-name fields accept Ctrl+A or Command+A selection and ignore unsupported
+modified text shortcuts (#248), consistently with the Save name editor.
+Typing replaces the selected name and Backspace clears it; field navigation and
+focus loss clear selection. Command is tracked separately from Control, so world
+command/control-group routing is unchanged. See [name editing](menus.md).
+
 Front options use actual mute and world zoom preferences. Game Data Folder
 opens the existing macOS picker, restores the system pointer for the dialog,
 validates both root MIX archives before remembering the directory, then reloads

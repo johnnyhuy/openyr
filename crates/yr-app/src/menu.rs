@@ -133,6 +133,7 @@ pub struct State {
     pub front: bool,
     pub page: Page,
     pub name: String,
+    pub name_selected: bool,
     pub slots: Vec<Slot>,
     pub selected: Option<usize>,
     pub focus: usize,
@@ -156,6 +157,7 @@ impl Default for State {
             front: false,
             page: Page::Closed,
             name: String::new(),
+            name_selected: false,
             slots: Vec::new(),
             selected: None,
             focus: 0,
@@ -180,6 +182,7 @@ impl State {
         self.page != Page::Closed
     }
     pub fn set(&mut self, page: Page) {
+        self.name_selected = false;
         self.heading_refreshed = self.page == Page::ChooseMap && page == Page::Skirmish;
         self.page = page;
         self.message_scroll = 0;
@@ -282,6 +285,8 @@ impl State {
         }
     }
     pub fn navigate(&mut self, delta: i32) {
+        self.name_selected = false;
+        self.setup.name_selected = false;
         let had_focus = self.keyboard_focus
             || (self.front && self.page == Page::Skirmish && self.setup.focus.is_some());
         self.keyboard_focus = true;
@@ -492,6 +497,10 @@ impl State {
             .chars()
             .filter(|ch| !ch.is_control() && !matches!(ch, '/' | '\\' | ':'))
         {
+            if self.name_selected {
+                self.name.clear();
+                self.name_selected = false;
+            }
             if self.name.chars().count() >= 48 {
                 break;
             }
@@ -503,8 +512,19 @@ impl State {
             self.selected = Some(index);
             self.focus = 0;
             if self.page == Page::Save {
+                self.name_selected = false;
                 self.name = slot.name.clone();
             }
+        }
+    }
+    pub fn backspace_name(&mut self) {
+        if self.page == Page::Save {
+            if self.name_selected {
+                self.name.clear();
+            } else {
+                self.name.pop();
+            }
+            self.name_selected = false;
         }
     }
     pub fn navigate_slot(&mut self, delta: i32) {

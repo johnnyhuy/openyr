@@ -49,6 +49,7 @@ impl App {
         self.keys.clear();
         self.shift = false;
         self.control = false;
+        self.super_key = false;
         if self.service_mode != ServiceMode::None {
             self.service_mode = ServiceMode::None;
         } else if self.placing.take().is_some() {
@@ -71,6 +72,7 @@ impl App {
         self.keys.clear();
         self.shift = false;
         self.control = false;
+        self.super_key = false;
         self.attack_move = false;
         self.placing = None;
         self.service_mode = ServiceMode::None;
@@ -156,6 +158,7 @@ impl App {
         if button == MouseButton::Left {
             match state {
                 ElementState::Pressed => {
+                    self.menu.name_selected = false;
                     self.menu.keyboard_focus = false;
                     self.menu.pressed = layout.hit(&self.menu, self.cursor);
                     if self.menu.front && self.menu.page == Page::Skirmish {
@@ -225,6 +228,12 @@ impl App {
         self.menu_key_code(code, event.text.as_deref(), event.repeat);
     }
     pub(super) fn menu_key_code(&mut self, code: KeyCode, text: Option<&str>, repeat: bool) {
+        let shortcut = self.control || self.super_key;
+        if self.menu.page == Page::Save && shortcut && code == KeyCode::KeyA {
+            self.menu.name_selected = true;
+            self.reset_menu_clock();
+            return;
+        }
         if matches!(self.menu.page, Page::Message { .. }) {
             let delta = match code {
                 KeyCode::ArrowDown => Some(1),
@@ -266,17 +275,17 @@ impl App {
                         self.reset_menu_clock();
                         return;
                     }
-                    if code == KeyCode::KeyA && self.control {
+                    if code == KeyCode::KeyA && shortcut {
                         self.menu.setup.name_selected = true;
                         self.reset_menu_clock();
                         return;
                     }
-                    if code == KeyCode::Backspace {
+                    if code == KeyCode::Backspace && !shortcut {
                         self.menu.setup.edit_name(None);
                         self.reset_menu_clock();
                         return;
                     }
-                    if !self.control && text.is_some_and(|s| s.chars().any(|c| !c.is_control())) {
+                    if !shortcut && text.is_some_and(|s| s.chars().any(|c| !c.is_control())) {
                         self.menu.setup.edit_name(text);
                         self.reset_menu_clock();
                         return;
@@ -353,11 +362,11 @@ impl App {
                     self.apply_menu_effect(e);
                 }
             }
-            KeyCode::Backspace if self.menu.page == Page::Save => {
-                self.menu.name.pop();
+            KeyCode::Backspace if self.menu.page == Page::Save && !shortcut => {
+                self.menu.backspace_name();
             }
             _ => {
-                if let Some(text) = text {
+                if let Some(text) = text.filter(|_| !shortcut) {
                     self.menu.text(text);
                 }
             }
@@ -388,6 +397,7 @@ impl App {
                 self.keys.clear();
                 self.shift = false;
                 self.control = false;
+                self.super_key = false;
             }
             Effect::Quit => self.quit_requested = true,
             Effect::Restart => self.start_menu_load(None),
@@ -586,6 +596,7 @@ impl App {
                 self.keys.clear();
                 self.shift = false;
                 self.control = false;
+                self.super_key = false;
                 self.cancel_pointer_action();
                 self.announced = false;
                 if let Some(session) = &self.session {

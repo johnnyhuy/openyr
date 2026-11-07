@@ -178,7 +178,15 @@ pub fn draw(
             c.text((48, 154), "No saved matches", WHITE, 40);
         }
         if state.page == Page::Save {
-            c.rect((38, 414), (world - 76, 30), [0, 0, 0, 255]);
+            c.rect(
+                (38, 414),
+                (world - 76, 30),
+                if state.name_selected {
+                    [32, 56, 88, 255]
+                } else {
+                    [0, 0, 0, 255]
+                },
+            );
             c.text(
                 (48, 420),
                 &editing_name(c.face, &state.name, world - 110),

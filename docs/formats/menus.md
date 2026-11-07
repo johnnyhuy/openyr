@@ -94,6 +94,23 @@ editing behavior; original caret styling/timing and physical Mac/Retina input
 remain uncalibrated. Fallback/retail compositor checks at three sizes and actual
 append/backspace/save handlers verify visibility and unchanged complete save bytes.
 
+Save and Skirmish player-name fields support Ctrl+A and Command+A to select the
+whole name (#248). Unmodified typing replaces that selection; Backspace clears
+it. The Save field uses the same blue selection fill as a selected Skirmish
+name. Other Control/Command text shortcuts cannot insert their shortcut letters
+or erase the selection. Clipboard copy/cut/paste are not implemented here.
+Ordinary Unicode text, filename filtering and existing length limits remain.
+Tab, page/slot changes, mouse interaction and focus loss clear Save selection;
+focus loss and menu/match transitions also clear the tracked Command modifier.
+Skirmish navigation clears name selection before moving to another field.
+
+Handler checks cover both modifier families and both player rows, replacement,
+Backspace, unsupported shortcuts, bounds and stale focus. Retail/fallback Save
+composition at three sizes confines selection changes to the editor; a real
+retail save retains complete match bytes and uses the replacement filename.
+These are native editing choices, not original shortcut calibration or physical
+Mac/Retina evidence.
+
 Save writes through the existing atomic snapshot envelope. Named saves stay
 beside the current quicksave path, with overwrite confirmation. Load requires
 confirmation before discarding the current match. One worker prepares the

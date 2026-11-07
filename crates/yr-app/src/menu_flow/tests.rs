@@ -937,3 +937,136 @@ fn retail_menu_pause_save_overwrite_async_load_cancel_restart_and_results() {
     assert!(app.quit_requested);
     println!("Menu flow verified: frozen tick 1, single resumed tick 2, restored hash {initial_hash:016x}, cancelled load retained pause, restart retained seed.");
 }
+
+#[test]
+fn save_name_select_all_does_not_insert_shortcut_text() {
+    let temp = Scratch::new();
+    let mut app = new_app(temp.0.to_string_lossy().into(), "EB1.MMX".into(), 1);
+    app.save_path = temp.0.join("quicksave.oyrsave");
+    app.open_menu(Page::Save);
+    app.menu.name = "Original checkpoint".into();
+    app.control = true;
+    app.menu_key_code(KeyCode::KeyA, Some("a"), false);
+    assert_eq!(app.menu.name, "Original checkpoint");
+    app.control = false;
+    app.menu_key_code(KeyCode::KeyN, Some("New checkpoint"), false);
+    assert_eq!(app.menu.name, "New checkpoint");
+}
+
+#[test]
+fn name_shortcuts_replace_clear_bound_and_reset_in_save_and_both_player_fields() {
+    use yr_app::menu::setup::Field;
+    let temp = Scratch::new();
+    let mut app = new_app(temp.0.to_string_lossy().into(), "EB1.MMX".into(), 1);
+    app.save_path = temp.0.join("quicksave.oyrsave");
+    for field in [None, Some(Field::Name(0)), Some(Field::Name(1))] {
+        for command in [false, true] {
+            app.menu.front = field.is_some();
+            app.open_menu(if field.is_some() {
+                Page::Skirmish
+            } else {
+                Page::Save
+            });
+            app.menu.setup.focus = field;
+            let name = |app: &App| match field {
+                Some(Field::Name(row)) => app.menu.setup.config.players[row].name.clone(),
+                _ => app.menu.name.clone(),
+            };
+            app.menu_key_code(KeyCode::KeyN, Some("Original"), false);
+            let original = name(&app);
+            app.control = !command;
+            app.super_key = command;
+            for repeat in [false, true] {
+                app.menu_key_code(KeyCode::KeyA, Some("a"), repeat);
+                assert_eq!(name(&app), original, "Select All must not insert text");
+            }
+            for code in [
+                KeyCode::KeyC,
+                KeyCode::KeyX,
+                KeyCode::KeyV,
+                KeyCode::KeyZ,
+                KeyCode::Backspace,
+            ] {
+                app.menu_key_code(code, Some("shortcut"), false);
+                assert_eq!(
+                    name(&app),
+                    original,
+                    "unsupported shortcuts must not mutate names"
+                );
+            }
+            app.control = false;
+            app.super_key = false;
+            app.menu_key_code(KeyCode::KeyN, Some("\n\t"), false);
+            assert_eq!(name(&app), original);
+            app.menu_key_code(KeyCode::KeyN, Some("新 checkpoint"), false);
+            assert_eq!(name(&app), "新 checkpoint");
+            app.menu_key_code(KeyCode::Backspace, None, false);
+            assert_eq!(name(&app), "新 checkpoin");
+            app.super_key = true;
+            app.menu_key_code(KeyCode::KeyA, Some("a"), false);
+            app.super_key = false;
+            app.menu_key_code(KeyCode::Backspace, None, false);
+            assert!(name(&app).is_empty(), "Backspace clears the selected name");
+            app.menu_key_code(KeyCode::KeyN, Some(&"界".repeat(100)), false);
+            assert_eq!(
+                name(&app).chars().count(),
+                if field.is_some() { 32 } else { 48 }
+            );
+            app.super_key = true;
+            app.menu_key_code(KeyCode::KeyA, Some("a"), false);
+            app.focus_changed(false);
+            assert!(!app.super_key && !app.control);
+            assert!(!app.menu.name_selected && !app.menu.setup.name_selected);
+            app.focus_changed(true);
+            // No stale modifier or selection can replace the name on refocus.
+            app.menu_key_code(KeyCode::Backspace, None, false);
+            assert_eq!(
+                name(&app).chars().count(),
+                if field.is_some() { 31 } else { 47 }
+            );
+            app.super_key = true;
+            app.menu_key_code(KeyCode::KeyA, Some("a"), false);
+            app.super_key = false;
+            app.menu_key_code(KeyCode::Tab, None, false);
+            assert!(!app.menu.name_selected && !app.menu.setup.name_selected);
+            app.menu.set(Page::Pause);
+            assert!(!app.menu.name_selected && !app.menu.setup.name_selected);
+        }
+    }
+}
+
+#[test]
+fn retail_name_shortcut_save_preserves_complete_match_bytes() {
+    let dir = PathBuf::from(std::env::var("HOME").unwrap_or_default())
+        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    if !dir.is_dir() {
+        return;
+    }
+    let temp = Scratch::new();
+    let mut app = new_app(dir.to_string_lossy().into(), "EB1.MMX".into(), 1);
+    app.session = Some(app.load_session().unwrap());
+    let saved = yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap();
+    app.save_path = temp.0.join("quicksave.oyrsave");
+    app.open_menu(Page::Save);
+    app.menu.name = "Old checkpoint".into();
+    app.super_key = true;
+    app.menu_key_code(KeyCode::KeyA, Some("a"), false);
+    app.super_key = false;
+    app.menu_key_code(KeyCode::KeyN, Some("New checkpoint"), false);
+    assert_eq!(app.menu.name, "New checkpoint");
+    assert!(!app.advance_clock(Instant::now() + Duration::from_secs(3600)));
+    assert!(app.pending.is_empty());
+    app.menu_key_code(KeyCode::Enter, None, false);
+    assert_eq!(app.save_path, temp.0.join("New checkpoint.oyrsave"));
+    assert_eq!(std::fs::read(&app.save_path).unwrap(), saved);
+    assert_eq!(
+        yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap(),
+        saved
+    );
+    assert!(!app.super_key && !app.control && !app.menu.name_selected);
+    if let Some(out) = std::env::var_os("OPENYR_NAME_SHORTCUT_PROOF") {
+        let out = PathBuf::from(out);
+        std::fs::create_dir_all(&out).unwrap();
+        std::fs::write(out.join("fixture.oyrsave"), saved).unwrap();
+    }
+}

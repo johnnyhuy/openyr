@@ -108,6 +108,7 @@ The workspace defaults to `yr-app`. Use `-p mix-dump` for asset inspection or
 | M | Toggle mute |
 | Escape | Cancel an active command, then open Pause |
 | F5 / F9 | Save / confirm loading the active quicksave target |
+| Ctrl+A / Command+A in name fields | Select the whole save/player name for replacement |
 
 Left-click a sidebar item to build, resume held work or pick up a READY structure.
 Right-click holds production; a second right-click cancels it. Menus pause the
