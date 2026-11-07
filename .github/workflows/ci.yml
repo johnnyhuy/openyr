@@ -25,6 +25,9 @@ jobs:
         with:
           components: rustfmt, clippy
 
+      - name: Test proof build provenance
+        run: python3 -m unittest discover -s scripts -p 'test_*.py' -v
+
       - name: Cache cargo build
         uses: Swatinem/rust-cache@v2
 

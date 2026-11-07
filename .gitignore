@@ -7,3 +7,5 @@ Cargo.lock.bak
 *.log
 /.tmp
 *.oyrsave
+
+__pycache__/
