@@ -1,0 +1,97 @@
+[
+  {
+    "name": "1280x800-cli-start.png",
+    "size": 1457480,
+    "sha256": "0851c43a55273afea2b01eae7d7ed5531895a1f2af7bf9e941756a5e39bd848c"
+  },
+  {
+    "name": "1280x800-confirmation.png",
+    "size": 293128,
+    "sha256": "00ba875afbfe3d9452dbe0289cb31f540e8633622da9790b1b1fe9f756feef82"
+  },
+  {
+    "name": "1280x800-expired.png",
+    "size": 1804377,
+    "sha256": "a14a75cc7772eb658c593b856a2ca08fca86e11458382550e8e7444b8557ac6d"
+  },
+  {
+    "name": "1280x800-loaded-notice.png",
+    "size": 1452326,
+    "sha256": "e55fcb0fe3df0d591d9ce0de3e22550a2247a48aaee3be89c889a6363d6d8657"
+  },
+  {
+    "name": "640x480-cli-start.png",
+    "size": 302524,
+    "sha256": "5c2e661887c107d0553acd1edced0c390540b34e2902f51cb26e0525dfb90bd1"
+  },
+  {
+    "name": "640x480-confirmation.png",
+    "size": 148877,
+    "sha256": "060b4bd3612c6d1a4d9168c8269707c31527f1bf31a21ecd9aa0df73cf85a812"
+  },
+  {
+    "name": "640x480-expired.png",
+    "size": 408071,
+    "sha256": "e52199b989cffdf1510c79a384c5f5b34af132f56ef95be9cf15d9c176ab2ce3"
+  },
+  {
+    "name": "640x480-loaded-notice.png",
+    "size": 329291,
+    "sha256": "2bab0976422f0eba05361cf22940baf2da63c624ed60d73c1595be83930fdfef"
+  },
+  {
+    "name": "README.md",
+    "size": 1845,
+    "sha256": "c9e666cb661748a4655774f7b957f813310f963f89124e0edfc2b1d9cd6f6e19"
+  },
+  {
+    "name": "build-receipt.json",
+    "size": 781,
+    "sha256": "d3218395ea184f1fb0dc77bc67754a359baa6f8d4936cb43611c36563399fa7f"
+  },
+  {
+    "name": "build.log",
+    "size": 5810,
+    "sha256": "d09845386391fdcda07fecdf54d7457ecd2421cd4137a6f482794cfbcfd4dbcf"
+  },
+  {
+    "name": "capture.py",
+    "size": 4325,
+    "sha256": "bed628a1d695a2e6ef77d9cd4e5b3f209cc81d81617364106969d0a581d411d2"
+  },
+  {
+    "name": "clippy.log",
+    "size": 72,
+    "sha256": "22e0df986057b9ba5be07526ac5fb348862a3dedef42108383cc3e088acbb889"
+  },
+  {
+    "name": "comparison.png",
+    "size": 316012,
+    "sha256": "038a277122c4f4b22f4ef1d9f5b785ae12a66c7297b2657243d6b712e0fd001c"
+  },
+  {
+    "name": "fmt.log",
+    "size": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "live-receipt.json",
+    "size": 1505,
+    "sha256": "767f2a167048af3726a407d8c6755e8aa6b7beb37cd0c06e11bc23cbb2515880"
+  },
+  {
+    "name": "source.json",
+    "size": 261,
+    "sha256": "d28ab683ebba8cc2563d165ae0213827b1faf7dd46bf7dbc8953fd206b973eda"
+  },
+  {
+    "name": "workspace-test.log",
+    "size": 41083,
+    "sha256": "29c13cb85c534bca7ca3c18fa5a6cc7acef9b31638db73c5ad94a14347a43201"
+  },
+  {
+    "name": "xorg.conf",
+    "size": 415,
+    "sha256": "2b8327cf598f157ffa656492fc1138c4ea33ca4525f81bef3e1c24086e43dd0e"
+  }
+]
