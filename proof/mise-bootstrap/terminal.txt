@@ -1,6 +1,0 @@
-Script started on 2026-11-07 15:00:35+00:00 [COMMAND="mise run proof:run -- --receipt .tmp/runtime-ci-final/receipt.json -- /workspace/game-data/RA2 EB1.MMX --ticks 1" <not executed on terminal>]
-[proof:run] $ python3 scripts/proof_build.py run --receipt .tmp/runtime-ci-final/receipt.json -- /workspace/game-data/RA2 EB1.MMX --ticks 1
-Verified: /workspace/openyr-mise-demo-20261107/.tmp/runtime-ci-final/program
-OpenYR: headless tick 1, hash c4740e7a21c92521, Ongoing
-
-Script done on 2026-11-07 15:00:35+00:00 [COMMAND_EXIT_CODE="0"]
