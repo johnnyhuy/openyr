@@ -32,15 +32,19 @@ playable baseline. [Known limits and observations](docs/formats/front-menu.md).
 
 ## Build and launch
 
-Use current stable Rust with `rustfmt` and `clippy`. Python 3.9+ and Git are needed
-for the runtime-proof helper and development checks. Linux contributors also need
+Use [mise](https://mise.jdx.dev/getting-started.html) to install the project tools.
+Rust follows `rust-toolchain.toml` (stable with `rustfmt` and `clippy`);
+`mise.toml` selects Python 3.13 and defines the development tasks. Git is also
+required. Linux contributors also need
 `pkg-config` and ALSA development headers, such as `libasound2-dev` on Debian/Ubuntu.
 A desktop display is needed for the interactive window; headless runs can use
 `--ticks` or `--frames`.
 
 ```sh
-cargo build --workspace --locked
-OPENYR_GAMEDIR="/path/to/RA2" cargo run --release --locked
+mise trust
+mise install
+mise run build
+OPENYR_GAMEDIR="/path/to/RA2" mise run run
 ```
 
 Launch without game arguments to open the main menu. `OPENYR_GAMEDIR` selects
@@ -52,7 +56,7 @@ not the Windows executable. See [game-data discovery and packaging](docs/macos-a
 On macOS, build a Finder-launchable app:
 
 ```sh
-./scripts/package-macos.sh
+mise run package
 open target/OpenYR.app
 ```
 
@@ -62,7 +66,7 @@ launcher; it reads your game data from the selected install.
 Start the EB1 sandbox directly with explicit arguments:
 
 ```sh
-cargo run --release --locked -- "/path/to/RA2" EB1.MMX
+mise run run -- "/path/to/RA2" EB1.MMX
 ```
 
 The workspace defaults to `yr-app`. Use `-p mix-dump` for asset inspection or
@@ -96,9 +100,9 @@ makes that file the new target. Successful menu loads confirm the save name and
 restored tick. Failures retain the current match with a recovery route.
 
 ```sh
-cargo run --release --locked -- "/path/to/RA2" EB1.MMX --ticks 900 --save /tmp/match.oyrsave
-cargo run --release --locked -- "/path/to/RA2" EB1.MMX --load /tmp/match.oyrsave --ticks 3000
-cargo run --release --locked -- "/path/to/RA2" EB1.MMX --load /tmp/match.oyrsave
+mise run run -- "/path/to/RA2" EB1.MMX --ticks 900 --save /tmp/match.oyrsave
+mise run run -- "/path/to/RA2" EB1.MMX --load /tmp/match.oyrsave --ticks 3000
+mise run run -- "/path/to/RA2" EB1.MMX --load /tmp/match.oyrsave
 ```
 
 Ticks are absolute: the second command resumes the saved state through tick 3000.
@@ -110,11 +114,15 @@ and [team controls](docs/control-groups.md).
 ## Development and proof
 
 ```sh
-cargo test --workspace --locked
-cargo clippy --workspace --all-targets --locked -- -D warnings
-cargo fmt --all --check
-python3 -m unittest discover -s scripts -p 'test_*.py' -v
+mise run check
 ```
+
+`mise tasks` lists individual build, run, test, clippy, fmt, proof and packaging
+tasks. `check` runs formatting, Clippy, workspace tests and proof-helper tests.
+CI uses the same mise configuration and tasks. For ad hoc commands, use
+`mise exec -- cargo ...` or activate mise in your shell; direct Cargo commands
+remain supported through `rust-toolchain.toml`. Keep local paths and credentials
+out of the shared configuration.
 
 Retail tests use `~/Games/RA2YR/prefix/drive_c/Westwood/RA2` when available and
 self-skip without it. CI checks the code on macOS without retail data; that is
@@ -123,8 +131,8 @@ separate from physical Mac, Retina or audio-device verification.
 For runtime proof, commit your source and use a new isolated output directory:
 
 ```sh
-python3 scripts/proof_build.py build --output .tmp/proof-build-001
-python3 scripts/proof_build.py run --receipt .tmp/proof-build-001/receipt.json -- \
+mise run proof:build -- --output .tmp/proof-build-001
+mise run proof:run -- --receipt .tmp/proof-build-001/receipt.json -- \
   "/path/to/RA2" EB1.MMX --frames /tmp/openyr-proof 300 900 1500
 ```
 
@@ -137,9 +145,9 @@ cover verification and publishing evidence.
 Inspect your own assets with `mix-dump`:
 
 ```sh
-cargo run --locked -p mix-dump -- list "/path/to/RA2/langmd.mix"
-cargo run --locked -p mix-dump -- rules "/path/to/RA2" NukeSpecial
-cargo run --release --locked -p mix-dump -- scan /path/to/RA2/*.mix
+mise exec -- cargo run --locked -p mix-dump -- list "/path/to/RA2/langmd.mix"
+mise exec -- cargo run --locked -p mix-dump -- rules "/path/to/RA2" NukeSpecial
+mise exec -- cargo run --release --locked -p mix-dump -- scan /path/to/RA2/*.mix
 ```
 
 ## Repository layout

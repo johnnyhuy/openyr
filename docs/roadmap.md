@@ -26,6 +26,10 @@ Johnny on 2026-10-31.
       record source tree, Cargo command and executable size/SHA256; verified
       runs reject changed source or executables (`docs/runtime-proof.md`).
 
+- [x] Use mise for project Rust/Python tools, local development tasks and CI;
+      retain `rust-toolchain.toml` as the Rust toolchain source of truth.
+      Publish native screenshots and video demos separately from engine source.
+
 ## M1: Asset layer (done 2026-10-17; open items carried forward)
 
 - [x] MIX reader: classic + flagged headers, SHA1 trailer, encrypted (RSA/Blowfish) headers

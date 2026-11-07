@@ -4,6 +4,10 @@ Native Rust rewrite of Red Alert 2: Yuri's Revenge (macOS first). Not a Wine wra
 
 ## Commands
 
+- `mise trust && mise install` installs project tools; `mise run check` runs the
+  local Rust and proof checks. `mise tasks` lists launch/proof/package tasks.
+  Rust versions/components live in `rust-toolchain.toml`; Python/tasks in `mise.toml`.
+
 - `cargo build --workspace` / `cargo test --workspace` (use `~/.cargo/bin` if cargo is not on PATH)
 - `cargo run -p mix-dump -- list <archive.mix>` to inspect game data
 - Real-data tests read `~/Games/RA2YR/prefix/drive_c/Westwood/RA2`; they skip when it is absent. Never commit game assets.
