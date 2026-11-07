@@ -22,6 +22,8 @@ jobs:
 
       - name: Install project tools
         uses: jdx/mise-action@v3
+        with:
+          version: 2026.11.3
 
       - name: Test proof build provenance
         run: mise run test:proof
