@@ -218,15 +218,6 @@ impl App {
         }
         self.reset_menu_clock();
     }
-    pub(super) fn menu_key(&mut self, event: &winit::event::KeyEvent) {
-        if event.state != ElementState::Pressed {
-            return;
-        }
-        let PhysicalKey::Code(code) = event.physical_key else {
-            return;
-        };
-        self.menu_key_code(code, event.text.as_deref(), event.repeat);
-    }
     pub(super) fn menu_key_code(&mut self, code: KeyCode, text: Option<&str>, repeat: bool) {
         let shortcut = self.control || self.super_key;
         if self.menu.page == Page::Save && shortcut && code == KeyCode::KeyA {

@@ -71,3 +71,26 @@ each stage. Live Linux X11 before/after captures at 640x480 and 1000x700 verify
 that the complete menus are visible and reachable through real pointer events.
 Synthetic doubled-scale checks do not verify a physical Retina display. Native
 macOS resize/DPI delivery remains a follow-up under #97.
+
+## Keyboard focus synchronization
+
+The window routes keyboard input through `keyboard_input.rs` before either
+menu or world handlers (#255, #97). Winit 0.30 documents synthesized key presses
+on focus gain and releases on focus loss on X11 and Windows
+(`WindowEvent::KeyboardInput::is_synthetic`). These presses describe keys
+already held; they are not deliberate menu choices or game commands.
+
+Synthesized presses and all unfocused presses are ignored. The affected
+physical key's subsequent repeats are suppressed until its release or a fresh,
+nonrepeated focused press. Releases always clear held/suppressed keys, including
+while a menu is visible or the window is unfocused. Ordinary focused navigation,
+name editing, repeats, shortcuts and world commands retain their existing
+routing. Selection, pending commands, simulation and save schemas are unchanged.
+
+Asset-independent regressions exercise the native dispatch function directly.
+A listed temporary `.oyrsave` file survives synthesized Enter with Yes selected,
+then is deleted by deliberate Enter through the same menu/backend path. Other
+checks cover F5/F9, command modes, camera keys, Escape, menu navigation/editing,
+follow-on repeats and release cleanup across focus/modal changes. These are
+handler tests, not physical desktop delivery or retail-save reconstruction.
+Original-game behavior and physical macOS/Retina input remain unverified.

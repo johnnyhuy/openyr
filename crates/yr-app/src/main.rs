@@ -20,6 +20,7 @@ mod control_groups;
 mod death_tests;
 mod front_flow;
 mod hover_feedback;
+mod keyboard_input;
 mod launcher;
 mod menu_flow;
 #[cfg(test)]
@@ -130,6 +131,7 @@ struct App {
     radar_drag: bool,
     last_cursor: (f64, f64),
     keys: std::collections::HashSet<KeyCode>,
+    suppressed_keys: std::collections::HashSet<KeyCode>,
     last_tick: Instant,
     accum: Duration,
     title: String,
@@ -1617,61 +1619,17 @@ impl ApplicationHandler for App {
                 self.pointer_moved((position.x, position.y))
             }
             WindowEvent::MouseWheel { delta, .. } => self.pointer_wheel(delta),
-            WindowEvent::KeyboardInput { event, .. } if self.menu.visible() => {
-                self.menu_key(&event)
-            }
-            WindowEvent::KeyboardInput { event, .. } => {
-                if let PhysicalKey::Code(code) = event.physical_key {
-                    if self.group_key(code, event.state, event.repeat, Instant::now()) {
-                        return;
-                    }
-                    if self.unit_order_key(code, event.state, event.repeat, Instant::now()) {
-                        return;
-                    }
-                    match event.state {
-                        ElementState::Pressed => {
-                            self.groups.interrupt();
-                            self.keys.insert(code);
-                            match code {
-                                KeyCode::Escape if !event.repeat => {
-                                    self.escape_command_or_pause();
-                                }
-                                KeyCode::Equal => self.zoom_camera((self.view.zoom * 1.2).min(4.0)),
-                                KeyCode::Minus => {
-                                    self.zoom_camera((self.view.zoom / 1.2).max(0.25))
-                                }
-                                KeyCode::KeyA => {
-                                    self.order_feedback.clear();
-                                    self.service_mode = ServiceMode::None;
-                                    self.attack_move = true;
-                                }
-                                KeyCode::KeyK if !event.repeat => {
-                                    self.toggle_service(ServiceMode::Repair)
-                                }
-                                KeyCode::KeyL if !event.repeat => {
-                                    self.toggle_service(ServiceMode::Sell)
-                                }
-                                KeyCode::KeyM if !event.repeat => {
-                                    self.apply_menu_effect(yr_app::menu::Effect::Mute);
-                                }
-                                KeyCode::F5 if !event.repeat => {
-                                    self.save_menu_path(self.save_path.clone())
-                                }
-                                KeyCode::F9 if !event.repeat => {
-                                    self.open_menu(yr_app::menu::Page::Confirm(
-                                        yr_app::menu::Intent::Load(self.save_path.clone()),
-                                    ));
-                                }
-                                _ => {}
-                            }
-                            self.view.dirty = true;
-                        }
-                        ElementState::Released => {
-                            self.keys.remove(&code);
-                        }
-                    }
-                }
-            }
+            WindowEvent::KeyboardInput {
+                event,
+                is_synthetic,
+                ..
+            } => self.keyboard_input(
+                event.physical_key,
+                event.state,
+                event.text.as_deref(),
+                event.repeat,
+                is_synthetic,
+            ),
             WindowEvent::RedrawRequested => {
                 self.view.dirty |= self.order_feedback.expire(Instant::now());
                 self.poll_front_presentation();
@@ -1766,6 +1724,7 @@ fn new_app(gamedir: String, map_name: String, scale: u32) -> App {
         radar_drag: false,
         last_cursor: (0.0, 0.0),
         keys: std::collections::HashSet::new(),
+        suppressed_keys: std::collections::HashSet::new(),
         last_tick: Instant::now(),
         accum: Duration::ZERO,
         title: String::new(),
