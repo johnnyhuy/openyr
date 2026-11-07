@@ -84,6 +84,16 @@ failed save retains its previous quicksave target. Dismissing the result cannot
 reactivate a mode or turn an earlier button release into a new order. This is
 native modal-isolation behavior, not a claim about original-game shortcuts.
 
+The Save name editor keeps the end of the name and its caret visible (#243).
+When the complete name fits the measured field width, its display is unchanged.
+Otherwise a two-dot prefix marks hidden leading characters and the visible suffix
+ends with the existing caret. The display window moves at Unicode character
+boundaries and does not alter the stored name, input limit or output filename.
+Read-only save-slot labels retain their existing prefix fitting. This is native
+editing behavior; original caret styling/timing and physical Mac/Retina input
+remain uncalibrated. Fallback/retail compositor checks at three sizes and actual
+append/backspace/save handlers verify visibility and unchanged complete save bytes.
+
 Save writes through the existing atomic snapshot envelope. Named saves stay
 beside the current quicksave path, with overwrite confirmation. Load requires
 confirmation before discarding the current match. One worker prepares the

@@ -1,4 +1,52 @@
 use super::*;
+
+#[test]
+fn long_save_names_keep_the_edited_suffix_visible() {
+    fn check(art: &Art) {
+        for (width, height) in [(640, 480), (800, 600), (1280, 800)] {
+            let render = |last| {
+                let mut state = State::default();
+                state.set(Page::Save);
+                state.name = format!("{}{last}", "W".repeat(47));
+                let mut frame = vec![0; (width * height * 4) as usize];
+                draw(&mut frame, width, height, art, &state, (-1.0, -1.0));
+                frame
+            };
+            let a = render('A');
+            let b = render('B');
+            assert!(
+                a != b,
+                "the last edited character must remain visible at {width}x{height}"
+            );
+            let layout = Layout::new(width, height);
+            for (i, (a, b)) in a
+                .as_chunks::<4>()
+                .0
+                .iter()
+                .zip(b.as_chunks::<4>().0)
+                .enumerate()
+            {
+                if a != b {
+                    let (x, y) = layout
+                        .local(((i as u32 % width) as f64, (i as u32 / width) as f64))
+                        .unwrap();
+                    assert!(
+                        (48..layout.width as i32 - 168 - 62).contains(&x)
+                            && (414..444).contains(&y)
+                    );
+                }
+            }
+        }
+    }
+    check(&Art::default());
+    let dir = std::path::PathBuf::from(std::env::var("HOME").unwrap_or_default())
+        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    if dir.is_dir() {
+        let art = Art::load(&yr_assets::AssetFs::open(&dir).unwrap());
+        assert!(art.font.is_some());
+        check(&art);
+    }
+}
 #[test]
 fn modal_navigation_skips_disabled_controls_and_confirms_discard() {
     let mut state = State::default();

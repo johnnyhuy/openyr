@@ -667,6 +667,11 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       cancellation, restart and fresh setup do not announce a saved load. Retail
       async handler/compositor checks preserve complete save bytes at three sizes
       (`docs/formats/menus.md`); original text/timing and physical input remain open.
+- [x] Keep long Save name edits visible (#243, #96, #97): measured suffix
+      fitting retains the caret and final typed characters at compact widths,
+      with a hidden-prefix indicator. Unicode boundaries, input limits and full
+      output filenames remain intact; retail/fallback pixels and handler save
+      bytes are checked (`docs/formats/menus.md`).
 - [ ] Complete world interaction and desktop UX (#97): consistent selection,
       supported control groups/hotkeys, hover/target/order feedback, bounded
       camera movement and configurable edge scrolling. Clear held input on
