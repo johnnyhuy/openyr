@@ -82,6 +82,52 @@ fn finish_load(app: &mut App) {
 }
 
 #[test]
+fn retail_long_save_name_edits_preserve_the_complete_filename_and_match() {
+    let dir = PathBuf::from(std::env::var("HOME").unwrap_or_default())
+        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    if !dir.is_dir() {
+        return;
+    }
+    let temp = Scratch::new();
+    let mut app = new_app(dir.to_string_lossy().into(), "EB1.MMX".into(), 1);
+    app.session = Some(app.load_session().unwrap());
+    let saved = yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap();
+    app.save_path = temp.0.join("quicksave.oyrsave");
+    app.menu_art = yr_app::menu::Art::load(&yr_assets::AssetFs::open(&dir).unwrap());
+    app.open_menu(Page::Save);
+    app.menu.name.clear();
+    app.menu_key_code(KeyCode::KeyW, Some(&"W".repeat(47)), false);
+    app.menu_key_code(KeyCode::KeyA, Some("A"), false);
+    assert_eq!(app.menu.name, format!("{}A", "W".repeat(47)));
+    app.menu_key_code(KeyCode::Backspace, None, false);
+    app.menu_key_code(KeyCode::KeyB, Some("B"), false);
+    let name = format!("{}B", "W".repeat(47));
+    assert_eq!(app.menu.name, name);
+    app.menu_key_code(KeyCode::KeyZ, Some("Z"), false);
+    assert_eq!(app.menu.name, name, "the input limit is unchanged");
+    assert!(!app.advance_clock(Instant::now() + Duration::from_secs(3600)));
+    assert!(app.pending.is_empty());
+    assert_eq!(
+        yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap(),
+        saved
+    );
+    app.menu_key_code(KeyCode::Enter, None, false);
+    assert!(matches!(app.menu.page, Page::Message { .. }));
+    assert_eq!(app.save_path, temp.0.join(format!("{name}.oyrsave")));
+    assert_eq!(std::fs::read(&app.save_path).unwrap(), saved);
+    assert_eq!(
+        yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap(),
+        saved
+    );
+    if let Some(out) = std::env::var_os("OPENYR_SAVE_EDIT_PROOF") {
+        let out = PathBuf::from(out);
+        std::fs::create_dir_all(&out).unwrap();
+        std::fs::write(out.join("fixture.oyrsave"), &saved).unwrap();
+    }
+    println!("Long-name append/backspace/input cap and actual full-filename save passed; complete match/file bytes unchanged.");
+}
+
+#[test]
 fn retail_saved_load_success_is_visible_only_after_committing_the_match() {
     let dir = PathBuf::from(std::env::var("HOME").unwrap_or_default())
         .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");

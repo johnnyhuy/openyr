@@ -181,7 +181,7 @@ pub fn draw(
             c.rect((38, 414), (world - 76, 30), [0, 0, 0, 255]);
             c.text(
                 (48, 420),
-                &fit(c.face, &format!("{}|", state.name), world - 110),
+                &editing_name(c.face, &state.name, world - 110),
                 YELLOW,
                 50,
             );
@@ -329,4 +329,43 @@ fn fit(face: Typeface<'_>, text: &str, width: i32) -> String {
         }
     }
     out
+}
+
+fn editing_name(face: Typeface<'_>, name: &str, width: i32) -> String {
+    // The editor stores at most 48 characters. Bound rendering independently
+    // and keep the end/caret visible without changing the stored name.
+    let mut chars: Vec<_> = name.chars().rev().take(48).collect();
+    chars.reverse();
+    chars.push('|');
+    let text: String = chars.into_iter().collect();
+    if face.width(&text) <= width {
+        return text;
+    }
+    for (start, _) in text.char_indices().skip(1) {
+        let shown = format!("..{}", &text[start..]);
+        if face.width(&shown) <= width {
+            return shown;
+        }
+    }
+    fit(face, "|", width)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn save_edit_text_keeps_caret_unicode_and_short_names_within_measured_width() {
+        let face = Typeface(None);
+        assert_eq!(editing_name(face, "Checkpoint", 362), "Checkpoint|");
+        for name in ["W".repeat(48), "界é😀".repeat(16), "界".repeat(10000)] {
+            let shown = editing_name(face, &name, 362);
+            assert!(shown.starts_with("..") && shown.ends_with('|'));
+            assert!(face.width(&shown) <= 362);
+            let suffix = &shown[2..shown.len() - 1];
+            assert!(name.ends_with(suffix));
+        }
+        assert_eq!(editing_name(face, "W", 8), "|");
+        assert_eq!(editing_name(face, "W", 0), "");
+    }
 }
