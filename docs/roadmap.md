@@ -540,12 +540,13 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       child exit status in `tools/wine-oracle`, with synthetic geometry,
       private Edit exclusion, silent-exit and absent-target checks. Publish
       the complete fixture before it becomes visible (#150).
-- [ ] Make original-game reference startup repeatable (#148). Installed
-      RA2MD.exe reached a verified gamemd.exe menu and supplied fresh preview
-      observations. The observer supports that bootstrap with a synthetic
-      lineage check and preserves processes at its deadline. A stopped-state
-      recheck still found no windows, with a Wine window-driver error. Keep
-      the successful pixel evidence and the failing startup receipts.
+- [x] Make original-game reference startup repeatable (#148). Two
+      consecutive GUI-attached launches each verified the gamemd.exe Main
+      Menu with matching launcher parent PIDs, and the Skirmish preview
+      control re-measured 145x113 at `(644,37)`. Shells without GUI access
+      or wineserver socket permission prove nothing about the prefix. Keep
+      the successful pixel evidence and the failing startup receipts
+      separate.
 - [ ] Native menu and match flow (#96): original-style main menu, skirmish
       setup/map preview, saved matches, pause/resume, save/load, restart,
       options and quit. Add Won/Lost screens, loading/error feedback and
