@@ -691,6 +691,13 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       navigation, cancellation, complete retail match/save bytes and existing
       backend validation remain intact (`docs/formats/menus.md`). Original dialog
       calibration and physical Mac/Retina input remain open.
+- [x] Ignore focus-synchronization key presses (#255, #97, #96): synthesized
+      and unfocused presses cannot activate menus or world commands. Suppress
+      follow-on repeats until release or a fresh focused press; releases still
+      clear held input through modal/focus changes. Asset-independent native
+      dispatch tests verify temporary-save preservation, deliberate deletion,
+      name/navigation guards and normal shortcuts (`docs/window-input.md`).
+      Physical Mac/Retina delivery remains unverified.
 - [ ] Complete world interaction and desktop UX (#97): consistent selection,
       supported control groups/hotkeys, hover/target/order feedback, bounded
       camera movement and configurable edge scrolling. Clear held input on
