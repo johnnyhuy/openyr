@@ -4,7 +4,7 @@
 use std::path::PathBuf;
 use yr_assets::AssetFs;
 use yr_formats::IniFile;
-use yr_rules::{Armor, Decimal, Rules, Severity, TechnoKind};
+use yr_rules::{Armor, Decimal, Rules, Severity, SoundData, TechnoKind};
 
 fn retail() -> Option<Rules> {
     let dir =
@@ -15,6 +15,19 @@ fn retail() -> Option<Rules> {
     let fs = AssetFs::open(&dir).expect("install opens");
     let ini = |n: &str| IniFile::parse(&String::from_utf8_lossy(fs.read(n).expect(n)));
     Some(Rules::load(&ini("RULESMD.INI"), &ini("ARTMD.INI")))
+}
+
+fn retail_sound() -> Option<SoundData> {
+    let dir =
+        PathBuf::from(std::env::var("HOME").ok()?).join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    if !dir.is_dir() {
+        return None;
+    }
+    let fs = AssetFs::open(&dir).expect("install opens");
+    let ini = IniFile::parse(&String::from_utf8_lossy(
+        fs.read("SOUNDMD.INI").expect("SOUNDMD.INI"),
+    ));
+    Some(SoundData::load(&ini))
 }
 
 #[test]
@@ -110,6 +123,94 @@ fn globals_houses_and_skirmish_defaults() {
         rules.houses.get("Neutral").map(|h| h.side.as_str()),
         Some("Civilian")
     );
+}
+
+#[test]
+fn superweapons_match_retail() {
+    let Some(r) = retail() else {
+        eprintln!("skip: retail install not present");
+        return;
+    };
+    // The 12 active [SuperWeaponTypes]; the IonCannonSpecial section is
+    // retail legacy (commented out of the list, granted by nothing).
+    let ids: Vec<&str> = r.superweapons.iter().map(|s| s.id.as_str()).collect();
+    assert_eq!(
+        ids,
+        [
+            "NukeSpecial",
+            "IronCurtainSpecial",
+            "LightningStormSpecial",
+            "ChronoSphereSpecial",
+            "ChronoWarpSpecial",
+            "ParaDropSpecial",
+            "AmericanParaDropSpecial",
+            "PsychicDominatorSpecial",
+            "SpyPlaneSpecial",
+            "GeneticConverterSpecial",
+            "ForceShieldSpecial",
+            "PsychicRevealSpecial"
+        ]
+    );
+    assert!(r.superweapons.iter().all(|s| s.defined));
+    assert!(r.superweapons.get("IonCannonSpecial").is_none());
+    let nuke = r.superweapons.get("NukeSpecial").unwrap();
+    assert_eq!(nuke.kind.as_deref(), Some("MultiMissile"));
+    assert_eq!(nuke.weapon_type.as_deref(), Some("NukeCarrier"));
+    assert_eq!(nuke.recharge_time.map(|d| d.units()), Some(10_000_000));
+    assert_eq!(nuke.ai_defend_against, Some(true));
+    assert_eq!(nuke.range.map(|d| d.to_leptons()), Some(1792));
+    let warp = r.superweapons.get("ChronoWarpSpecial").unwrap();
+    // Retail writes `PreDependent=ChronoSphere`, which names no registered
+    // superweapon (the sphere itself is ChronoSphereSpecial). Kept verbatim.
+    assert_eq!(warp.pre_dependent.as_deref(), Some("ChronoSphere"));
+    assert_eq!(warp.is_powered, Some(false));
+    let shield = r.superweapons.get("ForceShieldSpecial").unwrap();
+    assert_eq!(shield.special_sound.as_deref(), Some("ForceShieldFading"));
+    assert_eq!(shield.start_sound.as_deref(), Some("ForceShieldStarting"));
+    assert_eq!(shield.flash_sidebar_tab_frames, Some(120));
+    // Building grants resolve to the same registry entries.
+    assert_eq!(
+        r.techno("NAMISL").unwrap().super_weapon.as_deref(),
+        Some("NukeSpecial")
+    );
+    assert_eq!(
+        r.techno("GACSPH").unwrap().super_weapon.as_deref(),
+        Some("ChronoSphereSpecial")
+    );
+    assert_eq!(
+        r.techno("GADUMY").unwrap().super_weapon.as_deref(),
+        Some("ChronoWarpSpecial")
+    );
+}
+
+#[test]
+fn sound_data_matches_retail() {
+    let Some(s) = retail_sound() else {
+        eprintln!("skip: retail install not present");
+        return;
+    };
+    // 818 unique [SoundList] names (KirovVoiceDie is listed twice) plus
+    // the unlisted [GuardianGiUnDeploy] section.
+    assert_eq!(s.events.len(), 819);
+    assert!(s.events.iter().all(|e| e.defined));
+    assert!(s
+        .issues
+        .iter()
+        .any(|i| i.section == "SoundList" && i.message.contains("KirovVoiceDie listed twice")));
+    assert!(s.issues.iter().all(|i| i.severity == Severity::Note));
+    let gi = s.events.get("GISelect").unwrap();
+    assert_eq!(
+        gi.sounds,
+        ["$igisea", "$igiseb", "$igisec", "$igised", "$igisee", "$igisef"]
+    );
+    assert_eq!(gi.control, ["random"]);
+    assert_eq!(gi.volume, Some(85));
+    assert_eq!(s.defaults.volume, Some(80));
+    assert_eq!(s.defaults.limit, Some(5));
+    assert_eq!(s.defaults.min_volume, Some(50));
+    assert_eq!(s.defaults.range, Decimal::parse("10"));
+    assert_eq!(s.defaults.priority.as_deref(), Some("NORMAL"));
+    assert_eq!(s.defaults.event_type, ["NORMAL", "SCREEN", "UNSHROUD"]);
 }
 
 #[test]
