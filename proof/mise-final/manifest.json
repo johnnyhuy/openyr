@@ -1,4 +1,12 @@
 {
+  "final-headless.txt": {
+    "bytes": 267,
+    "sha256": "064e6305634486b9cc50abc4e49e27b0859d2d219cbfcb83cf6fd12c328a686f"
+  },
+  "mise-launch.txt": {
+    "bytes": 804,
+    "sha256": "71791fe19afa568185fdbde94572bbf251789aed1bfca3c279888bb84bd1bcfa"
+  },
   "media-verification.txt": {
     "bytes": 111,
     "sha256": "46f22be8f39c10ea096243ccda976a900821a891164265845a55bc063e8e1eec"
@@ -15,25 +23,21 @@
     "bytes": 138140,
     "sha256": "65d43c7e9a4ef2fe98c1c1813e74b2cef815888af2a34da6b9ea794524ef5235"
   },
-  "check.log": {
+  "check.txt": {
     "bytes": 49757,
     "sha256": "ef519ccb549714433545905e80353e39bd3e79d8e18bc10f372ca512a9ed6a47"
-  },
-  "final-headless.log": {
-    "bytes": 267,
-    "sha256": "064e6305634486b9cc50abc4e49e27b0859d2d219cbfcb83cf6fd12c328a686f"
   },
   "pause.png": {
     "bytes": 297368,
     "sha256": "18c2081e4221adece84a441e0ee52ccf1a805470bee0dc3b010fbf3d6ea93b89"
   },
-  "mise-launch.log": {
-    "bytes": 804,
-    "sha256": "71791fe19afa568185fdbde94572bbf251789aed1bfca3c279888bb84bd1bcfa"
-  },
   "capture.json": {
     "bytes": 3992,
     "sha256": "536e49f2179f01426d263a9581115e45dc7818639b35fc0733e569c7aec21c92"
+  },
+  "README.md": {
+    "bytes": 1330,
+    "sha256": "2ae8d913e8e8b19f9b7b89a3f8a74d9b16f96c214ae49cf8fcd9dc305933acbc"
   },
   "main-menu.png": {
     "bytes": 305162,
