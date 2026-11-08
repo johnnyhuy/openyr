@@ -733,6 +733,12 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       cover layouts, routes and release order; synthetic compositor frames
       verify removal without retail data (`docs/window-input.md`). Original
       button-chord calibration and physical Mac/Retina input remain open.
+- [x] Cancel menu pointer tracking on deliberate keyboard input (#274, #96,
+      #97): discard held buttons, Skirmish slider and map-thumb drags before
+      normal key routing. Actual temporary-file/handler checks prevent stale
+      confirmation deletion and preserve fresh actions, popups and focus guards
+      at three sizes (`docs/window-input.md`). Physical Mac and retail checks
+      remain open.
 - [x] Page through native Load/Delete save lists with Page Up/Page Down and
       Home/End (#270, #96, #97). Keep selection visible, bound endpoint arithmetic
       and preserve exact confirmation paths and file bytes on cancellation.

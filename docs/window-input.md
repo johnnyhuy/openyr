@@ -137,3 +137,24 @@ save-list rows, list bounds and gesture isolation. Optional
 `OPENYR_MENU_WHEEL_PROOF=<directory>` exports actual fallback compositor frames
 and row-state receipts. These are synthetic handler checks without a Session;
 they do not establish retail UI parity or physical Mac/Retina trackpad delivery.
+
+## Keyboard interrupts menu pointer tracking
+
+A deliberate focused key press reaching the menu handler cancels its pending
+mouse button, Skirmish slider drag and map-list thumb drag (#274, #96, #97).
+Keyboard navigation/editing then runs normally, including open-popup choices.
+Later pointer motion or a stale release cannot continue the old gesture or
+activate its button. A new pointer press starts a normal fresh gesture.
+
+Synthesized/unfocused and suppressed repeat presses retain their existing
+keyboard-dispatch guards. They do not reach this interruption path; actual
+focus loss already clears pointer tracking. Menu values, selected paths,
+configuration, simulation and save encoding do not change merely from cancelling
+tracking. Existing explicit keyboard actions still run.
+
+Asset-independent handlers verify temporary-file preservation when Tab moves
+away from a held Delete-confirmation button, fresh deliberate deletion, both
+sliders and map-thumb isolation at three sizes, and popup/synthetic-key behavior.
+`OPENYR_KEYBOARD_TRACKING_PROOF=<directory>` exports actual fallback composer
+frames and state receipts without a Session or retail art. These tests do not
+establish physical Mac/Retina input delivery or original-game tracking parity.
