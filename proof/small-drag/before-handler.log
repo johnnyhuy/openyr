@@ -1,0 +1,36 @@
+   Compiling yr-formats v0.1.0 (/workspace/openyr-pointer-gesture-20261108-0010/crates/yr-formats)
+   Compiling yr-rules v0.1.0 (/workspace/openyr-pointer-gesture-20261108-0010/crates/yr-rules)
+   Compiling yr-assets v0.1.0 (/workspace/openyr-pointer-gesture-20261108-0010/crates/yr-assets)
+   Compiling yr-sim v0.1.0 (/workspace/openyr-pointer-gesture-20261108-0010/crates/yr-sim)
+   Compiling yr-render v0.1.0 (/workspace/openyr-pointer-gesture-20261108-0010/crates/yr-render)
+   Compiling yr-app v0.1.0 (/workspace/openyr-pointer-gesture-20261108-0010/crates/yr-app)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 11.20s
+     Running unittests src/main.rs (/workspace/openyr/target/debug/deps/openyr-8539b05c03c1d83a)
+
+running 3 tests
+
+thread 'surface_input::tests::drag::small_drags_respect_bounds_and_invalidation_rejects_stale_releases' (33293) panicked at crates/yr-app/src/surface_input/tests/drag.rs:158:5:
+assertion failed: app.right_panning
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+thread 'surface_input::tests::drag::click_jitter_uses_press_displacement_and_out_and_back_remains_a_drag' (33292) panicked at crates/yr-app/src/surface_input/tests/drag.rs:146:5:
+assertion failed: app.selected.contains(&17)
+test surface_input::tests::drag::click_jitter_uses_press_displacement_and_out_and_back_remains_a_drag ... FAILED
+test surface_input::tests::drag::small_drags_respect_bounds_and_invalidation_rejects_stale_releases ... FAILED
+
+thread 'surface_input::tests::drag::small_motion_drags_pan_without_losing_threshold_pixels_or_selection' (33294) panicked at crates/yr-app/src/surface_input/tests/drag.rs:100:5:
+assertion `left == right` failed: (640, 480), zoom 1, direction (1, 1)
+  left: (1000.0, 1000.0)
+ right: (976.0, 976.0)
+test surface_input::tests::drag::small_motion_drags_pan_without_losing_threshold_pixels_or_selection ... FAILED
+
+failures:
+
+failures:
+    surface_input::tests::drag::click_jitter_uses_press_displacement_and_out_and_back_remains_a_drag
+    surface_input::tests::drag::small_drags_respect_bounds_and_invalidation_rejects_stale_releases
+    surface_input::tests::drag::small_motion_drags_pan_without_losing_threshold_pixels_or_selection
+
+test result: FAILED. 0 passed; 3 failed; 0 ignored; 0 measured; 94 filtered out; finished in 0.32s
+
+error: test failed, to rerun pass `-p yr-app --bin openyr`

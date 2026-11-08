@@ -1,0 +1,25 @@
+Script started on 2026-11-08 01:35:02+00:00 [COMMAND="bash /workspace/scratch/small-drag-proof/record.sh" <not executed on terminal>]
+026d4f0cc648b7693be71d3cdb98c1750cd8beae
+df92dc56964654e0393210bfb597d3260cd7b866
+Verified: /workspace/openyr-pointer-gesture-20261108-0010/.tmp/small-drag-proof-259/program
+Verified: /workspace/openyr-pointer-gesture-20261108-0010/.tmp/small-drag-proof-259/program
+openyr [<gamedir> [<map> [scale]]] [--load <file>] [--save <file>] [--ticks <end-tick>] [--frames <dir> <tick>...] [--passive]
+
+Without arguments, OpenYR finds your retail install and opens the main menu.
+Set OPENYR_GAMEDIR to override the remembered or standard install.
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.11s
+     Running unittests src/main.rs (/workspace/openyr/target/debug/deps/openyr-8539b05c03c1d83a)
+
+running 3 tests
+test surface_input::tests::drag::click_jitter_uses_press_displacement_and_out_and_back_remains_a_drag ... Jitter inside the click threshold stays a click; a completed out-and-back drag preserves selection.
+ok
+test surface_input::tests::drag::small_drags_respect_bounds_and_invalidation_rejects_stale_releases ... Bounded small drags remain drags; pointer invalidation prevents stale release cancellation or camera motion.
+ok
+test surface_input::tests::drag::small_motion_drags_pan_without_losing_threshold_pixels_or_selection ... 27 size/zoom/direction cases: one-pixel events pan by their full displacement and preserve selection/queued commands.
+ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 94 filtered out; finished in 0.32s
+
+a43b6563cabaf9660f24a67959dde0a3d5491c5449dc9ca02bad5f97329ec777  /workspace/openyr/target/debug/deps/openyr-8539b05c03c1d83a
+
+Script done on 2026-11-08 01:35:02+00:00 [COMMAND_EXIT_CODE="0"]

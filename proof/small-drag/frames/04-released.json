@@ -1,0 +1,22 @@
+{
+  "camera": [
+    976.0,
+    976.0
+  ],
+  "pending": "[Stop { id: 17 }]",
+  "pointer": [
+    324.0,
+    274.0
+  ],
+  "right_panning": false,
+  "selected": [
+    17
+  ],
+  "session_present": false,
+  "size": [
+    640,
+    480
+  ],
+  "synthetic_scene": true,
+  "zoom": 1.0
+}
