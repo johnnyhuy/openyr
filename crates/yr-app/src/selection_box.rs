@@ -59,10 +59,7 @@ impl Bounds {
             let (mx, my) = yr_app::interaction::ground_point(
                 map,
                 sim.terrain(),
-                (
-                    u.x.to_int_floor() as f32 + 0.5,
-                    u.y.to_int_floor() as f32 + 0.5,
-                ),
+                (u.x.raw() as f32 / 256.0, u.y.raw() as f32 / 256.0),
             );
             self.contains((
                 f64::from((mx - view.cam_x) * view.zoom),
