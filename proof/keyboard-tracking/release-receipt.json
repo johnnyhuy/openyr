@@ -1,0 +1,28 @@
+{
+  "format": "openyr-proof-build-v1",
+  "source": {
+    "commit": "7475d87ee6d2c35b005571b5bd6d41b551bcd78e",
+    "tree": "476068e70650095730749dd09ddbc7e1e0ecff38"
+  },
+  "package": "yr-app",
+  "binary": "openyr",
+  "profile": "release",
+  "cargo": "cargo 1.99.1 (5f94df478 2026-08-27)",
+  "command": [
+    "/workspace/.cargo/bin/cargo",
+    "build",
+    "--manifest-path",
+    "/workspace/openyr-menu-input-20261108-0940b/Cargo.toml",
+    "--package",
+    "yr-app",
+    "--bin",
+    "openyr",
+    "--release",
+    "--locked",
+    "--target-dir",
+    "/workspace/openyr-menu-input-20261108-0940b/.tmp/keyboard-tracking-release/target-1rr6hges",
+    "--message-format=json-render-diagnostics"
+  ],
+  "sha256": "77382adb33c631f4fbada10f79ecc445850d288eabe644fe0492fe4258f7be5c",
+  "bytes": 14075280
+}

@@ -1,0 +1,11 @@
+   Compiling yr-app v0.1.0 (/workspace/openyr-menu-input-20261108-0940b/crates/yr-app)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.49s
+     Running unittests src/main.rs (/workspace/openyr/target/debug/deps/openyr-8539b05c03c1d83a)
+
+running 3 tests
+test menu_flow::tests::keyboard_tracking::menu_keyboard_tracking_preserves_popup_navigation_and_synthetic_key_guards ... ok
+test menu_flow::tests::keyboard_tracking::menu_keyboard_tracking_interrupt_stops_slider_and_map_thumb_drags ... ok
+test menu_flow::tests::keyboard_tracking::menu_keyboard_tracking_interrupt_prevents_stale_confirmation_delete ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 112 filtered out; finished in 0.20s
+

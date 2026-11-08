@@ -1,0 +1,66 @@
+{
+  "release-build.log": {
+    "bytes": 5850,
+    "sha256": "e52c4ef3b5edbe60e7a01faa8f71429f6e09e7af97f0be9dbe7ea110e6bdbea2"
+  },
+  "02-stale-release.json": {
+    "bytes": 210,
+    "sha256": "f83f0160fe97aee3df78938d196c38ac4c32fe93efb9406a1772410c0f57c925"
+  },
+  "terminal.txt": {
+    "bytes": 1207,
+    "sha256": "c3b619381564039a34f97dd719cec42b6f58d4f47a3d20831b8199e5f04d6be0"
+  },
+  "release-receipt.json": {
+    "bytes": 801,
+    "sha256": "5542a355b8a439683a0eab9003acf9a04cc70ff996602be96f17623570643cce"
+  },
+  "00-held.png": {
+    "bytes": 1229438,
+    "sha256": "23a6f0ffa0517ebd332d6dc7dd65f356f6fc95a198ef8a11ca6bbda58a51efc2"
+  },
+  "00-held.json": {
+    "bytes": 218,
+    "sha256": "e1fab4e5e6009ca02b4110d2517bb234882e2b68a608870825d95c90ada4dd44"
+  },
+  "02-stale-release.png": {
+    "bytes": 1229438,
+    "sha256": "541685108f299d42c18f8e0f16ed193c4900f216097a1411a662ea749e52d37a"
+  },
+  "README.md": {
+    "bytes": 1656,
+    "sha256": "4fe80dc054cda5115bef56288e900097b0ceb9eb97e096e65520ac875d46e6a8"
+  },
+  "keyboard-tracking.gif": {
+    "bytes": 3089,
+    "sha256": "dff8b920fc46cd9b5bfea03c01aea8ee07a48641b9fdc47301ba0760c11a6aa5"
+  },
+  "before.log": {
+    "bytes": 1536,
+    "sha256": "df93772d5df1f7b3b786c2d914c82e02e77482422fefdede0c758a162be60a28"
+  },
+  "release-cli.txt": {
+    "bytes": 365,
+    "sha256": "63c09ab5bc67bd5d7001aebfdea4d344a4dfd645bc81ecc3be14cc798cc7b056"
+  },
+  "run-proof.sh": {
+    "bytes": 573,
+    "sha256": "d77087da4c53a7d42af3ca4580e10969a8cbb7f79ff3844854a5c56fa4e2cb8b"
+  },
+  "01-keyboard-focus.json": {
+    "bytes": 210,
+    "sha256": "f83f0160fe97aee3df78938d196c38ac4c32fe93efb9406a1772410c0f57c925"
+  },
+  "workspace-check.log": {
+    "bytes": 54894,
+    "sha256": "45466b9ee60bfdc47eb32a614d0dc5c49b406b88bf8adeb7d63b023ec3c4978f"
+  },
+  "targeted.log": {
+    "bytes": 728,
+    "sha256": "929915ee2cb8006dd01edf3380a04a47406fc65b68f9e6da567dfa5c3189d639"
+  },
+  "01-keyboard-focus.png": {
+    "bytes": 1229438,
+    "sha256": "541685108f299d42c18f8e0f16ed193c4900f216097a1411a662ea749e52d37a"
+  }
+}

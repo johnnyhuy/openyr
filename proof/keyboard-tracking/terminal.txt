@@ -1,0 +1,18 @@
+Script started on 2026-11-08 11:32:44+00:00 [COMMAND="bash /workspace/scratch/keyboard-tracking-proof/run-proof.sh" <not executed on terminal>]
+Source and tree
+7475d87ee6d2c35b005571b5bd6d41b551bcd78e 476068e70650095730749dd09ddbc7e1e0ecff38
+Debug handler executable
+2e9cbd156da878af45a4323980cdbc64d8b4d8aa58d1d0d2ce0ce3019cbb0717  /workspace/openyr/target/debug/deps/openyr-8539b05c03c1d83a
+Synthetic native keyboard/pointer dispatch; actual temporary file; no Session or retail art
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.19s
+     Running unittests src/main.rs (/workspace/openyr/target/debug/deps/openyr-8539b05c03c1d83a)
+
+running 3 tests
+test menu_flow::tests::keyboard_tracking::menu_keyboard_tracking_interrupt_prevents_stale_confirmation_delete ... ok
+test menu_flow::tests::keyboard_tracking::menu_keyboard_tracking_interrupt_stops_slider_and_map_thumb_drags ... ok
+test menu_flow::tests::keyboard_tracking::menu_keyboard_tracking_preserves_popup_navigation_and_synthetic_key_guards ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 112 filtered out; finished in 0.35s
+
+
+Script done on 2026-11-08 11:32:45+00:00 [COMMAND_EXIT_CODE="0"]
