@@ -1,0 +1,25 @@
+Script started on 2026-11-08 03:34:04+00:00 [COMMAND="bash /workspace/scratch/cancel-gesture-proof/record.sh" <not executed on terminal>]
+213d5b10328765f4e28b35bf81885882260ca77f
+b273010f19ca74c7ad8adcfb21bd3ca1199c7bf3
+Verified: /workspace/openyr-input-cancel-20261108-0320/.tmp/cancel-proof-263/program
+Verified: /workspace/openyr-input-cancel-20261108-0320/.tmp/cancel-proof-263/program
+openyr [<gamedir> [<map> [scale]]] [--load <file>] [--save <file>] [--ticks <end-tick>] [--frames <dir> <tick>...] [--passive]
+
+Without arguments, OpenYR finds your retail install and opens the main menu.
+Set OPENYR_GAMEDIR to override the remembered or standard install.
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.09s
+     Running unittests src/main.rs (/workspace/openyr/target/debug/deps/openyr-8539b05c03c1d83a)
+
+running 3 tests
+test surface_input::tests::cancel::right_cancellation_removes_the_rubber_band_and_stale_left_release_stays_inert ... Shared compositor: right press removes the unfinished rubber band; right/late-left releases cannot restore it.
+ok
+test surface_input::tests::cancel::right_press_cancels_left_and_radar_gestures_before_all_match_routes ... 15 size/route cases: right press cancels unfinished left/radar gestures; stale releases preserve queued commands.
+ok
+test surface_input::tests::cancel::world_right_gesture_owns_conflicting_left_presses_until_release ... Both release orders preserve right-click/pan semantics; conflicting left presses stay inert and fresh presses recover.
+ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 97 filtered out; finished in 0.23s
+
+fc817802ab6738417a81bf2cbc9d37502e6c42b2ea4d490ca429043c876ab034  /workspace/openyr/target/debug/deps/openyr-8539b05c03c1d83a
+
+Script done on 2026-11-08 03:34:05+00:00 [COMMAND_EXIT_CODE="0"]

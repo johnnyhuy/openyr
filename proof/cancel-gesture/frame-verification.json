@@ -1,0 +1,13 @@
+{
+  "synthetic_scene": true,
+  "session_present": false,
+  "rubber_band_pixels": [
+    760,
+    0,
+    0,
+    0
+  ],
+  "cancelled_frames_identical": true,
+  "queued_sentinel_unchanged": true,
+  "selection_clears_on_original_right_release_policy": true
+}

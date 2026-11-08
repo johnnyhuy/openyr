@@ -1,0 +1,14 @@
+{
+  "left_down": [
+    100.0,
+    120.0
+  ],
+  "pending": "[Stop { id: 17 }]",
+  "radar_drag": false,
+  "right_down": null,
+  "selected": [
+    17
+  ],
+  "session_present": false,
+  "synthetic_scene": true
+}
