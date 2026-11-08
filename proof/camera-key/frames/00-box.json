@@ -1,0 +1,21 @@
+{
+  "camera": [
+    200.0,
+    200.0
+  ],
+  "edge_armed": true,
+  "left_down": [
+    100.0,
+    120.0
+  ],
+  "pending": "[Stop { id: 17 }]",
+  "radar_drag": false,
+  "redraw_handler_called": false,
+  "retail_art": false,
+  "right_down": null,
+  "right_panning": false,
+  "selected": [
+    17
+  ],
+  "session_present": false
+}
