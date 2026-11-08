@@ -1,9 +1,0 @@
-Attack-move key proof for #276 / #277
-
-Source 6369b499c491cb9ab3575d693c0954e788c28347, tree e62183c5a7f71c0d4720b5f5b79469d10871db73. Four actual fallback-compositor frames: at 0s an unfinished box drag is visible; at 1s A removes that gesture and arms attack-move; at 2s the stale release leaves the mode/selection/pending intent intact; at 3s a repeated A event after an AttackMove request stays disarmed and the next shared radar command is Move. The last three synthetic canvas frames have no selection box; their JSON receipts distinguish mode and pending command state. No game artwork is used.
-
-The terminal recording identifies the debug handler executable and records four passing regressions, including 48 mode/gesture/layout combinations. Tests check placement/repair/sell cleanup, left/right/radar tracking, stale releases, fresh activation, AttackMove/Move intents, Escape/right cancellation and synthetic/focus/menu guards. The pre-change regressions fail because placement remains active and repeats re-arm the mode. These fixtures have no Session: direct shared radar command-handler intents are inspected, not stepped. Native powered-radar pointer gating and retail simulation are not exercised.
-
-Full mise run check passes 517 reported Rust tests, one ignored, strict Clippy, formatting and three provenance tests, with local socket permissions enabled for the existing UnixStream fixture. Retail-dependent cases self-skip. The separate isolated release receipt covers the --help smoke and its executable, not these debug frames.
-
-No retail reconstruction/archive scan, live game-window, physical Mac/Retina/audio or original-game shortcut calibration ran. Known blocked native Mac/original reference capture and HTTP401 release-upload paths were not retried. Remove every proof file before squash merge.
