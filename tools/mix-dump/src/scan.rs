@@ -9,7 +9,7 @@ use std::io::Write;
 use yr_formats::names::NameDb;
 use yr_formats::{
     AudFile, BinkFile, CsfFile, HvaFile, IniFile, MixArchive, Palette, PcxImage, ShpFile, TmpFile,
-    UnicodeFont, VxlFile,
+    UnicodeFont, VxlFile, WsaFile,
 };
 
 #[derive(Default)]
@@ -137,7 +137,30 @@ fn walk(data: &[u8], path: &str, depth: usize, names: &NameDb, c: &mut Census, v
             continue;
         };
         let hex_label = format!("{path}/0x{:08x}", e.id);
-        let kind = classify(payload, &hex_label, c);
+        // WSA carries no magic bytes, so only a recovered .WSA name can
+        // route an entry to its parser.
+        let named_wsa = names
+            .get(e.id)
+            .is_some_and(|n| n.to_ascii_uppercase().ends_with(".WSA"));
+        let kind = if named_wsa {
+            match WsaFile::parse(payload) {
+                Ok(clip) => {
+                    c.detail(format!(
+                        "wsa {}x{} {} frames",
+                        clip.width,
+                        clip.height,
+                        clip.frames.len()
+                    ));
+                    "wsa"
+                }
+                Err(err) => {
+                    c.errors.push(format!("{hex_label}: wsa: {err}"));
+                    "wsa?"
+                }
+            }
+        } else {
+            classify(payload, &hex_label, c)
+        };
         // Drop recovered names whose extension contradicts the content: those
         // are CRC32 collisions, not real filenames.
         let name = names.get(e.id).filter(|n| {
@@ -350,6 +373,7 @@ fn name_fits_kind(name: &str, kind: &str) -> bool {
         "CSF" => kind == "csf",
         "INI" | "MAP" | "MPR" | "YRM" => kind == "ini",
         "BIK" => kind == "bink",
+        "WSA" => kind == "wsa",
         "FNT" => kind == "fnt",
         _ => true,
     }

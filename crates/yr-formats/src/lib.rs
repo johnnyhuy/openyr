@@ -23,6 +23,7 @@ pub mod shp;
 pub mod tileset;
 pub mod tmp;
 pub mod vxl;
+pub mod wsa;
 
 pub use audio::{AudFile, AudioError, BagEntry, Pcm};
 pub use bink::{BinkError, BinkFile, BinkFrame, BinkTrack};
@@ -40,3 +41,4 @@ pub use shp::{ShpError, ShpFile, ShpFrame};
 pub use tileset::TileSetIndex;
 pub use tmp::{TmpError, TmpFile, TmpTile};
 pub use vxl::{Voxel, VxlError, VxlFile, VxlLimb};
+pub use wsa::{WsaError, WsaFile, WsaFrame};
