@@ -30,6 +30,9 @@ mod order_feedback;
 mod production_tests;
 #[cfg(test)]
 mod scrolling_tests;
+mod selection_box;
+#[cfg(test)]
+mod selection_box_tests;
 mod surface_input;
 mod window_size;
 
@@ -235,35 +238,14 @@ impl App {
         if !additive {
             self.selected.clear();
         }
+        let Some(bounds) = selection_box::Bounds::new(a, b, self.camera_size()) else {
+            return;
+        };
         let (Some(map), Some(session)) = (&self.map, &self.session) else {
             return;
         };
-        let (x0, x1) = (a.0.min(b.0), a.0.max(b.0));
-        let (y0, y1) = (a.1.min(b.1), a.1.max(b.1));
-        for u in session.sim.units() {
-            if u.owner != yr_sim::OWNER_PLAYER {
-                continue;
-            }
-            let (mx, my) = yr_app::interaction::ground_point(
-                map,
-                session.sim.terrain(),
-                (
-                    u.x.to_int_floor() as f32 + 0.5,
-                    u.y.to_int_floor() as f32 + 0.5,
-                ),
-            );
-            let (wx, wy) = (
-                (mx - self.view.cam_x) * self.view.zoom,
-                (my - self.view.cam_y) * self.view.zoom,
-            );
-            if f64::from(wx) >= x0
-                && f64::from(wx) <= x1
-                && f64::from(wy) >= y0
-                && f64::from(wy) <= y1
-            {
-                self.selected.insert(u.id);
-            }
-        }
+        self.selected
+            .extend(bounds.ids(map, &session.sim, &self.view));
         self.selection_audio();
         self.view.dirty = true;
     }
@@ -1250,7 +1232,9 @@ impl App {
         // Box-select rubber band.
         if let (Some(a), false) = (self.left_down, self.right_panning) {
             if (self.cursor.0 - a.0).abs() > 6.0 || (self.cursor.1 - a.1).abs() > 6.0 {
-                draw_rect_outline(frame, fw, fh, a, self.cursor, SELECT_COL);
+                if let Some(bounds) = selection_box::Bounds::new(a, self.cursor, (fw, fh)) {
+                    bounds.draw(frame, fw, fh, SELECT_COL);
+                }
             }
         }
         if let Some(session) = &self.session {
@@ -1446,26 +1430,6 @@ fn draw_health(frame: &mut [u8], fw: u32, fh: u32, cx: f32, cy: f32, width: f32,
         if dx + w / 2 <= filled {
             set_px(frame, fw, fh, cx as i32 + dx, cy as i32 + 1, col);
         }
-    }
-}
-
-fn draw_rect_outline(
-    frame: &mut [u8],
-    fw: u32,
-    fh: u32,
-    a: (f64, f64),
-    b: (f64, f64),
-    col: [u8; 4],
-) {
-    let (x0, x1) = (a.0.min(b.0) as i32, a.0.max(b.0) as i32);
-    let (y0, y1) = (a.1.min(b.1) as i32, a.1.max(b.1) as i32);
-    for x in x0..=x1 {
-        set_px(frame, fw, fh, x, y0, col);
-        set_px(frame, fw, fh, x, y1, col);
-    }
-    for y in y0..=y1 {
-        set_px(frame, fw, fh, x0, y, col);
-        set_px(frame, fw, fh, x1, y, col);
     }
 }
 
