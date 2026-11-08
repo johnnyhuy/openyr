@@ -1,9 +1,0 @@
-Exact subcell box-picking proof for #280 / #281
-
-Source 8fd9343dc2b3d8b972d4fe0a5a1c932160f2ac25, tree 9750b522ed3c7a65fad54fca53f83e0c6c9900f5. The terminal recording identifies the debug picker executable and records five passing selection tests. The two new checks cover 216 position/height/map-scale/zoom/layout cases and eight actual Sim movement ticks. Their coordinate/ID/hash receipts are subcell-matrix.json and moving-unit.json. Eight-pixel boxes contain the drawn ground anchor and reject isolated old cell-center hits where those centers are separated. Picking leaves full post-tick Sim snapshot bytes and hashes unchanged. The pre-change regression misses the unit in its valid box.
-
-The production unit renderer already uses raw fixed-point coordinates; the picker now uses that same conversion before height-aware projection. The previous viewport test now centers on the actual raw position of its integer-coordinate fixture and retains all hidden/enemy-anchor assertions. These are native picker-component tests against synthetic Sim data, without a complete Session, retail art or game-window capture. No new visual presentation is introduced, so the evidence is terminal/coordinate receipts rather than a retail screenshot.
-
-Full mise run check passes 522 reported Rust tests, one ignored, strict Clippy, formatting and three provenance tests. Local socket permissions were enabled for the existing UnixStream fixture. Retail-dependent cases self-skip. The separate isolated release receipt covers its executable and --help smoke, not the debug test binary.
-
-No retail Session/reconstruction/archive scan, physical Mac/Retina/audio or original-game comparison ran. Known blocked native Mac/original reference capture and HTTP401 release-upload paths were not retried. Remove every proof file before squash merge.
