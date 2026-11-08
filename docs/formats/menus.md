@@ -250,3 +250,22 @@ on Linux only. `OPENYR_SAVE_IDENTITY_PROOF=<directory>` exports fallback menu
 compositions and state receipts without a Session or retail art. These do not
 prove an actual retail overwrite, save reconstruction or physical Mac/Retina
 input delivery; those remain separate checks.
+
+## Saved-list keyboard navigation
+
+Load and Delete lists support Page Up/Page Down by ten slots, matching their
+visible row count, and Home/End for the first/last slot (#270, #96, #97).
+The selection remains visible through the same scrolling helper as Up/Down.
+With no selection, the first arrow/page key selects the first slot; Home/End
+select their respective endpoints. Empty lists remain unselected and disabled.
+Native footer hints name the page/endpoint keys. Tab still navigates action
+buttons; Enter uses the selected file's exact path
+through the existing confirmation flow. Save name editing is unchanged.
+
+The endpoint/page arithmetic saturates before clamping to the slot count.
+Native keyboard dispatch tests cover empty/short/long lists, focus/synthetic-key
+guards, front/pause flows at three sizes and exact temporary-file confirmation
+targets. Cancellation preserves all listed file bytes. Optional
+`OPENYR_LIST_KEYS_PROOF=<directory>` captures fallback composer frames and state
+receipts. The fixtures contain arbitrary bytes, not reconstructed retail saves;
+these checks do not establish original shortcut parity or physical Mac delivery.

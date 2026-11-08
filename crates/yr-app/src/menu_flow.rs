@@ -346,11 +346,26 @@ impl App {
                 let effect = self.menu.activate(yr_app::menu::Button::UseMap);
                 self.apply_menu_effect(effect);
             }
-            KeyCode::ArrowDown if matches!(self.menu.page, Page::Load | Page::Delete) => {
-                self.menu.navigate_slot(1)
-            }
-            KeyCode::ArrowUp if matches!(self.menu.page, Page::Load | Page::Delete) => {
-                self.menu.navigate_slot(-1)
+            KeyCode::ArrowDown
+            | KeyCode::ArrowUp
+            | KeyCode::PageDown
+            | KeyCode::PageUp
+            | KeyCode::Home
+            | KeyCode::End
+                if matches!(self.menu.page, Page::Load | Page::Delete) =>
+            {
+                let delta = match code {
+                    KeyCode::ArrowDown => 1,
+                    KeyCode::ArrowUp => -1,
+                    KeyCode::PageDown => 10,
+                    KeyCode::PageUp => -10,
+                    KeyCode::Home => i32::MIN,
+                    _ => i32::MAX,
+                };
+                if matches!(code, KeyCode::Home | KeyCode::End) {
+                    self.menu.select_slot(0);
+                }
+                self.menu.navigate_slot(delta);
             }
             KeyCode::Tab => self.menu.navigate(if self.shift { -1 } else { 1 }),
             KeyCode::ArrowDown => self.menu.navigate(1),

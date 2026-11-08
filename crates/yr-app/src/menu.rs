@@ -579,7 +579,8 @@ impl State {
             return;
         }
         let index = self.selected.map_or(0, |i| {
-            (i as i32 + delta).clamp(0, self.slots.len() as i32 - 1) as usize
+            i.saturating_add_signed(delta as isize)
+                .min(self.slots.len() - 1)
         });
         self.select_slot(index);
         if index < self.scroll {

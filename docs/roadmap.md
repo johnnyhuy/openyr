@@ -729,6 +729,11 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       cover layouts, routes and release order; synthetic compositor frames
       verify removal without retail data (`docs/window-input.md`). Original
       button-chord calibration and physical Mac/Retina input remain open.
+- [x] Page through native Load/Delete save lists with Page Up/Page Down and
+      Home/End (#270, #96, #97). Keep selection visible, bound endpoint arithmetic
+      and preserve exact confirmation paths and file bytes on cancellation.
+      Native dispatch/fallback frames cover compact/default shells; retail
+      reconstruction and physical Mac input remain open (`docs/formats/menus.md`).
 - [x] Accumulate high-resolution menu wheel input (#268, #96, #97): retain
       fractional pixel/line motion and multi-row magnitude, bound large events
       and discard partial gestures across page/input/focus changes. Dispatch

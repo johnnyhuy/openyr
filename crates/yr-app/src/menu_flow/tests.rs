@@ -1185,3 +1185,5 @@ fn retail_confirmation_targets_preserve_save_load_delete_and_match_bytes() {
 }
 
 mod save_identity;
+
+mod list_keys;
