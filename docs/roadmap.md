@@ -729,6 +729,11 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       cover layouts, routes and release order; synthetic compositor frames
       verify removal without retail data (`docs/window-input.md`). Original
       button-chord calibration and physical Mac/Retina input remain open.
+- [x] Accumulate high-resolution menu wheel input (#268, #96, #97): retain
+      fractional pixel/line motion and multi-row magnitude, bound large events
+      and discard partial gestures across page/input/focus changes. Dispatch
+      and fallback compositor checks preserve selection and selected Save paths
+      (`docs/window-input.md`). Retail and physical Mac checks remain open.
 - [x] Preserve the selected Save file's actual identity (#265, #96): unchanged
       listed paths survive truncated/lossy labels and overwrite decline. Effective
       edits create a new-name request; stale, unlisted or out-of-folder selected

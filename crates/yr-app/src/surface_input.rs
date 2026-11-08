@@ -137,11 +137,30 @@ impl App {
         if self.menu.visible() {
             let y = match delta {
                 MouseScrollDelta::LineDelta(_, y) => f64::from(y),
-                MouseScrollDelta::PixelDelta(p) => p.y,
+                MouseScrollDelta::PixelDelta(p) => p.y / 50.0,
             };
-            if y.is_finite() && y != 0.0 {
-                self.menu_scroll(if y < 0.0 { 1 } else { -1 });
-                self.view.dirty = true;
+            if !y.is_finite() || y == 0.0 {
+                return;
+            }
+            let position = |menu: &yr_app::menu::State| match menu.page {
+                Page::ChooseMap => Some(menu.maps.top),
+                Page::Save | Page::Load | Page::Delete => Some(menu.scroll),
+                Page::Message { .. } | Page::Confirm(_) => Some(menu.message_scroll),
+                _ => None,
+            };
+            let Some(before) = position(&self.menu) else {
+                self.menu.wheel_remainder = 0.0;
+                return;
+            };
+            let sum = self.menu.wheel_remainder - y.clamp(-128.0, 128.0);
+            let whole = sum.trunc() as i32;
+            self.menu.wheel_remainder = sum.fract();
+            if whole != 0 {
+                self.menu_scroll(whole);
+                // Do not carry overscroll into the next reversal at a list end.
+                if before.checked_add_signed(whole as isize) != position(&self.menu) {
+                    self.menu.wheel_remainder = 0.0;
+                }
             }
         } else {
             self.match_wheel(delta, self.camera_size());

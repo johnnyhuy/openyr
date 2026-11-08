@@ -144,6 +144,9 @@ impl App {
         stepped
     }
     pub(super) fn menu_mouse(&mut self, state: ElementState, button: MouseButton) {
+        if state == ElementState::Pressed {
+            self.menu.wheel_remainder = 0.0;
+        }
         let size = self.camera_size();
         let layout = Layout::for_state(&self.menu, size.0, size.1);
         if self.menu.front && self.menu.page == Page::Skirmish && self.menu.setup.popup.is_some() {
@@ -222,6 +225,7 @@ impl App {
         self.reset_menu_clock();
     }
     pub(super) fn menu_key_code(&mut self, code: KeyCode, text: Option<&str>, repeat: bool) {
+        self.menu.wheel_remainder = 0.0;
         let shortcut = self.control || self.super_key;
         if self.menu.page == Page::Save && shortcut && code == KeyCode::KeyA {
             self.menu.name_selected = true;

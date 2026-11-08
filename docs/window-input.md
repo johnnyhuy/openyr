@@ -117,3 +117,23 @@ frames and state receipts from a synthetic canvas. It shows a rubber band
 removed on right press, with no restoration by right/late-left release. There
 is no session, entity or retail data in that fixture; it does not establish
 retail command/save invariance or physical Mac/Retina delivery.
+
+## High-resolution menu wheel input
+
+Menu lists and scrollable dialogs accumulate finite vertical wheel motion into
+whole rows (#268, #96, #97). One line is one row; 50 pixel units are one row,
+matching the existing native sidebar conversion. Fractional rows carry between
+wheel events, and multi-row events retain their magnitude. Each event is bounded
+to 128 rows; zero and non-finite deltas are inert. Clamped whole-row overscroll
+is discarded so it cannot delay the next reversal.
+
+Page transitions, pointer/focus/surface invalidation, keyboard input and a new
+menu pointer press discard the partial gesture. Scrolling does not change a
+selected save path, editor name, list selection or confirmation target. The
+fraction is transient UI state; simulation and save encoding are unchanged.
+
+Asset-independent dispatch regressions cover pixel/line sequences, dialog and
+save-list rows, list bounds and gesture isolation. Optional
+`OPENYR_MENU_WHEEL_PROOF=<directory>` exports actual fallback compositor frames
+and row-state receipts. These are synthetic handler checks without a Session;
+they do not establish retail UI parity or physical Mac/Retina trackpad delivery.

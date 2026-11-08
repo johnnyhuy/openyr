@@ -144,6 +144,8 @@ pub struct State {
     pub keyboard_focus: bool,
     pub scroll: usize,
     pub message_scroll: usize,
+    /// Transient fractional rows from native menu wheel input.
+    pub wheel_remainder: f64,
     pub pressed: Option<Button>,
     pub muted: bool,
     pub zoom: u16,
@@ -169,6 +171,7 @@ impl Default for State {
             keyboard_focus: false,
             scroll: 0,
             message_scroll: 0,
+            wheel_remainder: 0.0,
             pressed: None,
             muted: false,
             zoom: 100,
@@ -202,6 +205,7 @@ impl State {
         self.heading_refreshed = self.page == Page::ChooseMap && page == Page::Skirmish;
         self.page = page;
         self.message_scroll = 0;
+        self.wheel_remainder = 0.0;
         self.focus = 0;
         self.keyboard_focus = false;
         if self.page == Page::SinglePlayer {
