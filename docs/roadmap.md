@@ -32,6 +32,10 @@ Johnny on 2026-10-31.
       GIFs (#251), hosted separately from source, and explain engine/content
       licensing and the clean-room method.
 
+- [x] Build a classic command-console GitHub Pages showcase (#261) with existing
+      game captures, source downloads, macOS build orders and legal context.
+      Site chrome is original CSS; media remains outside main (`docs/website.md`).
+
 ## M1: Asset layer (done 2026-10-17; open items carried forward)
 
 - [x] MIX reader: classic + flagged headers, SHA1 trailer, encrypted (RSA/Blowfish) headers
