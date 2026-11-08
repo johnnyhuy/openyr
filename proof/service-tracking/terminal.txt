@@ -1,0 +1,18 @@
+Script started on 2026-11-08 17:33:07+00:00 [COMMAND="bash /workspace/scratch/service-tracking-proof/run-proof.sh" <not executed on terminal>]
+Source and tree
+4ad36b2bca06c1ad81420f71a55c3710d381d84f 77dd774a0686e2d7b4a621370ac388cec1b79bac
+Debug handler executable
+0c99b46e0adcdfed7ea2896da804edf9f5be3d3cd1d75c860429f41f40fcb49d  /workspace/openyr/target/debug/deps/openyr-8539b05c03c1d83a
+Native pointer/keyboard dispatch and shared fallback composer; no Session or retail art
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.12s
+     Running unittests src/main.rs (/workspace/openyr/target/debug/deps/openyr-8539b05c03c1d83a)
+
+running 3 tests
+test keyboard_input::tests::service_tracking::service_mode_pan_cleanup_obeys_repeat_synthetic_focus_and_menu_guards ... ok
+test keyboard_input::tests::service_tracking::service_mode_pan_cleanup_preserves_mode_toggles_selection_and_queued_intents ... ok
+test keyboard_input::tests::service_tracking::service_mode_pan_cleanup_restores_a_visible_fresh_box_gesture ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 124 filtered out; finished in 0.80s
+
+
+Script done on 2026-11-08 17:33:09+00:00 [COMMAND_EXIT_CODE="0"]

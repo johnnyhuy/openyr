@@ -1,0 +1,17 @@
+{
+  "camera": [
+    150.0,
+    170.0
+  ],
+  "left_down": null,
+  "mode": "Repair",
+  "pending": "[Stop { id: 17 }]",
+  "radar_drag": false,
+  "retail_art": false,
+  "right_down": null,
+  "right_panning": false,
+  "selected": [
+    17
+  ],
+  "session_present": false
+}
