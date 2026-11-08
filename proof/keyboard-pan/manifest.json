@@ -1,0 +1,87 @@
+[
+  {
+    "path": "README.md",
+    "bytes": 1881,
+    "sha256": "1ffc2a7f3648b774a34f818a15b4a4837dbe1f6232881bba5f67ce39c0f40512"
+  },
+  {
+    "path": "cli-help.txt",
+    "bytes": 360,
+    "sha256": "ed0b4934d4653e0b123d27a8f39a6c22e7764e438ca9666dad31b0bb0b1c34c7"
+  },
+  {
+    "path": "frames/00-held-arrow.json",
+    "bytes": 284,
+    "sha256": "7ddf4acc49923e5f7e8b0953705d5d1324f3a7ebd86410c09e121bd43fcbbd1f"
+  },
+  {
+    "path": "frames/00-held-arrow.png",
+    "bytes": 1229438,
+    "sha256": "351fbe4ab16de6bcf9551994c6a890cef19b7cdd46a0114fbd328af281a2b6e5"
+  },
+  {
+    "path": "frames/01-ignored-box.json",
+    "bytes": 284,
+    "sha256": "7ddf4acc49923e5f7e8b0953705d5d1324f3a7ebd86410c09e121bd43fcbbd1f"
+  },
+  {
+    "path": "frames/01-ignored-box.png",
+    "bytes": 1229438,
+    "sha256": "351fbe4ab16de6bcf9551994c6a890cef19b7cdd46a0114fbd328af281a2b6e5"
+  },
+  {
+    "path": "frames/02-key-up.json",
+    "bytes": 274,
+    "sha256": "fa4f2357e1296b1a88891520ac966d5a7754cbda0c16c6ae8a844ee2c550544b"
+  },
+  {
+    "path": "frames/02-key-up.png",
+    "bytes": 1229438,
+    "sha256": "351fbe4ab16de6bcf9551994c6a890cef19b7cdd46a0114fbd328af281a2b6e5"
+  },
+  {
+    "path": "frames/03-fresh-box.json",
+    "bytes": 296,
+    "sha256": "be0bb0f9d40c17f015fb8b6ee1ba5d22805573c1e3d4f60fcf360e759c34d8ed"
+  },
+  {
+    "path": "frames/03-fresh-box.png",
+    "bytes": 1229438,
+    "sha256": "9fda3d1d7dda76ffbd04cfacc1f819fe8a0441943e25a20888fe9de277f6683c"
+  },
+  {
+    "path": "keyboard-pan.gif",
+    "bytes": 2197,
+    "sha256": "7a92f360da86fab486bab05f60fe5e3ce1a88a859a413c8d65c0c78ec345c2d7"
+  },
+  {
+    "path": "regression-before.log",
+    "bytes": 1491,
+    "sha256": "fc7905ace49772466b23c1f240e0f9c99203ef7f0fa8ccf76ad76ded4c426bf5"
+  },
+  {
+    "path": "release-build.log",
+    "bytes": 5845,
+    "sha256": "8579cbd812fa3ccc4274cda227ce7e270d9385749a8fd9c729d2b7f8edf9e5bd"
+  },
+  {
+    "path": "release-receipt.json",
+    "bytes": 796,
+    "sha256": "9ff764d6af12f482f58843f897ebc269e2b56aafae73c540ff911a91b525b99f"
+  },
+  {
+    "path": "run-proof.sh",
+    "bytes": 449,
+    "sha256": "19e7ee10d73297dec0bf73e9e3cf6680224ea89cfc784d433ba7fb35ba9fc95e"
+  },
+  {
+    "path": "terminal.txt",
+    "bytes": 866,
+    "sha256": "c3d6ab3cc242d1d9d881ce4455edae3eef6a8702cba0c87e1a4d69546c6e7375"
+  },
+  {
+    "path": "workspace-check.log",
+    "bytes": 57036,
+    "sha256": "7451b47bc84a172a1fae42e730d210e36d3dcce639077bb34af93675ad534b6e"
+  }
+]

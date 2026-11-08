@@ -1,0 +1,5 @@
+Verified: /workspace/openyr-menu-review-20261109-0400/.tmp/keyboard-pan-release/program
+openyr [<gamedir> [<map> [scale]]] [--load <file>] [--save <file>] [--ticks <end-tick>] [--frames <dir> <tick>...] [--passive]
+
+Without arguments, OpenYR finds your retail install and opens the main menu.
+Set OPENYR_GAMEDIR to override the remembered or standard install.

@@ -1,0 +1,14 @@
+Script started on 2026-11-08 21:28:05+00:00 [COMMAND="bash /workspace/scratch/keyboard-pan-proof/run-proof.sh" <not executed on terminal>]
+ddd2531553a169d69fcb0bf02fe9edb18dc5adcd
+7d0833a6c1b4fe8d3719c6eae0edaf9913eadd4c
+29869c53eb9b6775306d6902fbf91ece2fcdc9f2c738b2d4c2c82781d4311b7d  /workspace/openyr/target/debug/deps/openyr-8539b05c03c1d83a
+
+running 3 tests
+test surface_input::tests::keyboard_pan::held_camera_key_box_feedback_returns_after_key_up ... ok
+test surface_input::tests::keyboard_pan::held_camera_key_rejects_new_world_gestures_before_redraw ... ok
+test surface_input::tests::keyboard_pan::keyboard_pan_ownership_uses_net_direction_and_keeps_sidebar_and_menu_routes ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 130 filtered out; finished in 0.54s
+
+
+Script done on 2026-11-08 21:28:05+00:00 [COMMAND_EXIT_CODE="0"]
