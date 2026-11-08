@@ -1,0 +1,13 @@
+Script started on 2026-11-08 23:30:28+00:00 [COMMAND="bash /workspace/scratch/movie-recovery-proof/run-proof.sh" <not executed on terminal>]
+a10401463a8a1de2e1ab31f1c0d9a5d868320ef1
+10f155ba58f900f4480d0d501594e11bfb6f3005
+1a7cbcf12eb2df475e18d08045c080fa2937feb1605ca37c2fbc2b28f735a709  /workspace/openyr/target/debug/deps/openyr-8539b05c03c1d83a
+
+running 2 tests
+test front_flow::tests::movie_failure::movie_failure_recovery_drops_queued_retry_and_clears_input ... ok
+test front_flow::tests::movie_failure::movie_failure_recovery_ignores_late_load_results_and_progress ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 133 filtered out; finished in 0.42s
+
+
+Script done on 2026-11-08 23:30:29+00:00 [COMMAND_EXIT_CODE="0"]
