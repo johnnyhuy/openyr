@@ -278,8 +278,7 @@ pub fn draw(frame: &mut [u8], width: u32, height: u32, art: &Art, scene: Scene<'
             });
             setup_status.as_str()
         }
-        Page::Load => "Select a saved match. Arrows select; Escape returns.",
-        Page::Delete => "Select a saved match to delete. Arrows select; Escape returns.",
+        Page::Load | Page::Delete => "PgUp/PgDn page; Home/End jump; Esc returns.",
         Page::ChooseMap => "Select a Battle map. Enter uses it; Escape keeps the current map.",
         Page::Loading => "Escape cancels and returns.",
         Page::Confirm(intent) => {

@@ -282,8 +282,7 @@ pub fn draw(
         },
         Page::Abort => "Unsaved changes will be lost if you restart or quit.",
         Page::Save => "Type a name or select a slot. Escape returns.",
-        Page::Load => "Select a saved match. Escape returns.",
-        Page::Delete => "Select a saved match to delete. The current match stays in memory.",
+        Page::Load | Page::Delete => "PgUp/PgDn page; Home/End jump; Esc returns.",
         Page::Loading => "Escape cancels this load and keeps the current match.",
         Page::Result(_) => "Choose restart or quit.",
         Page::Confirm(intent) => {

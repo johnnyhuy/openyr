@@ -315,3 +315,25 @@ fn confirmations_distinguish_their_target_save_files() {
         }
     }
 }
+
+#[test]
+fn slot_navigation_bounds_large_deltas_without_overflow() {
+    let mut state = State::default();
+    state.set(Page::Load);
+    state.slots = (0..25)
+        .map(|i| Slot {
+            name: i.to_string(),
+            path: format!("{i}.oyrsave").into(),
+        })
+        .collect();
+    state.select_slot(20);
+    state.navigate_slot(i32::MAX);
+    assert_eq!(state.selected, Some(24));
+    assert_eq!(state.scroll, 15);
+    state.navigate_slot(i32::MIN);
+    assert_eq!(state.selected, Some(0));
+    assert_eq!(state.scroll, 0);
+    state.selected = Some(usize::MAX);
+    state.navigate_slot(1);
+    assert_eq!(state.selected, Some(24));
+}
