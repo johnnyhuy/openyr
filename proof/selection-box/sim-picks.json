@@ -1,0 +1,128 @@
+[
+  {
+    "enemy": 3,
+    "hash": "3fa91cec66ed3b0a",
+    "hidden_owned": 2,
+    "picked": [
+      1
+    ],
+    "size": [
+      640,
+      480
+    ],
+    "snapshot_unchanged": true,
+    "zoom": 0.25
+  },
+  {
+    "enemy": 3,
+    "hash": "3fa91cec66ed3b0a",
+    "hidden_owned": 2,
+    "picked": [
+      1
+    ],
+    "size": [
+      640,
+      480
+    ],
+    "snapshot_unchanged": true,
+    "zoom": 1.0
+  },
+  {
+    "enemy": 3,
+    "hash": "3fa91cec66ed3b0a",
+    "hidden_owned": 2,
+    "picked": [
+      1
+    ],
+    "size": [
+      640,
+      480
+    ],
+    "snapshot_unchanged": true,
+    "zoom": 4.0
+  },
+  {
+    "enemy": 3,
+    "hash": "3fa91cec66ed3b0a",
+    "hidden_owned": 2,
+    "picked": [
+      1
+    ],
+    "size": [
+      800,
+      600
+    ],
+    "snapshot_unchanged": true,
+    "zoom": 0.25
+  },
+  {
+    "enemy": 3,
+    "hash": "3fa91cec66ed3b0a",
+    "hidden_owned": 2,
+    "picked": [
+      1
+    ],
+    "size": [
+      800,
+      600
+    ],
+    "snapshot_unchanged": true,
+    "zoom": 1.0
+  },
+  {
+    "enemy": 3,
+    "hash": "3fa91cec66ed3b0a",
+    "hidden_owned": 2,
+    "picked": [
+      1
+    ],
+    "size": [
+      800,
+      600
+    ],
+    "snapshot_unchanged": true,
+    "zoom": 4.0
+  },
+  {
+    "enemy": 3,
+    "hash": "3fa91cec66ed3b0a",
+    "hidden_owned": 2,
+    "picked": [
+      1
+    ],
+    "size": [
+      1280,
+      800
+    ],
+    "snapshot_unchanged": true,
+    "zoom": 0.25
+  },
+  {
+    "enemy": 3,
+    "hash": "3fa91cec66ed3b0a",
+    "hidden_owned": 2,
+    "picked": [
+      1
+    ],
+    "size": [
+      1280,
+      800
+    ],
+    "snapshot_unchanged": true,
+    "zoom": 1.0
+  },
+  {
+    "enemy": 3,
+    "hash": "3fa91cec66ed3b0a",
+    "hidden_owned": 2,
+    "picked": [
+      1
+    ],
+    "size": [
+      1280,
+      800
+    ],
+    "snapshot_unchanged": true,
+    "zoom": 4.0
+  }
+]

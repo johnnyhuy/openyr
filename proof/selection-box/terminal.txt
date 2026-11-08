@@ -1,0 +1,18 @@
+Script started on 2026-11-08 15:39:40+00:00 [COMMAND="bash /workspace/scratch/selection-box-proof/run-proof.sh" <not executed on terminal>]
+Source and tree
+031a7b6a0d4eacc5075a16dfae7ef775ab9be102 cd46ddc074c9937efb79a70bf68dff9b094e2822
+Debug handler executable
+4405c8cf92d71ba51c1cab1c54382d187b7b078b23f75407e365d299ace5dd3a  /workspace/openyr/target/debug/deps/openyr-8539b05c03c1d83a
+Native compositor and synthetic Sim picking; no complete Session or retail art
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.17s
+     Running unittests src/main.rs (/workspace/openyr/target/debug/deps/openyr-8539b05c03c1d83a)
+
+running 3 tests
+test selection_box_tests::selection_box_bounds_reject_invalid_extents_and_keep_viewport_edges_half_open ... ok
+test selection_box_tests::selection_box_does_not_paint_over_the_sidebar ... ok
+test selection_box_tests::selection_box_picker_excludes_hidden_and_enemy_anchors_without_changing_sim ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 119 filtered out; finished in 0.94s
+
+
+Script done on 2026-11-08 15:39:42+00:00 [COMMAND_EXIT_CODE="0"]
