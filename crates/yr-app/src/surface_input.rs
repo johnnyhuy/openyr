@@ -91,6 +91,16 @@ impl App {
             self.menu_mouse(state, button);
             return;
         }
+        if state == ElementState::Pressed
+            && matches!(button, MouseButton::Left | MouseButton::Right)
+            && !self.in_sidebar(self.cursor)
+            && self.keyboard_pan() != (0.0, 0.0)
+        {
+            // Keyboard panning owns world gestures even between redraws.
+            self.cancel_pointer_action();
+            self.view.dirty = true;
+            return;
+        }
         if state == ElementState::Pressed {
             if button == MouseButton::Right {
                 self.cancel_pointer_action();

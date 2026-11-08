@@ -322,3 +322,5 @@ fn menu_wheel_proof(app: &App, name: &str) {
     )
     .unwrap();
 }
+
+mod keyboard_pan;

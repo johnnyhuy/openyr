@@ -99,6 +99,14 @@ fn edge_direction(cursor: (f64, f64), viewport: (u32, u32)) -> (f32, f32) {
 }
 
 impl App {
+    pub(super) fn keyboard_pan(&self) -> (f32, f32) {
+        let held = |key| i32::from(self.keys.contains(&key));
+        (
+            (held(KeyCode::ArrowRight) - held(KeyCode::ArrowLeft)) as f32,
+            (held(KeyCode::ArrowDown) - held(KeyCode::ArrowUp)) as f32,
+        )
+    }
+
     pub(super) fn camera_size(&self) -> (u32, u32) {
         self.pixels.as_ref().map_or(self.frame_size, |p| {
             (p.texture().width(), p.texture().height())
@@ -173,11 +181,7 @@ impl App {
         {
             return;
         }
-        let held = |key| i32::from(self.keys.contains(&key));
-        let keyboard = (
-            (held(KeyCode::ArrowRight) - held(KeyCode::ArrowLeft)) as f32,
-            (held(KeyCode::ArrowDown) - held(KeyCode::ArrowUp)) as f32,
-        );
+        let keyboard = self.keyboard_pan();
         let direction = if keyboard != (0.0, 0.0) {
             self.cancel_pointer_action();
             keyboard

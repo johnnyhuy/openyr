@@ -733,6 +733,11 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       cover layouts, routes and release order; synthetic compositor frames
       verify removal without retail data (`docs/window-input.md`). Original
       button-chord calibration and physical Mac/Retina input remain open.
+- [x] Reject new world gestures during held-key camera panning (#286, #97).
+      Shared net direction drives redraw and input ownership; opposing keys,
+      key-up recovery, sidebar and menu routes retain their behavior. Native
+      handlers/compositor verify 60 arrow/layout/mode cases without retail data
+      (`docs/camera-input.md`); physical Mac and original parity remain open.
 - [x] Cancel pointer gestures at camera key-down before redraw (#284, #97).
       Native dispatch/compositor regressions cover 48 arrow/gesture/layout
       cases, stale releases and fresh post-key-up boxes. Selection, queued

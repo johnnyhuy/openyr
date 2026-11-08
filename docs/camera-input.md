@@ -99,3 +99,28 @@ fallback compositor frames and state receipts. The synthetic fixture has no
 Session or retail art, so it does not establish retail command/save behavior,
 physical Mac/Retina delivery, audio or original-game parity. Simulation and save
 formats are unchanged.
+
+## Held keyboard pan owns new world gestures
+
+A nonzero held-arrow direction rejects new world Left/Right presses before
+pointer routing (#286, #97). An ignored click, box or right drag cannot change
+selection, queue an order, cancel a command mode or move the camera between
+redraws. Mouse releases stay inert because no gesture was armed. Pointer motion
+still updates hover position, while camera movement remains in the existing
+time-based redraw path.
+
+Input ownership and redraw use the same net direction. Opposing arrows with
+zero net direction allow world gestures. Releasing the last effective arrow
+allows a fresh press immediately. The sidebar and menus keep their existing
+routes; keyboard panning does not disable production or menu navigation. This
+is native interaction policy pending original-game comparison, not pointer
+confinement or a change to camera speed, bounds, simulation or save formats.
+
+Asset-independent handlers cover 60 arrow/layout/command-mode combinations,
+new left-click/box and right-click/pan sequences before any redraw, opposing
+keys, key-up recovery, sidebar routing and menu navigation.
+`OPENYR_KEYBOARD_PAN_PROOF=<directory>` exports synthetic shared-compositor
+frames and input receipts. The fixture has no Session, entities or retail art;
+it preserves transient selection/queued-intent sentinels rather than verifying
+retail commands or reconstructed saves. Physical Mac/Retina input, audio and
+original-game parity remain unverified.
