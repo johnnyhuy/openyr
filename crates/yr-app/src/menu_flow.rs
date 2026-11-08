@@ -226,6 +226,9 @@ impl App {
     }
     pub(super) fn menu_key_code(&mut self, code: KeyCode, text: Option<&str>, repeat: bool) {
         self.menu.wheel_remainder = 0.0;
+        self.menu.pressed = None;
+        self.menu.setup.drag = None;
+        self.menu.maps.drag = None;
         let shortcut = self.control || self.super_key;
         if self.menu.page == Page::Save && shortcut && code == KeyCode::KeyA {
             self.menu.name_selected = true;
