@@ -77,3 +77,25 @@ state receipts from a synthetic colored-grid fixture, without a session or
 retail art. These check camera transformation and transient selection/queued
 command preservation, not retail simulation/save reconstruction or physical
 macOS/Retina delivery. Original-game threshold calibration remains open.
+
+## Camera keys interrupt gestures before redraw
+
+World arrow-key dispatch cancels existing pointer tracking immediately (#284,
+#97), before the redraw handler computes movement. A mouse release arriving
+between key-down and redraw cannot finish the old box selection or right click.
+Held-arrow redraw cancellation remains in place. Camera speed, elapsed-time
+policy, zoom and bounds are unchanged; selected IDs, queued intents and command
+modes survive this pointer cleanup.
+
+The existing focused/synthetic-key and suppressed-repeat guards run first.
+Menu arrows retain menu navigation. Key-up clears the held key normally, and a
+fresh pointer press can start a new gesture. This is a native event-ordering
+policy, not original-game timing calibration.
+
+Asset-independent native dispatch checks cover 48 arrow/gesture/layout cases,
+stale releases before any redraw, focus synchronization, menu navigation and a
+fresh box after key-up. `OPENYR_CAMERA_KEY_PROOF=<directory>` exports actual
+fallback compositor frames and state receipts. The synthetic fixture has no
+Session or retail art, so it does not establish retail command/save behavior,
+physical Mac/Retina delivery, audio or original-game parity. Simulation and save
+formats are unchanged.

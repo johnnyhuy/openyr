@@ -180,3 +180,5 @@ fn focus_return_repeats_stay_suppressed_until_release_or_a_fresh_press() {
 mod attack_move;
 
 mod service_tracking;
+
+mod camera_tracking;

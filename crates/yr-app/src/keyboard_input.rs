@@ -40,6 +40,10 @@ impl App {
         self.groups.interrupt();
         self.keys.insert(code);
         match code {
+            KeyCode::ArrowLeft | KeyCode::ArrowRight | KeyCode::ArrowUp | KeyCode::ArrowDown => {
+                // Releases can arrive before the redraw that pans the camera.
+                self.cancel_pointer_action();
+            }
             KeyCode::Escape if !repeat => {
                 self.escape_command_or_pause();
             }

@@ -733,6 +733,11 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       cover layouts, routes and release order; synthetic compositor frames
       verify removal without retail data (`docs/window-input.md`). Original
       button-chord calibration and physical Mac/Retina input remain open.
+- [x] Cancel pointer gestures at camera key-down before redraw (#284, #97).
+      Native dispatch/compositor regressions cover 48 arrow/gesture/layout
+      cases, stale releases and fresh post-key-up boxes. Selection, queued
+      intents, command modes and camera timing remain intact
+      (`docs/camera-input.md`); retail/physical Mac checks remain open.
 - [x] Clear complete pointer tracking on repair/sell mode changes (#282, #97),
       including stale pan flags and edge arming. Native handlers and fallback
       composer frames verify 72 mode/gesture/layout combinations, inert old
