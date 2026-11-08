@@ -63,7 +63,11 @@ Johnny on 2026-10-31.
 - [x] AUD / AUDIO.BAG+IDX / IMA WAV decoders, bit-exact vs ffmpeg
 - [x] Bink 1 container metadata (#110): all 146 retail Bink entries validate
       with bounded frame/track tables and packet ranges (`docs/formats/bink.md`).
-- [ ] WSA metadata
+- [x] WSA metadata: bounded header, offset-table and frame-range parser
+      (`yr-formats::WsaFile`), routed in `mix-dump scan` through recovered
+      .WSA names. The retail census holds no WSA assets, so synthetic
+      known-answer and hostile-header fixtures carry the checks
+      (`docs/formats/wsa.md`). LCW/XOR-delta decoding remains future work.
 - [x] `yr-assets` VFS: engine-order MIX cascade, nested mounts, theaters, loose overrides
 - [ ] Side-specific archives (SIDEC##) and per-file loader exceptions
 - [x] MIX name database: every nested archive named; ~88% of all entries named
