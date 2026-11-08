@@ -711,6 +711,13 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       motion and stale releases. Synthetic shared-compositor frames show the
       camera shift without retail data (`docs/camera-input.md`); physical input
       and original threshold calibration remain open.
+- [x] Cancel unfinished mouse gestures on right press (#263, #97): clear
+      stale left/radar gestures before match routes and redraw the rubber band.
+      An active world right-click/pan rejects conflicting left presses; queued
+      commands and existing right-click policies remain intact. Handler checks
+      cover layouts, routes and release order; synthetic compositor frames
+      verify removal without retail data (`docs/window-input.md`). Original
+      button-chord calibration and physical Mac/Retina input remain open.
 - [ ] Complete world interaction and desktop UX (#97): consistent selection,
       supported control groups/hotkeys, hover/target/order feedback, bounded
       camera movement and configurable edge scrolling. Clear held input on

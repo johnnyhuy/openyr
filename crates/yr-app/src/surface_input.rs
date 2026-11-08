@@ -91,6 +91,15 @@ impl App {
             self.menu_mouse(state, button);
             return;
         }
+        if state == ElementState::Pressed {
+            if button == MouseButton::Right {
+                self.cancel_pointer_action();
+                self.view.dirty = true;
+            } else if button == MouseButton::Left && self.right_down.is_some() {
+                // A world right-click/pan owns the pointer until its release.
+                return;
+            }
+        }
         match (button, state) {
             (MouseButton::Left, ElementState::Pressed) if self.in_sidebar(self.cursor) => {
                 self.sidebar_left_press(self.camera_size());
