@@ -45,8 +45,10 @@ impl App {
             }
             KeyCode::Equal => self.zoom_camera((self.view.zoom * 1.2).min(4.0)),
             KeyCode::Minus => self.zoom_camera((self.view.zoom / 1.2).max(0.25)),
-            KeyCode::KeyA => {
+            KeyCode::KeyA if !repeat => {
                 self.order_feedback.clear();
+                self.cancel_pointer_action();
+                self.placing = None;
                 self.service_mode = ServiceMode::None;
                 self.attack_move = true;
             }

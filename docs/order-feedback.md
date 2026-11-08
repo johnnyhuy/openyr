@@ -234,3 +234,22 @@ and three zooms, covering full-health, damaged and enemy buildings, a unit
 under the pointer, lifecycle guards and complete save-byte invariance.
 Optional OPENYR_HOVER_PROOF=<external-dir> exports before, preview and
 composed frames for the repair case at each layout.
+
+## Attack-move key activation
+
+A deliberate A press arms one attack-move action (#276, #97). OS repeats do
+not re-arm it after an order or cancellation. Activation discards unfinished
+pointer gestures and placement/repair/sell modes, retaining selection and
+already queued commands. A stale mouse release cannot consume or cancel the
+new mode; a fresh pointer action uses the existing command route. Control+A
+in the Save editor remains a name-selection shortcut, through menu routing.
+
+Asset-independent keyboard/gesture checks cover conflicting modes, late
+releases, Escape/right cancellation, repeats, focus/synthetic guards and fresh
+activation. Shared radar-handler fixtures verify AttackMove then ordinary Move
+command intents. Optional `OPENYR_ATTACK_MOVE_KEY_PROOF=<directory>` exports
+fallback compositor frames and state receipts from a synthetic canvas.
+These fixtures have no Session: commands are inspected but not stepped, and
+retail radar power/input, save reconstruction, original shortcut parity and
+physical Mac/Retina behavior remain unverified. Simulation and save schemas
+are unchanged.

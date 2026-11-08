@@ -176,3 +176,5 @@ fn focus_return_repeats_stay_suppressed_until_release_or_a_fresh_press() {
     assert_eq!(app.selected, BTreeSet::from([17]));
     println!("Focus-return repeats cannot pan or arm attack-move; fresh presses work and selection remains intact.");
 }
+
+mod attack_move;
