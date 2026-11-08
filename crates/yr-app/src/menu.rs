@@ -136,6 +136,8 @@ pub struct State {
     pub page: Page,
     pub name: String,
     pub name_selected: bool,
+    /// Exact listed Save target, retained only while its label has not been edited.
+    pub save_slot_path: Option<PathBuf>,
     pub slots: Vec<Slot>,
     pub selected: Option<usize>,
     pub focus: usize,
@@ -160,6 +162,7 @@ impl Default for State {
             page: Page::Closed,
             name: String::new(),
             name_selected: false,
+            save_slot_path: None,
             slots: Vec::new(),
             selected: None,
             focus: 0,
@@ -184,6 +187,17 @@ impl State {
         self.page != Page::Closed
     }
     pub fn set(&mut self, page: Page) {
+        let keep_save_slot = match (&self.page, &page) {
+            (Page::Save, Page::Confirm(Intent::Save(path)))
+            | (Page::Confirm(Intent::Save(path)), Page::Save) => {
+                self.save_slot_path.as_ref() == Some(path)
+            }
+            _ => false,
+        };
+        if !keep_save_slot && self.save_slot_path.take().is_some() {
+            self.selected = None;
+            self.name.clear();
+        }
         self.name_selected = false;
         self.heading_refreshed = self.page == Page::ChooseMap && page == Page::Skirmish;
         self.page = page;
@@ -251,7 +265,17 @@ impl State {
                 (Abort, true),
                 (Resume, true),
             ],
-            Page::Save => vec![(Save, save_name(&self.name).is_some()), (Back, true)],
+            Page::Save => vec![
+                (
+                    Save,
+                    if self.save_slot_path.is_some() {
+                        self.selected_save_path().is_some()
+                    } else {
+                        save_name(&self.name).is_some()
+                    },
+                ),
+                (Back, true),
+            ],
             Page::Load => vec![
                 (Load, self.selected.is_some_and(|i| i < self.slots.len())),
                 (Delete, true),
@@ -507,7 +531,17 @@ impl State {
                 break;
             }
             self.name.push(ch);
+            self.save_slot_path = None;
+            self.selected = None;
         }
+    }
+    /// An unchanged label identifies its listed path, never a reconstructed name.
+    pub fn selected_save_path(&self) -> Option<&std::path::Path> {
+        let path = self.save_slot_path.as_deref()?;
+        self.selected
+            .and_then(|index| self.slots.get(index))
+            .filter(|slot| slot.path == path && slot.name == self.name)
+            .map(|slot| slot.path.as_path())
     }
     pub fn select_slot(&mut self, index: usize) {
         if let Some(slot) = self.slots.get(index) {
@@ -516,15 +550,22 @@ impl State {
             if self.page == Page::Save {
                 self.name_selected = false;
                 self.name = slot.name.clone();
+                self.save_slot_path = Some(slot.path.clone());
             }
         }
     }
     pub fn backspace_name(&mut self) {
         if self.page == Page::Save {
-            if self.name_selected {
+            let changed = if self.name_selected {
+                let changed = !self.name.is_empty();
                 self.name.clear();
+                changed
             } else {
-                self.name.pop();
+                self.name.pop().is_some()
+            };
+            if changed {
+                self.save_slot_path = None;
+                self.selected = None;
             }
             self.name_selected = false;
         }

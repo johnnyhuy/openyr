@@ -222,6 +222,13 @@ fn selected_save_name_replacement_filtering_and_navigation_keep_filename_rules()
         save_name(&state.name).as_deref(),
         Some("new checkpoint.oyrsave")
     );
+    state.set(Page::Pause);
+    assert_eq!(
+        state.name, "new checkpoint",
+        "typed drafts survive navigation"
+    );
+    assert!(state.save_slot_path.is_none());
+    state.set(Page::Save);
     state.name_selected = true;
     state.navigate(1);
     assert!(!state.name_selected);
@@ -237,7 +244,9 @@ fn selected_save_name_replacement_filtering_and_navigation_keep_filename_rules()
     state.set(Page::Pause);
     state.backspace_name();
     state.text("ignored");
-    assert_eq!(state.name, "saved slot");
+    assert!(state.name.is_empty());
+    assert!(state.save_slot_path.is_none());
+    assert!(state.selected.is_none());
     assert!(!state.name_selected);
 }
 

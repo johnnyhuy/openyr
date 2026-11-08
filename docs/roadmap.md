@@ -718,6 +718,13 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       cover layouts, routes and release order; synthetic compositor frames
       verify removal without retail data (`docs/window-input.md`). Original
       button-chord calibration and physical Mac/Retina input remain open.
+- [x] Preserve the selected Save file's actual identity (#265, #96): unchanged
+      listed paths survive truncated/lossy labels and overwrite decline. Effective
+      edits create a new-name request; stale, unlisted or out-of-folder selected
+      targets recover without falling back to a different sibling. Actual-file
+      handler fixtures check exact confirmation/Commit intents and protected
+      sibling bytes without a Session (`docs/formats/menus.md`). Retail overwrite
+      and physical Mac/Retina checks remain unverified; save encoding is unchanged.
 - [ ] Complete world interaction and desktop UX (#97): consistent selection,
       supported control groups/hotkeys, hover/target/order feedback, bounded
       camera movement and configurable edge scrolling. Clear held input on
