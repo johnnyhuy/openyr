@@ -1,0 +1,5 @@
+page=ChooseMap
+top=4
+remainder=0.8
+selected=0
+no Session or retail data

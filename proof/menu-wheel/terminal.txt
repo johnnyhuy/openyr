@@ -1,0 +1,18 @@
+Script started on 2026-11-08 07:29:26+00:00 [COMMAND="bash /workspace/scratch/menu-wheel-proof/run-proof.sh" <not executed on terminal>]
+Source and tree
+0276ce104ee226670afd9b0f94de0a729b979c99 ba30811a487ad0e348aa3d89b77529fa28732e8a
+Debug handler test binary
+0711d90df5a40e9683f3316f18b2a9a078d47a3c9a94edd5bd9139d25d4d50e6  /workspace/openyr/target/debug/deps/openyr-8539b05c03c1d83a
+Synthetic native dispatch and shared fallback compositor, no Session or retail art
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.11s
+     Running unittests src/main.rs (/workspace/openyr/target/debug/deps/openyr-8539b05c03c1d83a)
+
+running 3 tests
+test surface_input::tests::menu_wheel_accumulates_pixel_and_fractional_line_motion ... ok
+test surface_input::tests::menu_wheel_discards_partial_gestures_on_input_and_page_changes ... ok
+test surface_input::tests::menu_wheel_preserves_slots_and_scrolls_dialogs_by_complete_rows ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 106 filtered out; finished in 1.11s
+
+
+Script done on 2026-11-08 07:29:27+00:00 [COMMAND_EXIT_CODE="0"]
