@@ -704,6 +704,13 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       candidates, symlinks and failed-rename cleanup without changing encoded
       save bytes or simulation. Retail reconstruction and physical Mac checks
       remain outside this storage slice (`docs/formats/save.md`).
+- [x] Recognize right drags made of small pointer steps (#259, #97): activate
+      from cumulative press displacement and include the threshold-crossing
+      motion once, retaining incremental panning, bounds and click jitter.
+      Handler regressions cover 27 size/zoom/direction cases, out-and-back
+      motion and stale releases. Synthetic shared-compositor frames show the
+      camera shift without retail data (`docs/camera-input.md`); physical input
+      and original threshold calibration remain open.
 - [ ] Complete world interaction and desktop UX (#97): consistent selection,
       supported control groups/hotkeys, hover/target/order feedback, bounded
       camera movement and configurable edge scrolling. Clear held input on

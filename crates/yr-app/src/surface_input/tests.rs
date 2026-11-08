@@ -185,3 +185,5 @@ fn retail_pointer_guards_preserve_match_saves_and_valid_world_actions() {
         saved
     );
 }
+
+mod drag;

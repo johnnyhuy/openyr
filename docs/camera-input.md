@@ -54,3 +54,26 @@ edge arrows now use the same guarded, bounds-aware direction as camera motion
 (`docs/formats/cursors.md`). A partially blocked corner moves along its
 remaining axis at cardinal speed; a fully blocked arrow consumes left clicks
 without a world command, as do green scroll arrows.
+
+## Right-drag activation
+
+Right dragging crosses its native click-jitter threshold when Manhattan
+displacement from the press exceeds two framebuffer pixels (#259, #97).
+Activation uses the press position rather than individual event deltas, so
+one-pixel motion events can form a drag. The first pan includes all accumulated
+press displacement; subsequent pans use incremental event deltas, divided by
+world zoom and constrained by the existing raster bounds.
+
+Once activated, a gesture stays a drag until release or invalidation, including
+when returning to the press position or moving against a map boundary. Its
+release preserves selection. Motion confined within the threshold remains a
+right click and retains the existing mode/selection cancellation. Focus, leave,
+resize, modal, zoom and keyboard-pan cleanup retain their existing policies.
+
+Asset-independent handler regressions cover 27 layout/zoom/direction cases,
+small-step out-and-back motion, click jitter, bounds and stale releases.
+`OPENYR_SMALL_DRAG_PROOF=<directory>` exports four shared-compositor frames and
+state receipts from a synthetic colored-grid fixture, without a session or
+retail art. These check camera transformation and transient selection/queued
+command preservation, not retail simulation/save reconstruction or physical
+macOS/Retina delivery. Original-game threshold calibration remains open.

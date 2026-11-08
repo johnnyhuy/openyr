@@ -60,9 +60,16 @@ impl App {
                 self.radar_pan(cell);
             }
         }
-        if self.right_down.is_some() {
-            let dx = (position.0 - previous.0) as f32;
-            let dy = (position.1 - previous.1) as f32;
+        if let Some(pressed) = self.right_down {
+            // Activate from total press displacement, then follow event deltas.
+            // The first pan includes motion accumulated inside the click threshold.
+            let anchor = if self.right_panning {
+                previous
+            } else {
+                pressed
+            };
+            let dx = (position.0 - anchor.0) as f32;
+            let dy = (position.1 - anchor.1) as f32;
             if dx.abs() + dy.abs() > 2.0 {
                 self.right_panning = true;
             }
