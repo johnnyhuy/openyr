@@ -1048,3 +1048,5 @@ fn retail_participant_controls_reach_loading_match_and_restart() {
     assert_eq!(app.session.as_ref().unwrap().sim.tick(), 1);
     proof(&app, "participants-05-restarted-match");
 }
+
+mod movie_failure;

@@ -16,7 +16,10 @@ impl App {
             self.view.dirty = true;
         }
         if let Some(error) = self.movie.as_mut().and_then(|v| v.error.take()) {
-            self.menu.message(error, Page::Main);
+            self.open_menu(Page::Message {
+                text: error,
+                back: Box::new(Page::Main),
+            });
         }
     }
     pub(super) fn enter_front(&mut self) {
