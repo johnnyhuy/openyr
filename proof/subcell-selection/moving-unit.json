@@ -1,0 +1,114 @@
+[
+  {
+    "drawn": [
+      203.75,
+      201.875
+    ],
+    "hash": "df9bca96ab310abb",
+    "raw": [
+      1440,
+      1664
+    ],
+    "selected": 1,
+    "snapshot_unchanged": true,
+    "tick": 2
+  },
+  {
+    "drawn": [
+      207.5,
+      203.75
+    ],
+    "hash": "23d6e6aa62c07dea",
+    "raw": [
+      1472,
+      1664
+    ],
+    "selected": 1,
+    "snapshot_unchanged": true,
+    "tick": 3
+  },
+  {
+    "drawn": [
+      211.25,
+      205.625
+    ],
+    "hash": "96b0f21214002631",
+    "raw": [
+      1504,
+      1664
+    ],
+    "selected": 1,
+    "snapshot_unchanged": true,
+    "tick": 4
+  },
+  {
+    "drawn": [
+      215.0,
+      207.5
+    ],
+    "hash": "1d8b8881f57c4079",
+    "raw": [
+      1536,
+      1664
+    ],
+    "selected": 1,
+    "snapshot_unchanged": true,
+    "tick": 5
+  },
+  {
+    "drawn": [
+      218.75,
+      209.375
+    ],
+    "hash": "13a8f5cbcdbca89a",
+    "raw": [
+      1568,
+      1664
+    ],
+    "selected": 1,
+    "snapshot_unchanged": true,
+    "tick": 6
+  },
+  {
+    "drawn": [
+      222.5,
+      211.25
+    ],
+    "hash": "c8b90c133a919a43",
+    "raw": [
+      1600,
+      1664
+    ],
+    "selected": 1,
+    "snapshot_unchanged": true,
+    "tick": 7
+  },
+  {
+    "drawn": [
+      226.25,
+      213.125
+    ],
+    "hash": "ec93363294a68a34",
+    "raw": [
+      1632,
+      1664
+    ],
+    "selected": 1,
+    "snapshot_unchanged": true,
+    "tick": 8
+  },
+  {
+    "drawn": [
+      230.0,
+      215.0
+    ],
+    "hash": "8a8032fa0d5a714a",
+    "raw": [
+      1664,
+      1664
+    ],
+    "selected": 1,
+    "snapshot_unchanged": true,
+    "tick": 9
+  }
+]
