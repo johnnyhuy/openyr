@@ -339,6 +339,7 @@ impl App {
 
     fn cancel_pointer_action(&mut self) {
         self.sidebar_view.clear_wheel();
+        self.menu.wheel_remainder = 0.0;
         self.camera.edge_armed = false;
         self.menu.maps.drag = None;
         self.menu.setup.drag = None;

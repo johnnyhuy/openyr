@@ -189,3 +189,136 @@ fn retail_pointer_guards_preserve_match_saves_and_valid_world_actions() {
 mod drag;
 
 mod cancel;
+
+#[test]
+fn menu_wheel_accumulates_pixel_and_fractional_line_motion() {
+    let mut app = chooser();
+    app.pointer_moved((500.0, 300.0));
+    menu_wheel_proof(&app, "00-start");
+    for _ in 0..4 {
+        app.pointer_wheel(MouseScrollDelta::PixelDelta(
+            winit::dpi::PhysicalPosition::new(0.0, -10.0),
+        ));
+        assert_eq!(
+            app.menu.maps.top, 4,
+            "sub-row trackpad motion must accumulate"
+        );
+    }
+    menu_wheel_proof(&app, "01-partial");
+    app.pointer_wheel(MouseScrollDelta::PixelDelta(
+        winit::dpi::PhysicalPosition::new(0.0, -10.0),
+    ));
+    assert_eq!(app.menu.maps.top, 5);
+    menu_wheel_proof(&app, "02-one-row");
+    app.pointer_wheel(MouseScrollDelta::LineDelta(0.0, -3.5));
+    assert_eq!(app.menu.maps.top, 8);
+    menu_wheel_proof(&app, "03-multi-row");
+    app.pointer_wheel(MouseScrollDelta::LineDelta(0.0, -0.5));
+    assert_eq!(app.menu.maps.top, 9);
+    app.pointer_wheel(MouseScrollDelta::LineDelta(0.0, f32::MAX));
+    assert_eq!(app.menu.maps.top, 0);
+    app.pointer_wheel(MouseScrollDelta::LineDelta(0.0, -f32::MAX));
+    assert_eq!(app.menu.maps.top, 22);
+    for y in [0.0, f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+        app.pointer_wheel(MouseScrollDelta::PixelDelta(
+            winit::dpi::PhysicalPosition::new(0.0, y),
+        ));
+        assert_eq!(app.menu.maps.top, 22);
+    }
+}
+
+#[test]
+fn menu_wheel_discards_partial_gestures_on_input_and_page_changes() {
+    for reset in 0..6 {
+        let mut app = chooser();
+        app.pointer_moved((500.0, 300.0));
+        app.pointer_wheel(MouseScrollDelta::LineDelta(0.0, -0.75));
+        assert_eq!(app.menu.maps.top, 4);
+        match reset {
+            0 => {
+                app.menu.set(Page::Pause);
+                app.menu.set(Page::ChooseMap);
+            }
+            1 => app.invalidate_pointer(),
+            2 => {
+                app.focus_changed(false);
+                app.focus_changed(true);
+            }
+            3 => app.menu_key_code(KeyCode::Tab, None, false),
+            4 => app.menu_mouse(ElementState::Pressed, MouseButton::Middle),
+            _ => app.cancel_pointer_action(),
+        }
+        assert_eq!(app.menu.page, Page::ChooseMap);
+        app.pointer_moved((500.0, 300.0));
+        app.pointer_wheel(MouseScrollDelta::LineDelta(0.0, -0.25));
+        assert_eq!(app.menu.maps.top, 4, "reset {reset}");
+        app.pointer_wheel(MouseScrollDelta::LineDelta(0.0, -0.75));
+        assert_eq!(app.menu.maps.top, 5, "fresh gesture after reset {reset}");
+    }
+}
+
+#[test]
+fn menu_wheel_preserves_slots_and_scrolls_dialogs_by_complete_rows() {
+    for page in [Page::Save, Page::Load, Page::Delete] {
+        let mut app = chooser();
+        app.menu.set(page);
+        app.menu.slots = (0..40)
+            .map(|i| yr_app::menu::Slot {
+                name: format!("Match {i}"),
+                path: PathBuf::from(format!("Match {i}.oyrsave")),
+            })
+            .collect();
+        app.menu.select_slot(2);
+        let name = app.menu.name.clone();
+        let path = app.menu.save_slot_path.clone();
+        app.pointer_moved((500.0, 300.0));
+        app.pointer_wheel(MouseScrollDelta::LineDelta(0.0, -3.5));
+        assert_eq!(app.menu.scroll, 3);
+        assert_eq!(app.menu.selected, Some(2));
+        assert_eq!(app.menu.name, name);
+        assert_eq!(app.menu.save_slot_path, path);
+        app.pointer_wheel(MouseScrollDelta::LineDelta(0.0, -f32::MAX));
+        assert_eq!(app.menu.scroll, 30);
+        app.pointer_wheel(MouseScrollDelta::LineDelta(0.0, 1.0));
+        assert_eq!(app.menu.scroll, 29, "overscroll must not delay reversal");
+    }
+    for page in [
+        Page::Message {
+            text: "diagnostic line\n".repeat(100),
+            back: Box::new(Page::Pause),
+        },
+        Page::Confirm(yr_app::menu::Intent::Load(PathBuf::from("W".repeat(5000)))),
+    ] {
+        let mut app = chooser();
+        app.menu.front = false;
+        app.menu.set(page);
+        app.pointer_moved((500.0, 300.0));
+        app.pointer_wheel(MouseScrollDelta::LineDelta(0.0, -3.5));
+        assert_eq!(app.menu.message_scroll, 3);
+        app.pointer_wheel(MouseScrollDelta::LineDelta(0.0, -0.5));
+        assert_eq!(app.menu.message_scroll, 4);
+    }
+}
+
+fn menu_wheel_proof(app: &App, name: &str) {
+    let Some(directory) = std::env::var_os("OPENYR_MENU_WHEEL_PROOF") else {
+        return;
+    };
+    let directory = PathBuf::from(directory);
+    std::fs::create_dir_all(&directory).unwrap();
+    let mut frame = vec![0; (WIN_W * WIN_H * 4) as usize];
+    app.compose(&mut frame, WIN_W, WIN_H);
+    std::fs::write(
+        directory.join(format!("{name}.png")),
+        yr_render::png::encode_rgba(WIN_W, WIN_H, &frame),
+    )
+    .unwrap();
+    std::fs::write(
+        directory.join(format!("{name}.txt")),
+        format!(
+            "page={:?}\ntop={}\nremainder={}\nselected={}\nno Session or retail data\n",
+            app.menu.page, app.menu.maps.top, app.menu.wheel_remainder, app.menu.maps.selected,
+        ),
+    )
+    .unwrap();
+}
