@@ -570,6 +570,11 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       confirmation before discarding a match. Pausing stops sim ticks without
       catch-up on resume; modal input never reaches map commands. Preserve
       explicit CLI/headless launches and prove each menu state on its PR.
+- [x] Cancel pending loads on asynchronous menu movie failure (#288, #96).
+      Normal modal entry clears input, cancels work and drops queued retries;
+      late success/error/progress cannot replace recovery. Actual synthetic
+      decoder failures, load channels and fallback frames verify three sizes
+      (`docs/formats/bink.md`); retail/physical Mac checks remain open.
 - [x] Improve native start-flow loading within #96: prepare the sprite bank
       on the worker, show map/save names and actual loading stages, and queue
       an immediate retry behind cancelled work. Cancel removes queued retries;

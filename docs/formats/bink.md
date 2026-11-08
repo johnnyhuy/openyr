@@ -72,3 +72,21 @@ playback policy. Hostile header/index cases run without retail assets.
 Adding `OPENYR_FRONT_VIDEO=1` exports all 431 native compositions for a proof
 video at the declared 15 fps. These are shared-renderer captures, not a desktop
 recording. Keep every derived image/video outside git.
+
+## Asynchronous movie-error recovery
+
+A front-menu decoder error enters its recovery dialog through the normal app
+modal transition (#288, #96). This retains the existing return-to-Main route,
+cancels active load work and drops its queued replacement. Late preview/load
+results and progress cannot dismiss the error or restart Loading. Held keys,
+modifiers and pointer tracking are cleared before acknowledgement.
+
+Asset-independent tests run the actual Movie decoder on the existing 56-byte
+synthetic malformed BIKi container, then deliver controlled load-channel success,
+error and progress results. They cover three framebuffer sizes, queued retry
+cancellation, stale input and deliberate Enter back to Main.
+`OPENYR_MOVIE_RECOVERY_PROOF=<directory>` exports shared fallback-compositor
+frames and state receipts without retail assets or a Session. These checks do
+not establish retail match reconstruction, successful movie playback, original
+error-dialog parity or physical Mac/Retina delivery. Movie decoding, playback
+timing, simulation and save formats are unchanged.
