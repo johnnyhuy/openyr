@@ -43,3 +43,7 @@ run = "python3 scripts/proof_build.py run"
 [tasks.package]
 description = "Build the native macOS app bundle (macOS only)"
 run = "./scripts/package-macos.sh"
+
+[tasks."site:serve"]
+description = "Preview the classic project website at localhost:8000"
+run = "python3 -m http.server 8000 --directory site"
