@@ -83,7 +83,7 @@ fn selection_box_picker_excludes_hidden_and_enemy_anchors_without_changing_sim()
         origin_y: 4000,
         scale: 1,
     };
-    let (mx, my) = yr_app::interaction::ground_point(&map, None, (5.5, 5.5));
+    let (mx, my) = yr_app::interaction::ground_point(&map, None, (5.0, 5.0));
     let mut receipts = Vec::new();
     for size in [(640, 480), (800, 600), (1280, 800)] {
         for zoom in [0.25, 1.0, 4.0] {
@@ -191,4 +191,175 @@ fn capture(app: &App, name: &str, frame: &[u8]) {
         .unwrap(),
     )
     .unwrap();
+}
+
+#[test]
+fn box_selection_follows_the_drawn_subcell_unit_anchor() {
+    let mut receipts = Vec::new();
+    for raw in [
+        (5 * 256 + 64, 6 * 256 + 192),
+        (5 * 256 + 128, 6 * 256 + 128),
+        (5 * 256, 6 * 256),
+    ] {
+        for height in [0, 4] {
+            let (sim, id) = subcell_sim(raw, height, Fix::ONE);
+            let saved = sim.save_bytes().unwrap();
+            let hash = sim.state_hash();
+            for scale in [1, 2, 4] {
+                let map = projection_map(scale);
+                let cell = (raw.0 as f32 / 256.0, raw.1 as f32 / 256.0);
+                // This is the exact ground coordinate used by the unit renderer.
+                let point = yr_app::interaction::ground_point(&map, sim.terrain(), cell);
+                let snapped = yr_app::interaction::ground_point(
+                    &map,
+                    sim.terrain(),
+                    (cell.0.floor() + 0.5, cell.1.floor() + 0.5),
+                );
+                for size in [(640, 480), (800, 600), (1280, 800)] {
+                    for zoom in [0.25, 1.0, 1.25, 4.0] {
+                        let center = (f64::from(size.0 - SIDEBAR_W) / 2.0, f64::from(size.1) / 2.0);
+                        let view = View {
+                            cam_x: point.0 - center.0 as f32 / zoom,
+                            cam_y: point.1 - center.1 as f32 / zoom,
+                            zoom,
+                            dirty: false,
+                        };
+                        let bounds = selection_box::Bounds::new(
+                            (center.0 - 4.0, center.1 - 4.0),
+                            (center.0 + 4.0, center.1 + 4.0),
+                            size,
+                        )
+                        .unwrap();
+                        let picked = bounds.ids(&map, &sim, &view).collect::<Vec<_>>();
+                        assert_eq!(picked,[id],"raw={raw:?}, height={height}, scale={scale}, size={size:?}, zoom={zoom}");
+                        let old = (
+                            f64::from((snapped.0 - view.cam_x) * zoom),
+                            f64::from((snapped.1 - view.cam_y) * zoom),
+                        );
+                        let separated =
+                            (old.0 - center.0).abs() > 8.0 || (old.1 - center.1).abs() > 8.0;
+                        if separated {
+                            let stale = selection_box::Bounds::new(
+                                (old.0 - 4.0, old.1 - 4.0),
+                                (old.0 + 4.0, old.1 + 4.0),
+                                size,
+                            )
+                            .unwrap();
+                            assert!(
+                                stale.ids(&map, &sim, &view).next().is_none(),
+                                "the old cell center is not the drawn unit"
+                            );
+                        }
+                        assert_eq!(sim.state_hash(), hash);
+                        assert_eq!(sim.save_bytes().unwrap(), saved);
+                        receipts.push(serde_json::json!({"raw":raw,"height":height,"scale":scale,"size":size,"zoom":zoom,"picked":picked,"drawn_center":center,"cell_center":old,"cell_center_separate":separated,"hash":format!("{hash:016x}"),"snapshot_unchanged":true}));
+                    }
+                }
+            }
+        }
+    }
+    assert_eq!(receipts.len(), 216);
+    write_subcell_receipts("subcell-matrix.json", &receipts);
+    println!("216 size/scale/zoom/height/position cases pick the drawn anchor and preserve Sim bytes/hash.");
+}
+
+#[test]
+fn box_selection_tracks_actual_sim_movement_without_mutating_it() {
+    let (mut sim, id) = subcell_sim((5 * 256 + 128, 6 * 256 + 128), 4, Fix::from_raw(32));
+    let map = projection_map(1);
+    let point = yr_app::interaction::ground_point(&map, sim.terrain(), (5.5, 6.5));
+    let view = View {
+        cam_x: point.0 - 200.0,
+        cam_y: point.1 - 200.0,
+        zoom: 1.0,
+        dirty: false,
+    };
+    let mut receipts = Vec::new();
+    let start = sim.units()[0].x;
+    for step in 0..8 {
+        if step == 0 {
+            sim.step(&[Command::Move {
+                id,
+                x: Fix::from_raw(9 * 256 + 128),
+                y: Fix::from_raw(6 * 256 + 128),
+            }]);
+        } else {
+            sim.step(&[]);
+        }
+        let unit = &sim.units()[0];
+        let raw = (unit.x.raw(), unit.y.raw());
+        let point = yr_app::interaction::ground_point(
+            &map,
+            sim.terrain(),
+            (raw.0 as f32 / 256.0, raw.1 as f32 / 256.0),
+        );
+        let win = (
+            f64::from(point.0 - view.cam_x),
+            f64::from(point.1 - view.cam_y),
+        );
+        let saved = sim.save_bytes().unwrap();
+        let hash = sim.state_hash();
+        let bounds = selection_box::Bounds::new(
+            (win.0 - 4.0, win.1 - 4.0),
+            (win.0 + 4.0, win.1 + 4.0),
+            (640, 480),
+        )
+        .unwrap();
+        assert_eq!(bounds.ids(&map, &sim, &view).collect::<Vec<_>>(), [id]);
+        assert_eq!(sim.state_hash(), hash);
+        assert_eq!(sim.save_bytes().unwrap(), saved);
+        receipts.push(serde_json::json!({"tick":sim.tick(),"raw":raw,"drawn":win,"selected":id,"hash":format!("{hash:016x}"),"snapshot_unchanged":true}));
+    }
+    assert!(sim.units()[0].x > start, "the fixture must actually move");
+    write_subcell_receipts("moving-unit.json", &receipts);
+    println!("Eight actual Sim movement ticks retain accurate box picks and unchanged post-tick Sim bytes/hash.");
+}
+
+fn subcell_sim(raw: (i32, i32), height: u8, speed: Fix) -> (yr_sim::Sim, u32) {
+    let mut sim = yr_sim::Sim::new(42);
+    let mut terrain = yr_sim::TerrainGrid::new(0, 0, 16, 16);
+    for x in 0..16 {
+        for y in 0..16 {
+            terrain.cell_mut(x, y).unwrap().height = height;
+        }
+    }
+    sim.set_terrain(terrain);
+    let id = sim.next_id_peek();
+    sim.step(&[
+        Command::Spawn {
+            kind: 0,
+            x: Fix::from_raw(raw.0),
+            y: Fix::from_raw(raw.1),
+            loco: yr_sim::terrain::Loco::Foot,
+            speed,
+            hp: 100,
+            armor: 0,
+            weapon: None,
+        },
+        Command::AssignOwner {
+            id,
+            owner: yr_sim::OWNER_PLAYER,
+        },
+    ]);
+    (sim, id)
+}
+
+fn projection_map(scale: u32) -> yr_render::RenderedMap {
+    yr_render::RenderedMap {
+        width: 12000,
+        height: 8000,
+        rgba: Vec::new(),
+        summary: String::new(),
+        origin_x: 6000,
+        origin_y: 4000,
+        scale,
+    }
+}
+
+fn write_subcell_receipts(name: &str, receipts: &[serde_json::Value]) {
+    if let Some(dir) = std::env::var_os("OPENYR_SUBCELL_SELECTION_PROOF") {
+        let dir = PathBuf::from(dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(dir.join(name), serde_json::to_vec_pretty(receipts).unwrap()).unwrap();
+    }
 }

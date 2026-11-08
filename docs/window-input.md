@@ -180,3 +180,20 @@ bytes and state hash. `OPENYR_SELECTION_BOX_PROOF=<directory>` exports fallback
 frames and geometry/Sim receipts. These are component checks without a complete
 Session or retail art, not retail save reconstruction, original selection
 calibration or physical Mac/Retina input verification.
+
+## Box picking follows exact unit positions
+
+The box picker uses each unit's raw fixed-point x/y divided by 256, matching
+the unit renderer before height-aware projection (#280, #97). It no longer
+snaps moving or other subcell positions to the current cell center. A box over
+the drawn ground anchor can select the unit; an isolated box over the old
+cell-center anchor cannot. World-viewport clipping and owner filtering remain.
+
+Synthetic Sim tests cover 216 size/map-scale/zoom/height/position cases and eight
+actual movement ticks. Picking preserves complete post-tick Sim snapshot bytes
+and state hashes. The earlier viewport fixture now centers on the raw position
+of its integer-coordinate unit, retaining its hidden/enemy-anchor assertions.
+`OPENYR_SUBCELL_SELECTION_PROOF=<directory>` exports coordinate and Sim receipts;
+the terminal recording is the proof for this picking-only slice. No complete
+retail Session, retail save reconstruction, original-game comparison or physical
+Mac/Retina input is established. Simulation and save schemas are unchanged.

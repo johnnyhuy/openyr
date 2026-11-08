@@ -733,6 +733,11 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       cover layouts, routes and release order; synthetic compositor frames
       verify removal without retail data (`docs/window-input.md`). Original
       button-chord calibration and physical Mac/Retina input remain open.
+- [x] Pick units at their exact drawn subcell anchors (#280, #97), replacing
+      cell-center snapping while keeping height projection and viewport/owner
+      guards. Synthetic Sim checks cover 216 layout/scale/zoom/height/position
+      cases and eight movement ticks with unchanged post-tick snapshot bytes
+      and hashes (`docs/window-input.md`). Retail/physical Mac checks remain open.
 - [x] Bound box selection to the visible world viewport (#278, #97): share
       clipped picking/painting geometry, exclude sidebar-hidden anchors and
       keep ordinary owner/projection behavior. Native compositor pixels and
