@@ -29,6 +29,7 @@ original-game action-by-action comparison is still needed under #98.
 | Blocked | 41 | 1 | Slashed movement arrows |
 | Attack | 53 | 5 | Red targeting ring |
 | Attack-move | 404 | 9 | Rotating red/green target |
+| Harvest | 90 | 9 | Gold stacked downward chevrons |
 | Repair | 170 | 20 | Silver wrench |
 | Invalid repair | 190 | 1 | Slashed wrench |
 | Sell | 129 | 10 | Silver dollar sign |
@@ -91,10 +92,23 @@ non-finite coordinates, pointer ownership, stable clocks, invalid routes,
 weapon/ownership filtering, focus reset and cancellation.
 
 The full #98 requirement remains open for original hotspot/cadence and
-state mapping comparisons, action-specific harvesting feedback, minimap
-miniatures, range distinctions and future menu/modality
-integration. Pointer ownership and coordinate behavior still need physical
-Retina/resizing/focus exercises. No original implementation code was used.
+state mapping comparisons, minimap miniatures, range distinctions and
+future menu/modality integration. Pointer ownership and coordinate behavior
+still need physical Retina/resizing/focus exercises. No original
+implementation code was used.
+
+## Harvest feedback
+
+Frames 90 to 98 show gold stacked downward chevrons and frame 99 shows the
+same chevrons under a slash, via contact-sheet inspection of the decoded
+sheet. The shared resolver in `yr-app/src/interaction.rs` now maps a
+resource cell under a selected harvester to the harvest state, and the
+click issues `Command::Harvest` to each selected harvester. Other selected
+units keep their move order to the same cell, attack-move keeps its own
+state, and plain ground keeps the move state. The click acknowledgement
+names the harvest action. This mapping is a provisional native assignment
+pending a controlled original-game capture, in the same posture as the
+other state assignments above.
 
 ## Public recording comparison
 

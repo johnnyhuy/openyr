@@ -18,6 +18,20 @@ fn load_notice_bounds_names_omits_paths_and_uses_the_existing_expiry() {
 }
 
 #[test]
+fn harvest_orders_name_the_action_in_feedback() {
+    let now = Instant::now();
+    let mut feedback = Feedback::default();
+    feedback.record(
+        Kind::Harvest,
+        &[Command::Harvest { id: 7 }],
+        (3.0, 2.0),
+        now,
+    );
+    assert_eq!(feedback.message(now), Some("Harvest order sent (1 unit)"));
+    assert!(feedback.0.as_ref().unwrap().marker.is_none());
+}
+
+#[test]
 fn notice_expiry_and_inactive_keyboard_input_do_not_submit_commands() {
     let now = Instant::now();
     let mut feedback = Feedback::default();

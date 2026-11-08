@@ -82,6 +82,7 @@ impl Feedback {
             let (name, color) = match kind {
                 Kind::Attack => ("Attack", ENEMY_COL),
                 Kind::AttackMove => ("Attack-move", [255, 220, 64, 255]),
+                Kind::Harvest => ("Harvest", PLAYER_COL),
                 _ => ("Move", PLAYER_COL),
             };
             (
