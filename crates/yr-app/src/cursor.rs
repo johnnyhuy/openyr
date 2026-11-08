@@ -58,6 +58,7 @@ pub enum Kind {
     Blocked,
     Attack,
     AttackMove,
+    Harvest,
     Repair,
     NoRepair,
     Sell,
@@ -67,13 +68,14 @@ pub enum Kind {
 }
 
 impl Kind {
-    pub const ALL: [Self; 26] = [
+    pub const ALL: [Self; 27] = [
         Self::Pointer,
         Self::Select,
         Self::Move,
         Self::Blocked,
         Self::Attack,
         Self::AttackMove,
+        Self::Harvest,
         Self::Repair,
         Self::NoRepair,
         Self::Sell,
@@ -104,6 +106,7 @@ impl Kind {
             Self::Blocked => (41, 1),
             Self::Attack => (53, 5),
             Self::AttackMove => (404, 9),
+            Self::Harvest => (90, 9),
             Self::Repair => (170, 20),
             Self::NoRepair => (190, 1),
             Self::Sell => (129, 10),

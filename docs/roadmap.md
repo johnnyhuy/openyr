@@ -335,6 +335,13 @@ Johnny on 2026-10-31.
       pixels, inward native hotspots, all directions, zoom/bounds and complete
       match save invariance are checked. Original hotspots/behavior remain
       unverified (`docs/formats/cursors.md`).
+- [x] Harvest cursor feedback (#98): retail gold chevron frames 90 to 98
+      map resource cells under selected harvesters to a harvest state, and
+      the shared resolver issues the harvest order on click while other
+      selected units keep their move order. Source pixels, resolver
+      filtering and the named click acknowledgement are checked
+      (`docs/formats/cursors.md`). The frame assignment is provisional
+      pending a controlled original-game capture.
 - [ ] Contextual animated game cursor parity (#98): observed retail frames,
       palettes and hotspots for selection, movement, attack, harvesting,
       placement and other supported commands. Match actual command validation,

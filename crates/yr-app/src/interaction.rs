@@ -1,7 +1,7 @@
 //! One action resolver for cursor feedback and actual world clicks.
 
 use crate::{cursor::Kind, session::Session, sidebar::ServiceMode};
-use yr_sim::{Command, Fix, OWNER_PLAYER};
+use yr_sim::{Command, Fix, Role, OWNER_PLAYER};
 
 /// Brief command feedback in framebuffer pixels, independent of world zoom.
 pub fn draw_feedback(frame: &mut [u8], width: u32, height: u32, session: &Session, text: &str) {
@@ -201,8 +201,14 @@ fn orders(
             Fix::from_int(i32::from(cell.0)) + Fix::from_raw(128),
             Fix::from_int(i32::from(cell.1)) + Fix::from_raw(128),
         );
+        let resource = sim
+            .terrain()
+            .and_then(|g| g.cell(cell.0, cell.1))
+            .is_some_and(|c| c.resource > 0);
         for unit in units {
-            if sim.can_move_to(unit.id, x, y) {
+            if resource && unit.role == Role::Harvester && !attack_move {
+                action.commands.push(Command::Harvest { id: unit.id });
+            } else if sim.can_move_to(unit.id, x, y) {
                 action.commands.push(if attack_move {
                     Command::AttackMove { id: unit.id, x, y }
                 } else {
@@ -211,7 +217,13 @@ fn orders(
             }
         }
         if !action.commands.is_empty() {
-            action.cursor = if attack_move {
+            action.cursor = if action
+                .commands
+                .iter()
+                .any(|c| matches!(c, Command::Harvest { .. }))
+            {
+                Kind::Harvest
+            } else if attack_move {
                 Kind::AttackMove
             } else {
                 Kind::Move
@@ -289,6 +301,47 @@ mod tests {
             assert_eq!(action.cursor, Kind::Blocked);
             assert!(action.commands.is_empty());
         }
+    }
+
+    #[test]
+    fn resource_cells_offer_harvest_only_to_harvesters() {
+        let mut sim = scene();
+        let mut grid = yr_sim::TerrainGrid::from_tiles(
+            0,
+            0,
+            8,
+            6,
+            (0..6).flat_map(|y| (0..8).map(move |x| (x, y, 0, 13, 0))),
+        );
+        grid.set_resource(5, 2, yr_sim::terrain::Overlay::Ore, 40);
+        sim.set_terrain(grid);
+        sim.step(&[Command::AssignRole {
+            id: 2,
+            role: Role::Harvester,
+        }]);
+        let harvest = orders(&sim, &[2].into(), (5, 2), false);
+        assert_eq!(harvest.cursor, Kind::Harvest);
+        assert!(matches!(
+            harvest.commands.as_slice(),
+            [Command::Harvest { id: 2 }]
+        ));
+        let tank = orders(&sim, &[1].into(), (5, 2), false);
+        assert_eq!(tank.cursor, Kind::Move);
+        assert!(matches!(
+            tank.commands.as_slice(),
+            [Command::Move { id: 1, .. }]
+        ));
+        let mixed = orders(&sim, &[1, 2].into(), (5, 2), false);
+        assert_eq!(mixed.cursor, Kind::Harvest);
+        assert_eq!(mixed.commands.len(), 2);
+        let attack_move = orders(&sim, &[2].into(), (5, 2), true);
+        assert_eq!(attack_move.cursor, Kind::AttackMove);
+        assert!(matches!(
+            attack_move.commands.as_slice(),
+            [Command::AttackMove { id: 2, .. }]
+        ));
+        let plain = orders(&sim, &[2].into(), (4, 2), false);
+        assert_eq!(plain.cursor, Kind::Move);
     }
 
     #[test]
