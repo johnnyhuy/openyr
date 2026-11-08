@@ -1,0 +1,13 @@
+{
+  "commit": "7397146521b77a9be7bd55dacf5abe1d69d6db2b",
+  "tree": "dd8e5d0dac6e19f400cae1bc8cf94d3bcadc5796",
+  "files": {
+    "site/index.html": "b0db42eb9e35326e71be4f19b5d8833392e4d19ac8c493edd60ccab8a716abe9",
+    "site/style.css": "c7ca854617983ee1753a5139b9602e9fbc109ea505dd5140bf6b269cbe751155",
+    "site/site.js": "5582a270f1c69de2c2c343d1e6ec5ca7dd720783463c9cbc55a81ae9423cacf8",
+    ".github/workflows/pages.yml": "cc4cf92dc28242e9fddc68e70037438695a6e711ce6c1dada7db554cdb8e129e"
+  },
+  "capture": "Playwright Chromium, real rendered static site; public game media fulfilled from HTTPS-verified local copies",
+  "sourceZipHead": "200 after redirects",
+  "pagesSetup": "HTTP 403 Resource not accessible by integration; owner Pages Source setting required"
+}

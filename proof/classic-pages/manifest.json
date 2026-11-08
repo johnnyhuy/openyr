@@ -1,0 +1,42 @@
+{
+  "browser-check.cjs": {
+    "bytes": 5044,
+    "sha256": "02c902392d8cd8916742855396d3a04a533a7ff5dc72232125a22b53a24adf61"
+  },
+  "browser-results.json": {
+    "bytes": 344,
+    "sha256": "8b8205a6a66098b1538d729ca89b8686f69d8de4632eeb630cebbf141700be1d"
+  },
+  "desktop-fold.png": {
+    "bytes": 448976,
+    "sha256": "d8506ce29bfcf7f1b81144362f3ebce40d5f834488882543c2184cd697a52553"
+  },
+  "desktop.png": {
+    "bytes": 827934,
+    "sha256": "5abd29d2d42333ae9535497c9ef7d01b3008f91b543cb4e453a015b62655fcef"
+  },
+  "gallery.png": {
+    "bytes": 864696,
+    "sha256": "eea45fffcce9c12239ee65ddf3a4c1aa09133eb4777a48b87c892650345568cc"
+  },
+  "media-manifest.json": {
+    "bytes": 1509,
+    "sha256": "118a5ef5fb3e4da752d1138a474ead1585bbce7cae54d694e36e3a6434c0ae9a"
+  },
+  "mobile-fold.png": {
+    "bytes": 164109,
+    "sha256": "e2c464555ae21d57b66face4c0052fa661847cc3af7239683265115ef25ec974"
+  },
+  "mobile.png": {
+    "bytes": 388738,
+    "sha256": "ab35cad62110cbfc8f820e33cec1b65f427bd227db20a93d2e4876a095680d0a"
+  },
+  "source-receipt.json": {
+    "bytes": 773,
+    "sha256": "459368521fb9bfb7dc91675fb7332767cbccd90b51defc5aac8eb396873f0e14"
+  },
+  "workspace-check.log": {
+    "bytes": 50935,
+    "sha256": "64b59fddf94bca471d3e0b608be843ba85bf92c32ec76072c733944dbf7f9bce"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "https://raw.githubusercontent.com/johnnyhuy/openyr/1d3c9840cfa1293881ee093db9aec3e72a253235/proof/readme-features/main-menu.gif": {
+    "path": "/workspace/scratch/pages-media/main-menu.gif",
+    "bytes": 294273,
+    "sha256": "fc872c9e527c049dd094396f009e805c0869d040ae37da042a7573b48fe5a019"
+  },
+  "https://raw.githubusercontent.com/johnnyhuy/openyr/c7deba4c12ab133026c00570e4a2c78d7fa3fa65/proof/native-demo/skirmish.png": {
+    "path": "/workspace/scratch/pages-media/skirmish.png",
+    "bytes": 230001,
+    "sha256": "1e042caca78f5fdceca58c40960a3a71139f867f9cbafd172c33af5730a71a11"
+  },
+  "https://raw.githubusercontent.com/johnnyhuy/openyr/1d3c9840cfa1293881ee093db9aec3e72a253235/proof/readme-features/loading.gif": {
+    "path": "/workspace/scratch/pages-media/loading.gif",
+    "bytes": 158805,
+    "sha256": "b3ccc0be6828903b03f641f19faf26d749977f28eed213a794471c563f13a3c4"
+  },
+  "https://raw.githubusercontent.com/johnnyhuy/openyr/1d3c9840cfa1293881ee093db9aec3e72a253235/proof/readme-features/world-camera.gif": {
+    "path": "/workspace/scratch/pages-media/world-camera.gif",
+    "bytes": 702220,
+    "sha256": "adc1800e5b54909b0701a6dfb5be36cd245e944af1a398b938f936b92cd99e67"
+  },
+  "https://raw.githubusercontent.com/johnnyhuy/openyr/1d3c9840cfa1293881ee093db9aec3e72a253235/proof/readme-features/save-name.gif": {
+    "path": "/workspace/scratch/pages-media/save-name.gif",
+    "bytes": 125890,
+    "sha256": "8f5975cf1817f55eddfc1a8f22448147997f72b817a9eee3abd2aa76074ac245"
+  }
+}

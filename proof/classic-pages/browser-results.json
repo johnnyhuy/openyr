@@ -1,0 +1,21 @@
+{
+  "desktop": [
+    1440,
+    1000
+  ],
+  "mobile": [
+    390,
+    844
+  ],
+  "narrow": [
+    320,
+    720
+  ],
+  "galleryRecords": 5,
+  "keyboard": true,
+  "errorRecovery": true,
+  "anchors": true,
+  "noJavaScript": true,
+  "consoleErrors": [],
+  "media": "HTTPS-verified capture bytes mirrored locally; external Chromium TLS route skipped"
+}
