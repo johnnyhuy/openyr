@@ -1,7 +1,0 @@
-Saved-list keyboard navigation proof for #270 / #271
-
-Source 6ccc42920ec353dbb31bc2a1b6a82c205da3de3b, tree b59b3275e1f0fd64b1ade5f225b381b982fc4b8f. Four actual fallback-compositor frames: End selects Match24 at 0s, PageUp selects Match14 at 1s, Home selects Match00 at 2s, PageDown selects Match10 at 3s. Native footer hints describe the added keys. These are debug keyboard-dispatch fixtures with arbitrary temporary file bytes, no Session and no retail art. Exact Load/Delete confirmation paths and cancellation preserve all 25 file payloads in both shells at three sizes.
-
-The terminal recording identifies the debug handler binary and records three handler tests plus one bounds unit test. The separate isolated release receipt covers only its executable and the --help smoke, not the debug compositor frames. mise run check passed 506 reported Rust tests, one ignored, strict Clippy, formatting and three provenance tests, with local socket permissions enabled for the existing UnixStream fixture. Retail-dependent cases self-skip. The pre-change handler regression fails because End leaves selection empty.
-
-No live game-window, retail reconstruction, physical Mac/Retina/audio or original-game shortcut calibration ran. Known blocked native Mac/original reference capture and HTTP401 release-upload paths were not retried. This native keyboard policy does not establish original parity. Remove every proof file before squash merge.
