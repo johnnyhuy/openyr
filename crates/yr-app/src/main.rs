@@ -460,12 +460,10 @@ impl App {
 
     fn toggle_service(&mut self, mode: ServiceMode) {
         self.order_feedback.clear();
+        self.cancel_pointer_action();
         self.service_mode.toggle(mode);
         self.placing = None;
         self.attack_move = false;
-        self.left_down = None;
-        self.right_down = None;
-        self.radar_drag = false;
         self.view.dirty = true;
     }
 

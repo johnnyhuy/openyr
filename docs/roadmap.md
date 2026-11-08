@@ -733,6 +733,11 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       cover layouts, routes and release order; synthetic compositor frames
       verify removal without retail data (`docs/window-input.md`). Original
       button-chord calibration and physical Mac/Retina input remain open.
+- [x] Clear complete pointer tracking on repair/sell mode changes (#282, #97),
+      including stale pan flags and edge arming. Native handlers and fallback
+      composer frames verify 72 mode/gesture/layout combinations, inert old
+      releases and visible fresh box drags (`docs/window-input.md`). Selection
+      and queued intents remain; retail/physical Mac checks are still open.
 - [x] Pick units at their exact drawn subcell anchors (#280, #97), replacing
       cell-center snapping while keeping height projection and viewport/owner
       guards. Synthetic Sim checks cover 216 layout/scale/zoom/height/position

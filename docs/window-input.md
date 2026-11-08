@@ -197,3 +197,20 @@ of its integer-coordinate unit, retaining its hidden/enemy-anchor assertions.
 the terminal recording is the proof for this picking-only slice. No complete
 retail Session, retail save reconstruction, original-game comparison or physical
 Mac/Retina input is established. Simulation and save schemas are unchanged.
+
+## Repair/sell mode switches cancel pointer tracking
+
+Repair/sell mode changes use the shared pointer-cancellation path (#282, #97).
+They clear the pan-active flag as well as held buttons, radar dragging and old
+edge arming. A K/L press during a pan therefore cannot leave hover feedback or
+a later selection box suppressed. The current pointer position remains valid;
+a new pointer press can begin a normal gesture, and old releases stay inert.
+
+Mode-toggle behavior, selected IDs and queued command intents are preserved.
+Repeat, synthesized, unfocused and modal key guards retain their existing
+routing. Native dispatch tests cover 72 mode/gesture/layout combinations and
+an actual right-pan, service-on/off, fresh-box sequence in the shared composer.
+`OPENYR_SERVICE_TRACKING_PROOF=<directory>` exports fallback frames and state
+receipts. These fixtures have no Session or retail art; retail service-command,
+hover-art, save reconstruction, original tracking and physical Mac/Retina checks
+remain unverified. Simulation, recipes and save schemas are unchanged.
