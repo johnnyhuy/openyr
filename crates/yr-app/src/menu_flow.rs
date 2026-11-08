@@ -89,6 +89,9 @@ impl App {
             page,
             Page::Main | Page::Pause | Page::Save | Page::Load | Page::Delete
         ) {
+            if self.menu.save_slot_path.take().is_some() {
+                self.menu.name.clear();
+            }
             match yr_app::menu::slots(self.save_directory()) {
                 Ok(slots) => {
                     self.menu.slots = slots;
@@ -396,8 +399,31 @@ impl App {
             Effect::Quit => self.quit_requested = true,
             Effect::Restart => self.start_menu_load(None),
             Effect::RequestSave => {
-                if let Some(name) = yr_app::menu::save_name(&self.menu.name) {
-                    let path = self.save_directory().join(name);
+                let path = if self.menu.save_slot_path.is_some() {
+                    let selected = self.menu.selected_save_path().filter(|path| {
+                        path.parent() == Some(self.save_directory())
+                            && path
+                                .extension()
+                                .is_some_and(|extension| extension == "oyrsave")
+                            && std::fs::symlink_metadata(path).is_ok_and(|m| m.is_file())
+                    });
+                    let Some(path) = selected.map(std::path::Path::to_path_buf) else {
+                        // Never fall back from a stale selected identity to its display label.
+                        self.menu.name.clear();
+                        self.menu.selected = None;
+                        self.menu.message(
+                            "The selected save is no longer a regular file in this save folder. Select a save again or enter a new name.".into(),
+                            Page::Save,
+                        );
+                        self.reset_menu_clock();
+                        return;
+                    };
+                    Some(path)
+                } else {
+                    yr_app::menu::save_name(&self.menu.name)
+                        .map(|name| self.save_directory().join(name))
+                };
+                if let Some(path) = path {
                     if path.exists() {
                         self.menu.set(Page::Confirm(Intent::Save(path)));
                     } else {

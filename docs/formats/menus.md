@@ -216,3 +216,37 @@ overwrite decline/accept, load decline/accept, corrupt-load recovery, cancelled
 load, restart and result actions. `OPENYR_MENU_PROOF=<directory>` exports each
 state outside the repository. Won/Lost menu captures set the outcome in a test
 fixture; ordinary headless skirmishes still verify the actual match outcome.
+
+## Selected Save-file identity
+
+Choosing an existing Save slot retains its actual listed path, rather than
+rebuilding a filename from the 48-character display label (#265). This also
+preserves leading/trailing spaces, names disallowed for newly created slots,
+and supported filesystem byte names. The unchanged selected target enables
+Save and supplies the exact path for overwrite confirmation and commit intent.
+Declining an overwrite preserves that target for another deliberate attempt.
+
+An accepted character edit or Backspace clears selected identity and the slot
+highlight; the editor then follows the existing bounded new-name rules. Filtered
+characters, unsupported shortcuts, selection-only Ctrl/Command+A and input
+ignored at the length limit retain the target. Unrelated page/list transitions
+clear the selected target and its display-derived editor name, so a later Save
+cannot accidentally reconstruct a shorter sibling from a stale label. Typed
+new names retain their existing page-navigation behavior.
+
+Before requesting an overwrite, the app rechecks that selected identity still
+matches the current listed slot, the active save folder, the `.oyrsave` extension
+and no-follow regular-file metadata. A different regular file at the same
+path is still that selected path; this is not inode/content identity tracking.
+Missing, unlisted, outside or directory/symlink-replaced selected targets report recovery and clear the editor instead of falling back
+to a label-derived path. Fresh typed-name behavior, backend atomic writes,
+simulation and save encoding are unchanged.
+
+Asset-independent handler tests use actual temporary long, spaced and hidden
+filenames plus protected siblings. They check exact confirmation/Commit intent,
+decline, accepted/ignored edits, stale target recovery and byte preservation
+while requesting/declining confirmations. Non-UTF-8 filename creation is checked
+on Linux only. `OPENYR_SAVE_IDENTITY_PROOF=<directory>` exports fallback menu
+compositions and state receipts without a Session or retail art. These do not
+prove an actual retail overwrite, save reconstruction or physical Mac/Retina
+input delivery; those remain separate checks.

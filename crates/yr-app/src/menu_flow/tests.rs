@@ -1183,3 +1183,5 @@ fn retail_confirmation_targets_preserve_save_load_delete_and_match_bytes() {
         assert!(app.pending.is_empty());
     }
 }
+
+mod save_identity;
