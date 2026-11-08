@@ -7,6 +7,8 @@ with macOS as the primary target. OpenYR reads data from your legally owned game
 install. It is a pre-alpha playable sandbox; full game and visual parity are
 still in progress.
 
+[Project website](https://johnnyhuy.github.io/openyr/) / [Source ZIP](https://github.com/johnnyhuy/openyr/archive/refs/heads/main.zip)
+
 ## Features
 
 | Feature | In game | Preview |

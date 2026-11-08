@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="OpenYR: a native Rust engine for Red Alert 2: Yuri's Revenge. Explore the battlefield, skirmish setup and original-style menus. macOS first. Bring your own game data.">
+<meta name="theme-color" content="#171b16">
+<title>OpenYR | Command Center</title>
+<link rel="stylesheet" href="style.css">
+<script src="site.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#briefing">Skip to briefing</a>
+<div class="shell">
+<header class="masthead">
+  <div class="transmission">INDEPENDENT ENGINE PROJECT <span>EST. 2026 / MACOS FIRST</span></div>
+  <div class="brand"><a href="#" aria-label="OpenYR home">OPEN<span>YR</span></a><div class="brand-note">RED ALERT 2: YURI'S REVENGE<br>NATIVE RUST ENGINE</div></div>
+  <div class="hazard" aria-hidden="true"></div>
+  <nav class="top-nav" aria-label="Primary"><a href="#briefing">BRIEFING</a><a href="#field-records">FIELD RECORDS</a><a href="#download">DOWNLOAD</a><a href="https://github.com/johnnyhuy/openyr">SOURCE CODE</a></nav>
+</header>
+<div class="columns">
+<aside class="sidebar">
+  <div class="panel"><h2>COMMAND CENTER</h2><nav aria-label="Command center"><a href="#briefing">MISSION BRIEFING</a><a href="#field-records">RECON GALLERY</a><a href="#features">ENGINE SYSTEMS</a><a href="#download">DOWNLOAD / INSTALL</a><a href="#legal">LEGAL &amp; CREDITS</a></nav></div>
+  <div class="panel telemetry"><h2>PROJECT STATUS</h2><p class="signal"><span aria-hidden="true"></span> PRE-ALPHA</p><dl><dt>ENGINE</dt><dd>Native Rust</dd><dt>PRIMARY TARGET</dt><dd>macOS</dd><dt>GAME DATA</dt><dd>Your own install</dd><dt>FULL PARITY</dt><dd>In progress</dd></dl></div>
+  <div class="panel channels"><h2>COMM CHANNELS</h2><a href="https://github.com/johnnyhuy/openyr/issues">ISSUE TRACKER</a><a href="https://github.com/johnnyhuy/openyr/blob/main/docs/roadmap.md">DEVELOPMENT ROADMAP</a><a href="https://github.com/johnnyhuy/openyr/blob/main/docs/demos.md">CAPTURE RECORDS</a></div>
+  <p class="side-note">An unofficial, independent project.<br>No game files included.</p>
+  <div class="serial" aria-hidden="true">OY-001 / ENGINE DIVISION<br>|||| ||| |||| | ||| ||||</div>
+</aside>
+<main id="briefing">
+<section class="briefing panel">
+  <h1><span>01 / MISSION BRIEFING</span>THE BATTLEFIELD.<br>A NEW ENGINE.</h1>
+  <p class="lead">Red Alert 2: Yuri's Revenge, rebuilt as a native Rust engine. Same world. A new way back in.</p>
+  <p>Command a skirmish, build your base and return to the original-style menus. OpenYR reads the terrain, units, sounds and maps from your own legally owned game install. macOS is the primary target.</p>
+  <div class="orders"><a class="button primary" href="#download">DOWNLOAD SOURCE</a><a class="button" href="#field-records">VIEW FIELD RECORDS</a></div>
+  <p class="small">Playable sandbox / pre-alpha. Full gameplay and visual parity are still in progress.</p>
+</section>
+<section id="field-records" class="panel gallery">
+  <h2><span>02</span> FIELD RECORDS <small>OPENYR CAPTURES</small></h2>
+  <div class="monitor">
+    <div class="monitor-label"><span id="record-name">SKIRMISH SETUP</span><span>REC / ENGINE FOOTAGE</span></div>
+    <a id="record-link" href="https://raw.githubusercontent.com/johnnyhuy/openyr/c7deba4c12ab133026c00570e4a2c78d7fa3fa65/proof/native-demo/skirmish.png" aria-label="Open the full skirmish setup capture"><img id="record-image" src="https://raw.githubusercontent.com/johnnyhuy/openyr/c7deba4c12ab133026c00570e4a2c78d7fa3fa65/proof/native-demo/skirmish.png" alt="OpenYR skirmish setup with player countries and a selected map preview" width="1280" height="800" fetchpriority="high"></a>
+    <p id="media-error" role="status" hidden>Capture unavailable. <a href="https://github.com/johnnyhuy/openyr/blob/main/README.md#features">View the capture archive on GitHub.</a></p>
+  </div>
+  <div class="record-controls" aria-label="Choose a game capture" hidden>
+    <button type="button" data-record="setup" aria-pressed="true">SETUP</button><button type="button" data-record="battle" aria-pressed="false">BATTLEFIELD</button><button type="button" data-record="menu" aria-pressed="false">MAIN MENU</button><button type="button" data-record="loading" aria-pressed="false">LOADING</button><button type="button" data-record="save" aria-pressed="false">SAVED MATCHES</button>
+  </div>
+  <p id="record-caption" class="caption" aria-live="polite">Choose your country, colors, starting position and battlefield. Two participants, nine Allied/Soviet countries.</p>
+  <p class="small gallery-note">Select a record to load its GIF. Click the image for the full capture. Game artwork belongs to its respective rights holders.</p>
+  <p class="small gallery-note"><a href="https://github.com/johnnyhuy/openyr#features">Browse the full screenshot and GIF archive</a>.</p>
+</section>
+<section id="features" class="panel">
+  <h2><span>03</span> ENGINE SYSTEMS <small>CURRENT CAPABILITIES</small></h2>
+  <table><caption class="sr-only">Implemented OpenYR game systems</caption><thead><tr><th scope="col">SYSTEM</th><th scope="col">IN THE FIELD</th></tr></thead><tbody>
+    <tr><th scope="row">COMMAND</th><td>Click and box selection, control groups, attack-move, contextual cursors and target feedback.</td></tr>
+    <tr><th scope="row">CONSTRUCTION</th><td>Unit and building queues, hold/resume/cancel, READY placement, repair and sell.</td></tr>
+    <tr><th scope="row">BATTLEFIELD</th><td>Retail terrain and unit art, building animations, pan, zoom, powered radar and optional edge scrolling.</td></tr>
+    <tr><th scope="row">ECONOMY &amp; COMBAT</th><td>Deterministic movement, weapon damage, harvesting, owner credits and basic skirmish AI.</td></tr>
+    <tr><th scope="row">SOUND &amp; MENUS</th><td>Theme music, unit voices, weapon reports, EVA, original-style menus and country loading artwork.</td></tr>
+    <tr><th scope="row">MISSION ARCHIVE</th><td>Named save/load/delete, quicksave, overwrite confirmation and visible recovery messages.</td></tr>
+  </tbody></table>
+  <div class="dispatch"><h3>WORK STILL UNDERWAY</h3><p>Superweapon activation, country special abilities, broader game modes, original AI and remaining effects are unfinished. Original timing and physical Mac/Retina input verification remain open. <a href="https://github.com/johnnyhuy/openyr/blob/main/docs/roadmap.md">Read the roadmap.</a></p></div>
+</section>
+<section id="download" class="panel">
+  <h2><span>04</span> DOWNLOAD &amp; DEPLOY <small>ENGINE ONLY</small></h2>
+  <div class="download-box"><div><h3>OPENYR SOURCE</h3><p>The current engine source, ready to build with mise.</p></div><a class="button primary" href="https://github.com/johnnyhuy/openyr/archive/refs/heads/main.zip">DOWNLOAD .ZIP</a></div>
+  <p>No prebuilt application release is published yet. Build a native macOS app from source using the orders below. <a href="https://github.com/johnnyhuy/openyr/releases">Check GitHub releases</a> for future application packages.</p>
+  <ol class="install"><li><h3>PREPARE YOUR GAME DATA</h3><p>You need a legally owned Red Alert 2 + Yuri's Revenge install. Keep the folder containing <code>ra2.mix</code> and <code>ra2md.mix</code>. OpenYR does not include the game.</p></li><li><h3>INSTALL THE PROJECT TOOLS</h3><p>Install <a href="https://mise.jdx.dev/getting-started.html">mise</a> and Git, then open a terminal in the downloaded source folder.</p><pre><code>mise trust
+mise install
+mise run package
+open target/OpenYR.app</code></pre></li><li><h3>CHOOSE YOUR INSTALL &amp; COMMAND A SKIRMISH</h3><p>On macOS, select your game-data folder when prompted. Open Single Player, choose Skirmish and set up your battle.</p></li></ol>
+  <p class="small">macOS packaging instructions are for local source builds. Linux contributors also need a desktop display, pkg-config and ALSA development headers. <a href="https://github.com/johnnyhuy/openyr#build-and-launch">Full build instructions</a> / <a href="https://github.com/johnnyhuy/openyr/blob/main/docs/macos-app.md">macOS packaging notes</a>.</p>
+</section>
+<section id="legal" class="panel legal">
+  <h2><span>05</span> LEGAL &amp; CREDITS</h2>
+  <p>OpenYR is an independent, unofficial project, unaffiliated with and not endorsed by Electronic Arts or Westwood Studios. Red Alert 2 and Yuri's Revenge were not included in EA's 2025 source-code release.</p>
+  <p>The new engine is licensed under <a href="https://github.com/johnnyhuy/openyr/blob/main/LICENSE">GNU GPLv3</a>. Original game artwork, audio, maps, rules and trademarks retain their existing ownership. The engine license does not relicense that content. You supply your own legally owned game data.</p>
+  <p>This is a clean-room implementation based on documented asset formats and observed behavior, without copied original executable implementation or process memory. The screenshots and GIFs illustrate OpenYR using retail data; they grant no rights to the depicted game content. This site's interface is original CSS, without copied Westwood branding.</p>
+  <p><a href="https://github.com/johnnyhuy/openyr/blob/main/docs/legal.md">Legal context</a> / <a href="https://github.com/johnnyhuy/openyr/blob/main/docs/third-party.md">Dependency credits</a> / <a href="https://github.com/johnnyhuy/openyr/blob/main/docs/demos.md">Capture provenance</a></p>
+</section>
+<footer><a href="#">RETURN TO COMMAND CENTER</a><span>OPENYR / INDEPENDENT ENGINE PROJECT / GPLv3</span></footer>
+</main>
+</div>
+</div>
+</body>
+</html>
