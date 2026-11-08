@@ -158,3 +158,25 @@ sliders and map-thumb isolation at three sizes, and popup/synthetic-key behavior
 `OPENYR_KEYBOARD_TRACKING_PROOF=<directory>` exports actual fallback composer
 frames and state receipts without a Session or retail art. These tests do not
 establish physical Mac/Retina input delivery or original-game tracking parity.
+
+## Box selection stays in the world viewport
+
+Box picking and rubber-band painting share a rectangle intersected with the
+visible world viewport (#278, #97). Its right boundary excludes the sidebar;
+right/bottom viewport edges are half-open. Drag endpoints remain inclusive
+inside that viewport. A drag over UI controls cannot paint across them or
+select unit ground anchors hidden behind them. Dragging back into the world
+continues the same gesture, and additive selection retains its existing policy.
+
+The shared picker keeps owner filtering and height-aware projection, applies
+camera/zoom before testing visibility, and only returns IDs. It does not mutate
+the simulation, snapshots or command queue. Invalid/non-finite extents and
+viewports without world pixels yield no rectangle; drawing loops stay bounded.
+
+Asset-free tests check actual compositor sidebar pixels, reversed/degenerate
+rectangles and fractional edge points. Synthetic Sim fixtures check visible,
+UI-hidden and enemy anchors at three sizes/zooms, preserving full Sim snapshot
+bytes and state hash. `OPENYR_SELECTION_BOX_PROOF=<directory>` exports fallback
+frames and geometry/Sim receipts. These are component checks without a complete
+Session or retail art, not retail save reconstruction, original selection
+calibration or physical Mac/Retina input verification.

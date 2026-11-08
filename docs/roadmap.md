@@ -733,6 +733,11 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       cover layouts, routes and release order; synthetic compositor frames
       verify removal without retail data (`docs/window-input.md`). Original
       button-chord calibration and physical Mac/Retina input remain open.
+- [x] Bound box selection to the visible world viewport (#278, #97): share
+      clipped picking/painting geometry, exclude sidebar-hidden anchors and
+      keep ordinary owner/projection behavior. Native compositor pixels and
+      synthetic Sim picks at three sizes/zooms preserve full snapshot bytes
+      and hashes (`docs/window-input.md`). Retail/physical Mac checks remain open.
 - [x] Make native attack-move key activation exclusive and repeat-safe (#276,
       #97): cancel unfinished pointer and placement/service modes before arming;
       OS repeats cannot re-arm after an order or cancellation. Asset-independent
