@@ -1,0 +1,13 @@
+{
+  "attack_move": false,
+  "left_down": null,
+  "pending": "[Stop { id: 7 }, AttackMove { id: 7, x: Fix(3200), y: Fix(5248) }, AttackMove { id: 9, x: Fix(3200), y: Fix(5248) }, Move { id: 7, x: Fix(4736), y: Fix(1920) }, Move { id: 9, x: Fix(4736), y: Fix(1920) }]",
+  "placing": null,
+  "retail_art": false,
+  "right_down": null,
+  "selected": [
+    7,
+    9
+  ],
+  "session_present": false
+}

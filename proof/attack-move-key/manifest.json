@@ -1,0 +1,70 @@
+{
+  "00-old-box-drag.json": {
+    "bytes": 228,
+    "sha256": "2e39161f5611ce1f35a578694c7e22608e748d15cadb23161bd0f20cba611a1f"
+  },
+  "release-build.log": {
+    "bytes": 5841,
+    "sha256": "4d683fc2a14bb2fb1dacaa07d2e2ced530ff973f356ea340e0a81ae8756dc83c"
+  },
+  "02-stale-release.json": {
+    "bytes": 205,
+    "sha256": "abeb7ec2e29833953ed115cac34d0372a4385693d30e8e020a42472f0c47474c"
+  },
+  "terminal.txt": {
+    "bytes": 1294,
+    "sha256": "cebf215516b5e6281fc290bb82bb675cc76b9bff23d7eb85ce8e64790e9eba06"
+  },
+  "01-attack-move-armed.json": {
+    "bytes": 205,
+    "sha256": "abeb7ec2e29833953ed115cac34d0372a4385693d30e8e020a42472f0c47474c"
+  },
+  "release-receipt.json": {
+    "bytes": 797,
+    "sha256": "6dd0779d8701bacd83c3b4d2a1467a69b854288647a391d541867f89857343ae"
+  },
+  "02-stale-release.png": {
+    "bytes": 1229438,
+    "sha256": "351fbe4ab16de6bcf9551994c6a890cef19b7cdd46a0114fbd328af281a2b6e5"
+  },
+  "00-old-box-drag.png": {
+    "bytes": 1229438,
+    "sha256": "2475fa0b344f47e379c491b5e2f2b0b294215f13e7b11f99dd046fa39158faf6"
+  },
+  "attack-move.gif": {
+    "bytes": 3132,
+    "sha256": "e7ba4bedb698ca11b1c48cbc7c9b1ad5d6cf9b0efe59930f32ebd5ae39a7c107"
+  },
+  "01-attack-move-armed.png": {
+    "bytes": 1229438,
+    "sha256": "351fbe4ab16de6bcf9551994c6a890cef19b7cdd46a0114fbd328af281a2b6e5"
+  },
+  "README.md": {
+    "bytes": 1824,
+    "sha256": "a17aaf75078375bf5e92cdeb81f68c340c9d2968ae5add5d933883d35ffe34e0"
+  },
+  "03-repeat-stays-disarmed.json": {
+    "bytes": 394,
+    "sha256": "b35ae2fcd880fb0289b743e79e8668a00f0306f1c38292941846f72145346327"
+  },
+  "03-repeat-stays-disarmed.png": {
+    "bytes": 1229438,
+    "sha256": "351fbe4ab16de6bcf9551994c6a890cef19b7cdd46a0114fbd328af281a2b6e5"
+  },
+  "before.log": {
+    "bytes": 1873,
+    "sha256": "cb92c96ebbaca7620721b229be5adaebbb8807881700bd3477c5120e3267b881"
+  },
+  "release-cli.txt": {
+    "bytes": 362,
+    "sha256": "76c91287d2267cfb93153e96994849d7737e2880c9b2ba66237fafd5728092a3"
+  },
+  "run-proof.sh": {
+    "bytes": 580,
+    "sha256": "06a09a0d0a2328c6f0ca6c21cbfe63363ffeb2c2a3d939a893bec5cc2050341d"
+  },
+  "workspace-check.log": {
+    "bytes": 55411,
+    "sha256": "56ee6669e43ce776b27be9cfad8b23700fa832220bb9975024bba1a1ab81b02e"
+  }
+}
