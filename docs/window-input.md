@@ -94,3 +94,26 @@ checks cover F5/F9, command modes, camera keys, Escape, menu navigation/editing,
 follow-on repeats and release cleanup across focus/modal changes. These are
 handler tests, not physical desktop delivery or retail-save reconstruction.
 Original-game behavior and physical macOS/Retina input remain unverified.
+
+## Conflicting mouse gestures
+
+A right press in the match cancels unfinished pointer gestures before routing
+its ordinary world, sidebar, repair/sell or placement action (#263, #97).
+This clears held left/radar gestures and immediately redraws any rubber band.
+Existing selection remains until the route's existing cancellation policy
+applies; already queued commands remain queued. Menus retain their own routing.
+
+A world right-click/pan owns the pointer until release. Left presses during
+that ownership cannot arm another world selection or activate sidebar/service/
+placement controls. Either release order stays inert for that ignored left
+press. A fresh left press after the right gesture ends starts normally.
+Focus/leave/resize and other existing invalidation still discard stale releases.
+This is native input policy, not original-game button-chord calibration.
+
+Asset-independent handler checks cover three layouts and five right-action
+routes, click/pan release order, recovery and queued-command sentinels.
+`OPENYR_CANCEL_GESTURE_PROOF=<directory>` exports four actual shared-compositor
+frames and state receipts from a synthetic canvas. It shows a rubber band
+removed on right press, with no restoration by right/late-left release. There
+is no session, entity or retail data in that fixture; it does not establish
+retail command/save invariance or physical Mac/Retina delivery.
