@@ -733,6 +733,12 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       cover layouts, routes and release order; synthetic compositor frames
       verify removal without retail data (`docs/window-input.md`). Original
       button-chord calibration and physical Mac/Retina input remain open.
+- [x] Make native attack-move key activation exclusive and repeat-safe (#276,
+      #97): cancel unfinished pointer and placement/service modes before arming;
+      OS repeats cannot re-arm after an order or cancellation. Asset-independent
+      handlers/compositor checks preserve selection and queued intents, with
+      fresh actions and focus/menu guards intact (`docs/order-feedback.md`).
+      Retail simulation and physical Mac checks remain open.
 - [x] Cancel menu pointer tracking on deliberate keyboard input (#274, #96,
       #97): discard held buttons, Skirmish slider and map-thumb drags before
       normal key routing. Actual temporary-file/handler checks prevent stale
