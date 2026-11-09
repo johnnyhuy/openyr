@@ -844,6 +844,12 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       Session bytes. Controlled result channels cover load/restart/preview/
       failure/cancel policies at supported layouts (`docs/formats/menus.md`).
       Retail reconstruction and physical Mac/Retina checks remain open.
+- [x] Keep saved matches beyond the first 64 reachable (#308, #96). Retain all
+      regular saves found in the existing bounded directory scan; native
+      Save/Load/Delete handlers verify a newly written 65th slot, exact paths,
+      both skins and three layouts while preserving file and Session bytes.
+      The 4,096-entry scan and no-follow filters remain; synthetic proof does
+      not establish retail reconstruction (`docs/formats/menus.md`).
 - [ ] Complete world interaction and desktop UX (#97): consistent selection,
       supported control groups/hotkeys, hover/target/order feedback, bounded
       camera movement and configurable edge scrolling. Clear held input on

@@ -648,7 +648,6 @@ pub fn slots(dir: &std::path::Path) -> Result<Vec<Slot>, String> {
         });
     }
     slots.sort_by(|a, b| a.path.cmp(&b.path));
-    slots.truncate(64);
     Ok(slots)
 }
 

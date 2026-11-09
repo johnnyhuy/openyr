@@ -653,3 +653,4 @@ fn preferences_modal_capture(app: &mut App, name: &str) {
 mod placement;
 
 mod new_match_saves;
+mod save_catalog;
