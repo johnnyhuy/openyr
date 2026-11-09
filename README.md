@@ -89,6 +89,7 @@ The workspace defaults to `yr-app`. Use `-p mix-dump` for asset inspection or
 | T | Expand selection to visible owned units of matching types |
 | H | Center the camera on an owned construction yard |
 | S / Ctrl+H | Stop / harvest with eligible selected units |
+| Q / W / E / R | Structures / defences / infantry / vehicles tab |
 | K / L | Repair / sell mode |
 | M | Toggle mute |
 | Escape | Cancel an active command, then open Pause |

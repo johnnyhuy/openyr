@@ -1,6 +1,6 @@
 use super::*;
 
-fn ready(size: (u32, u32), zoom: f32) -> (App, u32, usize) {
+pub(super) fn ready(size: (u32, u32), zoom: f32) -> (App, u32, usize) {
     let (mut app, own, _) = scene(size);
     app.view.zoom = zoom;
     let session = app.session.as_mut().unwrap();
