@@ -69,6 +69,14 @@ modes. See [structure service rules and limits](structure-services.md).
 Selected tabs use sheet frame 1 and other tabs frame 0. A green underline
 keeps a paid structure visible on a hidden category. The `READY` label,
 placement outline and other status presentation remain provisional.
+
+Picking up a ready structure ends any earlier A attack-move action (#302),
+so placing or cancelling that structure cannot leak the action into the next
+world click. A new deliberate A press still replaces placement. Ordinary
+non-ready production clicks retain their existing mode policy. Native Session
+handler checks and synthetic compositor proof are described in
+`docs/order-feedback.md`; this does not establish original mode parity.
+
 Credits, queue counts, READY and hover tooltips now use the retail
 [Unicode bitmap font](font.md) with measured widths. Localized names,
 costs and duration estimates remain available by hovering a cameo.

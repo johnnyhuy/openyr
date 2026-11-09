@@ -535,6 +535,7 @@ impl App {
             return;
         };
         if session.ready_structure() == Some(slot) {
+            self.attack_move = false;
             self.placing = Some(slot);
             self.acknowledge_placement_start(Instant::now());
         } else {

@@ -799,6 +799,12 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       handlers/compositor checks preserve selection and queued intents, with
       fresh actions and focus/menu guards intact (`docs/order-feedback.md`).
       Retail simulation and physical Mac checks remain open.
+- [x] Replace an armed attack-move action when picking up a ready structure
+      (#302, #97, #86). Actual sidebar and world handlers verify 27 layout/zoom/
+      outcome cases, placement/cancellation recovery, fresh A activation and
+      ordinary production, preserving full encoded saves and prior intents.
+      Synthetic compositor proof is asset-independent; original mode parity,
+      retail reconstruction and physical Mac/Retina input remain unverified.
 - [x] Cancel menu pointer tracking on deliberate keyboard input (#274, #96,
       #97): discard held buttons, Skirmish slider and map-thumb drags before
       normal key routing. Actual temporary-file/handler checks prevent stale
