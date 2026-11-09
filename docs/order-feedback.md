@@ -267,3 +267,34 @@ and already queued intents. `OPENYR_PLACEMENT_MODE_PROOF=<directory>` exports
 actual synthetic compositor frames and cursor-kind/state receipts. The fixture
 has no retail cursor sheet; it does not verify retail pixels, original-game
 parity or physical Mac/Retina delivery.
+
+## Unit selection and health
+
+Selected units use white six-pixel corner brackets from the same raster and
+footprint bounds as the existing green/red hover and attack previews. The old
+white ground diamond is removed. Health is a four-pixel-high black frame with
+two-pixel pips, one-pixel separators and a darker lower edge. Green, yellow and
+red indicate the existing above-50%, above-25% and remaining health bands.
+Zero health has no colored pip; positive fractions retain at least one pip.
+Both overlays clip to the world viewport before the sidebar. Corner length,
+bar height and pip pitch stay in UI pixels; footprint width follows map zoom,
+with health width bounded to 127 pixels. Selected-or-damaged health visibility
+is unchanged. This presentation does not change simulation or save formats.
+
+The public [Red Alert 2 manual, printed pages 5-6](https://static.wikia.nocookie.net/cnc_gamepedia_en/images/3/3b/CCUC-RA2-pcMANOLeUS.pdf/revision/latest)
+backs left-click selection/orders, right-click deselection/cancellation,
+box selection and green movement/red targeting cursor roles. The existing
+retail cursor sheet remains the source of cursor artwork when data is supplied.
+The new status geometry, pip colors and health placement are a native
+classic-style revision, not a pixel-calibrated original-game reproduction.
+Public Steam store screenshots inspected for this revision hide the interaction
+HUD and cannot establish selection/health geometry. Hotspots, animation cadence,
+original health visibility/thresholds and physical Mac/Retina input remain open
+under #97/#98. No original executable was run.
+
+Synthetic shared-compositor checks exercise selected status at three layouts
+and three map zooms, Attack/Select cursor kinds, right-click deselection and
+left-click reselection with identical encoded Session bytes and no queued
+commands. Raster tests cover empty/full and damage-band boundaries, clipping
+and malformed/nonfinite inputs. Without retail files these checks do not
+verify cursor artwork, sprite overlap or physical input delivery.
