@@ -1,2 +1,0 @@
-Verified: /workspace/openyr-core-audit-20261109-1000/.tmp/tileset-budget-release/program
-error: TEMPERATMD.INI: theater tile index exceeds 65536 filenames
