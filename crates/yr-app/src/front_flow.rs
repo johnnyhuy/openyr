@@ -35,6 +35,7 @@ impl App {
         self.effects = Default::default();
         self.selected.clear();
         self.groups = Default::default();
+        self.type_press = None;
         self.pending.clear();
         self.front_preview = None;
         self.loading_preview = None;

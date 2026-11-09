@@ -166,6 +166,84 @@ fn mixed_type_selection_retains_owned_seeds_and_cancels_old_gestures_only() {
 }
 
 #[test]
+fn double_press_type_selection_expands_across_the_map() {
+    for size in [(640, 480), (1280, 800)] {
+        let (mut app, own, enemy) = scene(size);
+        let buddy = spawn(&mut app, 0, (5, 4), yr_sim::OWNER_PLAYER);
+        let far = spawn(&mut app, 0, (31, 31), yr_sim::OWNER_PLAYER);
+        let far_other = spawn(&mut app, 1, (30, 31), yr_sim::OWNER_PLAYER);
+        let far_enemy = spawn(&mut app, 0, (31, 30), yr_sim::OWNER_ENEMY);
+        point_at(&mut app, own, size);
+        let before = bytes(&app);
+        let camera = (app.view.cam_x, app.view.cam_y, app.view.zoom);
+        press_t(&mut app);
+        assert_eq!(app.selected, BTreeSet::from([own, buddy]));
+        press_t(&mut app);
+        assert_eq!(app.selected, BTreeSet::from([own, buddy, far]));
+        assert!(!app.selected.contains(&far_other) && !app.selected.contains(&far_enemy));
+        assert_eq!(
+            app.order_feedback.message(Instant::now()),
+            Some("Type selection (3 units)")
+        );
+        press_t(&mut app);
+        assert_eq!(
+            app.selected,
+            BTreeSet::from([own, buddy, far]),
+            "third press stays global"
+        );
+        assert_eq!(bytes(&app), before);
+        assert_eq!((app.view.cam_x, app.view.cam_y, app.view.zoom), camera);
+        assert!(app.pending.is_empty());
+        let _ = enemy;
+    }
+    println!("Second deliberate T expands the represented types across the whole map at two layouts, excluding other types and enemy units; camera, queued orders and complete Session bytes stay unchanged.");
+}
+
+#[test]
+fn double_press_type_selection_needs_same_selection_inside_the_window() {
+    let size = (800, 600);
+    // An intervening selection change breaks the double press.
+    let (mut app, own, _) = scene(size);
+    let buddy = spawn(&mut app, 0, (5, 4), yr_sim::OWNER_PLAYER);
+    let far = spawn(&mut app, 0, (31, 31), yr_sim::OWNER_PLAYER);
+    point_at(&mut app, own, size);
+    press_t(&mut app);
+    assert_eq!(app.selected, BTreeSet::from([own, buddy]));
+    app.selected = BTreeSet::from([own]);
+    press_t(&mut app);
+    assert_eq!(app.selected, BTreeSet::from([own, buddy]));
+    assert!(!app.selected.contains(&far));
+    // Focus loss interrupts the window through the real handler.
+    press_t(&mut app);
+    assert!(
+        app.selected.contains(&far),
+        "uninterrupted second press is global"
+    );
+    let (mut app, own, _) = scene(size);
+    let buddy = spawn(&mut app, 0, (5, 4), yr_sim::OWNER_PLAYER);
+    let far = spawn(&mut app, 0, (31, 31), yr_sim::OWNER_PLAYER);
+    point_at(&mut app, own, size);
+    press_t(&mut app);
+    app.focus_changed(false);
+    app.pointer.focused = true;
+    press_t(&mut app);
+    assert_eq!(app.selected, BTreeSet::from([own, buddy]));
+    assert!(!app.selected.contains(&far));
+    // A press after the 400 ms window only expands the viewport again.
+    let (mut app, own, _) = scene(size);
+    let buddy = spawn(&mut app, 0, (5, 4), yr_sim::OWNER_PLAYER);
+    let far = spawn(&mut app, 0, (31, 31), yr_sim::OWNER_PLAYER);
+    point_at(&mut app, own, size);
+    press_t(&mut app);
+    let (at, types, selected) = app.type_press.clone().unwrap();
+    app.type_press = Some((at - std::time::Duration::from_millis(401), types, selected));
+    press_t(&mut app);
+    assert_eq!(app.selected, BTreeSet::from([own, buddy]));
+    assert!(!app.selected.contains(&far));
+    println!("Selection changes, focus loss and a press after 400 ms keep T viewport-only; only an uninterrupted second press on the same selection goes global.");
+}
+
+#[test]
 fn type_selection_respects_repeat_focus_modifiers_outcome_and_menu_text() {
     for guard in 0..9 {
         let (mut app, own, _) = scene((640, 480));

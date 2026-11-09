@@ -879,6 +879,14 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       The manual establishes T's mapping; detailed type-selection scope and
       repeated-press behavior remain native policies pending original comparison
       (`docs/control-groups.md`). Retail/physical checks remain unverified.
+- [x] Add battlefield-wide type selection on a second T press (#97): the
+      manual's double-press expands the represented living owned types beyond
+      the viewport. The native 400 ms window requires the same types and
+      selection as the first press; selection changes, focus loss, menu input
+      and match replacement interrupt it. Count feedback, camera, queued
+      orders and complete Session bytes stay unchanged at two layouts.
+      Original timing and physical Mac/Retina checks remain open
+      (`docs/control-groups.md`).
 - [x] Align H with the documented base-navigation shortcut (#318, #97):
       center the oldest owned living construction yard using drawn ground
       projection and bounded world dimensions. Keep selection, queued orders,

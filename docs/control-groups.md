@@ -61,17 +61,30 @@ existing selection-audio route. OS repeats, synthetic/unfocused events, tracked
 Shift/Control/Command chords, menus and ended matches cannot perform this action.
 Save/Skirmish editors still receive ordinary text T events through menu routing.
 
-The manual establishes the shortcut mapping, not these detailed policies.
-Viewport-only expansion, retained offscreen seeds, mixed-type behavior, notice
-wording/timing and audio triggering are native choices pending original-game
-comparison. A second T currently performs the same viewport expansion; it does
-not select units across the whole map. Full type-selection calibration remains
-in #97. Other public hotkey-guide pages returned HTTP 403 and were not used as
-behavioral evidence. No original executable was run.
+The manual also documents the double press: one press selects the units on
+screen of the same type, and a double press selects them across the
+battlefield. OpenYR follows that split. A second deliberate T within
+400 milliseconds (the team double-press window) expands the represented
+living owned types to the whole map when the types and the selection still
+match the first press exactly. A selection change through clicks, boxes,
+team recall or right-click cancellation interrupts the window, as do focus
+loss, menu input and match replacement. A third press inside the window
+stays global; a press after the window expands the viewport again and
+re-primes the double press.
+
+The manual establishes the shortcut mapping and the screen/battlefield
+split, not these detailed policies. The 400-millisecond window, the exact
+type-and-selection match, retained offscreen seeds, mixed-type behavior,
+notice wording/timing and audio triggering are native choices pending
+original-game comparison. Full type-selection calibration remains in #97.
+No original executable was run.
 
 Authored Session checks cover three layouts at zoom 1, 2 and 4, plus sidebar
 and bottom-edge geometry at zoom 0.25, 1 and 4. Native input/compositor checks
 verify expansion, ownership/type filtering, retained offscreen seeds, stale-ID
 pruning, gesture cleanup, pending-order preservation and unchanged Session bytes.
+Double-press checks add whole-map expansion at two layouts, a third press
+staying global, and viewport-only results after a selection change, focus
+loss or an expired 400-millisecond window.
 Retail sprite/cursor pixels, physical Mac/Retina input, selection audio and
 original-game timing remain unverified without the install and native session.
