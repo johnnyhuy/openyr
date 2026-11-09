@@ -1,0 +1,202 @@
+[
+  {
+    "path": "README.md",
+    "bytes": 2645,
+    "sha256": "3c1c25e1ec6ac4e30a5508926706b38ca2c0e01b8ca5c53b8a13ae1924fc420e"
+  },
+  {
+    "path": "cancel-offset.png",
+    "bytes": 259553,
+    "sha256": "658a173dbe279c0ecbe0306bf200fdec055a1c252d9b8077e65091356c5288f2"
+  },
+  {
+    "path": "cli-huge-coordinates-1.txt",
+    "bytes": 144,
+    "sha256": "2cc68bc61952c20be2148c71edd9b1fbb0e47ffd45618d28c6ee5b8026c9f5ee"
+  },
+  {
+    "path": "cli-huge-coordinates-2.txt",
+    "bytes": 144,
+    "sha256": "2cc68bc61952c20be2148c71edd9b1fbb0e47ffd45618d28c6ee5b8026c9f5ee"
+  },
+  {
+    "path": "cli-huge-coordinates-4.txt",
+    "bytes": 144,
+    "sha256": "2cc68bc61952c20be2148c71edd9b1fbb0e47ffd45618d28c6ee5b8026c9f5ee"
+  },
+  {
+    "path": "cli-huge-extra-1.txt",
+    "bytes": 137,
+    "sha256": "4672c5fc8f2791fa7350a89395e8c59b4b3c474893c1d863d2988abaf1c85577"
+  },
+  {
+    "path": "cli-huge-extra-2.txt",
+    "bytes": 137,
+    "sha256": "4672c5fc8f2791fa7350a89395e8c59b4b3c474893c1d863d2988abaf1c85577"
+  },
+  {
+    "path": "cli-huge-extra-4.txt",
+    "bytes": 137,
+    "sha256": "4672c5fc8f2791fa7350a89395e8c59b4b3c474893c1d863d2988abaf1c85577"
+  },
+  {
+    "path": "inputs/cancel-offset/ARTMD.INI",
+    "bytes": 10,
+    "sha256": "a371ee2822ab833c1349cbe193bf4b9292d6ab6b49a22b525fc1dcd95aa933c1"
+  },
+  {
+    "path": "inputs/cancel-offset/CLEAR01.TEM",
+    "bytes": 89,
+    "sha256": "dace72b4f2c98241a5944a806a0b0a2c99f34b9c08d9a5c3c6b9d02f1e03a4a7"
+  },
+  {
+    "path": "inputs/cancel-offset/ISOTEM.PAL",
+    "bytes": 768,
+    "sha256": "62beccfe091e42e1a2558403a75ed84c3e88a1a725fbec9f8922f21d0d696066"
+  },
+  {
+    "path": "inputs/cancel-offset/RULESMD.INI",
+    "bytes": 10,
+    "sha256": "a371ee2822ab833c1349cbe193bf4b9292d6ab6b49a22b525fc1dcd95aa933c1"
+  },
+  {
+    "path": "inputs/cancel-offset/SMALL.MAP",
+    "bytes": 104,
+    "sha256": "702cc711f656001e3071684b9a78cc3d0bee183367fe9e7f2c25b5cd1b61fe95"
+  },
+  {
+    "path": "inputs/cancel-offset/TEMPERATMD.INI",
+    "bytes": 42,
+    "sha256": "009c6a0edde1d1c41b8c5271c25cca7275b74d16cc375700b939d9c37d8f3e9e"
+  },
+  {
+    "path": "inputs/huge-coordinates/ARTMD.INI",
+    "bytes": 10,
+    "sha256": "a371ee2822ab833c1349cbe193bf4b9292d6ab6b49a22b525fc1dcd95aa933c1"
+  },
+  {
+    "path": "inputs/huge-coordinates/CLEAR01.TEM",
+    "bytes": 89,
+    "sha256": "9878e913dfc5796640ae3427c531199795d4571ab0f2e95533e8fbd9ba9bc54f"
+  },
+  {
+    "path": "inputs/huge-coordinates/ISOTEM.PAL",
+    "bytes": 768,
+    "sha256": "62beccfe091e42e1a2558403a75ed84c3e88a1a725fbec9f8922f21d0d696066"
+  },
+  {
+    "path": "inputs/huge-coordinates/RULESMD.INI",
+    "bytes": 10,
+    "sha256": "a371ee2822ab833c1349cbe193bf4b9292d6ab6b49a22b525fc1dcd95aa933c1"
+  },
+  {
+    "path": "inputs/huge-coordinates/SMALL.MAP",
+    "bytes": 104,
+    "sha256": "054abb40148e418dc6a587cbb9b8228b6e3dcce3d25729e7a034d29a7572b8c8"
+  },
+  {
+    "path": "inputs/huge-coordinates/TEMPERATMD.INI",
+    "bytes": 42,
+    "sha256": "009c6a0edde1d1c41b8c5271c25cca7275b74d16cc375700b939d9c37d8f3e9e"
+  },
+  {
+    "path": "inputs/huge-extra/ARTMD.INI",
+    "bytes": 10,
+    "sha256": "a371ee2822ab833c1349cbe193bf4b9292d6ab6b49a22b525fc1dcd95aa933c1"
+  },
+  {
+    "path": "inputs/huge-extra/CLEAR01.TEM",
+    "bytes": 89,
+    "sha256": "757d95bb43e862d88d9df8da95eb52118f341ac3f71eb25e265e74ff47630183"
+  },
+  {
+    "path": "inputs/huge-extra/ISOTEM.PAL",
+    "bytes": 768,
+    "sha256": "62beccfe091e42e1a2558403a75ed84c3e88a1a725fbec9f8922f21d0d696066"
+  },
+  {
+    "path": "inputs/huge-extra/RULESMD.INI",
+    "bytes": 10,
+    "sha256": "a371ee2822ab833c1349cbe193bf4b9292d6ab6b49a22b525fc1dcd95aa933c1"
+  },
+  {
+    "path": "inputs/huge-extra/SMALL.MAP",
+    "bytes": 104,
+    "sha256": "702cc711f656001e3071684b9a78cc3d0bee183367fe9e7f2c25b5cd1b61fe95"
+  },
+  {
+    "path": "inputs/huge-extra/TEMPERATMD.INI",
+    "bytes": 42,
+    "sha256": "009c6a0edde1d1c41b8c5271c25cca7275b74d16cc375700b939d9c37d8f3e9e"
+  },
+  {
+    "path": "inputs/small/ARTMD.INI",
+    "bytes": 10,
+    "sha256": "a371ee2822ab833c1349cbe193bf4b9292d6ab6b49a22b525fc1dcd95aa933c1"
+  },
+  {
+    "path": "inputs/small/CLEAR01.TEM",
+    "bytes": 89,
+    "sha256": "9878e913dfc5796640ae3427c531199795d4571ab0f2e95533e8fbd9ba9bc54f"
+  },
+  {
+    "path": "inputs/small/ISOTEM.PAL",
+    "bytes": 768,
+    "sha256": "62beccfe091e42e1a2558403a75ed84c3e88a1a725fbec9f8922f21d0d696066"
+  },
+  {
+    "path": "inputs/small/RULESMD.INI",
+    "bytes": 10,
+    "sha256": "a371ee2822ab833c1349cbe193bf4b9292d6ab6b49a22b525fc1dcd95aa933c1"
+  },
+  {
+    "path": "inputs/small/SMALL.MAP",
+    "bytes": 104,
+    "sha256": "702cc711f656001e3071684b9a78cc3d0bee183367fe9e7f2c25b5cd1b61fe95"
+  },
+  {
+    "path": "inputs/small/TEMPERATMD.INI",
+    "bytes": 42,
+    "sha256": "009c6a0edde1d1c41b8c5271c25cca7275b74d16cc375700b939d9c37d8f3e9e"
+  },
+  {
+    "path": "prepare-inputs.py",
+    "bytes": 1398,
+    "sha256": "39fa7b41fcb1c310d3fef2e7c52a30bc32bd42dfffbb826ffddc4c8f00d72df4"
+  },
+  {
+    "path": "release-build.log",
+    "bytes": 1635,
+    "sha256": "11bde66f232eaf06de0452502dc0a03477e471dc7c333228e501b63a653351ca"
+  },
+  {
+    "path": "release-receipt.json",
+    "bytes": 801,
+    "sha256": "88e8ac174f640a46e0008145d32c289fd2313306cf19fbdd4bb801340489d15b"
+  },
+  {
+    "path": "run-proof.sh",
+    "bytes": 1546,
+    "sha256": "7d328acf6ab0d372fac983e799df7b3a58d1242d6b1f5dae3edcf0751453a0fb"
+  },
+  {
+    "path": "small.png",
+    "bytes": 259553,
+    "sha256": "658a173dbe279c0ecbe0306bf200fdec055a1c252d9b8077e65091356c5288f2"
+  },
+  {
+    "path": "terminal.txt",
+    "bytes": 2295,
+    "sha256": "1e2fa7e21425e5b556f1cdeb32bbc87ea2b0d31508f63221c2f0e2217afbf4a3"
+  },
+  {
+    "path": "unit-sparse-state.txt",
+    "bytes": 201,
+    "sha256": "8e289f1ce30548bfbd17e5772ea95be1b55366cfa820fea44d452d5f18b12068"
+  },
+  {
+    "path": "workspace-check.log",
+    "bytes": 64680,
+    "sha256": "2d727b872c9afe1063fb6153830343d480a5c98d408990264b74e076eb38ce1a"
+  }
+]

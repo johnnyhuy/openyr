@@ -1,0 +1,30 @@
+Script started on 2026-11-09 04:59:33+00:00 [COMMAND="bash .tmp/run-map-bounds-proof.sh" <not executed on terminal>]
+e0c94dfad7a21d96800f9c239f9b4b1f9ac2c603
+dcaf8a1f5be705a1e1ec2953c9b28ec92d3cfc2a
+Verified: /workspace/openyr-map-extents-20261109-1000/.tmp/map-bounds-release/program
+Verified: /workspace/openyr-map-extents-20261109-1000/.tmp/map-bounds-release/program
+rendered SMALL.MAP (TEMPERATE, 1 tiles, 1 templates, 0 missing, 0 object SHPs, 0 markers, 240x270 @ scale 1) -> /workspace/scratch/map-bounds-294-proof/small.png
+Verified: /workspace/openyr-map-extents-20261109-1000/.tmp/map-bounds-release/program
+rendered SMALL.MAP (TEMPERATE, 1 tiles, 1 templates, 0 missing, 0 object SHPs, 0 markers, 240x270 @ scale 1) -> /workspace/scratch/map-bounds-294-proof/cancel-offset.png
+658a173dbe279c0ecbe0306bf200fdec055a1c252d9b8077e65091356c5288f2  /workspace/scratch/map-bounds-294-proof/small.png
+658a173dbe279c0ecbe0306bf200fdec055a1c252d9b8077e65091356c5288f2  /workspace/scratch/map-bounds-294-proof/cancel-offset.png
+Verified: /workspace/openyr-map-extents-20261109-1000/.tmp/map-bounds-release/program
+error: map terrain coordinate extent exceeds 262144 cells
+Verified huge-coordinates scale 1: exit 1, no output PNG.
+Verified: /workspace/openyr-map-extents-20261109-1000/.tmp/map-bounds-release/program
+error: map terrain coordinate extent exceeds 262144 cells
+Verified huge-coordinates scale 2: exit 1, no output PNG.
+Verified: /workspace/openyr-map-extents-20261109-1000/.tmp/map-bounds-release/program
+error: map terrain coordinate extent exceeds 262144 cells
+Verified huge-coordinates scale 4: exit 1, no output PNG.
+Verified: /workspace/openyr-map-extents-20261109-1000/.tmp/map-bounds-release/program
+error: map raster exceeds 1 GiB native RGBA budget
+Verified huge-extra scale 1: exit 1, no output PNG.
+Verified: /workspace/openyr-map-extents-20261109-1000/.tmp/map-bounds-release/program
+error: map raster exceeds 1 GiB native RGBA budget
+Verified huge-extra scale 2: exit 1, no output PNG.
+Verified: /workspace/openyr-map-extents-20261109-1000/.tmp/map-bounds-release/program
+error: map raster exceeds 1 GiB native RGBA budget
+Verified huge-extra scale 4: exit 1, no output PNG.
+
+Script done on 2026-11-09 04:59:34+00:00 [COMMAND_EXIT_CODE="0"]

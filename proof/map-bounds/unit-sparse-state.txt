@@ -1,0 +1,9 @@
+size=240x270
+origin=-120,-170
+rgba_equal=true
+extra_pixel=162,203,243,255
+sim_hash=6499904022806f38
+sim_save_bytes=578
+sim_save_matches_expected_sparse_grid=true
+retail_art=false
+session_present=false

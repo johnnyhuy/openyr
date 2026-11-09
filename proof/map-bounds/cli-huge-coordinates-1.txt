@@ -1,0 +1,2 @@
+Verified: /workspace/openyr-map-extents-20261109-1000/.tmp/map-bounds-release/program
+error: map terrain coordinate extent exceeds 262144 cells
