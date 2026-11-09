@@ -297,6 +297,23 @@ input delivery; those remain separate checks.
 
 ## Saved-list keyboard navigation
 
+Save, Load and Delete retain every regular `.oyrsave` found within the existing
+scan of at most 4,096 directory entries (#308). The earlier 64-slot truncation
+could hide a successfully written named save that sorted later. Entries still
+sort by exact filesystem path, display names remain capped at 48 characters,
+and symlinks, directories and unrelated files are excluded. The scan bound
+counts all directory entries, including unrelated ones; this is not an unlimited
+directory catalogue. File writing, confirmation and save formats are unchanged.
+
+Authored native Session tests write a real 65th named save through keyboard
+dispatch, then verify Load/Delete endpoint/page navigation and exact confirmation
+paths in both skins at three sizes. Save wheel/pointer selection reaches that
+same file. Declining confirmations preserves every file and encoded Session.
+A separate metadata fixture checks the scan bound with 4,097 regular entries
+and no-follow filtering. `OPENYR_SAVE_CATALOG_PROOF=<directory>` exports fallback
+compositor frames and state receipts. These checks do not reconstruct retail
+saves or establish original-game or physical Mac/Retina behavior.
+
 Load and Delete lists support Page Up/Page Down by ten slots, matching their
 visible row count, and Home/End for the first/last slot (#270, #96, #97).
 The selection remains visible through the same scrolling helper as Up/Down.
