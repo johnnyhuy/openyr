@@ -66,6 +66,7 @@ impl RenderedMap {
 const HALF_W: i32 = 30;
 const HALF_H: i32 = 15;
 const LEVEL_H: i32 = 15;
+mod raster_bounds;
 
 /// Render `map_name` (a loose file in the game dir, or a path) at
 /// downscale `scale` (1, 2 or 4).
@@ -82,6 +83,7 @@ pub fn render_map(gamedir: &str, map_name: &str, scale: u32) -> Result<RenderedM
     let theater = Theater::from_map_name(&map.theater)
         .ok_or_else(|| format!("unknown theater {}", map.theater))?;
     vfs.set_theater(theater);
+    map.terrain_dimensions().map_err(|e| e.to_string())?;
     let ini_name = theater
         .tileset_inis()
         .iter()
@@ -135,8 +137,8 @@ pub fn render_map(gamedir: &str, map_name: &str, scale: u32) -> Result<RenderedM
         )
     };
     // Canvas bounds over diamonds and extras.
-    let (mut x0, mut y0, mut x1, mut y1) = (i32::MAX, i32::MAX, i32::MIN, i32::MIN);
-    let mut grow = |ax: i32, ay: i32, bx: i32, by: i32| {
+    let (mut x0, mut y0, mut x1, mut y1) = (i64::MAX, i64::MAX, i64::MIN, i64::MIN);
+    let mut grow = |ax: i64, ay: i64, bx: i64, by: i64| {
         x0 = x0.min(ax);
         y0 = y0.min(ay);
         x1 = x1.max(bx);
@@ -150,26 +152,29 @@ pub fn render_map(gamedir: &str, map_name: &str, scale: u32) -> Result<RenderedM
             continue;
         };
         let (cx, cy) = cell_screen(t.x, t.y, t.level);
-        grow(cx - HALF_W, cy, cx + HALF_W, cy + HALF_H * 2);
+        grow(
+            i64::from(cx - HALF_W),
+            i64::from(cy),
+            i64::from(cx + HALF_W),
+            i64::from(cy + HALF_H * 2),
+        );
         if let Some(e) = &tile.extra {
-            let (ox, oy) = (cx - HALF_W - tile.x + e.x, cy - tile.y + e.y);
-            grow(ox, oy, ox + e.width as i32, oy + e.height as i32);
+            let (ox, oy) = raster_bounds::extra_origin(i64::from(cx), i64::from(cy), tile, e);
+            grow(ox, oy, ox + i64::from(e.width), oy + i64::from(e.height));
         }
     }
-    if x0 > x1 {
-        return Err("map has no drawable tiles".into());
-    }
-    // Room for tall object art (trees, infantry) above the terrain.
-    x0 -= 90;
-    y0 -= 200;
-    x1 += 90;
-    y1 += 40;
-    let (w, h) = ((x1 - x0) as usize, (y1 - y0) as usize);
-    let mut rgba = vec![0u8; w * h * 4];
+    let layout = raster_bounds::Layout::from_bounds(x0, y0, x1, y1)?;
+    let (x0, y0, w, h) = (
+        layout.origin_x,
+        layout.origin_y,
+        layout.width,
+        layout.height,
+    );
+    let mut rgba = vec![0u8; layout.bytes];
     for px in rgba.as_chunks_mut::<4>().0 {
         px[3] = 255;
     }
-    let put = |rgba: &mut [u8], x: i32, y: i32, index: u8| {
+    let put = |rgba: &mut [u8], x: i64, y: i64, index: u8| {
         if index != 0 && x >= 0 && y >= 0 && (x as usize) < w && (y as usize) < h {
             let at = (y as usize * w + x as usize) * 4;
             rgba[at..at + 4].copy_from_slice(&pal.rgba(index));
@@ -190,16 +195,22 @@ pub fn render_map(gamedir: &str, map_name: &str, scale: u32) -> Result<RenderedM
         for &(row, xs, width) in &tmp.diamond_rows() {
             for ddx in 0..width {
                 let index = *src.next().unwrap_or(&0);
-                put(&mut rgba, dx + (xs + ddx) as i32, dy + row as i32, index);
+                put(
+                    &mut rgba,
+                    i64::from(dx) + (xs + ddx) as i64,
+                    i64::from(dy) + row as i64,
+                    index,
+                );
             }
         }
         if let Some(e) = &tile.extra {
-            let (ox, oy) = (dx - tile.x + e.x, dy - tile.y + e.y);
+            let (ox, oy) = raster_bounds::extra_origin(i64::from(cx), i64::from(cy), tile, e);
+            let (ox, oy) = (ox - i64::from(x0), oy - i64::from(y0));
             for (p, &index) in e.pixels.iter().enumerate() {
                 put(
                     &mut rgba,
-                    ox + (p % e.width as usize) as i32,
-                    oy + (p / e.width as usize) as i32,
+                    ox + (p % e.width as usize) as i64,
+                    oy + (p / e.width as usize) as i64,
                     index,
                 );
             }
@@ -489,7 +500,7 @@ pub fn render_map(gamedir: &str, map_name: &str, scale: u32) -> Result<RenderedM
     } else {
         let s = scale as usize;
         let (ow, oh) = (w.div_ceil(s), h.div_ceil(s));
-        let mut out = vec![0u8; ow * oh * 4];
+        let mut out = vec![0u8; raster_bounds::rgba_len(ow, oh)?];
         for y in 0..oh {
             for x in 0..ow {
                 let src = ((y * s) * w + x * s) * 4;
@@ -642,6 +653,7 @@ pub fn build_terrain(
     overlay_types: &[String],
     theater: yr_assets::Theater,
 ) -> Result<yr_sim::TerrainGrid, String> {
+    map.terrain_dimensions().map_err(|e| e.to_string())?;
     let ini_name = theater
         .tileset_inis()
         .iter()
@@ -760,3 +772,6 @@ mod tileset_loading_tests;
 
 #[cfg(test)]
 mod tmp_loading_tests;
+
+#[cfg(test)]
+mod map_extent_tests;

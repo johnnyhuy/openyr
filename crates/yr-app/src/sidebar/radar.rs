@@ -68,6 +68,7 @@ struct Terrain {
 
 impl Terrain {
     fn load(fs: &AssetFs, map: &MapFile) -> Result<Self, String> {
+        map.terrain_dimensions().map_err(|e| e.to_string())?;
         let (lx, ly, w, h) = map.local_size;
         if !(1..=512).contains(&w)
             || !(1..=512).contains(&h)

@@ -8,6 +8,8 @@ use crate::ini::{IniFile, IniSection};
 
 /// Overlay and overlay-data packs cover a fixed 512x512 cell grid.
 pub const OVERLAY_GRID: usize = 512;
+/// Native resource budget, not an original-engine coordinate limit.
+pub const MAX_TERRAIN_CELLS: usize = OVERLAY_GRID * OVERLAY_GRID;
 /// No overlay in this cell.
 pub const NO_OVERLAY: u8 = 0xFF;
 
@@ -41,6 +43,7 @@ pub struct MapObject {
 pub enum MapError {
     MissingSection(&'static str),
     BadValue(&'static str),
+    TerrainExtent,
     Pack(&'static str, DecompressError),
 }
 
@@ -49,6 +52,9 @@ impl std::fmt::Display for MapError {
         match self {
             MapError::MissingSection(s) => write!(f, "map has no [{s}]"),
             MapError::BadValue(k) => write!(f, "map has an invalid {k}"),
+            MapError::TerrainExtent => {
+                write!(f, "map terrain coordinate extent exceeds 262144 cells")
+            }
             MapError::Pack(s, e) => write!(f, "[{s}]: {e}"),
         }
     }
@@ -79,7 +85,30 @@ pub struct MapFile {
     pub ini: IniFile,
 }
 
+fn terrain_dimensions(tiles: &[IsoTile]) -> Result<(usize, usize), MapError> {
+    if tiles.len() > MAX_TERRAIN_CELLS {
+        return Err(MapError::TerrainExtent);
+    }
+    let (width, height) = tiles.iter().fold((0usize, 0usize), |(w, h), tile| {
+        (
+            w.max(usize::from(tile.x) + 1),
+            h.max(usize::from(tile.y) + 1),
+        )
+    });
+    width
+        .checked_mul(height)
+        .filter(|&cells| cells <= MAX_TERRAIN_CELLS)
+        .ok_or(MapError::TerrainExtent)?;
+    Ok((width, height))
+}
+
 impl MapFile {
+    /// Bound the declared tile rectangle before any coordinate-derived allocation.
+    /// Programmatic callers must validate too; sparse/empty extents remain valid.
+    pub fn terrain_dimensions(&self) -> Result<(usize, usize), MapError> {
+        terrain_dimensions(&self.tiles)
+    }
+
     pub fn preview(&self) -> Result<Option<crate::MapPreview>, MapError> {
         crate::MapPreview::parse(&self.ini)
     }
@@ -137,7 +166,8 @@ impl MapFile {
             })
             // Zero-coordinate padding entries fill the end of the pack.
             .filter(|t| t.x != 0 || t.y != 0)
-            .collect();
+            .collect::<Vec<_>>();
+        terrain_dimensions(&tiles)?;
 
         let grid = OVERLAY_GRID * OVERLAY_GRID;
         let overlay = overlay_pack(&ini, "OverlayPack", grid, NO_OVERLAY)?;
@@ -362,3 +392,6 @@ mod tests {
         ));
     }
 }
+
+#[cfg(test)]
+mod extent_tests;
