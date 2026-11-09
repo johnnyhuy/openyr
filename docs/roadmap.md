@@ -816,6 +816,11 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       handler fixtures check exact confirmation/Commit intents and protected
       sibling bytes without a Session (`docs/formats/menus.md`). Retail overwrite
       and physical Mac/Retina checks remain unverified; save encoding is unchanged.
+- [x] Preserve occupied files and symlink targets when saving interface preferences
+      (#299, #96): bounded exclusive sibling creation, synced replacement and
+      owned cleanup retain the existing JSON schema. Actual native handler and
+      scratch-file checks cover publication errors, Controls recovery and retry;
+      physical Mac input remains unverified (`docs/formats/menus.md`).
 - [ ] Complete world interaction and desktop UX (#97): consistent selection,
       supported control groups/hotkeys, hover/target/order feedback, bounded
       camera movement and configurable edge scrolling. Clear held input on
