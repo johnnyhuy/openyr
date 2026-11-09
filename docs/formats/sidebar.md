@@ -273,3 +273,33 @@ OPENYR_SIDEBAR_SCROLL_PROOF=/tmp/openyr-sidebar-scroll cargo test -p yr-app --bi
 
 The optional proof writes tick- and row-labeled compositor PNGs outside git.
 Physical mouse/trackpad and Retina behavior still need desktop verification.
+
+## Category shortcuts
+
+The original [Yuri's Revenge manual, printed page 3](https://gamepedia.cursecdn.com/cnc_gamepedia_en/8/8e/Red_Alert_2_-_Yuri%27s_Revenge_-_English.pdf)
+lists Q for Structures, W for Defence, E for Infantry and R for Vehicles.
+The native match handler now routes these keys to the same `View::select`
+category and row state used by mouse tabs (#323). Each category keeps its
+row; selecting it clears partial wheel input. Empty categories remain
+selectable, as they are through the mouse route. Selecting a tab does not
+start production, resume held work or pick up a READY structure.
+
+A deliberate unmodified press during an ongoing match cancels old pointer
+gestures, placement and repair/sell modes. It retains selected units, assigned
+teams, queued commands, camera and attack-move, following the current mouse-tab
+mode policy. Old mouse releases cannot issue an order after the shortcut.
+The dispatcher interrupts team/type double-press timing. Repeats, synthesized
+or unfocused input, tracked Shift/Control/Command chords, absent maps/matches
+and ended matches cannot switch categories. Menu routing precedes the match
+shortcuts, so save/player name editors retain ordinary Q/W/E/R text input.
+
+The manual establishes the mappings. Modifier, gesture/mode cleanup, empty-tab
+and repeat behavior are explicit native policies pending original comparison.
+Authored Session regressions compare twelve complete keyboard/mouse compositor
+frames at three layouts, exercise 48 key/mode/layout cleanup cases and 44 guard
+cases, preserve READY work and byte-exact saved Sessions, and check compact
+row restoration and wheel-fraction reset. Set `OPENYR_CATEGORY_KEYS_PROOF`
+when running `cargo test -p yr-app --bin openyr sidebar_keys -- --nocapture`
+to export four fallback frames and state receipts. No retail artwork is used.
+Retail pixels, original transition timing and physical Mac/Retina delivery
+remain unverified in these checks.

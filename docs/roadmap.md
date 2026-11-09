@@ -326,6 +326,13 @@ Johnny on 2026-10-31.
       held and READY queues retain their actions. Wheel input over the panel
       leaves map zoom unchanged. Original arrow styling and timing remain open
       (`docs/formats/sidebar.md`).
+- [x] Add classic Q/W/E/R sidebar category shortcuts (#323, #86, #97):
+      deliberate match input shares mouse-tab category/row state, preserves
+      selection, READY work, pending orders, camera and Session bytes, and
+      cancels stale gestures and placement/service modes. Authored full-frame
+      mouse/key comparisons, guard cases and compact scroll restoration pass.
+      The manual establishes the mappings; original transitions and physical
+      Mac/Retina checks remain open (`docs/formats/sidebar.md`).
 - [ ] Complete original sidebar behavior and command bar (#86), including
       radar calibration/shroud, power-meter calibration, repair/sell fidelity, text calibration,
       button transitions,
