@@ -1,8 +1,0 @@
-Script started on 2026-11-09 15:09:15+00:00 [COMMAND="python3 scripts/proof_build.py run --receipt .tmp/status-runtime-final/receipt.json -- --help" <not executed on terminal>]
-Verified: /workspace/openyr-classic-unit-status-20261109/.tmp/status-runtime-final/program
-openyr [<gamedir> [<map> [scale]]] [--load <file>] [--save <file>] [--ticks <end-tick>] [--frames <dir> <tick>...] [--passive]
-
-Without arguments, OpenYR finds your retail install and opens the main menu.
-Set OPENYR_GAMEDIR to override the remembered or standard install.
-
-Script done on 2026-11-09 15:09:15+00:00 [COMMAND_EXIT_CODE="0"]
