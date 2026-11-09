@@ -19,7 +19,7 @@ arrival at the exact cell. Attack markers follow the target's current ground
 position or building center and disappear if the target is removed. A sent
 order can still lose its target or route before the simulation applies it.
 
-S sends Stop to living owned selected units. H sends Harvest to selected
+S sends Stop to living owned selected units. Ctrl+H sends Harvest to selected
 harvesters; their existing economy loop decides whether to start or continue
 work. Both keys show the number of submitted commands or explain the required
 selection. OS repeat, key release, inactive matches, focus loss and menus do

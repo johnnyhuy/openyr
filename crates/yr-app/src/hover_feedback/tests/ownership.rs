@@ -660,3 +660,5 @@ mod unit_status;
 mod modal_repeat;
 
 mod type_selection;
+
+mod base_navigation;

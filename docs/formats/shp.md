@@ -288,7 +288,7 @@ remain fidelity work under #6. Static map objects are still baked into
 the terrain image; the new layers and ordering apply to live objects.
 
 The retail EB1 economy test starts the existing harvester with the same
-`Harvest` command as the H key. Unloading starts at tick 623, pays 500
+`Harvest` command as the native Ctrl+H shortcut (formerly H). Unloading starts at tick 623, pays 500
 credits at tick 654, and pays another 500 at tick 1399. Setting
 `OPENYR_REFINERY_SAVE=<external-file>` when running
 `eb1_harvester_delivers_to_retail_refinery_with_working_animation` saves

@@ -133,3 +133,35 @@ selection, intents or command modes. Asset-independent native Session tests
 check actual queued orders and unchanged encoded saves, extending the earlier
 Session-free camera dispatch coverage. The cursor format notes describe the
 synthetic visual proof and its limits.
+
+## Base navigation
+
+The public [RA2 manual, Basic Keyboard Functions, printed page 2](https://static.wikia.nocookie.net/cnc_gamepedia_en/images/3/3b/CCUC-RA2-pcMANOLeUS.pdf/revision/latest)
+maps H to Center tactical map on base. OpenYR now uses a deliberate H to center
+the bounded world viewport on the drawn ground center of its lowest-ID living
+owned construction yard (#318). Terrain lift, zoom and sidebar width use the
+existing camera projection. If no owned yard is available, the view stays put
+and the feedback strip explains that no construction yard is available.
+
+This intentionally changes the earlier native H binding. Harvest remains on
+Ctrl+H with the same eligible-unit commands, acknowledgement and command-mode
+cleanup. S still stops selected units. Menu name fields still receive ordinary
+H text; repeats, synthesized/unfocused events, tracked Shift/Command chords
+and ended matches cannot trigger base navigation. Ctrl+Shift+H and
+Control+Command+H do not issue either action.
+
+Base navigation cancels old pointer/edge tracking and team-recall timing. It
+preserves selected units, assigned teams, queued valid commands, zoom and armed
+placement/repair/sell/attack-move modes, as the existing camera keys do. An old
+mouse release cannot issue an order or clear the retained selection. The notice
+uses the existing native two-second feedback channel and has no world marker.
+Simulation, match saves and camera speed are unchanged.
+
+The manual establishes H's action. Choosing the oldest owned yard, having no
+other-building fallback or yard cycling, notice wording/timing, raster bounds
+and the Ctrl+H alias are native policies pending original comparison in #97.
+Authored Session regressions cover elevated target projection at three layouts
+and zooms, bounds/oversized views, multiple/destroyed/enemy yards, pointer
+releases, mode preservation, input guards, Save text and actual Ctrl+H Harvest
+commands with exact Session bytes. These do not establish retail pixels,
+original-game timing, physical Mac/Retina delivery or audio-device behavior.

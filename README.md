@@ -86,7 +86,9 @@ The workspace defaults to `yr-app`. Use `-p mix-dump` for asset inspection or
 | Mouse wheel | Zoom the world; scroll lists/sidebar where applicable |
 | Ctrl+1-9 / 1-9 | Assign / recall a team; Shift+number adds it, double recall centers the camera |
 | A, then click / Ctrl+Shift+click | Attack-move |
-| S / H | Stop / harvest with eligible selected units |
+| T | Expand selection to visible owned units of matching types |
+| H | Center the camera on an owned construction yard |
+| S / Ctrl+H | Stop / harvest with eligible selected units |
 | K / L | Repair / sell mode |
 | M | Toggle mute |
 | Escape | Cancel an active command, then open Pause |

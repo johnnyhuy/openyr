@@ -248,6 +248,7 @@ fn retail_tactical_orders_have_visible_feedback_without_changing_saved_state() {
     );
     proof(&app, "06-stop-tick1", now);
     app.pending.clear();
+    app.control = true;
     app.unit_order_key(KeyCode::KeyH, ElementState::Pressed, false, now);
     assert!(app.pending.is_empty());
     assert_eq!(
@@ -268,6 +269,7 @@ fn retail_tactical_orders_have_visible_feedback_without_changing_saved_state() {
     app.left_down = Some(app.cursor);
     app.unit_order_key(KeyCode::KeyH, ElementState::Pressed, false, now);
     assert!(matches!(app.pending.as_slice(), [Command::Harvest {id}] if *id == harvester));
+    app.control = false;
     app.pending.clear();
     app.left_release();
     assert!(app.pending.is_empty(), "key cancels stale pointer release");

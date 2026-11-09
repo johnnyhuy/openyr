@@ -21,6 +21,19 @@ struct Notice {
 pub(super) struct Feedback(Option<Notice>);
 
 impl Feedback {
+    pub(super) fn base_navigation(&mut self, available: bool, now: Instant) {
+        self.0 = Some(Notice {
+            text: if available {
+                "Base centered"
+            } else {
+                "No construction yard available"
+            }
+            .into(),
+            marker: None,
+            at: now,
+        });
+    }
+
     pub(super) fn type_selection(&mut self, count: usize, now: Instant) {
         self.0 = Some(Notice {
             text: if count == 0 {
@@ -282,6 +295,10 @@ impl App {
         }
         if state != ElementState::Pressed || repeat || self.menu.visible() || !self.pointer.focused
         {
+            return true;
+        }
+        // Bare H belongs to base navigation; Ctrl+H retains the native order.
+        if code == KeyCode::KeyH && (!self.control || self.shift || self.super_key) {
             return true;
         }
         let Some(session) = &self.session else {
