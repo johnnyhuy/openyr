@@ -1,0 +1,38 @@
+   Compiling yr-app v0.1.0 (/workspace/openyr-menu-flow-20261109-next/crates/yr-app)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.06s
+     Running unittests src/main.rs (.tmp/cargo-target/debug/deps/openyr-8539b05c03c1d83a)
+
+running 1 test
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: cursor art unavailable; keeping the system pointer
+
+thread 'hover_feedback::tests::ownership::preferences_error_modal_cancels_world_modes_before_recovery' (267211) panicked at crates/yr-app/src/hover_feedback/tests/ownership.rs:515:5:
+assertion `left == right` failed: fresh click after recovery must not reuse attack-move from before the modal
+  left: [AttackMove { id: 6, x: Fix(2176), y: Fix(2176) }]
+ right: [Move { id: 6, x: Fix(2176), y: Fix(2176) }]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test hover_feedback::tests::ownership::preferences_error_modal_cancels_world_modes_before_recovery ... FAILED
+
+failures:
+
+failures:
+    hover_feedback::tests::ownership::preferences_error_modal_cancels_world_modes_before_recovery
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 144 filtered out; finished in 0.02s
+
+error: test failed, to rerun pass `-p yr-app --bin openyr`
