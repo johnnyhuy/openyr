@@ -1,9 +1,0 @@
-{
-  "commit": "e9bb9f0fffd2086b9b48a1f9003620ef0d35406b",
-  "tree": "134f6ea27985a44d4c20f3403cc8afdba92360d5",
-  "executable": "/workspace/openyr-front-loading-cancel-20261109-2/.tmp/cargo-target/debug/deps/openyr-8539b05c03c1d83a",
-  "size": 194633264,
-  "sha256": "c064f02b6940909169f2d2c63efbd919a3e277c0e05a0ea40da195365508b109",
-  "build_command": "CARGO_TARGET_DIR=$PWD/.tmp/cargo-target CARGO_BUILD_JOBS=2 cargo test -p yr-app --bin openyr --locked --no-run --message-format=json",
-  "capture_command": "OPENYR_WORLD_FEEDBACK_PROOF=$PWD/.tmp/modal-proof-final <recorded executable> hover_feedback::tests::ownership::modal_repeat:: --nocapture"
-}
