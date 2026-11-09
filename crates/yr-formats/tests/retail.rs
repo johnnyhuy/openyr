@@ -6,9 +6,10 @@
 
 use std::fs;
 use std::path::PathBuf;
+use yr_formats::names::known_name;
 use yr_formats::{
-    mix_id, CsfFile, HvaFile, IniFile, MapFile, MixArchive, PcxImage, PcxPixels, ShpFile, TmpFile,
-    VxlFile,
+    mix_id, CsfFile, HvaFile, IniFile, MapFile, MixArchive, Palette, PcxImage, PcxPixels, ShpFile,
+    TmpFile, VxlFile,
 };
 
 fn corpus() -> Option<PathBuf> {
@@ -174,6 +175,46 @@ fn cameo_shp_is_60x48() {
         px.iter().filter(|&&p| p != 0).count() > 60 * 48 / 2,
         "cameo is mostly opaque"
     );
+}
+
+#[test]
+fn yuri_side_archive_is_fully_named_and_decodes() {
+    let Some(data) = nested("ra2md.mix", &["SIDEC02MD.MIX"]) else {
+        eprintln!("skip: retail corpus not present");
+        return;
+    };
+    let mix = MixArchive::parse(&data).expect("SIDEC02MD parses");
+    assert_eq!(mix.entries().len(), 7);
+    for e in mix.entries() {
+        assert!(known_name(e.id).is_some(), "entry {:#x} is named", e.id);
+    }
+    for (name, w, h, frames) in [
+        ("RADARY.SHP", 168, 110, 33),
+        ("BKGDSMY.SHP", 472, 448, 1),
+        ("BKGDMDY.SHP", 632, 568, 1),
+        ("BKGDLGY.SHP", 856, 736, 1),
+    ] {
+        let shp = ShpFile::parse(mix.get(name).expect(name)).expect("SHP parses");
+        assert_eq!(
+            (shp.width, shp.height, shp.frames.len()),
+            (w, h, frames),
+            "{name}"
+        );
+        for i in 0..frames {
+            let canvas = shp.decode_frame_canvas(i).unwrap();
+            assert_eq!(canvas.len(), usize::from(w) * usize::from(h));
+            assert!(
+                canvas.iter().any(|&p| p != 0),
+                "{name} frame {i} has pixels"
+            );
+        }
+    }
+    for name in ["UIBKGDY.PAL", "RADARYURI.PAL"] {
+        let pal = Palette::parse(mix.get(name).expect(name)).expect("palette parses");
+        assert!(pal.rgba(1) != pal.rgba(2), "{name} has distinct colours");
+    }
+    let key = IniFile::parse(std::str::from_utf8(mix.get("KEY.INI").unwrap()).unwrap());
+    assert!(key.section("PublicKey").is_some());
 }
 
 #[test]

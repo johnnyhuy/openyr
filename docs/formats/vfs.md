@@ -55,7 +55,9 @@ Opening the full install (memory-mapped, 27 mounts) takes about 0.4 s.
   per-faction sidebar/UI art under identical names, so they must be selected
   by side and not mounted together. The Allied sidebar now reads
   `SIDEC01.MIX` in a separate UI namespace (`docs/formats/sidebar.md`).
-  General faction switching remains open.
+  Allied and Soviet sidebars load by side. The Yuri `SIDEC02MD.MIX`
+  entries are fully hash-named (`docs/formats/menus.md`), but Yuri
+  gameplay and its sidebar remain unwired.
 - **Per-file exceptions.** ModEnc notes the engine expects some files only
   from specific archives (e.g. `unit*.pal` from cached mixes, not
   `EXPANDMD##`). The VFS applies one global order; exceptions will be added
