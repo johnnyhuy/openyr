@@ -1,0 +1,15 @@
+{
+  "attack_move": false,
+  "held_keys": "{}",
+  "left_down": null,
+  "page": "Closed",
+  "pending": "[Stop { id: 6 }, Move { id: 6, x: Fix(2176), y: Fix(2176) }]",
+  "retail_art": false,
+  "selected": [
+    6
+  ],
+  "service_mode": "None",
+  "sim_hash": "30dbf338b80849ca",
+  "snapshot_bytes": 89747,
+  "tick": 3
+}

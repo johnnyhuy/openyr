@@ -1,0 +1,15 @@
+{
+  "attack_move": false,
+  "held_keys": "{}",
+  "left_down": null,
+  "page": "Message { text: \"cannot save preferences /tmp/openyr-preferences-modal-274970-1794210140577755260/interface.json: Is a directory (os error 21)\", back: Controls }",
+  "pending": "[Stop { id: 6 }]",
+  "retail_art": false,
+  "selected": [
+    6
+  ],
+  "service_mode": "None",
+  "sim_hash": "30dbf338b80849ca",
+  "snapshot_bytes": 89747,
+  "tick": 3
+}
