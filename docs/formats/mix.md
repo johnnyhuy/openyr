@@ -127,6 +127,20 @@ More nested names confirmed by brute force over candidate stems:
 `NTRLMD.MIX` (`0xc93b27a0`), `LOAD.MIX` (`0xbc80c10f`), `LOADMD.MIX`
 (`0xdf966243`). Every nested archive in the retail install now has a name.
 
+The side-archive name slice (#311, #310) adds literal known-ID checks for
+`BKGDSM.SHP`, `BKGDMD.SHP`, `BKGDLG.SHP` and the seven reported
+`SIDEC02MD.MIX` entries: `BKGDSMY.SHP`, `BKGDMDY.SHP`, `BKGDLGY.SHP`,
+`RADARY.SHP`, `UIBKGDY.PAL`, `RADARYURI.PAL` and `KEY.INI`. These names
+remain scoped by the archive containing each entry; naming them does not mount
+multiple side namespaces or enable Yuri gameplay. Asset observations and the
+optional retail decode test are described in [menu notes](menus.md).
+
+Authored classic-MIX fixtures using the independently recorded literal IDs
+verify CLI name resolution without retail data. They do not establish retail
+corpus completeness or reproduce supplied retail artwork. The contributed
+retail captures are separately checked by byte size and SHA256; a missing
+install causes the retail test to skip, not pass a new retail scan.
+
 ### Name recovery from INIs (`mix-dump scan`)
 
 The game names its own assets: `artmd.ini` (`Image=`, `Cameo=`), rules sections,
