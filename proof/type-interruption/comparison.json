@@ -1,0 +1,46 @@
+{
+  "baseline": {
+    "camera": [
+      364.0,
+      275.0,
+      1.0
+    ],
+    "logical_capture_ms": 60,
+    "logical_second_press_ms": 50,
+    "pending": "[Stop { id: 6 }]",
+    "retail_art": false,
+    "selected": [
+      6,
+      8,
+      9
+    ],
+    "sim_hash": "a2ffe5f056910722",
+    "snapshot_bytes": 90286,
+    "tick": 5
+  },
+  "fixed": {
+    "camera": [
+      364.0,
+      275.0,
+      1.0
+    ],
+    "logical_capture_ms": 60,
+    "logical_second_press_ms": 50,
+    "pending": "[Stop { id: 6 }]",
+    "retail_art": false,
+    "selected": [
+      6,
+      8
+    ],
+    "sim_hash": "a2ffe5f056910722",
+    "snapshot_bytes": 90286,
+    "tick": 5
+  },
+  "equal_fields": [
+    "camera",
+    "pending",
+    "tick",
+    "sim_hash",
+    "snapshot_bytes"
+  ]
+}

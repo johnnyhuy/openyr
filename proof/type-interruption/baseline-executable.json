@@ -1,0 +1,11 @@
+{
+  "commit": "a4ea3d13ea7b9f243da79f918caa3178a3df1969",
+  "tree": "2b3083e4c8c195ce22b77db6cbcef412ba8fd8eb",
+  "production_base": "411e64788eb1b5f48eebe26705e88eaefa9311df",
+  "executable": "/workspace/openyr-sidebar-shortcuts-20261109-5/.tmp/cargo-target/debug/deps/openyr-8539b05c03c1d83a",
+  "retained_copy": "/workspace/openyr-sidebar-shortcuts-20261109-5/.tmp/baseline-compositor-program",
+  "size": 196183520,
+  "sha256": "a89c001ec2363de9d47fd1c0ec83d6bd98c2a8f33ae8ef29a2bbf0d79da34d82",
+  "capture_command": "OPENYR_TYPE_INTERRUPTION_PROOF=$PWD/.tmp/baseline-proof cargo test -p yr-app --bin openyr --locked type_interruption -- --nocapture",
+  "expected_result": "1 pass, 3 failures before the fix"
+}
