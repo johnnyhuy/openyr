@@ -168,6 +168,7 @@ mod retail_pointer_tests {
                     &app.selected,
                     cell,
                     false,
+                    false,
                     ServiceMode::None,
                 )
                 .cursor

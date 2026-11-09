@@ -180,3 +180,23 @@ independently of pointer hover (`docs/order-feedback.md`). The existing sim
 attack field supplies current targets, including automatic engagements. This
 adds no cursor state, frame, hotspot, cadence, asset or save-format change.
 Appearance and physical Retina delivery remain uncalibrated under #97/#98.
+
+## Shift-only selection feedback
+
+The shared world resolver receives the app's existing Shift-without-Control
+selection policy (#290, #98, #97). That mode returns Select for an owned unit
+and Pointer elsewhere, with no tactical commands. It cannot advertise Move,
+Attack, Harvest, AttackMove or blocked movement for a click that will instead
+perform additive selection. It also retains owned-unit selection when the
+native A mode is armed. Ctrl+Shift and ordinary orders keep their existing
+routes; repair/sell resolution runs before this selection policy.
+
+Synthetic Sim tests compare the four ordinary tactical cursors with selection
+feedback and cover 70 selection/target/attack-mode combinations, including
+empty/stale/enemy selections and out-of-grid points. Complete Sim save bytes
+and state hashes remain unchanged. `OPENYR_SELECTION_CURSOR_PROOF=<directory>`
+exports resolver receipts; terminal proof records the states and verification.
+These are resolver checks, without a complete Session, retail cursor artwork
+or physical modifier delivery. Retail pixels, hotspots/cadence, original-game
+modifier parity and physical Mac/Retina input remain unverified. No cursor
+frame mapping, simulation or save format changes.

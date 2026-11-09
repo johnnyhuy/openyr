@@ -346,6 +346,12 @@ Johnny on 2026-10-31.
       filtering and the named click acknowledgement are checked
       (`docs/formats/cursors.md`). The frame assignment is provisional
       pending a controlled original-game capture.
+- [x] Align Shift-only cursor feedback with additive selection (#290, #98,
+      #97). Shared resolution retains Select/Pointer without tactical orders,
+      including when A is armed; normal and Ctrl+Shift orders remain intact.
+      Synthetic Sim checks cover 70 target/selection/mode cases and unchanged
+      save bytes/hash (`docs/formats/cursors.md`). Retail/physical Mac checks
+      and original modifier calibration remain open.
 - [ ] Contextual animated game cursor parity (#98): observed retail frames,
       palettes and hotspots for selection, movement, attack, harvesting,
       placement and other supported commands. Match actual command validation,

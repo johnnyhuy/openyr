@@ -287,6 +287,7 @@ fn retail_team_keys_preserve_match_state_and_drive_selection_orders_and_camera()
         &app.selected,
         (i32::from(enemy.cell.0), i32::from(enemy.cell.1)),
         false,
+        false,
         ServiceMode::None,
     );
     assert!(!action.commands.is_empty());
