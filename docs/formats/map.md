@@ -209,3 +209,33 @@ crop. Blocking those additional border tiles needs controlled original-game
 playable-bounds observation and is not inferred from the missing-cell defect.
 Sparse support is hashed and stored in simulation save version 3; see
 `docs/formats/save.md` for compatibility with older match setups.
+
+## Bounded theater tile indexes
+
+`TileSetIndex::parse` returns a checked `Result` (#292). A supplied
+`TilesInSet` must be an unsigned 32-bit integer; a missing count still means
+zero. Cumulative expansion is limited to 65,536 filenames and a conservative
+16 MiB budget for generated filename bytes plus `String` entries. Each set is
+checked before reserving or generating its names, with checked addition and
+multiplication. The filename estimate uses the set's longest numeric suffix
+(minimum two digits), uppercased prefix/extension and the entry size. Allocator
+bookkeeping and the already-parsed INI are outside that estimate.
+
+These are native resource limits, not established original-engine limits.
+Oversized indexes and supplied malformed counts now return errors instead of
+unbounded expansion or silently treating an invalid count as zero. There is
+no partial index or tile-number truncation. Ordinary cumulative numbering,
+retired empty sets, uppercase filenames and first-missing-section behavior
+remain unchanged. Existing metadata within these bounds keeps the same names.
+Map rendering, simulation terrain setup and radar propagate contextual errors;
+the radar retains its existing optional-layer recovery policy.
+
+Asset-independent tests cover huge/malformed/aggregate counts, long-prefix and
+aggregate storage rejection, the 65,536-name boundary and existing numbering.
+Synthetic in-memory/file assets exercise the real terrain, radar and map-render
+entrypoints. A receipt-verified `mix-dump render-map` run demonstrates the
+recoverable error on synthetic metadata without a PNG. This is loader/parser
+verification, not a retail archive scan, complete Session, physical Mac/Retina
+or original-game comparison. Simulation and save formats are unchanged.
+Missing/malformed TMP panics and map-coordinate extent allocation remain
+separate defects (#293, #294).

@@ -94,7 +94,8 @@ impl Terrain {
             .find_map(|name| fs.read(name))
             .ok_or("radar tileset missing")?;
         let ini = IniFile::parse(&String::from_utf8_lossy(ini));
-        let index = TileSetIndex::parse(&ini, theater.tile_extension());
+        let index = TileSetIndex::parse(&ini, theater.tile_extension())
+            .map_err(|e| format!("radar tileset: {e}"))?;
         let mut cache = BTreeMap::<u32, Option<TmpFile>>::new();
         for tile in &map.tiles {
             let id = tile.tile.unwrap_or(0);

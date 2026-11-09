@@ -38,7 +38,7 @@ pub use mix::{MixArchive, MixEntry, MixError, MixVersion};
 pub use pal::Palette;
 pub use pcx::{PcxError, PcxImage, PcxPixels};
 pub use shp::{ShpError, ShpFile, ShpFrame};
-pub use tileset::TileSetIndex;
+pub use tileset::{TileSetError, TileSetIndex};
 pub use tmp::{TmpError, TmpFile, TmpTile};
 pub use vxl::{Voxel, VxlError, VxlFile, VxlLimb};
 pub use wsa::{WsaError, WsaFile, WsaFrame};

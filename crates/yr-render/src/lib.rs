@@ -90,7 +90,8 @@ pub fn render_map(gamedir: &str, map_name: &str, scale: u32) -> Result<RenderedM
     let ini = IniFile::parse(&String::from_utf8_lossy(
         vfs.read(ini_name).ok_or("tileset INI unreadable")?,
     ));
-    let index = TileSetIndex::parse(&ini, theater.tile_extension());
+    let index = TileSetIndex::parse(&ini, theater.tile_extension())
+        .map_err(|e| format!("{ini_name}: {e}"))?;
     let pal = Palette::parse(
         vfs.read(theater.palette())
             .ok_or("theater palette not found")?,
@@ -649,7 +650,8 @@ pub fn build_terrain(
     let ini = IniFile::parse(&String::from_utf8_lossy(
         fs.read(ini_name).ok_or("tileset INI unreadable")?,
     ));
-    let index = TileSetIndex::parse(&ini, theater.tile_extension());
+    let index = TileSetIndex::parse(&ini, theater.tile_extension())
+        .map_err(|e| format!("{ini_name}: {e}"))?;
     let mut tmps: std::collections::HashMap<String, TmpFile> = std::collections::HashMap::new();
     let mut rows: Vec<(u16, u16, u8, u8, u8)> = Vec::new();
     for t in &map.tiles {
@@ -744,3 +746,6 @@ mod named_color_tests {
         }
     }
 }
+
+#[cfg(test)]
+mod tileset_loading_tests;
