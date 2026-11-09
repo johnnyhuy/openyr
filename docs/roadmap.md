@@ -838,6 +838,12 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       and gestures while preserving queued orders, selected units, assigned
       teams and encoded Sessions. Successful mute remains nonmodal; authored
       compositor proof is asset-free (`docs/formats/menus.md`).
+- [x] Protect an earlier named save when a fresh front-menu match commits
+      (#306, #96). The new match targets quicksave in the current save folder;
+      actual F5/F9 dispatch preserves old named bytes and writes exact fresh
+      Session bytes. Controlled result channels cover load/restart/preview/
+      failure/cancel policies at supported layouts (`docs/formats/menus.md`).
+      Retail reconstruction and physical Mac/Retina checks remain open.
 - [ ] Complete world interaction and desktop UX (#97): consistent selection,
       supported control groups/hotkeys, hover/target/order feedback, bounded
       camera movement and configurable edge scrolling. Clear held input on

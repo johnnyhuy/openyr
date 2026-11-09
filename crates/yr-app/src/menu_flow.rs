@@ -615,12 +615,15 @@ impl App {
                 sprites,
             }) => {
                 let restored = save_path.is_some();
+                let fresh_front_match = self.menu.front && !restored;
                 self.menu.front = false;
                 self.movie = None;
                 self.front_preview = None;
                 self.front_art = Default::default();
                 if let Some(path) = save_path {
                     self.save_path = path;
+                } else if fresh_front_match {
+                    self.save_path = self.save_directory().join("quicksave.oyrsave");
                 }
                 self.menu.setup.options = session.start_options;
                 self.menu.setup.config = session.match_config.clone();
