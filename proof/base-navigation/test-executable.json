@@ -1,0 +1,9 @@
+{
+  "commit": "e989266d52c02a16c2e29af2c0b04ddc1ca0d8e5",
+  "tree": "52b7d4d71d2f93ff6456b607efde6e1619279354",
+  "executable": "/workspace/openyr-base-shortcut-20261109-4/.tmp/cargo-target/debug/deps/openyr-8539b05c03c1d83a",
+  "size": 195645800,
+  "sha256": "c8924f4cc2eb96ac3877f2e1f8514cd78b485580d578b5a51ebc4b96d6fe4c8c",
+  "build_command": "CARGO_TARGET_DIR=$PWD/.tmp/cargo-target CARGO_BUILD_JOBS=2 cargo test -p yr-app --bin openyr --locked --no-run --message-format=json",
+  "capture_command": "OPENYR_WORLD_FEEDBACK_PROOF=$PWD/.tmp/base-proof-final <recorded executable> hover_feedback::tests::ownership::base_navigation:: --nocapture"
+}
