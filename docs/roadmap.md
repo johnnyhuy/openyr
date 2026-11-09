@@ -863,6 +863,14 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       both skins and three layouts while preserving file and Session bytes.
       The 4,096-entry scan and no-follow filters remain; synthetic proof does
       not establish retail reconstruction (`docs/formats/menus.md`).
+- [x] Suppress held-key repeats across modal boundaries (#314, #96, #97):
+      track physical presses separately from world keys; menu/popup transitions,
+      focus loss, native folder selection and prepared loads require release or
+      a fresh press before an old repeat can edit, pan or zoom. Native Save,
+      dropdown and 24 resume cases at three layouts preserve existing selection,
+      command and Session/save policies. Same-editor repeats remain available;
+      retail reconstruction and physical Mac/Retina checks remain unverified
+      (`docs/formats/menus.md`).
 - [ ] Complete world interaction and desktop UX (#97): consistent selection,
       supported control groups/hotkeys, hover/target/order feedback, bounded
       camera movement and configurable edge scrolling. Clear held input on

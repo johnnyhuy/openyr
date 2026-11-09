@@ -47,7 +47,7 @@ impl App {
     pub(super) fn escape_command_or_pause(&mut self) {
         self.order_feedback.clear();
         self.cancel_pointer_action();
-        self.keys.clear();
+        self.suppress_held_keys();
         self.shift = false;
         self.control = false;
         self.super_key = false;
@@ -70,7 +70,7 @@ impl App {
         self.groups.interrupt();
         self.order_feedback.clear();
         self.cancel_pointer_action();
-        self.keys.clear();
+        self.suppress_held_keys();
         self.shift = false;
         self.control = false;
         self.super_key = false;
@@ -414,7 +414,7 @@ impl App {
             Effect::CancelMap => self.cancel_map_chooser(),
             Effect::Resume => {
                 self.cancel_pointer_action();
-                self.keys.clear();
+                self.suppress_held_keys();
                 self.shift = false;
                 self.control = false;
                 self.super_key = false;
@@ -639,7 +639,7 @@ impl App {
                 self.groups = Default::default();
                 self.order_feedback.clear();
                 self.pending.clear();
-                self.keys.clear();
+                self.suppress_held_keys();
                 self.shift = false;
                 self.control = false;
                 self.super_key = false;
@@ -680,6 +680,7 @@ impl App {
             }
             Err(e) => self.menu.message(e, back),
         }
+        self.suppress_held_keys();
         self.reset_menu_clock();
     }
     pub(super) fn read_preferences(&mut self) {

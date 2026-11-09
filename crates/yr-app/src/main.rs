@@ -136,6 +136,7 @@ struct App {
     last_cursor: (f64, f64),
     keys: std::collections::HashSet<KeyCode>,
     suppressed_keys: std::collections::HashSet<KeyCode>,
+    held_keys: std::collections::HashSet<KeyCode>,
     last_tick: Instant,
     accum: Duration,
     title: String,
@@ -358,7 +359,8 @@ impl App {
             self.groups.interrupt();
             self.order_feedback.clear();
             self.invalidate_pointer();
-            self.keys.clear();
+            self.suppress_held_keys();
+            self.held_keys.clear();
             self.shift = false;
             self.control = false;
             self.super_key = false;
@@ -1686,6 +1688,7 @@ fn new_app(gamedir: String, map_name: String, scale: u32) -> App {
         last_cursor: (0.0, 0.0),
         keys: std::collections::HashSet::new(),
         suppressed_keys: std::collections::HashSet::new(),
+        held_keys: std::collections::HashSet::new(),
         last_tick: Instant::now(),
         accum: Duration::ZERO,
         title: String::new(),
