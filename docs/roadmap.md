@@ -827,6 +827,11 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       owned cleanup retain the existing JSON schema. Actual native handler and
       scratch-file checks cover publication errors, Controls recovery and retry;
       physical Mac input remains unverified (`docs/formats/menus.md`).
+- [x] Apply normal modal input cleanup to live preference-write recovery (#303,
+      #96, #97). Actual M failures and recovery at three sizes cancel old modes
+      and gestures while preserving queued orders, selected units, assigned
+      teams and encoded Sessions. Successful mute remains nonmodal; authored
+      compositor proof is asset-free (`docs/formats/menus.md`).
 - [ ] Complete world interaction and desktop UX (#97): consistent selection,
       supported control groups/hotkeys, hover/target/order feedback, bounded
       camera movement and configurable edge scrolling. Clear held input on
