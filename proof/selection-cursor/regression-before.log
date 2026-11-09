@@ -1,0 +1,21 @@
+   Compiling yr-app v0.1.0 (/workspace/openyr-loading-audit-20261109-0800/crates/yr-app)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 5.22s
+     Running unittests src/lib.rs (/workspace/openyr/target/debug/deps/yr_app-3d65909a3deb91c6)
+
+running 1 test
+
+thread 'interaction::tests::selection_only::selection_only_cursor_never_promises_a_world_order' (192759) panicked at crates/yr-app/src/interaction/tests/selection_only.rs:26:9:
+assertion `left == right` failed: selection-only click cannot advertise Move
+  left: Move
+ right: Pointer
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test interaction::tests::selection_only::selection_only_cursor_never_promises_a_world_order ... FAILED
+
+failures:
+
+failures:
+    interaction::tests::selection_only::selection_only_cursor_never_promises_a_world_order
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 118 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p yr-app --lib`

@@ -1,0 +1,81 @@
+Script started on 2026-11-09 01:32:23+00:00 [COMMAND="bash /workspace/scratch/selection-cursor-proof/run-proof.sh" <not executed on terminal>]
+cf06fe72dcd009b547d76f4af527c5a238cc5b21
+68f6cb76505f4b64724fec60d1f159962b51012f
+37436705eefe87a96cfe541fa33b14daa3740d0c6319c8b01a73a8d9daeb6274  /workspace/openyr/target/debug/deps/yr_app-3d65909a3deb91c6
+
+running 4 tests
+test interaction::tests::absent_tiles_produce_blocked_cursor_and_no_world_orders ... ok
+test interaction::tests::resource_cells_offer_harvest_only_to_harvesters ... ok
+test interaction::tests::same_resolver_selects_and_filters_click_commands_by_ownership_weapon_and_route ... ok
+test interaction::tests::selection_only::selection_only_cursor_never_promises_a_world_order ... Selection-only resolver: Move/Attack/Harvest/AttackMove suppressed; 70 selection/target/mode cases; complete Sim save bytes and hash unchanged (26aeb9068b9c7e1d).
+ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 115 filtered out; finished in 0.00s
+
+{
+  "actions": [
+    {
+      "attack_move": false,
+      "cell": [
+        3,
+        2
+      ],
+      "ordinary_commands": "[Move { id: 1, x: Fix(896), y: Fix(640) }]",
+      "ordinary_cursor": "Move",
+      "selected": [
+        1
+      ],
+      "selection_commands": "[]",
+      "selection_cursor": "Pointer"
+    },
+    {
+      "attack_move": false,
+      "cell": [
+        6,
+        2
+      ],
+      "ordinary_commands": "[Attack { id: 1, target: 3 }]",
+      "ordinary_cursor": "Attack",
+      "selected": [
+        1
+      ],
+      "selection_commands": "[]",
+      "selection_cursor": "Pointer"
+    },
+    {
+      "attack_move": false,
+      "cell": [
+        5,
+        2
+      ],
+      "ordinary_commands": "[Harvest { id: 2 }]",
+      "ordinary_cursor": "Harvest",
+      "selected": [
+        2
+      ],
+      "selection_commands": "[]",
+      "selection_cursor": "Pointer"
+    },
+    {
+      "attack_move": true,
+      "cell": [
+        3,
+        2
+      ],
+      "ordinary_commands": "[AttackMove { id: 1, x: Fix(896), y: Fix(640) }]",
+      "ordinary_cursor": "AttackMove",
+      "selected": [
+        1
+      ],
+      "selection_commands": "[]",
+      "selection_cursor": "Pointer"
+    }
+  ],
+  "hash": "26aeb9068b9c7e1d",
+  "matrix_cases": 70,
+  "retail_art": false,
+  "session_present": false,
+  "sim_save_bytes": 5325,
+  "sim_save_unchanged": true
+}
+Script done on 2026-11-09 01:32:23+00:00 [COMMAND_EXIT_CODE="0"]

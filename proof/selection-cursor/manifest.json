@@ -1,0 +1,47 @@
+[
+  {
+    "path": "README.md",
+    "bytes": 1933,
+    "sha256": "90f820dc1cf6f9c8c91fe67a14c0b1b1f867361d0456bc27f06fc84477a187a5"
+  },
+  {
+    "path": "cli-help.txt",
+    "bytes": 366,
+    "sha256": "665233dd3113fc77f7fe10890eed9166f82976e5f9af1de548de40da6d351ce8"
+  },
+  {
+    "path": "regression-before.log",
+    "bytes": 1006,
+    "sha256": "63e8666adddd5a4408e14a2ac0f3f1f2b84477ce9f598bddff6728e81dda1f1d"
+  },
+  {
+    "path": "release-build.log",
+    "bytes": 5863,
+    "sha256": "96cc868d62a8127c3399950ceca65c0bd40142ad74c6ddf5cbb615f2fc8c9148"
+  },
+  {
+    "path": "release-receipt.json",
+    "bytes": 804,
+    "sha256": "15ef90313177785d31fdff600f6b96df8abd7ed37b7d7b30eb841d420380df2a"
+  },
+  {
+    "path": "resolver.json",
+    "bytes": 1368,
+    "sha256": "91a0c0ed3e2dc42d933155f1bc48d05cacf4723a553ad6f46339571ac8204861"
+  },
+  {
+    "path": "run-proof.sh",
+    "bytes": 496,
+    "sha256": "fc60e45be1a4fd344fc143a377b6487585607580cc36915fcdc53041bb734bef"
+  },
+  {
+    "path": "terminal.txt",
+    "bytes": 2519,
+    "sha256": "77ead1377840649f8c69723fc45b17a97bfa146490746e477cdcc056b53e9573"
+  },
+  {
+    "path": "workspace-check.log",
+    "bytes": 57342,
+    "sha256": "29ea97153e9eb141493fe9bf9b1e071b64135b7d05a1150c32faba819f53250d"
+  }
+]
