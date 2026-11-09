@@ -179,6 +179,8 @@ pub const KNOWN_NAMES: &[&str] = &[
     "PALETTE.PAL",
     "GRFXTXT.PAL",
     "UIBKGD.PAL",
+    "UIBKGDY.PAL",
+    "RADARYURI.PAL",
     "SIDEBAR.PAL",
     "LIBTEM.PAL",
     "LIBSNO.PAL",
@@ -211,6 +213,14 @@ pub const KNOWN_NAMES: &[&str] = &[
     "CREDITS.SHP",
     "TOP.SHP",
     "RADAR.SHP",
+    "RADARY.SHP",
+    "BKGDSM.SHP",
+    "BKGDMD.SHP",
+    "BKGDLG.SHP",
+    "BKGDSMY.SHP",
+    "BKGDMDY.SHP",
+    "BKGDLGY.SHP",
+    "KEY.INI",
     "SIDE2B.SHP",
     "TAB00.SHP",
     "TAB01.SHP",
@@ -409,6 +419,22 @@ mod tests {
         // Confirmed in langmd.mix: docs/formats/mix.md.
         assert_eq!(known_name(0xbd835079), Some("RA2MD.CSF"));
         assert_eq!(known_name(0xdead_beef), None);
+    }
+
+    #[test]
+    fn resolves_side_background_and_yuri_ids() {
+        // Retail SIDEC01.MIX (RA2.MIX) background plates, by entry ID.
+        assert_eq!(known_name(0x69b1_fbfa), Some("BKGDSM.SHP"));
+        assert_eq!(known_name(0x9518_9d30), Some("BKGDMD.SHP"));
+        assert_eq!(known_name(0x685a_8733), Some("BKGDLG.SHP"));
+        // Retail SIDEC02MD.MIX (RA2MD.MIX) Yuri variants and radar.
+        assert_eq!(known_name(0x827a_6765), Some("BKGDSMY.SHP"));
+        assert_eq!(known_name(0x7ed3_01af), Some("BKGDMDY.SHP"));
+        assert_eq!(known_name(0x8391_1bac), Some("BKGDLGY.SHP"));
+        assert_eq!(known_name(0x799d_088d), Some("RADARY.SHP"));
+        assert_eq!(known_name(0x0d7c_6d7c), Some("UIBKGDY.PAL"));
+        assert_eq!(known_name(0x0b8d_57c4), Some("RADARYURI.PAL"));
+        assert_eq!(known_name(0x763c_81dd), Some("KEY.INI"));
     }
 
     #[test]

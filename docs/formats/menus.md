@@ -26,6 +26,17 @@ the status strip. The sidebar reuses `CREDITS`, `TOP`, `RADAR`, `SIDE1`, `SIDE2`
 The dialog and control palettes differ. Applying `SIDEBAR.PAL` to the eagle
 plate produces incorrect colors.
 
+The Yuri `SIDEC02MD.MIX` in `RA2MD.MIX` holds seven entries, all now
+hash-resolved in the name database. Its background plates follow the
+Allied pattern with a `Y` suffix, via `BKGDSMY.SHP` (472x448),
+`BKGDMDY.SHP` (632x568) and `BKGDLGY.SHP` (856x736). Its radar sheet is
+`RADARY.SHP` (168x110, 33 frames), with palettes `UIBKGDY.PAL` and
+`RADARYURI.PAL`, plus the shared `KEY.INI` key file. The contributed retail run
+reported that every SHP frame decoded and both palettes parsed; the optional
+retail corpus test retains those checks. Cloud checks without an install do
+not repeat that decoding. Yuri gameplay remains unsupported, so this naming
+does not wire a Yuri sidebar into a match.
+
 `GAME.FNT` supplies glyphs; `RA2MD.CSF` supplies available labels and tooltips.
 Native flow and error messages use short fallback text. Optional assets with
 unexpected canvas/frame counts are rejected before allocating decoded canvases.
