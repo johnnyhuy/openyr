@@ -1,0 +1,9 @@
+{
+  "source_commit": "0bededaa976ea441fb65a13e11f9223351ff9d1f",
+  "source_tree": "a5cb025a47d4ef3d7f1657e2b9fa787d09b85a81",
+  "debug_test_binary_sha256": "6a5f8774b98eeac183ba0f1ac1ad2996cc77b2a92fb957dd14599502289b20a1",
+  "debug_test_binary_bytes": 193308168,
+  "test": "hover_feedback::tests::ownership::world_feedback_ownership_matches_ignored_keyboard_pan_clicks",
+  "kind": "native App debug handler test; distinct from isolated release CLI receipt",
+  "retail_data": false
+}

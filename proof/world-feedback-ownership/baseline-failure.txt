@@ -1,0 +1,15 @@
+thread 'hover_feedback::tests::ownership::world_feedback_ownership_matches_ignored_keyboard_pan_clicks' (237602) panicked at crates/yr-app/src/hover_feedback/tests/ownership.rs:75:5:
+assertion `left == right` failed: ignored click cannot advertise Attack
+  left: Attack
+ right: Pointer
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test hover_feedback::tests::ownership::world_feedback_ownership_matches_ignored_keyboard_pan_clicks ... FAILED
+
+failures:
+
+failures:
+    hover_feedback::tests::ownership::world_feedback_ownership_matches_ignored_keyboard_pan_clicks
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 135 filtered out; finished in 0.30s
+
+error: test failed, to rerun pass `-p yr-app --bin openyr`
