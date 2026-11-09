@@ -1,0 +1,140 @@
+   Compiling yr-rules v0.1.0 (/workspace/openyr-core-audit-20261109-1000/crates/yr-rules)
+   Compiling yr-assets v0.1.0 (/workspace/openyr-core-audit-20261109-1000/crates/yr-assets)
+   Compiling yr-sim v0.1.0 (/workspace/openyr-core-audit-20261109-1000/crates/yr-sim)
+   Compiling yr-render v0.1.0 (/workspace/openyr-core-audit-20261109-1000/crates/yr-render)
+   Compiling yr-app v0.1.0 (/workspace/openyr-core-audit-20261109-1000/crates/yr-app)
+   Compiling sim-bench v0.1.0 (/workspace/openyr-core-audit-20261109-1000/tools/sim-bench)
+   Compiling mix-dump v0.1.0 (/workspace/openyr-core-audit-20261109-1000/tools/mix-dump)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 16.94s
+     Running unittests src/main.rs (/workspace/openyr/target/debug/deps/mix_dump-5ae923b35a507dc9)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/cli.rs (/workspace/openyr/target/debug/deps/cli-71c20bf242817682)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 0.00s
+
+     Running unittests src/main.rs (/workspace/openyr/target/debug/deps/sim_bench-efb3bd1d7418e0a6)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (/workspace/openyr/target/debug/deps/yr_app-3d65909a3deb91c6)
+
+running 1 test
+Radar terrain loader returned: radar tileset: theater tile index exceeds 65536 filenames
+test sidebar::radar::tests::tileset_budget_error_reaches_radar_terrain_loading ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 119 filtered out; finished in 0.00s
+
+     Running unittests src/main.rs (/workspace/openyr/target/debug/deps/openyr-8539b05c03c1d83a)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 135 filtered out; finished in 0.00s
+
+     Running tests/audio.rs (/workspace/openyr/target/debug/deps/audio-800d99bfb7c3d4cf)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.00s
+
+     Running tests/participants.rs (/workspace/openyr/target/debug/deps/participants-3e756ceb52de2841)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.00s
+
+     Running tests/retail.rs (/workspace/openyr/target/debug/deps/retail-0542cb82d876cb1d)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 9 filtered out; finished in 0.00s
+
+     Running tests/services.rs (/workspace/openyr/target/debug/deps/services-2f2c4484e0f73c9a)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.00s
+
+     Running tests/terrain.rs (/workspace/openyr/target/debug/deps/terrain-9ee06504a978e422)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (/workspace/openyr/target/debug/deps/yr_assets-9531e89f5c38dc69)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.00s
+
+     Running tests/retail.rs (/workspace/openyr/target/debug/deps/retail-a15c015f13058153)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 6 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (/workspace/openyr/target/debug/deps/yr_formats-0e772dec0ccadab9)
+
+running 3 tests
+Huge, aggregate and malformed tile counts return errors before oversized expansion.
+test tileset::budget_tests::tileset_budget_rejects_hostile_and_malformed_counts_before_expansion ... ok
+Accepted 65536 short template names without truncating or shifting tile indexes.
+test tileset::budget_tests::tileset_budget_accepts_the_count_boundary_and_preserves_numbering ... ok
+Long-prefix and aggregate filename storage exceed the bounded 16 MiB budget and are rejected.
+test tileset::budget_tests::tileset_budget_bounds_long_prefix_expansion_and_cumulative_storage ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 67 filtered out; finished in 0.02s
+
+     Running tests/retail.rs (/workspace/openyr/target/debug/deps/retail-1a598f24f2f4f974)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 14 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (/workspace/openyr/target/debug/deps/yr_render-ddfd1ae686f8de65)
+
+running 2 tests
+Terrain loading returned: TEMPERATMD.INI: theater tile index exceeds 65536 filenames
+test tileset_loading_tests::tileset_budget_error_reaches_terrain_loading_without_template_access ... ok
+Map render entrypoint returned: TEMPERATMD.INI: theater tile index exceeds 65536 filenames
+test tileset_loading_tests::tileset_budget_error_reaches_actual_map_render_entrypoint ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 62 filtered out; finished in 0.00s
+
+     Running tests/retail.rs (/workspace/openyr/target/debug/deps/retail-5ec7fec35fbc9170)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 5 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (/workspace/openyr/target/debug/deps/yr_rules-98668b0d309a18b5)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 10 filtered out; finished in 0.00s
+
+     Running tests/retail.rs (/workspace/openyr/target/debug/deps/retail-6132b8ac12951a2d)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 7 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (/workspace/openyr/target/debug/deps/yr_sim-e69a4d211883ad72)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 75 filtered out; finished in 0.00s
+
+     Running tests/retail.rs (/workspace/openyr/target/debug/deps/retail-b784eaa2b10c8ab6)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.00s
+
