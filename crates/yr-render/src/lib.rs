@@ -659,9 +659,17 @@ pub fn build_terrain(
         let Some(name) = index.file_for(id) else {
             continue;
         };
-        let tmp = tmps.entry(name.to_string()).or_insert_with(|| {
-            TmpFile::parse(fs.read(name).expect("TMP readable")).expect("TMP parses")
-        });
+        let tmp = match tmps.entry(name.to_string()) {
+            std::collections::hash_map::Entry::Occupied(entry) => entry.into_mut(),
+            std::collections::hash_map::Entry::Vacant(entry) => {
+                let bytes = fs
+                    .read(name)
+                    .ok_or_else(|| format!("terrain template {name} is missing"))?;
+                let template = TmpFile::parse(bytes)
+                    .map_err(|error| format!("terrain template {name}: {error}"))?;
+                entry.insert(template)
+            }
+        };
         if let Some(cell) = tmp.tiles.get(t.subtile as usize).and_then(Option::as_ref) {
             rows.push((t.x, t.y, t.level, cell.terrain_type, cell.ramp_type));
         }
@@ -749,3 +757,6 @@ mod named_color_tests {
 
 #[cfg(test)]
 mod tileset_loading_tests;
+
+#[cfg(test)]
+mod tmp_loading_tests;

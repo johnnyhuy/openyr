@@ -581,8 +581,11 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       malformed metadata without truncating tile numbering. Synthetic parser,
       terrain/radar/map-loader and CLI proof cover recovery
       (`docs/formats/map.md`); retail scans remain unavailable.
-- [ ] Replace missing/malformed TMP panics in terrain setup with contextual
-      loader errors (#293), preserving ordinary sparse-grid behavior.
+- [x] Replace missing/malformed TMP panics in terrain setup with contextual
+      loader errors (#293), preserving ordinary sparse-grid behavior. In-memory
+      fixtures verify valid metadata, clear-sentinel/cache reuse and complete
+      synthetic Sim save-byte/hash equivalence (`docs/formats/tmp.md`). Retail
+      scans and physical Mac checks remain unavailable.
 - [ ] Bound map-coordinate-derived terrain/raster extents before allocation
       (#294), with a documented native policy and hostile-coordinate checks.
 - [x] Cancel pending loads on asynchronous menu movie failure (#288, #96).

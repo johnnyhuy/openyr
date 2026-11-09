@@ -237,5 +237,6 @@ entrypoints. A receipt-verified `mix-dump render-map` run demonstrates the
 recoverable error on synthetic metadata without a PNG. This is loader/parser
 verification, not a retail archive scan, complete Session, physical Mac/Retina
 or original-game comparison. Simulation and save formats are unchanged.
-Missing/malformed TMP panics and map-coordinate extent allocation remain
-separate defects (#293, #294).
+Missing/malformed terrain templates now return contextual loader errors
+([TMP recovery policy](tmp.md), #293). Map-coordinate extent allocation remains
+a separate defect (#294).

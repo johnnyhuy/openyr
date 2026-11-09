@@ -48,3 +48,25 @@ returns the `(row, x_start, width)` table.
 - XCC Utilities `tmp_ts_file`, ModEnc "TMP (TS)".
 - OpenRA `TmpTSLoader.cs` (GPL-3.0), cross-check only.
 - Verified against retail data as above.
+
+## Terrain-loader recovery
+
+Simulation terrain setup returns a filename-specific error when a referenced,
+indexed template is missing or fails bounded TMP parsing (#293). It no longer
+panics inside the template cache. Missing files report `terrain template
+<name> is missing`; malformed files retain the parser's reason after the
+filename. Successfully parsed templates are cached and reused as before.
+
+This does not invent ground for unknown tile indexes, out-of-range subtiles or
+authored empty TMP cells. Those records keep their existing sparse-grid policy.
+Valid records retain TMP terrain class/ramp metadata and the map record's
+height; clear-sentinel records still resolve through tile zero. No simulation
+or save format changes.
+
+Asset-independent in-memory tests cover missing, malformed and truncated TMPs,
+repeated valid and clear-sentinel references, unresolved/empty subtiles, and
+complete synthetic Sim save-byte/hash equivalence and roundtrip. Terminal proof
+exercises the changed public `build_terrain` API directly. The separately
+receipt-verified CLI smoke covers `mix-dump`, whose map-art path is distinct;
+it does not establish complete Session reconstruction. Retail scans, physical
+Mac/Retina, audio and original-game behavior remain unverified without data.
