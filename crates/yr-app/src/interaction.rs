@@ -111,6 +111,7 @@ pub fn at(
     selected: &std::collections::BTreeSet<u32>,
     cell: (i32, i32),
     attack_move: bool,
+    selection_only: bool,
     service: ServiceMode,
 ) -> Action {
     if service != ServiceMode::None {
@@ -126,7 +127,7 @@ pub fn at(
         action.commands.extend(command);
         return action;
     }
-    orders(&session.sim, selected, cell, attack_move)
+    orders(&session.sim, selected, cell, attack_move, selection_only)
 }
 
 fn orders(
@@ -134,12 +135,13 @@ fn orders(
     selected: &std::collections::BTreeSet<u32>,
     cell: (i32, i32),
     attack_move: bool,
+    selection_only: bool,
 ) -> Action {
     let coordinate = u16::try_from(cell.0).ok().zip(u16::try_from(cell.1).ok());
     let Some(cell) =
         coordinate.filter(|&(x, y)| sim.terrain().is_some_and(|g| g.cell(x, y).is_some()))
     else {
-        return Action::new(if selected.is_empty() {
+        return Action::new(if selection_only || selected.is_empty() {
             Kind::Pointer
         } else {
             Kind::Blocked
@@ -151,12 +153,15 @@ fn orders(
             && u.x.to_int_floor() == i32::from(cell.0)
             && u.y.to_int_floor() == i32::from(cell.1)
     });
-    if !attack_move {
+    if selection_only || !attack_move {
         if let Some(unit) = own {
             let mut action = Action::new(Kind::Select);
             action.select = Some(unit.id);
             return action;
         }
+    }
+    if selection_only {
+        return Action::new(Kind::Pointer);
     }
     let building = sim.buildings().iter().find(|b| {
         b.owner != OWNER_PLAYER
@@ -241,6 +246,9 @@ mod tests {
         Sim,
     };
 
+    use std::collections::BTreeSet;
+    mod selection_only;
+
     fn scene() -> Sim {
         let mut sim = Sim::new(42);
         sim.set_terrain(TerrainGrid::from_tiles(
@@ -297,7 +305,7 @@ mod tests {
             }),
         ));
         for attack_move in [false, true] {
-            let action = orders(&sim, &[1].into(), (3, 2), attack_move);
+            let action = orders(&sim, &[1].into(), (3, 2), attack_move, false);
             assert_eq!(action.cursor, Kind::Blocked);
             assert!(action.commands.is_empty());
         }
@@ -319,28 +327,28 @@ mod tests {
             id: 2,
             role: Role::Harvester,
         }]);
-        let harvest = orders(&sim, &[2].into(), (5, 2), false);
+        let harvest = orders(&sim, &[2].into(), (5, 2), false, false);
         assert_eq!(harvest.cursor, Kind::Harvest);
         assert!(matches!(
             harvest.commands.as_slice(),
             [Command::Harvest { id: 2 }]
         ));
-        let tank = orders(&sim, &[1].into(), (5, 2), false);
+        let tank = orders(&sim, &[1].into(), (5, 2), false, false);
         assert_eq!(tank.cursor, Kind::Move);
         assert!(matches!(
             tank.commands.as_slice(),
             [Command::Move { id: 1, .. }]
         ));
-        let mixed = orders(&sim, &[1, 2].into(), (5, 2), false);
+        let mixed = orders(&sim, &[1, 2].into(), (5, 2), false, false);
         assert_eq!(mixed.cursor, Kind::Harvest);
         assert_eq!(mixed.commands.len(), 2);
-        let attack_move = orders(&sim, &[2].into(), (5, 2), true);
+        let attack_move = orders(&sim, &[2].into(), (5, 2), true, false);
         assert_eq!(attack_move.cursor, Kind::AttackMove);
         assert!(matches!(
             attack_move.commands.as_slice(),
             [Command::AttackMove { id: 2, .. }]
         ));
-        let plain = orders(&sim, &[2].into(), (4, 2), false);
+        let plain = orders(&sim, &[2].into(), (4, 2), false, false);
         assert_eq!(plain.cursor, Kind::Move);
     }
 
@@ -350,44 +358,55 @@ mod tests {
         let armed = [1].into();
         let unarmed = [2].into();
         let both = [1, 2].into();
-        let select = orders(&sim, &armed, (2, 2), false);
+        let select = orders(&sim, &armed, (2, 2), false, false);
         assert_eq!(
             (select.cursor, select.select, select.commands.len()),
             (Kind::Select, Some(2), 0)
         );
-        let attack = orders(&sim, &both, (6, 2), false);
+        let attack = orders(&sim, &both, (6, 2), false, false);
         assert_eq!(attack.cursor, Kind::Attack);
         assert!(matches!(
             attack.commands.as_slice(),
             [Command::Attack { id: 1, target: 3 }]
         ));
-        assert_eq!(orders(&sim, &unarmed, (6, 2), false).cursor, Kind::Blocked);
-        let movement = orders(&sim, &armed, (3, 2), false);
+        assert_eq!(
+            orders(&sim, &unarmed, (6, 2), false, false).cursor,
+            Kind::Blocked
+        );
+        let movement = orders(&sim, &armed, (3, 2), false, false);
         assert_eq!(movement.cursor, Kind::Move);
         assert!(matches!(
             movement.commands.as_slice(),
             [Command::Move { id: 1, .. }]
         ));
-        assert_eq!(orders(&sim, &armed, (3, 2), true).cursor, Kind::AttackMove);
+        assert_eq!(
+            orders(&sim, &armed, (3, 2), true, false).cursor,
+            Kind::AttackMove
+        );
         assert!(
-            orders(&sim, &armed, (6, 4), false).commands.is_empty(),
+            orders(&sim, &armed, (6, 4), false, false)
+                .commands
+                .is_empty(),
             "disconnected terrain is not advertised as reachable"
         );
         for cell in [(-1, 0), (8, 0), (0, 6), (i32::MAX, 0)] {
-            assert_eq!(orders(&sim, &armed, cell, false).cursor, Kind::Blocked);
+            assert_eq!(
+                orders(&sim, &armed, cell, false, false).cursor,
+                Kind::Blocked
+            );
         }
         assert_eq!(
-            orders(&sim, &Default::default(), (6, 2), false).cursor,
+            orders(&sim, &Default::default(), (6, 2), false, false).cursor,
             Kind::Pointer
         );
         assert_eq!(
-            orders(&sim, &[3].into(), (3, 2), false).cursor,
+            orders(&sim, &[3].into(), (3, 2), false, false).cursor,
             Kind::Pointer,
             "stale/enemy selections cannot issue commands"
         );
         let before = sim.state_hash();
         for _ in 0..3 {
-            let _ = orders(&sim, &both, (3, 4), false);
+            let _ = orders(&sim, &both, (3, 4), false, false);
         }
         assert_eq!(sim.state_hash(), before);
     }

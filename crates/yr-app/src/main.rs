@@ -267,6 +267,7 @@ impl App {
             &self.selected,
             (cell.0.floor() as i32, cell.1.floor() as i32),
             self.attack_move || (self.control && self.shift),
+            self.shift && !self.control,
             self.service_mode,
         ))
     }

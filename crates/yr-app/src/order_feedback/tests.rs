@@ -97,6 +97,7 @@ fn retail_tactical_orders_have_visible_feedback_without_changing_saved_state() {
                 &app.selected,
                 cell,
                 false,
+                false,
                 ServiceMode::None,
             )
             .cursor
