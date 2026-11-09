@@ -114,6 +114,11 @@ impl App {
                 return;
             }
         }
+        if state == ElementState::Pressed
+            && matches!(button, MouseButton::Left | MouseButton::Right)
+        {
+            self.interrupt_type_press();
+        }
         match (button, state) {
             (MouseButton::Left, ElementState::Pressed) if self.in_sidebar(self.cursor) => {
                 self.sidebar_left_press(self.camera_size());

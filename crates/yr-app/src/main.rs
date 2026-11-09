@@ -668,6 +668,7 @@ impl App {
         if !rows.is_finite() || rows == 0.0 {
             return;
         }
+        self.interrupt_type_press();
         if self.cursor.0 >= f64::from(size.0.saturating_sub(SIDEBAR_W)) {
             if let Some(session) = &self.session {
                 self.sidebar_view.wheel(session, size.1, -rows);

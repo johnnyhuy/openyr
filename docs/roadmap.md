@@ -895,6 +895,14 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       Native elevated/bounds/layout, mode, guard and command tests preserve
       Session bytes. Yard choice, fallback/cycling and notice calibration remain
       native policies; retail/physical checks remain open (`docs/camera-input.md`).
+- [x] Require consecutive deliberate T input for global expansion (#321,
+      #97): fresh other keys, accepted Left/Right presses, routed wheels and
+      rejected tracked T chords interrupt the prior window. Guarded repeats,
+      rejected input and pointer motion preserve normal double-T behavior.
+      Native Session regressions reproduce the old offscreen addition and
+      verify viewport-only restart, valid global pairs and unchanged camera,
+      orders and save bytes (`docs/control-groups.md`). Original timing and
+      physical/retail calibration remain open.
 - [ ] Complete world interaction and desktop UX (#97): consistent selection,
       supported control groups/hotkeys, hover/target/order feedback, bounded
       camera movement and configurable edge scrolling. Clear held input on
