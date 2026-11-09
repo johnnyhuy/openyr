@@ -26,6 +26,11 @@ fn category_keys_match_mouse_tab_composition_and_preserve_match() {
             let (mut keyboard, own, _) = scene(size);
             let (mut mouse, _, _) = scene(size);
             for app in [&mut keyboard, &mut mouse] {
+                app.map.as_mut().unwrap().rgba = [30, 40, 30, 255]
+                    .into_iter()
+                    .cycle()
+                    .take(1600 * 1200 * 4)
+                    .collect();
                 app.sidebar_view.select(if category == Category::Vehicles {
                     Category::Infantry
                 } else {
