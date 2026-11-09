@@ -591,8 +591,8 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       rasters use checked wide bounds and a 1 GiB pre-downscale budget. Parser,
       programmatic terrain/radar and actual tiny raster tests preserve sparse
       behavior and an independently specified sparse Sim save
-      (`docs/formats/map.md`). Large-map compatibility and retail/physical
-      Mac verification remain unverified.
+      (`docs/formats/map.md`). Large-map compatibility remains unverified;
+      retail/physical Mac checks remain open.
 
 - [x] Cancel pending loads on asynchronous menu movie failure (#288, #96).
       Normal modal entry clears input, cancels work and drops queued retries;

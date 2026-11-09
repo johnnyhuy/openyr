@@ -276,4 +276,3 @@ Sim state hash/complete save are checked.
 and a state receipt. This does not verify retail maps/assets, a complete
 Session, native Mac/Retina input, audio or original pixel/timing parity.
 Simulation and save schemas are unchanged.
-
