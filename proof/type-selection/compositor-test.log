@@ -1,0 +1,506 @@
+
+running 4 tests
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: cursor art unavailable; keeping the system pointer
+OpenYR: cursor art unavailable; keeping the system pointer
+OpenYR: cursor art unavailable; keeping the system pointer
+OpenYR: cursor art unavailable; keeping the system pointer
+Mixed types expand together, offscreen owned seeds remain, enemy/stale IDs are pruned and old gestures cannot issue an order on release; queued Stop and Session bytes survive.
+test hover_feedback::tests::ownership::type_selection::mixed_type_selection_retains_owned_seeds_and_cancels_old_gestures_only ... ok
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: cursor art unavailable; keeping the system pointer
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: cursor art unavailable; keeping the system pointer
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: cursor art unavailable; keeping the system pointer
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: cursor art unavailable; keeping the system pointer
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: cursor art unavailable; keeping the system pointer
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: cursor art unavailable; keeping the system pointer
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: cursor art unavailable; keeping the system pointer
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: cursor art unavailable; keeping the system pointer
+OpenYR: cursor art unavailable; keeping the system pointer
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: cursor art unavailable; keeping the system pointer
+OpenYR: cursor art unavailable; keeping the system pointer
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: cursor art unavailable; keeping the system pointer
+OpenYR: cursor art unavailable; keeping the system pointer
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: cursor art unavailable; keeping the system pointer
+OpenYR: cursor art unavailable; keeping the system pointer
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: cursor art unavailable; keeping the system pointer
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+Repeat, synthetic/unfocused, tracked modifier, ended-match and missing-map/session guards are inert; focused T works and Save still accepts the letter t.
+test hover_feedback::tests::ownership::type_selection::type_selection_respects_repeat_focus_modifiers_outcome_and_menu_text ... ok
+OpenYR: cursor art unavailable; keeping the system pointer
+18 geometry cases keep anchors at the sidebar/bottom edge excluded and include them one framebuffer pixel inside, from zoom 0.25 to 4, without changing Session bytes.
+test hover_feedback::tests::ownership::type_selection::type_selection_uses_half_open_world_edges_at_low_and_high_zoom ... ok
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: cursor art unavailable; keeping the system pointer
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: cursor art unavailable; keeping the system pointer
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: cursor art unavailable; keeping the system pointer
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: cursor art unavailable; keeping the system pointer
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: cursor art unavailable; keeping the system pointer
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: cursor art unavailable; keeping the system pointer
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: cursor art unavailable; keeping the system pointer
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: cursor art unavailable; keeping the system pointer
+Native T selects visible owned matching types at three layouts x three zooms, excluding enemy, unrelated and offscreen units; camera and complete Session bytes stay unchanged.
+test hover_feedback::tests::ownership::type_selection::type_selection_expands_visible_owned_types_without_mutating_the_match ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 161 filtered out; finished in 4.25s
+
