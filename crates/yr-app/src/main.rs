@@ -368,6 +368,15 @@ impl App {
         self.view.dirty = true;
     }
 
+    /// Feedback follows the native gesture owner, including before a redraw.
+    fn world_pointer_busy(&self) -> bool {
+        self.keyboard_pan() != (0.0, 0.0)
+            || self.left_down.is_some()
+            || self.right_down.is_some()
+            || self.right_panning
+            || self.radar_drag
+    }
+
     fn cursor_kind(&self, size: (u32, u32)) -> yr_app::cursor::Kind {
         use yr_app::cursor::Kind;
         if let Some(kind) = self.edge_cursor(size) {
@@ -376,15 +385,15 @@ impl App {
         if self.cursor.0 >= f64::from(size.0.saturating_sub(SIDEBAR_W)) {
             return Kind::Pointer;
         }
+        if self.world_pointer_busy() {
+            return Kind::Pointer;
+        }
         if self.placing.is_some() {
             return if self.placement_target().is_some_and(|(_, _, valid)| valid) {
                 Kind::Pointer
             } else {
                 Kind::Blocked
             };
-        }
-        if self.left_down.is_some() || self.right_panning {
-            return Kind::Pointer;
         }
         self.world_action(self.cursor)
             .map_or(Kind::Pointer, |a| a.cursor)

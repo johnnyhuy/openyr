@@ -762,6 +762,12 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       cover layouts, routes and release order; synthetic compositor frames
       verify removal without retail data (`docs/window-input.md`). Original
       button-chord calibration and physical Mac/Retina input remain open.
+- [x] Align world cursor/hover feedback with gesture ownership (#298, #98,
+      #97): nonzero net held arrows and tracked right presses suppress action
+      previews before redraw, including service and placement modes. Native
+      synthetic Sessions verify 108 arrow/layout/action combinations, real
+      queued commands, ready structures, opposing arrows, key-up recovery and
+      unchanged encoded saves. Retail, original and physical Mac checks remain.
 - [x] Reject new world gestures during held-key camera panning (#286, #97).
       Shared net direction drives redraw and input ownership; opposing keys,
       key-up recovery, sidebar and menu routes retain their behavior. Native
