@@ -662,3 +662,5 @@ mod modal_repeat;
 mod type_selection;
 
 mod base_navigation;
+
+mod type_interruption;
