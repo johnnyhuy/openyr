@@ -68,6 +68,7 @@ impl App {
     }
     fn clear_menu_input(&mut self) {
         self.groups.interrupt();
+        self.interrupt_type_press();
         self.order_feedback.clear();
         self.cancel_pointer_action();
         self.suppress_held_keys();
@@ -637,6 +638,7 @@ impl App {
                 self.effects = Default::default();
                 self.selected.clear();
                 self.groups = Default::default();
+                self.type_press = None;
                 self.order_feedback.clear();
                 self.pending.clear();
                 self.suppress_held_keys();

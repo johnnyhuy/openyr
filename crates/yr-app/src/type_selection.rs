@@ -1,7 +1,14 @@
 //! Native visible-type expansion using the shared drawn-ground selection bounds.
+//! A second deliberate press within the team double-press window expands the
+//! same types across the whole map, as the manual documents for Type Select.
 use super::*;
 
+pub(super) const TYPE_DOUBLE_PRESS: Duration = Duration::from_millis(400);
+
 impl App {
+    pub(super) fn interrupt_type_press(&mut self) {
+        self.type_press = None;
+    }
     pub(super) fn type_select_key(
         &mut self,
         code: KeyCode,
@@ -48,21 +55,42 @@ impl App {
             })
             .map(|u| u.kind)
             .collect();
-        let visible: BTreeSet<_> = bounds.ids(map, &session.sim, &self.view).collect();
-        let selected: BTreeSet<_> = session
-            .sim
-            .units()
-            .iter()
-            .filter(|u| {
-                u.owner == yr_sim::OWNER_PLAYER
-                    && u.hp > 0
-                    && (self.selected.contains(&u.id)
-                        || (types.contains(&u.kind) && visible.contains(&u.id)))
-            })
-            .map(|u| u.id)
-            .collect();
+        let global = !types.is_empty()
+            && self
+                .type_press
+                .as_ref()
+                .is_some_and(|(at, prev_types, prev_selected)| {
+                    *prev_types == types
+                        && *prev_selected == self.selected
+                        && now >= *at
+                        && now.duration_since(*at) <= TYPE_DOUBLE_PRESS
+                });
+        let selected: BTreeSet<_> = if global {
+            session
+                .sim
+                .units()
+                .iter()
+                .filter(|u| u.owner == yr_sim::OWNER_PLAYER && u.hp > 0 && types.contains(&u.kind))
+                .map(|u| u.id)
+                .collect()
+        } else {
+            let visible: BTreeSet<_> = bounds.ids(map, &session.sim, &self.view).collect();
+            session
+                .sim
+                .units()
+                .iter()
+                .filter(|u| {
+                    u.owner == yr_sim::OWNER_PLAYER
+                        && u.hp > 0
+                        && (self.selected.contains(&u.id)
+                            || (types.contains(&u.kind) && visible.contains(&u.id)))
+                })
+                .map(|u| u.id)
+                .collect()
+        };
         let changed = self.selected != selected;
         self.selected = selected;
+        self.type_press = (!types.is_empty()).then(|| (now, types, self.selected.clone()));
         self.groups.interrupt();
         self.cancel_pointer_action();
         self.placing = None;

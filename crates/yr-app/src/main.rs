@@ -4,7 +4,7 @@
 //! Left-click / box-drag selects own units. With units selected, left-click
 //! moves or attacks; right-click cancels. `A` then left-click = attack-move, `S` stop,
 //! `H` centers the base, Ctrl+H harvests, Ctrl+1-9 assigns teams, 1-9 recalls, two presses center,
-//! Shift+number adds a team; T expands visible matching types; right-drag / arrows pan, wheel or +/- zoom,
+//! Shift+number adds a team; T expands visible matching types, two T presses select them across the map; right-drag / arrows pan, wheel or +/- zoom,
 //! K toggles repair, L toggles sell, M toggles audio, F5 saves, F9 loads, Esc pauses. Sidebar tabs select a category.
 //! Left-click a cameo to queue it at the
 //! war factory/barracks/construction yard, right-click holds, then cancels (refund). A finished
@@ -123,6 +123,8 @@ struct App {
     camera: camera::Input,
     selected: BTreeSet<u32>,
     groups: control_groups::ControlGroups,
+    /// Last deliberate T press: time, represented types and resulting selection.
+    type_press: Option<(Instant, BTreeSet<u16>, BTreeSet<u32>)>,
     order_feedback: order_feedback::Feedback,
     pending: Vec<Command>,
     attack_move: bool,
@@ -211,6 +213,7 @@ impl App {
 
     fn select_at(&mut self, pos: (f64, f64), additive: bool) {
         self.groups.interrupt();
+        self.interrupt_type_press();
         self.order_feedback.clear();
         let Some(cell) = self.window_to_cell(pos) else {
             return;
@@ -238,6 +241,7 @@ impl App {
 
     fn select_box(&mut self, a: (f64, f64), b: (f64, f64), additive: bool) {
         self.groups.interrupt();
+        self.interrupt_type_press();
         self.order_feedback.clear();
         if !additive {
             self.selected.clear();
@@ -340,6 +344,7 @@ impl App {
 
     fn cancel_mode_or_selection(&mut self) {
         self.groups.interrupt();
+        self.interrupt_type_press();
         self.order_feedback.clear();
         if self.placing.take().is_none()
             && self.service_mode == ServiceMode::None
@@ -359,6 +364,7 @@ impl App {
             self.menu.setup.name_selected = false;
             self.menu.refresh_heading();
             self.groups.interrupt();
+            self.interrupt_type_press();
             self.order_feedback.clear();
             self.invalidate_pointer();
             self.suppress_held_keys();
@@ -614,6 +620,7 @@ impl App {
         self.service_mode = ServiceMode::None;
         if self.radar_target(self.cursor).is_some() {
             self.order_feedback.clear();
+            self.interrupt_type_press();
             self.selected.clear();
             self.attack_move = false;
             self.placing = None;
@@ -1672,6 +1679,7 @@ fn new_app(gamedir: String, map_name: String, scale: u32) -> App {
         camera: Default::default(),
         selected: BTreeSet::new(),
         groups: Default::default(),
+        type_press: None,
         order_feedback: Default::default(),
         pending: Vec::new(),
         attack_move: false,
