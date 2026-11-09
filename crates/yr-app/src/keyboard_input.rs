@@ -54,7 +54,9 @@ impl App {
             return;
         }
         let now = Instant::now();
-        if self.group_key(code, state, repeat, now) || self.unit_order_key(code, state, repeat, now)
+        if self.group_key(code, state, repeat, now)
+            || self.type_select_key(code, state, repeat, now)
+            || self.unit_order_key(code, state, repeat, now)
         {
             return;
         }

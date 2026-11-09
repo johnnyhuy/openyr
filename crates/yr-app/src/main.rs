@@ -4,7 +4,7 @@
 //! Left-click / box-drag selects own units. With units selected, left-click
 //! moves or attacks; right-click cancels. `A` then left-click = attack-move, `S` stop,
 //! `H` harvest, Ctrl+1-9 assigns teams, 1-9 recalls, two presses center,
-//! Shift+number adds a team; right-drag / arrows pan, wheel or +/- zoom,
+//! Shift+number adds a team; T expands visible matching types; right-drag / arrows pan, wheel or +/- zoom,
 //! K toggles repair, L toggles sell, M toggles audio, F5 saves, F9 loads, Esc pauses. Sidebar tabs select a category.
 //! Left-click a cameo to queue it at the
 //! war factory/barracks/construction yard, right-click holds, then cancels (refund). A finished
@@ -34,6 +34,7 @@ mod selection_box;
 #[cfg(test)]
 mod selection_box_tests;
 mod surface_input;
+mod type_selection;
 mod unit_status;
 mod window_size;
 
@@ -1522,7 +1523,7 @@ impl ApplicationHandler for App {
                 return;
             }
         }
-        println!("OpenYR: left-click select/order, box select, Ctrl+1-9=assign team, 1-9=recall (twice=center), Shift+number=add team, right-click cancel, A=attack-move, S=stop, H=harvest, K=repair, L=sell, M=mute, F5=save, F9=load, Esc=pause, right-drag/arrows pan, wheel zoom; sidebar: left-click build or place a ready structure, right-click hold/cancel");
+        println!("OpenYR: left-click select/order, box select, T=select visible matching types, Ctrl+1-9=assign team, 1-9=recall (twice=center), Shift+number=add team, right-click cancel, A=attack-move, S=stop, H=harvest, K=repair, L=sell, M=mute, F5=save, F9=load, Esc=pause, right-drag/arrows pan, wheel zoom; sidebar: left-click build or place a ready structure, right-click hold/cancel");
         window.request_redraw();
         self.window = Some(window);
         self.pixels = Some(pixels);

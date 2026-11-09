@@ -40,3 +40,38 @@ modal input and focus loss, and checks centering at zoom 0.25, 1 and 4.
 selection, feedback and state hash. No game art is committed. These captures
 exercise the same handlers and compositor as the window; physical macOS
 keyboard delivery and Retina exercise remain in #97.
+
+## Visible type selection
+
+The public [Red Alert 2 manual, Basic Keyboard Functions, printed page 1](https://static.wikia.nocookie.net/cnc_gamepedia_en/images/3/3b/CCUC-RA2-pcMANOLeUS.pdf/revision/latest)
+maps `T` to Type select. OpenYR now handles a deliberate T during an ongoing
+match (#316). It expands the living owned types represented in the current
+selection to matching living owned units whose drawn ground anchors are inside
+the world viewport. It uses the same terrain-height projection and half-open
+right/bottom bounds as box selection, excluding the sidebar. Already-selected
+living owned units remain selected even when offscreen; invalid, dead and
+nonowned IDs are pruned. Mixed selections expand all represented kind IDs.
+
+T cancels old pointer gestures, placement, repair/sell and attack-move modes,
+interrupts team-recall timing and shows a short unit-count notice through the
+existing two-second feedback channel. An empty eligible selection shows a
+request to select a unit. Queued valid commands, assigned teams, camera, sim
+hashes and save bytes are not changed. A changed nonempty selection uses the
+existing selection-audio route. OS repeats, synthetic/unfocused events, tracked
+Shift/Control/Command chords, menus and ended matches cannot perform this action.
+Save/Skirmish editors still receive ordinary text T events through menu routing.
+
+The manual establishes the shortcut mapping, not these detailed policies.
+Viewport-only expansion, retained offscreen seeds, mixed-type behavior, notice
+wording/timing and audio triggering are native choices pending original-game
+comparison. A second T currently performs the same viewport expansion; it does
+not select units across the whole map. Full type-selection calibration remains
+in #97. Other public hotkey-guide pages returned HTTP 403 and were not used as
+behavioral evidence. No original executable was run.
+
+Authored Session checks cover three layouts at zoom 1, 2 and 4, plus sidebar
+and bottom-edge geometry at zoom 0.25, 1 and 4. Native input/compositor checks
+verify expansion, ownership/type filtering, retained offscreen seeds, stale-ID
+pruning, gesture cleanup, pending-order preservation and unchanged Session bytes.
+Retail sprite/cursor pixels, physical Mac/Retina input, selection audio and
+original-game timing remain unverified without the install and native session.
