@@ -665,6 +665,13 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       Retail start/loading, selection, pause/resume, save-byte invariance and
       Linux live before/after captures cover 640x480 and 1000x700; map zoom is
       preserved. Physical Retina delivery remains open under #97.
+- [x] Revise native unit status toward classic UI (#312, #97): selected units
+      share corner-bracket geometry with hover/attack previews; bordered health
+      pips replace the flat stripe, clip to the world viewport and remain empty
+      at zero health. Three-layout/three-zoom compositor and cursor/cancel checks
+      preserve encoded Session bytes. Exact original geometry/colors/visibility,
+      retail sprite overlap and physical Mac/Retina checks remain open
+      (`docs/order-feedback.md`, #97/#98).
 - [x] Preview selectable and attackable world targets (#97): green/red native
       corner brackets use the existing cursor/click resolver and current entity
       ground anchors. Focus/menu/gesture/command-mode guards, Shift routing,

@@ -34,6 +34,7 @@ mod selection_box;
 #[cfg(test)]
 mod selection_box_tests;
 mod surface_input;
+mod unit_status;
 mod window_size;
 
 use pixels::{Pixels, SurfaceTexture};
@@ -1187,17 +1188,21 @@ impl App {
         drop(bank);
         for m in &markers {
             if m.selected {
-                draw_diamond_outline(frame, fw, fh, m.wx, m.wy, m.half_w + 4.0, SELECT_COL);
-            }
-            // As in game: health only on selected or damaged objects.
-            if m.selected || m.hp < 1.0 {
-                draw_health(
+                unit_status::draw_brackets(
                     frame,
-                    fw,
-                    fh,
-                    m.wx,
-                    m.wy - m.half_w * 0.5 - 8.0,
-                    m.half_w * 1.2,
+                    (fw, fh),
+                    (m.wx, m.wy),
+                    m.half_w + 6.0,
+                    SELECT_COL,
+                );
+            }
+            // Preserve the existing selected-or-damaged visibility policy.
+            if m.selected || m.hp < 1.0 {
+                unit_status::draw_health(
+                    frame,
+                    (fw, fh),
+                    (m.wx, m.wy - (m.half_w + 6.0) * 0.5 - 6.0),
+                    m.half_w * 2.0,
                     m.hp,
                 );
             }
@@ -1421,24 +1426,6 @@ fn draw_diamond_outline(
         let w = (half_w - (dy as f32).abs() * half_w / half_h.max(1.0)).max(0.0);
         set_px(frame, fw, fh, cx as i32 - w as i32, cy as i32 + dy, col);
         set_px(frame, fw, fh, cx as i32 + w as i32, cy as i32 + dy, col);
-    }
-}
-
-fn draw_health(frame: &mut [u8], fw: u32, fh: u32, cx: f32, cy: f32, width: f32, frac: f32) {
-    let w = width.max(10.0) as i32;
-    let filled = (w as f32 * frac) as i32;
-    let col = if frac > 0.5 {
-        [64, 255, 64, 255]
-    } else if frac > 0.25 {
-        [255, 200, 64, 255]
-    } else {
-        [255, 64, 64, 255]
-    };
-    for dx in -w / 2..=w / 2 {
-        set_px(frame, fw, fh, cx as i32 + dx, cy as i32, [32, 32, 32, 255]);
-        if dx + w / 2 <= filled {
-            set_px(frame, fw, fh, cx as i32 + dx, cy as i32 + 1, col);
-        }
     }
 }
 
