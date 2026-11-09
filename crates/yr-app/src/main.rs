@@ -3,7 +3,7 @@
 //! Usage: `openyr <gamedir> <map> [scale]`
 //! Left-click / box-drag selects own units. With units selected, left-click
 //! moves or attacks; right-click cancels. `A` then left-click = attack-move, `S` stop,
-//! `H` harvest, Ctrl+1-9 assigns teams, 1-9 recalls, two presses center,
+//! `H` centers the base, Ctrl+H harvests, Ctrl+1-9 assigns teams, 1-9 recalls, two presses center,
 //! Shift+number adds a team; T expands visible matching types; right-drag / arrows pan, wheel or +/- zoom,
 //! K toggles repair, L toggles sell, M toggles audio, F5 saves, F9 loads, Esc pauses. Sidebar tabs select a category.
 //! Left-click a cameo to queue it at the
@@ -12,6 +12,7 @@
 //! green ghost; right-click or Esc backs out of placement (issue #46). Orders go through
 //! `yr_sim::Command` only, the UI never mutates sim state directly (issue #15).
 
+mod base_navigation;
 mod camera;
 #[cfg(test)]
 mod combat_depth_tests;
@@ -1523,7 +1524,7 @@ impl ApplicationHandler for App {
                 return;
             }
         }
-        println!("OpenYR: left-click select/order, box select, T=select visible matching types, Ctrl+1-9=assign team, 1-9=recall (twice=center), Shift+number=add team, right-click cancel, A=attack-move, S=stop, H=harvest, K=repair, L=sell, M=mute, F5=save, F9=load, Esc=pause, right-drag/arrows pan, wheel zoom; sidebar: left-click build or place a ready structure, right-click hold/cancel");
+        println!("OpenYR: left-click select/order, box select, T=select visible matching types, Ctrl+1-9=assign team, 1-9=recall (twice=center), Shift+number=add team, right-click cancel, A=attack-move, S=stop, H=center base, Ctrl+H=harvest, K=repair, L=sell, M=mute, F5=save, F9=load, Esc=pause, right-drag/arrows pan, wheel zoom; sidebar: left-click build or place a ready structure, right-click hold/cancel");
         window.request_redraw();
         self.window = Some(window);
         self.pixels = Some(pixels);

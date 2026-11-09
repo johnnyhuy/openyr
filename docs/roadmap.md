@@ -879,6 +879,14 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       The manual establishes T's mapping; detailed type-selection scope and
       repeated-press behavior remain native policies pending original comparison
       (`docs/control-groups.md`). Retail/physical checks remain unverified.
+- [x] Align H with the documented base-navigation shortcut (#318, #97):
+      center the oldest owned living construction yard using drawn ground
+      projection and bounded world dimensions. Keep selection, queued orders,
+      zoom and armed command modes; cancel stale pointer tracking. Preserve
+      Harvest commands on Ctrl+H and document the intentional binding change.
+      Native elevated/bounds/layout, mode, guard and command tests preserve
+      Session bytes. Yard choice, fallback/cycling and notice calibration remain
+      native policies; retail/physical checks remain open (`docs/camera-input.md`).
 - [ ] Complete world interaction and desktop UX (#97): consistent selection,
       supported control groups/hotkeys, hover/target/order feedback, bounded
       camera movement and configurable edge scrolling. Clear held input on
