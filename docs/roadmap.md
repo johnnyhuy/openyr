@@ -576,6 +576,15 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       confirmation before discarding a match. Pausing stops sim ticks without
       catch-up on resume; modal input never reaches map commands. Preserve
       explicit CLI/headless launches and prove each menu state on its PR.
+- [x] Bound theater tile-index expansion before loading (#292, #96).
+      Checked count/storage budgets and fallible parsing reject oversized or
+      malformed metadata without truncating tile numbering. Synthetic parser,
+      terrain/radar/map-loader and CLI proof cover recovery
+      (`docs/formats/map.md`); retail scans remain unavailable.
+- [ ] Replace missing/malformed TMP panics in terrain setup with contextual
+      loader errors (#293), preserving ordinary sparse-grid behavior.
+- [ ] Bound map-coordinate-derived terrain/raster extents before allocation
+      (#294), with a documented native policy and hostile-coordinate checks.
 - [x] Cancel pending loads on asynchronous menu movie failure (#288, #96).
       Normal modal entry clears input, cancels work and drops queued retries;
       late success/error/progress cannot replace recovery. Actual synthetic

@@ -417,3 +417,18 @@ fn retail_radar_frames_rules_power_live_map_and_save_roundtrip() {
     capture(&session, "provider-lost");
     save(&session, "provider-lost");
 }
+
+#[test]
+fn tileset_budget_error_reaches_radar_terrain_loading() {
+    let fs = AssetFs::from_files(vec![(
+        "TEMPERATMD.INI".into(),
+        b"[TileSet0000]\nFileName=Clear\nTilesInSet=4294967295\n".to_vec(),
+    )]);
+    let map = MapFile::parse("[Map]\nTheater=TEMPERATE\nSize=0,0,2,2\nLocalSize=0,0,2,2\n[IsoMapPack5]\n1=CAAEABUAAAAAEQAA\n").unwrap();
+    let error = Terrain::load(&fs, &map).err().unwrap();
+    assert_eq!(
+        error,
+        "radar tileset: theater tile index exceeds 65536 filenames"
+    );
+    println!("Radar terrain loader returned: {error}");
+}

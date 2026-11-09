@@ -89,7 +89,7 @@ fn tileset_index_resolves_a_real_map() {
         .find(|n| fs.read(n).is_some())
         .expect("tileset INI present");
     let ini = IniFile::parse(&String::from_utf8_lossy(fs.read(ini_name).unwrap()));
-    let index = yr_formats::TileSetIndex::parse(&ini, theater.tile_extension());
+    let index = yr_formats::TileSetIndex::parse(&ini, theater.tile_extension()).unwrap();
     assert!(
         index.files.len() > 800,
         "{} tiles in {ini_name}",

@@ -43,7 +43,7 @@ fn temperate_map_builds_a_sane_terrain_grid() {
         .find(|n| fs.read(n).is_some())
         .unwrap();
     let ini = IniFile::parse(&String::from_utf8_lossy(fs.read(ini_name).unwrap()));
-    let index = TileSetIndex::parse(&ini, Theater::Temperate.tile_extension());
+    let index = TileSetIndex::parse(&ini, Theater::Temperate.tile_extension()).unwrap();
 
     let mut tmps: HashMap<String, TmpFile> = HashMap::new();
     let mut rows: Vec<(u16, u16, u8, u8, u8)> = Vec::new();
