@@ -124,3 +124,12 @@ frames and input receipts. The fixture has no Session, entities or retail art;
 it preserves transient selection/queued-intent sentinels rather than verifying
 retail commands or reconstructed saves. Physical Mac/Retina input, audio and
 original-game parity remain unverified.
+
+World feedback now follows the same held-key ownership (#298): a nonzero net
+arrow direction suppresses actionable cursor kinds and prospective hover
+brackets before redraw. A tracked right press suppresses these previews even
+before it becomes a pan. Key-up restores the resolver result without clearing
+selection, intents or command modes. Asset-independent native Session tests
+check actual queued orders and unchanged encoded saves, extending the earlier
+Session-free camera dispatch coverage. The cursor format notes describe the
+synthetic visual proof and its limits.

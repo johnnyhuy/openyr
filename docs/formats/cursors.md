@@ -67,6 +67,15 @@ toggles owned units. Ctrl+Shift gives attack-move; A remains a native shortcut.
 Box dragging selects; releasing a camera drag cannot issue a world order.
 The sidebar and powered radar keep their existing left-click workflows.
 
+Native cursor and hover previews also follow gesture ownership (#298). A
+nonzero net held-arrow direction, tracked Left/Right press, active right pan
+or radar drag gives the neutral pointer and suppresses prospective target
+brackets. This guard runs before placement/service feedback, including a right
+press that has not crossed the pan threshold. Opposing arrows with zero net
+movement keep actionable feedback; releasing the effective key restores it.
+Existing attack-target brackets describe committed orders and remain visible.
+No command routing, cursor frame mapping, hotspots or cadence changed.
+
 World picking now inverts the height lift used to draw objects. Overlapping
 ground diamonds choose the frontmost matching cell. Box-selection anchors
 apply that lift too. Synthetic checks reproduce the old level-4 error at
@@ -200,3 +209,14 @@ These are resolver checks, without a complete Session, retail cursor artwork
 or physical modifier delivery. Retail pixels, hotspots/cadence, original-game
 modifier parity and physical Mac/Retina input remain unverified. No cursor
 frame mapping, simulation or save format changes.
+
+Asset-independent native ownership tests construct a real Session through
+public setup with authored INI, map, SHP and TMP fixtures. They check 108
+arrow/layout/action combinations, actual selection and queued commands,
+produced structure placement, service modes, opposing arrows and right-click
+ownership. Encoded Session bytes and simulation hashes stay unchanged while
+ignored clicks leave queued intents intact. Optional
+`OPENYR_WORLD_FEEDBACK_PROOF=<directory>` exports actual synthetic compositor
+frames and cursor-kind receipts; there is no retail cursor sheet in this
+fixture. It does not establish retail snapshot reconstruction, original-game
+parity or physical Mac/Retina input behavior.

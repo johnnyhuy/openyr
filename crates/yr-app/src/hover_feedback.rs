@@ -64,10 +64,7 @@ impl App {
         if !self.pointer.active(size, self.cursor)
             || self.menu.visible()
             || self.in_sidebar(self.cursor)
-            || self.left_down.is_some()
-            || self.right_down.is_some()
-            || self.right_panning
-            || self.radar_drag
+            || self.world_pointer_busy()
             || self.placing.is_some()
             || self.edge_cursor(size).is_some()
             || self.session.as_ref()?.outcome != Outcome::Ongoing

@@ -419,3 +419,5 @@ fn proof(app: &mut App, size: (u32, u32), name: &str) {
         .unwrap();
     }
 }
+
+mod ownership;
