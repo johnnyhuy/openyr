@@ -101,8 +101,10 @@ saved-match lists. Edge scrolling is optional in Controls.
 Pause provides named saves, load/delete, restart and return to Main Menu.
 Saved matches are also available from Single Player. The default F5/F9 file is
 `~/Library/Application Support/OpenYR/quicksave.oyrsave`; loading a named match
-makes that file the new target. Successful menu loads confirm the save name and
-restored tick. Failures retain the current match with a recovery route.
+makes that file the new target. A successful fresh front-menu Start uses
+`quicksave.oyrsave` in the current save folder, protecting the earlier named slot.
+In-match restart retains its active target. Successful menu loads confirm the save
+name and restored tick. Failures retain the current match with a recovery route.
 
 ```sh
 mise run run -- "/path/to/RA2" EB1.MMX --ticks 900 --save /tmp/match.oyrsave

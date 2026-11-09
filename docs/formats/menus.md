@@ -121,6 +121,22 @@ queued commands and selection are discarded. The loaded slot becomes the
 F5/F9 target. Restart rebuilds the same map with the same seed. Quit exits the
 app; Main Menu discards the match through the explicit abort choice.
 
+A successful fresh front-menu Start chooses `quicksave.oyrsave` in the current
+save folder (#306), rather than inheriting an earlier named match's basename.
+The target changes only when the new prepared match commits. Returning to Main,
+preview success, load failure and cancellation keep the previous target and do
+not write a save. Saved-load commits still select the supplied named slot;
+in-match restart retains its current target. Existing quicksave replacement,
+named-save confirmation, explicit CLI startup and save schemas are unchanged.
+
+Asset-independent native Session checks drive normal Main Menu entry, controlled
+prepared-result channels and actual F5/F9 handlers. They verify protected named
+bytes, exact fresh quicksave bytes, confirmation paths, three layouts and the
+load/restart/preview/failure/cancel policies. They do not execute the retail asset
+loader or reconstruct a saved match. `OPENYR_NEW_MATCH_SAVE_PROOF=<directory>`
+exports actual synthetic compositor frames and state receipts without retail art;
+physical Mac/Retina and original-game comparisons remain unverified.
+
 A committed saved-match load from the front or pause flow briefly shows
 `Match loaded (tick N): <save name>` in the existing world feedback strip (#97).
 Only the filename stem is shown: controls are removed, outer whitespace is
