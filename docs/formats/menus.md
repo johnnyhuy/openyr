@@ -204,9 +204,23 @@ the real-handler regression, using a controlled overflowing diagnostic after a
 real save failure. Front-menu message geometry and existing pixel checks remain
 unchanged. Physical Mac/Retina checks remain in #97.
 
-Controls persist actual mute and world zoom in
-`~/Library/Application Support/OpenYR/interface.json`, through a sibling
-file and rename. Reads are limited to 16 KiB with strict fields and zoom bounds.
+Controls persist actual mute, world zoom and edge scrolling in
+`~/Library/Application Support/OpenYR/interface.json`, through an exclusively
+created sibling file and rename (#299). The writer tries at most 32 process/serial
+candidate names using `create_new`; occupied files, directories and symlinks are
+skipped without modification. It writes and syncs the owned file before closing
+and renaming it, and removes only that candidate if publication fails. Existing
+predictable `interface.<pid>.tmp` files are left untouched. This prevents a stale
+or planted temporary symlink from redirecting the write to an unrelated file.
+It does not claim safety against concurrent replacement by an actor who can
+modify the containing directory.
+
+Reads retain their 16 KiB limit, strict fields and zoom bounds; JSON and game save
+formats are unchanged. Actual native EdgeScroll handler tests use owned scratch
+files to verify Unix symlink-target preservation, reopening, failed publication,
+Controls recovery and retry. Separate helper tests cover occupied candidates,
+32-collision exhaustion and owned cleanup. No retail assets or physical desktop
+are needed for these filesystem checks; physical Mac delivery remains unverified.
 Preference/save/load errors remain visible with a route back to the match.
 Headless runs bypass preferences and retain their existing CLI behavior.
 

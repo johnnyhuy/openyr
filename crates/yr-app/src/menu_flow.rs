@@ -2,6 +2,7 @@ use super::*;
 use std::io::Read;
 use yr_app::menu::{Effect, Intent, Layout, Page};
 mod loading;
+mod preferences_storage;
 pub(super) use loading::LoadKind;
 
 pub(super) enum LoadProgress {
@@ -729,13 +730,7 @@ impl App {
                 edge_scroll: self.menu.edge_scroll,
             })
             .map_err(|e| e.to_string())?;
-            if let Some(parent) = path.parent() {
-                std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
-            }
-            let temporary = path.with_extension(format!("{}.tmp", std::process::id()));
-            std::fs::write(&temporary, bytes)
-                .and_then(|()| std::fs::rename(&temporary, path))
-                .map_err(|e| e.to_string())
+            preferences_storage::write(path, &bytes)
         })();
         if let Err(e) = result {
             self.menu.message(e, Page::Controls);
