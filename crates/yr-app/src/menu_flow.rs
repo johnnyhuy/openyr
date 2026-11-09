@@ -733,7 +733,10 @@ impl App {
             preferences_storage::write(path, &bytes)
         })();
         if let Err(e) = result {
-            self.menu.message(e, Page::Controls);
+            self.open_menu(Page::Message {
+                text: e,
+                back: Box::new(Page::Controls),
+            });
         }
     }
 }

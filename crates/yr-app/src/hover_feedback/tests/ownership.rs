@@ -469,3 +469,183 @@ fn world_feedback_ownership_keeps_committed_targets_and_clears_on_focus_loss() {
         saved
     );
 }
+
+struct PreferenceDirectory(PathBuf);
+impl PreferenceDirectory {
+    fn new() -> Self {
+        let path = std::env::temp_dir().join(format!(
+            "openyr-preferences-modal-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        std::fs::create_dir(&path).unwrap();
+        Self(path)
+    }
+}
+impl Drop for PreferenceDirectory {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.0);
+    }
+}
+fn press_key(app: &mut App, code: KeyCode) {
+    key(app, code, ElementState::Pressed);
+    key(app, code, ElementState::Released);
+}
+
+#[test]
+fn preferences_error_modal_cancels_world_modes_before_recovery() {
+    for size in [(640, 480), (800, 600), (1280, 800)] {
+        for mode in [KeyCode::KeyA, KeyCode::KeyK, KeyCode::KeyL] {
+            let (mut app, own, enemy) = scene(size);
+            let directory = PreferenceDirectory::new();
+            let destination = directory.0.join("interface.json");
+            // A directory cannot be replaced by the writer's regular file.
+            std::fs::create_dir(&destination).unwrap();
+            std::fs::write(destination.join("keep"), b"protected destination").unwrap();
+            app.preferences_path = Some(destination.clone());
+            app.control = true;
+            press_key(&mut app, KeyCode::Digit1);
+            app.control = false;
+            press_key(&mut app, mode);
+            point_at(&mut app, enemy, size);
+            if mode == KeyCode::KeyA {
+                app.pointer_button(ElementState::Pressed, MouseButton::Left);
+                assert!(app.left_down.is_some() && app.attack_move);
+            } else {
+                assert_ne!(app.service_mode, ServiceMode::None);
+            }
+            app.pending.push(Command::Stop { id: own });
+            let pending = app.pending.clone();
+            let saved = yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap();
+            let proof = size == (640, 480) && mode == KeyCode::KeyA;
+            app.shift = true;
+            app.control = true;
+            app.super_key = true;
+            if proof {
+                preferences_modal_capture(&mut app, "00-armed-click");
+            }
+            key(&mut app, KeyCode::KeyM, ElementState::Pressed);
+            assert!(
+                matches!(app.menu.page, Page::Message { ref back, .. } if **back == Page::Controls)
+            );
+            assert!(app.keys.is_empty());
+            assert!(!app.shift && !app.control && !app.super_key);
+            assert!(app.left_down.is_none() && app.right_down.is_none());
+            assert!(!app.attack_move && app.placing.is_none());
+            assert_eq!(app.service_mode, ServiceMode::None);
+            assert!(app.order_feedback.message(Instant::now()).is_none());
+            assert_eq!(app.pending, pending);
+            assert_eq!(
+                std::fs::read(destination.join("keep")).unwrap(),
+                b"protected destination"
+            );
+            assert_eq!(std::fs::read_dir(&directory.0).unwrap().count(), 1);
+            if proof {
+                preferences_modal_capture(&mut app, "01-error-modal");
+            }
+            key(&mut app, KeyCode::KeyM, ElementState::Released);
+            assert!(!app.advance_clock(Instant::now() + Duration::from_secs(3600)));
+            for page in [Page::Controls, Page::Pause, Page::Closed] {
+                press_key(&mut app, KeyCode::Escape);
+                assert_eq!(app.menu.page, page);
+            }
+            app.pointer_button(ElementState::Released, MouseButton::Left);
+            assert_eq!(app.pending, pending, "stale release adds no command");
+            if proof {
+                preferences_modal_capture(&mut app, "02-resumed");
+            }
+            point_cell(&mut app, (8.0, 8.0), size);
+            click(&mut app);
+            assert_eq!(
+                app.pending,
+                [
+                    Command::Stop { id: own },
+                    Command::Move {
+                        id: own,
+                        x: Fix::from_raw(2176),
+                        y: Fix::from_raw(2176)
+                    }
+                ],
+                "fresh click cannot reuse pre-dialog modes"
+            );
+            assert_eq!(app.selected, [own].into());
+            if proof {
+                preferences_modal_capture(&mut app, "03-fresh-move");
+            }
+            assert_eq!(
+                yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap(),
+                saved
+            );
+            // Modal entry interrupts recall decoration, not assigned team membership.
+            app.selected.clear();
+            press_key(&mut app, KeyCode::Digit1);
+            assert_eq!(app.selected, [own].into());
+        }
+    }
+    println!("Nine native mode/layout failures preserve encoded Sessions, queued orders, selection and team membership; modal recovery cancels modes and stale releases, and fresh clicks queue Move.");
+}
+
+#[test]
+fn preferences_error_modal_keeps_successful_live_mute_nonmodal() {
+    let (mut app, own, enemy) = scene((640, 480));
+    let directory = PreferenceDirectory::new();
+    let destination = directory.0.join("interface.json");
+    app.preferences_path = Some(destination.clone());
+    press_key(&mut app, KeyCode::KeyA);
+    point_at(&mut app, enemy, (640, 480));
+    app.pointer_button(ElementState::Pressed, MouseButton::Left);
+    let saved = yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap();
+    press_key(&mut app, KeyCode::KeyM);
+    assert_eq!(app.menu.page, Page::Closed);
+    assert!(app.menu.muted && app.attack_move && app.left_down.is_some());
+    assert!(std::fs::read_to_string(destination)
+        .unwrap()
+        .contains("\"muted\":true"));
+    assert_eq!(app.selected, [own].into());
+    assert!(app.pending.is_empty());
+    assert_eq!(
+        yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap(),
+        saved
+    );
+    println!("Successful live M remains nonmodal and preserves armed input and Session bytes.");
+}
+
+fn preferences_modal_capture(app: &mut App, name: &str) {
+    let Some(path) = std::env::var_os("OPENYR_PREFERENCES_MODAL_PROOF") else {
+        return;
+    };
+    let path = PathBuf::from(path);
+    std::fs::create_dir_all(&path).unwrap();
+    if app.map.as_ref().is_some_and(|m| m.rgba.is_empty()) {
+        app.map.as_mut().unwrap().rgba = [30, 40, 30, 255]
+            .into_iter()
+            .cycle()
+            .take(1600 * 1200 * 4)
+            .collect();
+    }
+    let (w, h) = app.frame_size;
+    let saved = yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap();
+    let mut frame = vec![0; (w * h * 4) as usize];
+    app.compose(&mut frame, w, h);
+    std::fs::write(
+        path.join(format!("{name}.png")),
+        yr_render::png::encode_rgba(w, h, &frame),
+    )
+    .unwrap();
+    std::fs::write(
+        path.join(format!("{name}.json")),
+        serde_json::to_vec_pretty(&serde_json::json!({
+            "page":format!("{:?}",app.menu.page), "attack_move":app.attack_move,
+            "service_mode":format!("{:?}",app.service_mode), "left_down":app.left_down,
+            "held_keys":format!("{:?}",app.keys), "pending":format!("{:?}",app.pending),
+            "selected":app.selected, "tick":app.session.as_ref().unwrap().sim.tick(),
+            "sim_hash":format!("{:016x}",app.session.as_ref().unwrap().sim.state_hash()),
+            "snapshot_bytes":saved.len(), "retail_art":false
+        }))
+        .unwrap(),
+    )
+    .unwrap();
+}

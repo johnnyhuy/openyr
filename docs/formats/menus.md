@@ -224,6 +224,20 @@ are needed for these filesystem checks; physical Mac delivery remains unverified
 Preference/save/load errors remain visible with a route back to the match.
 Headless runs bypass preferences and retain their existing CLI behavior.
 
+Live preference-write failures enter recovery through normal modal entry (#303).
+The M shortcut therefore cancels held keys/modifiers, gestures and command modes
+before showing the error, matching Pause and F5 recovery. Controls remains the
+return destination. Selection, assigned teams, queued valid orders and encoded
+Session bytes survive; after resuming, a fresh ground click uses ordinary Move
+instead of a pre-dialog attack-move or service mode. A successful live mute
+write stays nonmodal and preserves its existing input behavior.
+
+Authored native Sessions cover attack-move/repair/sell recovery at three sizes,
+protected destination bytes, stale release rejection, team recall and actual
+fresh Move commands. `OPENYR_PREFERENCES_MODAL_PROOF=<directory>` exports fallback
+compositor frames and state receipts. No retail art or cursor sheet is supplied;
+these checks do not establish original-game or physical Mac/Retina behavior.
+
 The retail flow test exercises the same modal handlers and compositor as the
 window, including a simulated hour paused, one resumed tick, named save,
 overwrite decline/accept, load decline/accept, corrupt-load recovery, cancelled
