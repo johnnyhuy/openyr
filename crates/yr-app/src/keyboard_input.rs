@@ -2,6 +2,21 @@
 use super::*;
 
 impl App {
+    /// Repeat events from an earlier input surface need a release or fresh press.
+    pub(super) fn suppress_held_keys(&mut self) {
+        self.suppressed_keys.extend(self.held_keys.iter().copied());
+        self.suppressed_keys.extend(self.keys.drain());
+    }
+
+    pub(super) fn menu_input_context(
+        &self,
+    ) -> (yr_app::menu::Page, Option<yr_app::menu::setup::Field>) {
+        (
+            self.menu.page.clone(),
+            self.menu.setup.popup.map(|popup| popup.field),
+        )
+    }
+
     pub(super) fn keyboard_input(
         &mut self,
         physical_key: PhysicalKey,
@@ -16,6 +31,7 @@ impl App {
         // Focus synchronization must never become a new menu action or order.
         // Releases still clear held keys after focus loss or a modal transition.
         if state == ElementState::Released {
+            self.held_keys.remove(&code);
             self.keys.remove(&code);
             self.suppressed_keys.remove(&code);
             return;
@@ -28,8 +44,13 @@ impl App {
             return;
         }
         self.suppressed_keys.remove(&code);
+        self.held_keys.insert(code);
         if self.menu.visible() {
+            let context = self.menu_input_context();
             self.menu_key_code(code, text, repeat);
+            if context != self.menu_input_context() {
+                self.suppress_held_keys();
+            }
             return;
         }
         let now = Instant::now();

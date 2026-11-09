@@ -341,3 +341,26 @@ targets. Cancellation preserves all listed file bytes. Optional
 `OPENYR_LIST_KEYS_PROOF=<directory>` captures fallback composer frames and state
 receipts. The fixtures contain arbitrary bytes, not reconstructed retail saves;
 these checks do not establish original shortcut parity or physical Mac delivery.
+
+## Held keys at modal boundaries
+
+Focused physical key presses are tracked separately from active world keys
+(#314). Entering or leaving a menu page or Skirmish dropdown suppresses repeats
+from keys already held. The same cleanup applies on focus loss, native folder
+selection and prepared-load completion. A release or fresh non-repeat press
+restores that key. Ordinary repeats within the same input surface remain
+available for name editing, list navigation, camera movement and zoom.
+
+Clearing the world-key set alone was insufficient: the next OS repeat could
+insert a held letter into a new Save name, revive camera movement after Resume,
+or alter a country just selected by pointer from a dropdown. The native
+keyboard and pointer dispatchers now compare menu/popup context around their
+handlers. Match/preview/error results also suppress held keys before presenting
+their destination. Existing synthetic/unfocused key guards remain in place.
+
+Authored Session checks cover Save editing, 24 keyboard/pointer resume cases,
+country-dropdown closure, focus return without synthetic events and controlled
+prepared-match commits at three layouts. Fresh presses and normal same-editor
+repeats still work. Selection, pending valid orders and saved/encoded Session
+bytes follow their existing transition policies. This does not reconstruct
+retail saves or establish original-game timing or physical Mac/Retina delivery.

@@ -101,7 +101,7 @@ impl App {
     }
     pub(super) fn choose_front_directory(&mut self) {
         self.cancel_pointer_action();
-        self.keys.clear();
+        self.suppress_held_keys();
         self.shift = false;
         self.control = false;
         self.super_key = false;

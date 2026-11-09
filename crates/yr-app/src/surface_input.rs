@@ -88,7 +88,11 @@ impl App {
             return;
         }
         if self.menu.visible() {
+            let context = self.menu_input_context();
             self.menu_mouse(state, button);
+            if context != self.menu_input_context() {
+                self.suppress_held_keys();
+            }
             return;
         }
         if state == ElementState::Pressed
