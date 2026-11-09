@@ -21,6 +21,21 @@ struct Notice {
 pub(super) struct Feedback(Option<Notice>);
 
 impl Feedback {
+    pub(super) fn type_selection(&mut self, count: usize, now: Instant) {
+        self.0 = Some(Notice {
+            text: if count == 0 {
+                "Select a unit to select its type".into()
+            } else {
+                format!(
+                    "Type selection ({count} {})",
+                    if count == 1 { "unit" } else { "units" }
+                )
+            },
+            marker: None,
+            at: now,
+        });
+    }
+
     pub(super) fn loaded(&mut self, path: &std::path::Path, tick: u64, now: Instant) {
         let name: String = path
             .file_stem()

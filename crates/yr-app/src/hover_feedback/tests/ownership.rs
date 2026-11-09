@@ -658,3 +658,5 @@ mod save_catalog;
 mod unit_status;
 
 mod modal_repeat;
+
+mod type_selection;

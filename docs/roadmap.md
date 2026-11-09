@@ -871,6 +871,14 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       command and Session/save policies. Same-editor repeats remain available;
       retail reconstruction and physical Mac/Retina checks remain unverified
       (`docs/formats/menus.md`).
+- [x] Add visible-unit type expansion on T (#316, #97): use the shared drawn
+      ground bounds to add living owned matching kinds while retaining owned
+      seeds, excluding sidebar-hidden candidates and pruning invalid IDs.
+      Native count feedback, mode/gesture cleanup, input guards and unchanged
+      camera, queued orders and Session bytes are checked across layouts/zooms.
+      The manual establishes T's mapping; detailed type-selection scope and
+      repeated-press behavior remain native policies pending original comparison
+      (`docs/control-groups.md`). Retail/physical checks remain unverified.
 - [ ] Complete world interaction and desktop UX (#97): consistent selection,
       supported control groups/hotkeys, hover/target/order feedback, bounded
       camera movement and configurable edge scrolling. Clear held input on
