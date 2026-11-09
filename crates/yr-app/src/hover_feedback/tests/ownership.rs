@@ -649,3 +649,5 @@ fn preferences_modal_capture(app: &mut App, name: &str) {
     )
     .unwrap();
 }
+
+mod placement;

@@ -253,3 +253,17 @@ These fixtures have no Session: commands are inspected but not stepped, and
 retail radar power/input, save reconstruction, original shortcut parity and
 physical Mac/Retina behavior remain unverified. Simulation and save schemas
 are unchanged.
+
+Picking up a ready structure from its actual sidebar cameo replaces an armed
+A attack-move action (#302). Placement success, invalid-placement recovery and
+cancellation cannot restore the previous action. A deliberate new A press
+still replaces placement, while ordinary production clicks keep their current
+mode policy. This is native mode ownership, not measured original behavior.
+
+Asset-independent native Session tests cover 27 layout/zoom/outcome combinations,
+real placement and subsequent Move intents, fresh A activation and ordinary
+unit production. They preserve full encoded saves, simulation hashes, selection
+and already queued intents. `OPENYR_PLACEMENT_MODE_PROOF=<directory>` exports
+actual synthetic compositor frames and cursor-kind/state receipts. The fixture
+has no retail cursor sheet; it does not verify retail pixels, original-game
+parity or physical Mac/Retina delivery.
