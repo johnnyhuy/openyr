@@ -1,0 +1,9 @@
+{
+  "commit": "bf9e129fe4567c08155cff129cfd6784675819b8",
+  "tree": "e96010ed4e50f67b2a2e7203b4d46335e3b86741",
+  "executable": "/workspace/openyr-classic-unit-status-20261109/.tmp/cargo-target/debug/deps/openyr-8539b05c03c1d83a",
+  "size": 194396352,
+  "sha256": "15c221b75d0b50f4b6c4bd02f8977ff0b4c08b52f25c1ddc7a74ec73d26d0f3f",
+  "build_command": "CARGO_TARGET_DIR=$PWD/.tmp/cargo-target CARGO_BUILD_JOBS=2 cargo test -p yr-app --bin openyr --locked --no-run --message-format=json",
+  "capture_command": "OPENYR_WORLD_FEEDBACK_PROOF=$PWD/.tmp/status-proof-final <recorded test executable> hover_feedback::tests::ownership::unit_status::classic_status_tracks_selection_cursor_cancel_and_preserves_session --exact --nocapture"
+}
