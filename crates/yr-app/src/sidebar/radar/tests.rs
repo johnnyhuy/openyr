@@ -432,3 +432,21 @@ fn tileset_budget_error_reaches_radar_terrain_loading() {
     );
     println!("Radar terrain loader returned: {error}");
 }
+
+#[test]
+fn map_extent_budget_revalidates_programmatic_radar_maps_before_loading() {
+    let mut map=MapFile::parse("[Map]\nTheater=TEMPERATE\nSize=0,0,2,2\nLocalSize=0,0,2,2\n[IsoMapPack5]\n1=CAAEABUAAAAAEQAA\n").unwrap();
+    map.tiles.push(yr_formats::map::IsoTile {
+        x: u16::MAX,
+        y: u16::MAX,
+        tile: Some(0),
+        subtile: 0,
+        level: 0,
+    });
+    let fs = AssetFs::from_files(Vec::new());
+    assert_eq!(
+        Terrain::load(&fs, &map).err().unwrap(),
+        "map terrain coordinate extent exceeds 262144 cells"
+    );
+    println!("Programmatic radar input rejects excessive declared terrain extents before loading assets or coordinate-sized buffers.");
+}

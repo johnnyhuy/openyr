@@ -238,5 +238,41 @@ recoverable error on synthetic metadata without a PNG. This is loader/parser
 verification, not a retail archive scan, complete Session, physical Mac/Retina
 or original-game comparison. Simulation and save formats are unchanged.
 Missing/malformed terrain templates now return contextual loader errors
-([TMP recovery policy](tmp.md), #293). Map-coordinate extent allocation remains
-a separate defect (#294).
+([TMP recovery policy](tmp.md), #293). Coordinate-derived allocation limits
+are documented below (#294).
+
+## Declared terrain extents and native raster budgets
+
+Map loading bounds the rectangle implied by declared terrain coordinates
+before a coordinate-sized allocation (#294). `MapFile::terrain_dimensions`
+checks `(maximum x + 1) * (maximum y + 1)` with checked arithmetic and limits
+it to 262,144 cells, matching the resource scale of the existing 512x512
+packed-entry cap. This is a native cell-budget policy, not an original-engine
+coordinate maximum. Long/narrow extents within the same budget remain valid;
+empty maps and sparse/unresolved subtiles retain their existing behavior.
+The declared rectangle includes unresolved tile references, so hostile outliers
+cannot bypass validation by failing an asset lookup. Parsed files validate it,
+and terrain/radar entrypoints revalidate programmatically constructed maps.
+
+The full RGBA terrain raster is limited to 1 GiB before optional scale-2/4
+nearest-neighbor downscaling. A requested smaller output does not bypass this
+native-canvas budget. Bounds and TMP-extra origins use 64-bit arithmetic;
+padding, span/byte products and public 32-bit origin conversions are checked
+before allocating. The downscaled allocation uses the same checked byte helper.
+Ordinary geometry, margins, palette expansion and sampling are unchanged.
+These limits can reject unusually large or widely separated custom maps that
+previously attempted an excessive allocation. No retail-wide compatibility or
+original-game limit is established while the game data is unavailable.
+
+Asset-independent checks cover packed hostile coordinates, the exact cell
+budget, long/narrow and zero-padding controls, programmatic terrain/radar
+validation, overflowing padding and exact raster-byte arithmetic. The 1 GiB
+boundary is checked without allocating at the ceiling. Actual synthetic TMPs
+exercise a tiny 240x270 raster, byte-identical cancelling extreme offsets and
+rejection of huge extra bounds at scales 1/2/4. The visible extra pixel, full
+RGBA bytes and actual terrain setup against an independently specified sparse
+Sim state hash/complete save are checked.
+`OPENYR_MAP_BOUNDS_PROOF=<directory>` exports the two actual synthetic rasters
+and a state receipt. This does not verify retail maps/assets, a complete
+Session, native Mac/Retina input, audio or original pixel/timing parity.
+Simulation and save schemas are unchanged.
