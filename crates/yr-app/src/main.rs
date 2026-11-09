@@ -1192,7 +1192,7 @@ impl App {
                     frame,
                     (fw, fh),
                     (m.wx, m.wy),
-                    m.half_w + 6.0,
+                    m.half_w.max(8.0) + 6.0,
                     SELECT_COL,
                 );
             }
@@ -1201,7 +1201,7 @@ impl App {
                 unit_status::draw_health(
                     frame,
                     (fw, fh),
-                    (m.wx, m.wy - (m.half_w + 6.0) * 0.5 - 6.0),
+                    (m.wx, m.wy - (m.half_w.max(8.0) + 6.0) * 0.5 - 6.0),
                     m.half_w * 2.0,
                     m.hp,
                 );

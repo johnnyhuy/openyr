@@ -18,7 +18,32 @@ fn classic_status_tracks_selection_cursor_cancel_and_preserves_session() {
             let before = yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap();
             let mut frame = vec![0; size.0 as usize * size.1 as usize * 4];
             app.compose(&mut frame, size.0, size.1);
-            assert!(frame.as_chunks::<4>().0.contains(&SELECT_COL));
+            let session = app.session.as_ref().unwrap();
+            let unit = session.sim.units().iter().find(|u| u.id == own).unwrap();
+            let (mx, my) = yr_app::interaction::ground_point(
+                app.map.as_ref().unwrap(),
+                session.sim.terrain(),
+                (unit.x.raw() as f32 / 256.0, unit.y.raw() as f32 / 256.0),
+            );
+            let center = (
+                ((mx - app.view.cam_x) * zoom).round() as u32,
+                ((my - app.view.cam_y) * zoom).round() as u32,
+            );
+            let half = (14.0 * zoom).max(8.0) + 6.0;
+            let x = center.0 - half.round() as u32;
+            let y = center.1 - (half * 0.5).round() as u32;
+            let at = ((y * size.0 + x) * 4) as usize;
+            assert_eq!(
+                &frame[at..at + 4],
+                &SELECT_COL,
+                "selected corner must match the hover bounds at {zoom}"
+            );
+            let middle = ((center.1 * size.0 + x) * 4) as usize;
+            assert_ne!(
+                &frame[middle..middle + 4],
+                &SELECT_COL,
+                "selection must have open sides rather than a diamond"
+            );
             assert!(frame.as_chunks::<4>().0.contains(&[0, 252, 0, 255]));
             if zoom == 1.0 {
                 capture(&app, &format!("status-{}-selected", size.0));
