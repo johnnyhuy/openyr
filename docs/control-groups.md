@@ -88,3 +88,27 @@ staying global, and viewport-only results after a selection change, focus
 loss or an expired 400-millisecond window.
 Retail sprite/cursor pixels, physical Mac/Retina input, selection audio and
 original-game timing remain unverified without the install and native session.
+
+## Consecutive type presses
+
+The native type-selection window now ends on a fresh non-T key press, an
+accepted Left/Right press, or finite nonzero wheel input routed to the world
+or sidebar (#321). A fresh rejected Shift/Control/Command+T also ends the
+previous plain-T sequence. For example T, H, T starts a new viewport expansion
+after base navigation rather than adding offscreen matches from the old view.
+Valid wheel attempts count even at a zoom/scroll limit.
+
+T release, OS repeat, synthesized/unfocused key guards, rejected pointer input,
+zero/nonfinite wheels and pointer motion alone do not become intervening
+commands. Consecutive deliberate T presses still use the existing 400 ms window
+and exact type/selection match. Previously selected offscreen seeds retain the
+existing first-press policy. This changes only transient UI timing state;
+selection submits no extra orders and preserves camera and Session bytes.
+
+These are native interruption rules, not a claim about original timing or
+physical input delivery. Regressions reproduce the old three-unit global
+result for T, H, T and compare the fixed two-unit viewport result. Eighteen
+key sequences, twelve accepted pointer/wheel cases, three modifier chords and
+seven positive guard cases use authored Sessions and shared composition.
+Logical 50/60 ms test timestamps control the second press/capture; they do not
+measure original-game runtime. Retail and physical Mac/Retina checks remain open.

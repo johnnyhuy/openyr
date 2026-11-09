@@ -44,6 +44,10 @@ impl App {
             return;
         }
         self.suppressed_keys.remove(&code);
+        // A different deliberate key ends a consecutive type-selection pair.
+        if code != KeyCode::KeyT && !repeat {
+            self.interrupt_type_press();
+        }
         self.held_keys.insert(code);
         if self.menu.visible() {
             let context = self.menu_input_context();

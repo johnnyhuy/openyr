@@ -19,6 +19,15 @@ impl App {
         if code != KeyCode::KeyT {
             return false;
         }
+        // A rejected deliberate chord cannot complete a later plain-T pair.
+        if state == ElementState::Pressed
+            && !repeat
+            && self.pointer.focused
+            && !self.menu.visible()
+            && (self.control || self.shift || self.super_key)
+        {
+            self.interrupt_type_press();
+        }
         if state != ElementState::Pressed
             || repeat
             || self.menu.visible()
