@@ -1,0 +1,13 @@
+{
+  "attack_move": false,
+  "cursor_kind": "Move",
+  "pending": "[PlaceProduced { kind: 3, x: 6, y: 6 }, Move { id: 6, x: Fix(3200), y: Fix(3200) }]",
+  "placing": null,
+  "retail_art": false,
+  "selected": [
+    6
+  ],
+  "sim_hash": "292a2bb1ba6f221e",
+  "snapshot_bytes": 89975,
+  "tick": 4
+}
