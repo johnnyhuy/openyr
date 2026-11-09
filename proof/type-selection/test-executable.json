@@ -1,9 +1,0 @@
-{
-  "commit": "76e3953ed4acce3d600b164d4d6dffe1966d8c35",
-  "tree": "be44591d013f49e43728160d747e5a566dcc8256",
-  "executable": "/workspace/openyr-type-selection-20261109-3/.tmp/cargo-target/debug/deps/openyr-8539b05c03c1d83a",
-  "size": 195459912,
-  "sha256": "9eaf667b175bbc624c5a21c523325f65e89768c611675d32dfe75eb7033fb7e8",
-  "build_command": "CARGO_TARGET_DIR=$PWD/.tmp/cargo-target CARGO_BUILD_JOBS=2 cargo test -p yr-app --bin openyr --locked --no-run --message-format=json",
-  "capture_command": "OPENYR_WORLD_FEEDBACK_PROOF=$PWD/.tmp/type-proof-final <recorded executable> hover_feedback::tests::ownership::type_selection:: --nocapture"
-}
