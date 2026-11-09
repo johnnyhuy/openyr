@@ -1,0 +1,48 @@
+   Compiling version_check v0.9.5
+   Compiling autocfg v1.5.1
+   Compiling generic-array v0.14.7
+   Compiling typenum v1.20.1
+   Compiling num-traits v0.2.19
+   Compiling proc-macro2 v1.0.107
+   Compiling unicode-ident v1.0.27
+   Compiling quote v1.0.47
+   Compiling inout v0.1.4
+   Compiling crypto-common v0.1.7
+   Compiling serde_core v1.0.229
+   Compiling cipher v0.4.4
+   Compiling num-integer v0.1.47
+   Compiling byteorder v1.5.0
+   Compiling blowfish v0.9.1
+   Compiling syn v3.0.9
+   Compiling num-bigint v0.4.8
+   Compiling libc v0.2.191
+   Compiling serde v1.0.229
+   Compiling zmij v1.0.23
+   Compiling serde_derive v1.0.229
+   Compiling yr-formats v0.1.0 (/workspace/openyr-tmp-loading-293-20261109-parallel/crates/yr-formats)
+   Compiling serde_json v1.0.154
+   Compiling itoa v1.0.18
+   Compiling memchr v2.8.3
+   Compiling memmap2 v0.9.11
+   Compiling yr-rules v0.1.0 (/workspace/openyr-tmp-loading-293-20261109-parallel/crates/yr-rules)
+   Compiling yr-sim v0.1.0 (/workspace/openyr-tmp-loading-293-20261109-parallel/crates/yr-sim)
+   Compiling yr-assets v0.1.0 (/workspace/openyr-tmp-loading-293-20261109-parallel/crates/yr-assets)
+   Compiling yr-render v0.1.0 (/workspace/openyr-tmp-loading-293-20261109-parallel/crates/yr-render)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 12.39s
+     Running unittests src/lib.rs (.tmp/cargo-target/debug/deps/yr_render-2cd18ce61d9dada1)
+
+running 1 test
+
+thread 'tmp_loading_tests::tmp_loading_reports_a_missing_referenced_template_without_panicking' (208693) panicked at crates/yr-render/src/lib.rs:663:42:
+TMP readable
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test tmp_loading_tests::tmp_loading_reports_a_missing_referenced_template_without_panicking ... FAILED
+
+failures:
+
+failures:
+    tmp_loading_tests::tmp_loading_reports_a_missing_referenced_template_without_panicking
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 67 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p yr-render --lib`

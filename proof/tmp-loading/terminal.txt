@@ -1,0 +1,25 @@
+Script started on 2026-11-09 04:50:36+00:00 [COMMAND="bash /workspace/scratch/tmp-293-proof/run-proof.sh" <not executed on terminal>]
+2761389c82023b25dc90535356f2944852a8fc27
+c1d6342a6e20a0b204a6e5256240ecb16335b55e
+37401c84be60a641e8cf78acc50aa16ffb3d393a075895682b0bfeda69528d8d  .tmp/cargo-target/debug/deps/yr_render-2cd18ce61d9dada1
+
+running 4 tests
+test tmp_loading_tests::tmp_loading_keeps_unresolved_templates_and_absent_subtiles_sparse ... Unknown tile indexes, out-of-range subtiles and authored empty TMP cells remain absent ground.
+ok
+test tmp_loading_tests::tmp_loading_preserves_valid_metadata_repeated_clear_references_and_saved_terrain ... Valid TMP controls preserve Rough terrain, authored map heights, ramp 7, clear-sentinel reuse, full Sim save bytes (2839) and hash 5ae3413acffebcda.
+ok
+test tmp_loading_tests::tmp_loading_reports_a_missing_referenced_template_without_panicking ... Missing TMP returned: terrain template CLEAR01.TEM is missing
+ok
+test tmp_loading_tests::tmp_loading_reports_malformed_referenced_templates_with_filename_and_reason ... Malformed TMP returned: terrain template CLEAR01.TEM: not a TS/RA2 TMP file
+Malformed TMP returned: terrain template CLEAR01.TEM: TMP cell 0 is malformed
+ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 64 filtered out; finished in 0.01s
+
+Verified: /workspace/openyr-tmp-loading-293-20261109-parallel/.tmp/tmp-loading-release/program
+Verified: /workspace/openyr-tmp-loading-293-20261109-parallel/.tmp/tmp-loading-release/program
+rendered SYNTHETIC.MAP (TEMPERATE, 1 tiles, 1 templates, 0 missing, 0 object SHPs, 0 markers, 240x270 @ scale 1) -> /workspace/scratch/tmp-293-proof/valid-control.png
+be64176350a5b7df8944e8a564e5a7abce8303e2f74380aafb78315cf9b112f2  /workspace/scratch/tmp-293-proof/valid-control.png
+The receipt-verified CLI image is a separate valid map-art control. Direct API tests above exercise build_terrain recovery.
+
+Script done on 2026-11-09 04:50:36+00:00 [COMMAND_EXIT_CODE="0"]

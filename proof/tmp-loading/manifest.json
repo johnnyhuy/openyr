@@ -1,0 +1,82 @@
+[
+  {
+    "path": "README.md",
+    "bytes": 1917,
+    "sha256": "9461ac9d5a5794ba6cde08d830c0bb46286a15273ebf929dd860ee228e94cae4"
+  },
+  {
+    "path": "input-valid/ARTMD.INI",
+    "bytes": 30,
+    "sha256": "6588fa9a765ceaaaa566defb142c6f0f59247d089028f7f8d0fb60f4029a798f"
+  },
+  {
+    "path": "input-valid/CLEAR01.TEM",
+    "bytes": 972,
+    "sha256": "b60c88c4bf52d4081946fdfcd138f4bf28ac76a391b971bf4d6b7e06510f9953"
+  },
+  {
+    "path": "input-valid/ISOTEM.PAL",
+    "bytes": 768,
+    "sha256": "2ae47ec2fcfe59d84e927d42823d22a3635e54cf55f4e7f268536a9d10770cac"
+  },
+  {
+    "path": "input-valid/RULESMD.INI",
+    "bytes": 30,
+    "sha256": "6588fa9a765ceaaaa566defb142c6f0f59247d089028f7f8d0fb60f4029a798f"
+  },
+  {
+    "path": "input-valid/SYNTHETIC.MAP",
+    "bytes": 104,
+    "sha256": "bf68019443bf7d42b95d5d02397859a79b3c58661283e05efa6287edf5b6ab04"
+  },
+  {
+    "path": "input-valid/TEMPERATMD.INI",
+    "bytes": 42,
+    "sha256": "009c6a0edde1d1c41b8c5271c25cca7275b74d16cc375700b939d9c37d8f3e9e"
+  },
+  {
+    "path": "make-input.py",
+    "bytes": 915,
+    "sha256": "386a76496f56e9e4f726f7330680d492b89446bb311d4e4348194cee484d2f6c"
+  },
+  {
+    "path": "regression-before.log",
+    "bytes": 2050,
+    "sha256": "fb20fecb7dccbad996b460bb098f611149e4696fdc290914da1b4fe1c60fa049"
+  },
+  {
+    "path": "release-build.log",
+    "bytes": 1692,
+    "sha256": "675ee28060dbc628204f2b8dc94b6fb237a032fa0f651b5811de20804108b9c2"
+  },
+  {
+    "path": "release-receipt.json",
+    "bytes": 818,
+    "sha256": "52124fc1e2e532b6867c6c5bfc80c1ae480c6a7a8ef64fb83c4467f9b0a09733"
+  },
+  {
+    "path": "run-proof.sh",
+    "bytes": 1051,
+    "sha256": "94ad3b1ae0170a47b866e735a5e0574841ff6d2c1e742947bc4ef29c6ebf72c5"
+  },
+  {
+    "path": "targeted.log",
+    "bytes": 1452,
+    "sha256": "c4b63636206996d3a2766fa0bdbee79ba19551679f345acf1649c7c3a18dc328"
+  },
+  {
+    "path": "terminal.txt",
+    "bytes": 2013,
+    "sha256": "650aea8d416dfc8767e87cf9452305c6b003f60ae3472c85ef4598edf278e76b"
+  },
+  {
+    "path": "valid-control.png",
+    "bytes": 259553,
+    "sha256": "be64176350a5b7df8944e8a564e5a7abce8303e2f74380aafb78315cf9b112f2"
+  },
+  {
+    "path": "workspace-check.log",
+    "bytes": 69457,
+    "sha256": "1ee5157334d62c1a76503578521a77bda1bef7b7ecba354c23552fac25b9467d"
+  }
+]
