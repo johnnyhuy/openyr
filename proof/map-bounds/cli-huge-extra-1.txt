@@ -1,2 +1,0 @@
-Verified: /workspace/openyr-map-extents-20261109-1000/.tmp/map-bounds-release/program
-error: map raster exceeds 1 GiB native RGBA budget
