@@ -918,6 +918,13 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       guards and count/empty feedback checks pass. The manual establishes
       mapping/scope; original, retail and physical calibration remain open
       (`docs/control-groups.md`).
+- [x] Reject Command-modified team numbers (#327, #97) before recall,
+      assignment or camera/mode mutations. Fresh rejected chords end old
+      recall timing; assigned membership, selection, pointer gestures, camera,
+      queued orders and Session bytes remain intact. Authored baseline/fixed
+      regressions cover all nine slots, modifier combinations, ordinary
+      shortcuts and shared composition. Original and physical/retail
+      calibration remain open (`docs/control-groups.md`).
 - [ ] Complete world interaction and desktop UX (#97): consistent selection,
       supported control groups/hotkeys, hover/target/order feedback, bounded
       camera movement and configurable edge scrolling. Clear held input on

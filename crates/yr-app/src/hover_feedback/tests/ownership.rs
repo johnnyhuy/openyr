@@ -668,3 +668,5 @@ mod type_interruption;
 mod sidebar_keys;
 
 mod all_selection;
+
+mod team_command;
