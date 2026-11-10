@@ -1,0 +1,16 @@
+{
+  "camera": [
+    284.0,
+    215.0,
+    1.0
+  ],
+  "cursor_kind": "Sell",
+  "hover": 1,
+  "pending": "[Stop { id: 6 }]",
+  "retail_art": false,
+  "selected": [],
+  "sim_hash": "fc79cb7cbacdb516",
+  "snapshot_bytes": 89876,
+  "target": 1,
+  "tick": 4
+}

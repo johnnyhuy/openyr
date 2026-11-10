@@ -1,0 +1,47 @@
+   Compiling yr-formats v0.1.0 (/workspace/openyr-core-review-20261110-6/crates/yr-formats)
+   Compiling yr-rules v0.1.0 (/workspace/openyr-core-review-20261110-6/crates/yr-rules)
+   Compiling yr-sim v0.1.0 (/workspace/openyr-core-review-20261110-6/crates/yr-sim)
+   Compiling yr-assets v0.1.0 (/workspace/openyr-core-review-20261110-6/crates/yr-assets)
+   Compiling yr-render v0.1.0 (/workspace/openyr-core-review-20261110-6/crates/yr-render)
+   Compiling yr-app v0.1.0 (/workspace/openyr-core-review-20261110-6/crates/yr-app)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 17.84s
+     Running unittests src/main.rs (/workspace/openyr-next-unit-20261110-5/.tmp/cargo-target/debug/deps/openyr-8539b05c03c1d83a)
+
+running 2 tests
+test hover_feedback::tests::ownership::hover_health::hover_health_shows_healthy_selection_attack_and_structure_previews ... FAILED
+test hover_feedback::tests::ownership::hover_health::hover_health_respects_input_ownership_and_keeps_prior_visibility ... ok
+
+failures:
+
+---- hover_feedback::tests::ownership::hover_health::hover_health_shows_healthy_selection_attack_and_structure_previews stdout ----
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: cursor art unavailable; keeping the system pointer
+
+thread 'hover_feedback::tests::ownership::hover_health::hover_health_shows_healthy_selection_attack_and_structure_previews' (461717) panicked at crates/yr-app/src/hover_feedback/tests/ownership/hover_health.rs:71:5:
+assertion `left == right` failed: health visibility for 6 at (640, 480)
+  left: false
+ right: true
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    hover_feedback::tests::ownership::hover_health::hover_health_shows_healthy_selection_attack_and_structure_previews
+
+test result: FAILED. 1 passed; 1 failed; 0 ignored; 0 measured; 198 filtered out; finished in 3.86s
+
+error: test failed, to rerun pass `-p yr-app --bin openyr`

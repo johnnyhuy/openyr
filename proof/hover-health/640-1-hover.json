@@ -1,0 +1,18 @@
+{
+  "camera": [
+    484.0,
+    140.0,
+    1.0
+  ],
+  "cursor_kind": "Attack",
+  "hover": 7,
+  "pending": "[Stop { id: 6 }]",
+  "retail_art": false,
+  "selected": [
+    6
+  ],
+  "sim_hash": "fc79cb7cbacdb516",
+  "snapshot_bytes": 89876,
+  "target": 7,
+  "tick": 4
+}
