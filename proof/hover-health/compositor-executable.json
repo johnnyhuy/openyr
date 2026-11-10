@@ -1,9 +1,0 @@
-{
-  "source_commit": "2600996db486c0533af9405187cfdfa6e6b4b2aa",
-  "source_tree": "04fade3f60f5bd50e341ca35651ce15f89b2640f",
-  "build_command": "CARGO_TARGET_DIR=/workspace/openyr-next-unit-20261110-5/.tmp/cargo-target CARGO_BUILD_JOBS=2 mise run check",
-  "cargo_artifact": "/workspace/openyr-next-unit-20261110-5/.tmp/cargo-target/debug/deps/openyr-8539b05c03c1d83a",
-  "program": ".tmp/hover-health-compositor-program",
-  "bytes": 199040656,
-  "sha256": "acb8244707795e4c6223259a426f2b1060b351521e4fd2170cd9510616ca9fc1"
-}
