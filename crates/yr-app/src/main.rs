@@ -1207,15 +1207,6 @@ impl App {
         }
         drop(bank);
         for m in &markers {
-            if m.selected {
-                unit_status::draw_brackets(
-                    frame,
-                    (fw, fh),
-                    (m.wx, m.wy),
-                    m.half_w.max(8.0) + 6.0,
-                    SELECT_COL,
-                );
-            }
             // Preserve the existing selected-or-damaged visibility policy.
             if m.selected || m.hp < 1.0 {
                 unit_status::draw_health(

@@ -681,6 +681,9 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       Retail start/loading, selection, pause/resume, save-byte invariance and
       Linux live before/after captures cover 640x480 and 1000x700; map zoom is
       preserved. Physical Retina delivery remains open under #97.
+- [x] Remove the white selected-unit outline (#343): selected units draw no
+      white corner overlay; health, hover/target previews, drag selection and
+      command semantics stay unchanged.
 - [x] Revise native unit status toward classic UI (#312, #97): selected units
       share corner-bracket geometry with hover/attack previews; bordered health
       pips replace the flat stripe, clip to the world viewport and remain empty

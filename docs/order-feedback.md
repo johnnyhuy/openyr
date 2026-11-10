@@ -270,9 +270,10 @@ parity or physical Mac/Retina delivery.
 
 ## Unit selection and health
 
-Selected units use white six-pixel corner brackets from the same raster and
-footprint bounds as the existing green/red hover and attack previews. The old
-white ground diamond is removed. Health is a four-pixel-high black frame with
+Selected units draw no white corner or square overlay. Selection stays
+visible through the health bar, the cursor and command feedback, while the
+green/red corner brackets remain reserved for resolved hover, service and
+attack-target previews. The old white ground diamond stays removed. Health is a four-pixel-high black frame with
 two-pixel pips, one-pixel separators and a darker lower edge. Green, yellow and
 red indicate the existing above-50%, above-25% and remaining health bands.
 Zero health has no colored pip; positive fractions retain at least one pip.

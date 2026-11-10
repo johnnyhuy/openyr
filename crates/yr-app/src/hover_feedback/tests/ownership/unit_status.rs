@@ -33,16 +33,14 @@ fn classic_status_tracks_selection_cursor_cancel_and_preserves_session() {
             let x = center.0 - half.round() as u32;
             let y = center.1 - (half * 0.5).round() as u32;
             let at = ((y * size.0 + x) * 4) as usize;
-            assert_eq!(
+            assert_ne!(
                 &frame[at..at + 4],
                 &SELECT_COL,
-                "selected corner must match the hover bounds at {zoom}"
+                "selected units must not draw the white corner overlay at {zoom}"
             );
-            let middle = ((center.1 * size.0 + x) * 4) as usize;
-            assert_ne!(
-                &frame[middle..middle + 4],
-                &SELECT_COL,
-                "selection must have open sides rather than a diamond"
+            assert!(
+                !frame.as_chunks::<4>().0.contains(&SELECT_COL),
+                "no white selected-object overlay anywhere at {zoom}"
             );
             assert!(frame.as_chunks::<4>().0.contains(&[0, 252, 0, 255]));
             if zoom == 1.0 {
@@ -71,5 +69,5 @@ fn classic_status_tracks_selection_cursor_cancel_and_preserves_session() {
             assert!(app.pending.is_empty());
         }
     }
-    println!("Three layouts x three zooms: native selection brackets and health, Attack/Select cursor kinds, right-click deselection and reselection; complete Session bytes and pending commands unchanged. No retail cursor pixels supplied.");
+    println!("Three layouts x three zooms: no white selected-object overlay, health retained, Attack/Select cursor kinds, right-click deselection and reselection; complete Session bytes and pending commands unchanged. No retail cursor pixels supplied.");
 }
