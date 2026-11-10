@@ -658,7 +658,7 @@ fn setup_profile(
     }
     for obj in map.units.iter().chain(&map.infantry).chain(&map.aircraft) {
         let mut extra = Vec::new();
-        place_unit(
+        if let Some(id) = place_unit(
             &mut kinds,
             &mut next_id,
             rules,
@@ -666,7 +666,12 @@ fn setup_profile(
             (obj.x, obj.y),
             NEUTRAL,
             &mut extra,
-        );
+        ) {
+            extra.push(Command::SetMapUnitHealth {
+                id,
+                health: obj.health,
+            });
+        }
         cmds.extend(extra);
         taken_cells.push((obj.x, obj.y));
     }
@@ -1385,6 +1390,51 @@ mod save_tests {
             setup_hash,
             source_map: None,
         }
+    }
+
+    #[test]
+    fn map_unit_health_save_compatibility_preserves_unaffected_matches() {
+        let make = |corrected, health: u16| {
+            let mut session = fresh("GI", 200, None);
+            let mut commands = vec![Command::Spawn {
+                kind: 0,
+                x: Fix::from_int(2),
+                y: Fix::from_int(3),
+                loco: Loco::Track,
+                speed: Fix::ONE,
+                hp: 100,
+                armor: 0,
+                weapon: None,
+            }];
+            if corrected {
+                commands.push(Command::SetMapUnitHealth { id: 1, health });
+            }
+            session.sim.step(&commands);
+            session.setup_hash =
+                setup_fingerprint(&session.sim, &session.buildables, &session.kinds, &[]).unwrap();
+            session
+        };
+        let old = make(false, 128);
+        let bytes = crate::snapshot::encode(&old).unwrap();
+        let mut unaffected = make(true, 256);
+        crate::snapshot::restore(&mut unaffected, &bytes).unwrap();
+        assert_eq!(crate::snapshot::encode(&unaffected).unwrap(), bytes);
+        let mut affected = make(true, 128);
+        let before = crate::snapshot::encode(&affected).unwrap();
+        assert!(crate::snapshot::restore(&mut affected, &bytes)
+            .unwrap_err()
+            .contains("map, rules or engine setup"));
+        assert_eq!(crate::snapshot::encode(&affected).unwrap(), before);
+        let raw = old.sim.save_bytes().unwrap();
+        assert_eq!(
+            Sim::from_save_bytes(&raw).unwrap().save_bytes().unwrap(),
+            raw
+        );
+        assert_eq!(
+            (old.sim.units()[0].hp, old.sim.units()[0].max_hp),
+            (100, 100)
+        );
+        println!("Unit-health compatibility: unaffected prior matches accepted exactly; affected setup keys reject without replacement; old raw 100/100 unit snapshots remain unchanged.");
     }
 
     #[test]

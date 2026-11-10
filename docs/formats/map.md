@@ -83,13 +83,34 @@ claims about original-game handling of malformed inputs.
 For Strength 100, health 256 starts at 100/100, 128 at 50/100, and 1 or zero
 at 1/100. The existing half-health damaged-art predicate, health pips, generator
 output and repair read this preserved maximum. Normal scenario placement and
-player production retain their existing full-health paths. Placed unit health
-interpretation is outside this structure-only fix.
+player production retain their existing full-health paths.
 
 Authored setup tests parse structure rows and exercise native hover feedback,
 damaged-animation selection and exact match save/load. Integer boundary tests
 include maximum u16 health and i64 Strength. Retail/original health calibration
 did not run for this change. See [save.md](save.md) for compatibility.
+
+### Initial vehicle, infantry and aircraft health
+
+Session setup now applies each parsed `[Units]`, `[Infantry]` and `[Aircraft]`
+health field after spawning that map object (#349). `SetMapUnitHealth` uses the
+same bounded integer policy as structures: current HP is the type maximum times
+the fraction over 256, truncated to at least one. Overfull fractions become
+full health, Strength uses 1..=i32::MAX, and missing unit Strength still defaults
+to 100. Zero map health retains a living object at one HP. These malformed-input
+bounds are native policy rather than original-game observations.
+
+The scenario command retains type, owner, id, locomotion, position, facing and
+orders. Generated starting units and production do not use it. Applying 256 to
+a supported full-health spawn produces identical simulation bytes, including
+tick, RNG and events. Missing unit ids are ignored. No presentation state or
+new snapshot fields are added.
+
+Authored public setup tests cover all three sections, full/half/low/zero/overfull
+values and exact match roundtrips. Native health rows and Attack previews are
+checked for all three classes at two layouts without changing Session bytes.
+A 50-damage hit kills a 50/100 unit identically before and after save/load.
+Retail appearance and original handling of malformed health remain unverified.
 
 ## From tile number to artwork
 

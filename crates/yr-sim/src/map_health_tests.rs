@@ -14,6 +14,98 @@ fn spec(hp: i64) -> BuildingSpec {
     }
 }
 
+fn spawn(hp: i64, x: i32, weapon: Option<WeaponSpec>) -> Command {
+    Command::Spawn {
+        kind: 7,
+        x: Fix::from_int(x),
+        y: Fix::ZERO,
+        loco: terrain::Loco::Track,
+        speed: Fix::ONE,
+        hp,
+        armor: 0,
+        weapon,
+    }
+}
+
+#[test]
+fn map_unit_health_bounds_roundtrip_and_full_spawn_compatibility() {
+    for (strength, fraction, current, maximum) in [
+        (100, 256, 100, 100),
+        (100, 128, 50, 100),
+        (100, 1, 1, 100),
+        (100, 0, 1, 100),
+        (100, u16::MAX, 100, 100),
+        (i64::MAX, u16::MAX, i64::from(i32::MAX), i64::from(i32::MAX)),
+        (i64::MAX, 128, i64::from(i32::MAX) / 2, i64::from(i32::MAX)),
+        (i64::MIN, 0, 1, 1),
+    ] {
+        let mut sim = Sim::new(42);
+        sim.step(&[
+            spawn(strength, 2, None),
+            Command::SetMapUnitHealth {
+                id: 1,
+                health: fraction,
+            },
+        ]);
+        assert_eq!(
+            (sim.units()[0].hp, sim.units()[0].max_hp),
+            (current, maximum)
+        );
+        let bytes = sim.save_bytes().unwrap();
+        let restored = Sim::from_save_bytes(&bytes).unwrap();
+        assert_eq!(restored.save_bytes().unwrap(), bytes);
+        assert_eq!(restored.state_hash(), sim.state_hash());
+    }
+    let mut prior = Sim::new(42);
+    prior.step(&[spawn(100, 2, None)]);
+    let mut full = Sim::new(42);
+    full.step(&[
+        spawn(100, 2, None),
+        Command::SetMapUnitHealth { id: 1, health: 256 },
+    ]);
+    assert_eq!(full.save_bytes().unwrap(), prior.save_bytes().unwrap());
+    prior.step(&[]);
+    full.step(&[Command::SetMapUnitHealth {
+        id: u32::MAX,
+        health: 0,
+    }]);
+    assert_eq!(full.save_bytes().unwrap(), prior.save_bytes().unwrap());
+    println!("Unit map-health integer bounds roundtrip; full-health scenario command and missing-id no-op preserve complete prior simulation bytes.");
+}
+
+#[test]
+fn map_unit_health_lethality_uses_current_hp_and_resumes_identically() {
+    let mut sim = Sim::new(42);
+    sim.step(&[
+        spawn(
+            100,
+            0,
+            Some(WeaponSpec {
+                source: None,
+                damage: 50,
+                rof_ticks: 10,
+                range: Fix::from_int(5),
+                projectile_speed: Fix::ZERO,
+                verses: [yr_rules::Decimal::ONE; 11],
+            }),
+        ),
+        Command::AssignOwner {
+            id: 1,
+            owner: OWNER_PLAYER,
+        },
+        spawn(100, 2, None),
+        Command::SetMapUnitHealth { id: 2, health: 128 },
+    ]);
+    assert_eq!((sim.units()[1].hp, sim.units()[1].max_hp), (50, 100));
+    let mut restored = Sim::from_save_bytes(&sim.save_bytes().unwrap()).unwrap();
+    let attack = [Command::Attack { id: 1, target: 2 }];
+    sim.step(&attack);
+    restored.step(&attack);
+    assert!(sim.units().iter().all(|u| u.id != 2));
+    assert_eq!(sim.save_bytes().unwrap(), restored.save_bytes().unwrap());
+    println!("An instant 50-damage hit kills a 50/100 map unit; continued and restored simulations produce identical complete bytes.");
+}
+
 #[test]
 fn map_health_preserves_maximum_and_bounds_fraction_arithmetic() {
     for (strength, fraction, current, maximum) in [

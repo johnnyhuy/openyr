@@ -38,6 +38,13 @@ pub const LEPTONS_PER_CELL: i32 = 256;
 #[cfg(test)]
 mod map_health_tests;
 
+/// Native scenario health policy shared by placed structures and units.
+fn initial_map_health(strength: i64, health: u16) -> (i64, i64) {
+    let maximum = strength.clamp(1, i64::from(i32::MAX));
+    let current = i128::from(maximum) * i128::from(health.min(256)) / 256;
+    ((current as i64).max(1), maximum)
+}
+
 /// Commands are the only way to mutate the sim from outside. Applied in
 /// slice order at the start of a tick, so replays are command streams.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -82,6 +89,14 @@ pub enum Command {
     AssignOwner {
         id: u32,
         owner: u8,
+    },
+    /// Scenario setup: apply a map's 0..256 health fraction to a spawned unit.
+    /// Retain the type maximum within snapshot bounds. Zero/rounded-down HP
+    /// starts at one and overfull fractions become full health. Missing ids
+    /// are ignored. Ordinary spawns and produced units never use this command.
+    SetMapUnitHealth {
+        id: u32,
+        health: u16,
     },
     /// Place a building: footprint cells, health, armour, power
     /// (positive produces, negative drains).
@@ -498,11 +513,15 @@ impl Sim {
                     health,
                     owner,
                 } => {
-                    spec.hp = spec.hp.clamp(1, i64::from(i32::MAX));
+                    let (hp, maximum) = initial_map_health(spec.hp, health);
+                    spec.hp = maximum;
                     self.place_structure(kind, x, y, &spec, owner);
-                    // Widen before multiplying even for hostile Strength values.
-                    let hp = i128::from(spec.hp) * i128::from(health.min(256)) / 256;
-                    self.buildings.last_mut().unwrap().hp = (hp as i64).max(1);
+                    self.buildings.last_mut().unwrap().hp = hp;
+                }
+                Command::SetMapUnitHealth { id, health } => {
+                    if let Some(unit) = self.units.iter_mut().find(|u| u.id == id) {
+                        (unit.hp, unit.max_hp) = initial_map_health(unit.max_hp, health);
+                    }
                 }
                 Command::PlaceProduced { kind, x, y } => {
                     self.place_produced(OWNER_PLAYER, kind, x, y);
