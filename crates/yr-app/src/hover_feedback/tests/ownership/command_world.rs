@@ -26,11 +26,13 @@ fn command_world_chords_preserve_orders_modes_and_pointer_gestures() {
             ] {
                 let (mut app, own, _) = scene(size);
                 point_at(&mut app, own, size);
-                app.map.as_mut().unwrap().rgba = [30, 40, 30, 255]
-                    .into_iter()
-                    .cycle()
-                    .take(1600 * 1200 * 4)
-                    .collect();
+                if chord == 0 && code == KeyCode::KeyS {
+                    app.map.as_mut().unwrap().rgba = [30, 40, 30, 255]
+                        .into_iter()
+                        .cycle()
+                        .take(1600 * 1200 * 4)
+                        .collect();
+                }
                 app.pending.push(Command::Move {
                     id: own,
                     x: Fix::from_int(12),
