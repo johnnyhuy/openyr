@@ -65,6 +65,13 @@ impl AudioScene {
         Ok(scene)
     }
 
+    /// One accepted UI activation, using the supplied MenuClick event definition.
+    pub fn menu_click(&mut self, tick: u64) {
+        if let Some(cue) = self.bank.cue("MenuClick", Bus::Effect) {
+            self.emit(tick, cue);
+        }
+    }
+
     pub fn front_live(dir: &str) -> Result<Self, String> {
         let mut scene = Self::empty(dir, "", Output::Live(LiveOutput::open()?))?;
         if let Some(theme) = scene.bank.menu_theme() {

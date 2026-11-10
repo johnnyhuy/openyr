@@ -699,3 +699,5 @@ mod next_unit;
 mod hover_health;
 
 mod unit_follow;
+
+mod menu_click;

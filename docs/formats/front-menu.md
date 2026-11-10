@@ -280,3 +280,38 @@ native compositor frames at presentation phase 0, including both ends of
 overflowing messages. These frames contain retail art and stay outside git.
 This is a native recovery policy; original dialog geometry and behavior remain
 under #96. In-match message layout is unchanged by this slice.
+
+## Native click feedback (#344)
+
+Front buttons now keep a transient press clock. The existing SDBTNANM sheet
+supplies a bounded native press sequence from frames 4 through 16, one frame per
+front presentation phase. A held press stops at frame 16; a completed activation
+can play the same thirteen-phase sequence while that control remains visible.
+Then normal hover/idle drawing resumes. Missing late frames fall back to the
+existing pressed frame 4, then normal frame 2, then the plain-control fallback.
+Disabled controls and cancelled pointer releases do not activate or pulse.
+
+Page/effect activation remains immediate. An old button is not drawn over a
+replacement control after navigation, so this does not implement the original
+page entry/exit transition. The ordering/cadence of this native feedback is a
+presentation policy, not calibrated original-game timing. The separately
+verified idle frame 2 and menu layout remain unchanged.
+
+Accepted enabled Left-click and Enter activations request the supplied
+`MenuClick` event through the normal sound bank and effects mixer. The public
+[CnCNet SOUNDMD.INI](https://github.com/CnCNet/cncnet-yr-client-package/blob/7c07586445947825846a9cd39cceb396474755ef/game-assets/cncnet.pack/soundmd.ini)
+defines `[MenuClick] Sounds=umenucl1` and `Volume=60`. Only those asset-format
+facts were consulted; no original engine implementation was used. Runtime
+lookup still uses the user's supplied SOUNDMD.INI and WAV/AUD/BAG data, including
+existing loose overrides and safe missing-sample behavior. The native menu mute
+preference gates new cues, and the existing output mute state remains effective.
+No synthesized replacement sound is used when retail audio is unavailable.
+
+Authored tests check frame progression/caps/expiry, missing/short optional
+sheets, navigation semantics, accepted mouse/keyboard cues, disabled/cancelled/
+repeated/muted input and exact Session-byte preservation. The PCM fixture is an
+authored tone, not a retail menu sound; its decoded mixed output is nonzero.
+`OPENYR_MENU_CLICK_PROOF` with `cargo test -p yr-app menu_click -- --nocapture`
+exports native-compositor phase PNGs, the synthetic WAV and cue log. These
+checks do not establish retail click artwork/audio, live audio-device playback,
+physical Mac/Retina delivery or original transition parity under #96/#174.

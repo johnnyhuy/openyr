@@ -145,6 +145,18 @@ impl App {
         }
         stepped
     }
+    fn activate_menu_button(&mut self, button: yr_app::menu::Button) {
+        let Some(effect) = self.menu.activate_feedback(button, self.front_phase) else {
+            return;
+        };
+        if !self.menu.muted {
+            if let Some(audio) = &mut self.audio {
+                audio.menu_click(self.front_phase);
+            }
+        }
+        self.apply_menu_effect(effect);
+    }
+
     pub(super) fn menu_mouse(&mut self, state: ElementState, button: MouseButton) {
         if state == ElementState::Pressed {
             self.menu.wheel_remainder = 0.0;
@@ -168,7 +180,8 @@ impl App {
                 ElementState::Pressed => {
                     self.menu.name_selected = false;
                     self.menu.keyboard_focus = false;
-                    self.menu.pressed = layout.hit(&self.menu, self.cursor);
+                    self.menu
+                        .press_button(layout.hit(&self.menu, self.cursor), self.front_phase);
                     if self.menu.front && self.menu.page == Page::Skirmish {
                         self.menu.setup.focus = None;
                         if let Some((x, y)) = layout.local(self.cursor) {
@@ -215,8 +228,7 @@ impl App {
                     self.menu.setup.drag = None;
                     let hit = layout.hit(&self.menu, self.cursor);
                     if let Some(button) = self.menu.pressed.take().filter(|b| Some(*b) == hit) {
-                        let effect = self.menu.activate(button);
-                        self.apply_menu_effect(effect);
+                        self.activate_menu_button(button);
                     }
                 }
             }
@@ -348,8 +360,7 @@ impl App {
             KeyCode::Enter | KeyCode::NumpadEnter
                 if !repeat && self.menu.page == Page::ChooseMap && self.menu.maps.list_focus =>
             {
-                let effect = self.menu.activate(yr_app::menu::Button::UseMap);
-                self.apply_menu_effect(effect);
+                self.activate_menu_button(yr_app::menu::Button::UseMap);
             }
             KeyCode::ArrowDown
             | KeyCode::ArrowUp
@@ -377,8 +388,7 @@ impl App {
             KeyCode::ArrowUp => self.menu.navigate(-1),
             KeyCode::Enter | KeyCode::NumpadEnter if !repeat => {
                 if let Some((button, _)) = self.menu.buttons().get(self.menu.focus).copied() {
-                    let e = self.menu.activate(button);
-                    self.apply_menu_effect(e);
+                    self.activate_menu_button(button);
                 }
             }
             KeyCode::Backspace if self.menu.page == Page::Save && !shortcut => {

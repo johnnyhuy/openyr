@@ -190,14 +190,13 @@ pub fn draw(frame: &mut [u8], width: u32, height: u32, art: &Art, scene: Scene<'
     let hovered = l.hit(s, scene.cursor);
     for (index, (button, enabled)) in s.buttons().into_iter().enumerate() {
         let (x, y, w, h) = l.button(index, button);
-        let phase = if s.pressed == Some(button) {
-            4
-        } else if hovered == Some(button) {
-            3
-        } else {
-            2
-        };
-        if let Some(im) = art.buttons.get(phase) {
+        let phase = s.button_phase(button, scene.phase, hovered == Some(button));
+        if let Some(im) = art
+            .buttons
+            .get(phase)
+            .or_else(|| art.buttons.get(4))
+            .or_else(|| art.buttons.get(2))
+        {
             c.image((x, y), im);
         } else {
             c.rect((x, y), (w, h), [90, 16, 8, 255]);
