@@ -1,0 +1,28 @@
+{
+  "source_commit": "7de53356d025b6d331d2adfbb89d29f8e1b925ed",
+  "source_tree": "e159eca993b181049ed1fd896a6df90e1f4a0b66",
+  "build": "CARGO_TARGET_DIR=$PWD/.tmp/check-target CARGO_BUILD_JOBS=2 mise run check",
+  "executables": [
+    {
+      "name": "openyr",
+      "cargo_artifact": ".tmp/check-target/debug/deps/openyr-8539b05c03c1d83a",
+      "bytes": 200783784,
+      "sha256": "99adedc5a4e628a8afcbbba74ef1bb4154a40a828dad82a5f0de710532d5dae7"
+    },
+    {
+      "name": "yr_app",
+      "cargo_artifact": ".tmp/check-target/debug/deps/yr_app-3d65909a3deb91c6",
+      "bytes": 51950448,
+      "sha256": "45222994b026a7df9495b374ef5449656366032747a671138d280a1ecf1bef53"
+    },
+    {
+      "name": "yr_sim",
+      "cargo_artifact": ".tmp/check-target/debug/deps/yr_sim-e69a4d211883ad72",
+      "bytes": 23497592,
+      "sha256": "d2eecb750af3671b4d6812667a1ab15b21c86e7960de8db0f2cfdf0f3dec9522"
+    }
+  ],
+  "baseline_fixture_commit": "6604d77",
+  "baseline_production_main": "3bfb38509807a8061a692f9f904b1ace347cd97a",
+  "baseline_result": "expected failure: MTNK health=128 was 100/100, expected 50/100; baseline executable not retained"
+}

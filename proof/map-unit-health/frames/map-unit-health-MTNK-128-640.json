@@ -1,0 +1,19 @@
+{
+  "cursor_kind": "Attack",
+  "hover_target": 1,
+  "keyboard_pan": [
+    0.0,
+    0.0
+  ],
+  "keys": "{}",
+  "pending": "[]",
+  "redraw_handler_called": false,
+  "retail_art": false,
+  "selected": [
+    7
+  ],
+  "session_present": true,
+  "sim_hash": "d8e86f93740f6913",
+  "snapshot_bytes": 89744,
+  "tick": 2
+}
