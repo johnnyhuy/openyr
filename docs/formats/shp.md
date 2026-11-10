@@ -338,4 +338,5 @@ an unavailable body frame falls back to zero. Its shadow follows that resolved
 body frame, never the rejected index. Buildings and nonunit map layers retain
 their paths. Authored directional frames, a nonzero Ready start and shadow
 masks verify agreement. This is native consistency, not original direction or
-cadence calibration; unit-body lifetime and map-house remap remain #351.
+cadence calibration. Supported map-unit bodies now use the live lifetime and
+original-house path in #351, described in `map.md`; unsupported art stays static.

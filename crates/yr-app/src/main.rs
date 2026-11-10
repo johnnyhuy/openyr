@@ -864,6 +864,7 @@ impl App {
             animation: yr_render::sprites::InfantryAnimation,
             building: Option<yr_render::sprites::BuildingAnimation>,
             death: Option<(u8, u64)>,
+            map_remap: Option<[u8; 3]>,
         }
         let tick = self.session.as_ref().map_or(0, |s| s.sim.tick());
         let mut markers: Vec<Marker> = Vec::new();
@@ -926,10 +927,24 @@ impl App {
                     animation: Default::default(),
                     building: Some(yr_app::animation::building_animation(sim, b)),
                     death: None,
+                    map_remap: None,
                 });
             }
             for u in sim.units() {
-                if u.owner == yr_sim::OWNER_NEUTRAL && u.hp >= u.max_hp {
+                let map_house = session.map_unit_house(u);
+                let map_unit = map_house.is_some()
+                    && kind_id(u.kind).is_some_and(|kind| {
+                        self.sprites
+                            .as_ref()
+                            .is_none_or(|bank| bank.borrow().supports_map_unit(&kind))
+                    });
+                if u.owner == yr_sim::OWNER_NEUTRAL
+                    && if map_house.is_some() {
+                        !map_unit
+                    } else {
+                        u.hp >= u.max_hp
+                    }
+                {
                     continue;
                 }
                 let (fx, fy) = (u.x.raw() as f32 / 256.0, u.y.raw() as f32 / 256.0);
@@ -949,12 +964,19 @@ impl App {
                     col: selected_owner_col(self.session.as_ref(), u.owner),
                     selected: self.selected.contains(&u.id),
                     hp: hp_frac(u.hp, u.max_hp),
-                    art: (u.owner != yr_sim::OWNER_NEUTRAL)
+                    art: (u.owner != yr_sim::OWNER_NEUTRAL || map_unit)
                         .then(|| kind_id(u.kind).map(|k| (k, u.facing, u.owner)))
                         .flatten(),
                     animation: self.animations.get(u.id),
                     building: None,
                     death: None,
+                    map_remap: (u.owner == yr_sim::OWNER_NEUTRAL && map_unit)
+                        .then(|| {
+                            self.sprites
+                                .as_ref()
+                                .map(|bank| bank.borrow().house_color(map_house.unwrap()))
+                        })
+                        .flatten(),
                 });
             }
             for death in &self.effects.deaths {
@@ -978,6 +1000,7 @@ impl App {
                     art: Some((death.kind.clone(), death.facing, death.owner)),
                     animation: Default::default(),
                     building: None,
+                    map_remap: None,
                     death: Some((death.sequence, tick.saturating_sub(death.born))),
                 });
             }
@@ -1068,6 +1091,9 @@ impl App {
         let k = self.view.zoom / map.scale.max(1) as f32;
         let mut bank = self.sprites.as_ref().map(|b| b.borrow_mut());
         let marker_remap = |bank: &yr_render::sprites::SpriteBank, m: &Marker, id: &str, owner| {
+            if let Some(color) = m.map_remap {
+                return color;
+            }
             if m.building.is_some() && owner == yr_sim::OWNER_NEUTRAL {
                 bank.map_structure_color(id, (m.footprint.x as u16, m.footprint.y as u16))
                     .unwrap_or_else(|| owner_remap(bank, owner, self.session.as_ref()))

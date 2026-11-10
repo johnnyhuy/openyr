@@ -90,8 +90,41 @@ fallback. This intentionally changes the old raw-angle VXL and frame-zero SHP
 previews. Buildings keep their prior paths. Authored asymmetric VXL and
 independently colored directional SHP checks prove static/live pixel/anchor
 agreement, not original compass calibration, model orientation or pixel parity.
-Retail/original direction observations remain open. Baked unit-body lifetime,
-map-house remap and dynamic composition remain in #351.
+Retail/original direction observations remain open. Supported map-unit lifetime
+and map-house remap now use the live path described below (#351).
+
+### Live map-unit art
+
+Match backgrounds omit supported vehicle, infantry and aircraft bodies/shadows
+so the ordinary live compositor can draw their current position, heading and
+animation, and stop drawing them after destruction (#351). Static inspection
+and chooser previews retain the full map image. A shared per-type preflight
+drives background exclusion and SpriteBank eligibility, avoiding a second live
+body over unsupported baked art.
+
+Preflight checks all eight native screen directions at the initial pose. VXL
+models must load and produce bounded sprites at every direction. SHPs must be
+readable native unit `.SHP` files with positive dimensions at most 512x512,
+at most 4096 frames and decodable standing/fallback bodies and shadows.
+Theater-only SHP units are not yet resolved by the live unit path, so they keep
+the static fallback. Missing, malformed or unsupported art retains its earlier
+static representation; its lifetime is not dynamically reconstructed. If the
+whole live bank is unavailable, map units degrade to ordinary markers.
+
+Setup records original house names against stable unit ids and kind tags as
+presentation metadata. Neutral map units retain those colors after movement
+and save/load; changed ownership uses the normal owner's colors. New or
+mismatched kinds cannot inherit an unrelated map-house remap. This metadata
+never enters simulation snapshots or setup fingerprints and is rebuilt from
+the source map on load. No schema, commands, RNG or save compatibility changes.
+
+Authored public-session/native composition tests cover healthy and damaged
+SHP/VXL units, motion, restored state, ownership and destruction at two layouts.
+Opaque and fractional body pixels plus source shadows are checked against
+ground pixels; overlapping shadows darken once. Supported original/moved body
+neighborhoods return to the background after removal. Drawing preserves exact
+match bytes and pending input. Retail data, original layer/depth calibration,
+all future HVA poses, original cadence and physical Mac/Retina remain unverified.
 
 ### Initial structure health
 

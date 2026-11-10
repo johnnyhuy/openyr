@@ -241,4 +241,6 @@ vehicle with a differently colored nose checks opposite headings, body pixels
 and ground anchors against live SpriteBank decoding. Static voxel buildings
 retain their earlier raw-angle path. Supplied model front axes and the original
 map compass convention remain uncalibrated here; no retail/original runtime
-comparison ran for this change. Dynamic map-unit lifetime remains #351.
+comparison ran for this change. Supported map VXL bodies now leave match
+backgrounds for live composition in #351 (`map.md`), retaining position,
+direction and original-house remap across movement/load and removal.
