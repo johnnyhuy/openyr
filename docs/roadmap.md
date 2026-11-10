@@ -36,6 +36,15 @@ Johnny on 2026-10-31.
       game captures, source downloads, macOS build orders and legal context.
       Site chrome is original CSS; media remains outside main (`docs/website.md`).
 
+- [x] Put battlefield gameplay before menus in README tables (#339), with
+      verified combat, infantry movement and base-operation GIFs from earlier
+      native captures. Pin media outside main and record source versions,
+      conversion hashes and sampled-tick limits (`docs/demos.md`).
+- [ ] Record a fresh current-build retail gameplay session (#339). Retail
+      data is absent in the current cloud environment; retain the verified
+      executable, full recording, event times and derived in-game GIFs once
+      a legally supplied install is available.
+
 ## M1: Asset layer (done 2026-10-17; open items carried forward)
 
 - [x] MIX reader: classic + flagged headers, SHA1 trailer, encrypted (RSA/Blowfish) headers
