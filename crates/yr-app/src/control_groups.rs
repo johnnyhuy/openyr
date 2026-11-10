@@ -184,9 +184,7 @@ impl App {
             )
         });
         if let Some((x0, y0, x1, y1)) = bounds {
-            let (width, height) = self.pixels.as_ref().map_or((WIN_W, WIN_H), |p| {
-                (p.texture().width(), p.texture().height())
-            });
+            let (width, height) = self.camera_size();
             self.view.cam_x =
                 (x0 + x1) * 0.5 - width.saturating_sub(SIDEBAR_W) as f32 / (2.0 * self.view.zoom);
             self.view.cam_y = (y0 + y1) * 0.5 - height as f32 / (2.0 * self.view.zoom);
