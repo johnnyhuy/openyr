@@ -151,7 +151,7 @@ fn retail_pointer_guards_preserve_match_saves_and_valid_world_actions() {
     }
     let mut app = new_app(directory.to_string_lossy().into(), "EB1.MMX".into(), 1);
     app.session = Some(app.load_session().unwrap());
-    app.map = Some(yr_render::render_map(&app.gamedir, &app.map_name, 1).unwrap());
+    app.map = Some(yr_render::render_map_background(&app.gamedir, &app.map_name, 1).unwrap());
     let saved = yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap();
     let unit = app
         .session

@@ -890,9 +890,15 @@ impl App {
                 }
             }
             for b in sim.buildings() {
-                // Neutral map structures are already drawn as art; mark
-                // them only once they take damage.
-                if b.owner == yr_sim::OWNER_NEUTRAL && b.hp >= b.max_hp {
+                // Only reconstructable neutral buildings were omitted from
+                // the background. Unsupported static art stays baked there.
+                if b.owner == yr_sim::OWNER_NEUTRAL
+                    && !kind_id(b.kind).is_some_and(|id| {
+                        self.sprites.as_ref().is_some_and(|bank| {
+                            bank.borrow().map_structure_color(&id, b.cell).is_some()
+                        })
+                    })
+                {
                     continue;
                 }
                 let (bx, by) = b.centre();
@@ -916,9 +922,7 @@ impl App {
                     col: selected_owner_col(self.session.as_ref(), b.owner),
                     selected: false,
                     hp: hp_frac(b.hp, b.max_hp),
-                    art: (b.owner != yr_sim::OWNER_NEUTRAL)
-                        .then(|| kind_id(b.kind).map(|k| (k, 0, b.owner)))
-                        .flatten(),
+                    art: kind_id(b.kind).map(|k| (k, 0, b.owner)),
                     animation: Default::default(),
                     building: Some(yr_app::animation::building_animation(sim, b)),
                     death: None,
@@ -1063,12 +1067,20 @@ impl App {
         // filled owner-colour diamond.
         let k = self.view.zoom / map.scale.max(1) as f32;
         let mut bank = self.sprites.as_ref().map(|b| b.borrow_mut());
+        let marker_remap = |bank: &yr_render::sprites::SpriteBank, m: &Marker, id: &str, owner| {
+            if m.building.is_some() && owner == yr_sim::OWNER_NEUTRAL {
+                bank.map_structure_color(id, (m.footprint.x as u16, m.footprint.y as u16))
+                    .unwrap_or_else(|| owner_remap(bank, owner, self.session.as_ref()))
+            } else {
+                owner_remap(bank, owner, self.session.as_ref())
+            }
+        };
         // Bibs belong to the ground, below every unit and building body.
         for m in &markers {
             if let (Some((id, _, owner)), Some(animation), Some(bank)) =
                 (&m.art, m.building, bank.as_mut())
             {
-                let remap = owner_remap(bank, *owner, self.session.as_ref());
+                let remap = marker_remap(bank, m, id, *owner);
                 if let Some(bib) = bank.get_building(id, remap, animation).and_then(|b| b.bib) {
                     blit_sprite(frame, fw, fh, bib, m.ax, m.ay, k, SpritePass::Body);
                 }
@@ -1083,7 +1095,7 @@ impl App {
                 continue;
             }
             if let (Some((id, facing, owner)), Some(bank)) = (&m.art, bank.as_mut()) {
-                let remap = owner_remap(bank, *owner, self.session.as_ref());
+                let remap = marker_remap(bank, m, id, *owner);
                 if let Some(animation) = m.building {
                     if let Some(building) = bank.get_building(id, remap, animation) {
                         for layer in building.bib.into_iter().chain(building.layers) {
@@ -1171,7 +1183,7 @@ impl App {
             let m = &markers[index];
             let drawn = match (&m.art, bank.as_mut()) {
                 (Some((id, facing, owner)), Some(bank)) => {
-                    let remap = owner_remap(bank, *owner, self.session.as_ref());
+                    let remap = marker_remap(bank, m, id, *owner);
                     if let Some(animation) = m.building {
                         if let Some(building) = bank.get_building(id, remap, animation) {
                             for layer in building.layers {
@@ -1505,7 +1517,7 @@ impl ApplicationHandler for App {
             }
             return;
         }
-        match yr_render::render_map(&self.gamedir, &self.map_name, self.scale) {
+        match yr_render::render_map_background(&self.gamedir, &self.map_name, self.scale) {
             Ok(map) => {
                 println!("OpenYR: rendered {}", map.summary);
                 self.view
@@ -1780,7 +1792,7 @@ fn headless_frames(
     passive: bool,
 ) -> Result<(), String> {
     if let Some(dir) = dir {
-        app.map = Some(yr_render::render_map(
+        app.map = Some(yr_render::render_map_background(
             &app.gamedir,
             &app.map_name,
             app.scale,
@@ -2151,7 +2163,7 @@ mod render_tests {
         }
         let dir = dir.to_str().unwrap();
         let mut app = new_app(dir.into(), "EB1.MMX".into(), 1);
-        app.map = Some(yr_render::render_map(dir, "EB1.MMX", 1).unwrap());
+        app.map = Some(yr_render::render_map_background(dir, "EB1.MMX", 1).unwrap());
         app.sprites = load_sprites(dir, "EB1.MMX");
         let mut session = app.load_session().unwrap();
         session.sim.set_ai(None);
@@ -2247,7 +2259,7 @@ mod render_tests {
         let dir = dir.to_str().unwrap();
         let prepare = |scale| {
             let mut app = new_app(dir.into(), "EB1.MMX".into(), scale);
-            app.map = Some(yr_render::render_map(dir, "EB1.MMX", scale).unwrap());
+            app.map = Some(yr_render::render_map_background(dir, "EB1.MMX", scale).unwrap());
             app.sprites = load_sprites(dir, "EB1.MMX");
             let mut session = app.load_session().unwrap();
             session.sim.set_ai(None);
@@ -2687,7 +2699,7 @@ mod render_tests {
         let mut matrix = Vec::new();
         for scale in [1, 2, 4] {
             app.scale = scale;
-            app.map = Some(yr_render::render_map(dir, "EB1.MMX", scale).unwrap());
+            app.map = Some(yr_render::render_map_background(dir, "EB1.MMX", scale).unwrap());
             for zoom in [0.25, 1.0, 1.25, 4.0] {
                 app.view.zoom = zoom;
                 for size in [(1280, 800), (800, 600), (1760, 1000)] {

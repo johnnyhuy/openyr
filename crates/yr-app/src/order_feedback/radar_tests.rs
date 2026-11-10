@@ -88,7 +88,7 @@ fn retail_radar_input_acknowledges_orders_with_unchanged_commands_and_save_bytes
         app.session.as_mut().unwrap().step(&[]);
         assert!(app.session.as_ref().unwrap().sim.tick() < 3000);
     }
-    app.map = Some(yr_render::render_map(&app.gamedir, &app.map_name, 1).unwrap());
+    app.map = Some(yr_render::render_map_background(&app.gamedir, &app.map_name, 1).unwrap());
     app.sprites = load_sprites(&app.gamedir, &app.map_name);
     let saved = yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap();
     let mut receipts = Vec::new();

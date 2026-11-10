@@ -54,7 +54,7 @@ fn retail_placement_notices_preserve_ready_queue_commands_and_complete_snapshots
     let valid = valid_origin(&session, slot);
     let ready = yr_app::snapshot::encode(&session).unwrap();
     app.session = Some(session);
-    app.map = Some(yr_render::render_map(&app.gamedir, &app.map_name, 1).unwrap());
+    app.map = Some(yr_render::render_map_background(&app.gamedir, &app.map_name, 1).unwrap());
     app.sprites = load_sprites(&app.gamedir, &app.map_name);
     app.selected = [selected].into();
     if let Some(out) = std::env::var_os("OPENYR_PLACEMENT_ORDER_PROOF") {

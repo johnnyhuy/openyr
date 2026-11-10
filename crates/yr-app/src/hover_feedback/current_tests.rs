@@ -20,7 +20,7 @@ fn retail_current_targets_follow_sim_selection_and_lifecycle_without_changing_sa
     let mut app = new_app(directory.to_string_lossy().into(), "EB1.MMX".into(), 1);
     app.session = Some(app.load_session().unwrap());
     app.session.as_mut().unwrap().sim.set_ai(None);
-    app.map = Some(yr_render::render_map(&app.gamedir, &app.map_name, 1).unwrap());
+    app.map = Some(yr_render::render_map_background(&app.gamedir, &app.map_name, 1).unwrap());
     app.sprites = load_sprites(&app.gamedir, &app.map_name);
     let sim = &app.session.as_ref().unwrap().sim;
     let attackers: Vec<_> = sim

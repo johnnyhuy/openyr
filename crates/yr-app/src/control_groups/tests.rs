@@ -137,7 +137,7 @@ fn retail_team_keys_preserve_match_state_and_drive_selection_orders_and_camera()
     }
     let mut app = new_app(dir.to_string_lossy().into(), "EB1.MMX".into(), 1);
     app.session = Some(app.load_session().unwrap());
-    app.map = Some(yr_render::render_map(&app.gamedir, &app.map_name, 1).unwrap());
+    app.map = Some(yr_render::render_map_background(&app.gamedir, &app.map_name, 1).unwrap());
     app.sprites = load_sprites(&app.gamedir, &app.map_name);
     let ids: Vec<_> = app
         .session

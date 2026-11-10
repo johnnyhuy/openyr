@@ -71,6 +71,26 @@ mod raster_bounds;
 /// Render `map_name` (a loose file in the game dir, or a path) at
 /// downscale `scale` (1, 2 or 4).
 pub fn render_map(gamedir: &str, map_name: &str, scale: u32) -> Result<RenderedMap, String> {
+    render_map_layers(gamedir, map_name, scale, true)
+}
+
+/// Match background. Reconstructable SHP buildings are drawn live so idle
+/// layers can advance and their bodies can disappear after destruction.
+/// Inspection and chooser previews retain the complete static `render_map`.
+pub fn render_map_background(
+    gamedir: &str,
+    map_name: &str,
+    scale: u32,
+) -> Result<RenderedMap, String> {
+    render_map_layers(gamedir, map_name, scale, false)
+}
+
+fn render_map_layers(
+    gamedir: &str,
+    map_name: &str,
+    scale: u32,
+    include_buildings: bool,
+) -> Result<RenderedMap, String> {
     if !matches!(scale, 1 | 2 | 4) {
         return Err("scale must be 1, 2 or 4".into());
     }
@@ -393,6 +413,10 @@ pub fn render_map(gamedir: &str, map_name: &str, scale: u32) -> Result<RenderedM
     for obj in map
         .structures
         .iter()
+        .filter(|obj| {
+            include_buildings
+                || live_building_art(&vfs, &rules, &art_ini, &obj.kind, theater).is_none()
+        })
         .chain(&map.units)
         .chain(&map.infantry)
         .chain(&map.aircraft)
@@ -523,6 +547,27 @@ pub fn render_map(gamedir: &str, map_name: &str, scale: u32) -> Result<RenderedM
             tmps.len()
         ),
     })
+}
+
+pub(crate) fn live_building_art(
+    vfs: &AssetFs,
+    rules: &Rules,
+    art_ini: &IniFile,
+    kind: &str,
+    theater: Theater,
+) -> Option<buildings::BuildingArt> {
+    let techno = rules
+        .techno(kind)
+        .filter(|t| t.kind == yr_rules::TechnoKind::Building)?;
+    let art = techno.art.as_ref()?;
+    buildings::BuildingArt::load(
+        vfs,
+        art_ini,
+        &techno.image,
+        &art.section,
+        theater,
+        art.foundation.unwrap_or((1, 1)),
+    )
 }
 
 /// SHP names to try for building image `image`: NewTheater art swaps the

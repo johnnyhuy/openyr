@@ -9,7 +9,7 @@ fn retail_sidebar_scrolling_reaches_every_slot_and_routes_production_without_zoo
     }
     let mut app = new_app(dir.to_string_lossy().into(), "EB1.MMX".into(), 1);
     app.session = Some(app.load_session().unwrap());
-    app.map = Some(yr_render::render_map(&app.gamedir, &app.map_name, 1).unwrap());
+    app.map = Some(yr_render::render_map_background(&app.gamedir, &app.map_name, 1).unwrap());
     app.sprites = load_sprites(&app.gamedir, &app.map_name);
     let session = app.session.as_mut().unwrap();
     session.sim.set_ai(None);

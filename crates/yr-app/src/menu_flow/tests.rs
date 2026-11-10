@@ -248,7 +248,7 @@ fn retail_quicksave_clears_modal_input_on_success_and_failure() {
     let mut app = new_app(dir.to_string_lossy().into(), "EB1.MMX".into(), 1);
     app.session = Some(app.load_session().unwrap());
     app.session.as_mut().unwrap().sim.set_ai(None);
-    app.map = Some(yr_render::render_map(&app.gamedir, &app.map_name, 1).unwrap());
+    app.map = Some(yr_render::render_map_background(&app.gamedir, &app.map_name, 1).unwrap());
     app.menu_art = yr_app::menu::Art::load(&yr_assets::AssetFs::open(&dir).unwrap());
     let id = app
         .session
@@ -378,7 +378,7 @@ fn retail_pause_recovery_scrolling_keeps_the_match_and_routes_inputs() {
     let temp = Scratch::new();
     let mut app = new_app(dir.to_string_lossy().into(), "EB1.MMX".into(), 1);
     app.session = Some(app.load_session().unwrap());
-    app.map = Some(yr_render::render_map(&app.gamedir, &app.map_name, 1).unwrap());
+    app.map = Some(yr_render::render_map_background(&app.gamedir, &app.map_name, 1).unwrap());
     app.menu_art = yr_app::menu::Art::load(&yr_assets::AssetFs::open(&dir).unwrap());
     let saved = yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap();
     let original_target = temp.0.join("quicksave.oyrsave");
@@ -820,7 +820,7 @@ fn retail_menu_pause_save_overwrite_async_load_cancel_restart_and_results() {
     app.save_path = temp.0.join("quicksave.oyrsave");
     app.preferences_path = Some(temp.0.join("interface.json"));
     app.session = Some(app.load_session().unwrap());
-    app.map = Some(yr_render::render_map(&app.gamedir, &app.map_name, 1).unwrap());
+    app.map = Some(yr_render::render_map_background(&app.gamedir, &app.map_name, 1).unwrap());
     app.sprites = load_sprites(&app.gamedir, &app.map_name);
     app.menu_art = yr_app::menu::Art::load(&yr_assets::AssetFs::open(&dir).unwrap());
     app.pointer.inside = true;

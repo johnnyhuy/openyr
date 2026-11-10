@@ -203,6 +203,12 @@ Johnny on 2026-10-31.
       edges without whole-frame blur. Authored house/facing/depth/anchor checks
       cover map/live agreement and shadow isolation; original/retail calibration
       remains open (`docs/formats/vxl.md`).
+- [x] Animate pre-placed neutral building idle layers (#341, #6): omit
+      reconstructable SHP structures from match backgrounds and reuse live
+      body/bib/active layers, original map-house colors and existing foundation/
+      shadow ordering. Static previews and unsupported art stay baked. Authored
+      background/idle/destruction checks preserve complete Session bytes,
+      selected units and pending orders; original/retail calibration remains open.
 - [x] Geometry-derived voxel lighting (#82): cached local surface normals
       follow HVA poses and facings under a fixed camera light. Palette and
       house colours share bounded ambient/diffuse shading; ambiguous surfaces

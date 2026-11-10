@@ -113,7 +113,8 @@ mod retail_pointer_tests {
         let mut app = new_app(dir.to_string_lossy().into(), "EB1.MMX".into(), 1);
         app.session = Some(app.load_session().unwrap());
         app.session.as_mut().unwrap().sim.set_ai(None);
-        app.map = Some(yr_render::render_map(&app.gamedir, &app.map_name, app.scale).unwrap());
+        app.map =
+            Some(yr_render::render_map_background(&app.gamedir, &app.map_name, app.scale).unwrap());
         app.sprites = load_sprites(&app.gamedir, &app.map_name);
         app.pointer.inside = true;
         let unit = app
