@@ -122,6 +122,11 @@ impl App {
         if session.outcome != Outcome::Ongoing {
             return true;
         }
+        if self.super_key {
+            self.groups.interrupt();
+            self.view.dirty = true;
+            return true;
+        }
         let owned: BTreeSet<_> = session
             .sim
             .units()

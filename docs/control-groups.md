@@ -142,3 +142,31 @@ feedback; and byte-exact Session invariance. `OPENYR_ALL_SELECTION_PROOF` with
 after shared-compositor frames and state receipts without retail artwork.
 Original role semantics, retail sprite/cursor pixels, physical Mac/Retina input
 and selection audio remain unverified by these fixtures.
+
+## Unsupported Command team chords
+
+Fresh focused Command/Super+number input is consumed before team activation
+(#327). This includes Command+Control, Command+Shift and their combination.
+It cannot recall, add, replace or clear a team, center the camera, or cancel
+pointer gestures and command modes. Selection, assigned membership, camera,
+queued orders, simulation and encoded Session bytes are retained. The rejected
+chord ends the previous recall window and clears its old team notice, so a
+later plain number cannot complete an earlier pair. The dispatcher retains its
+existing interruption of T timing on fresh non-T keys.
+
+Release, repeat, synthesized/unfocused and menu guards run first; ignored
+input does not become a fresh recall interruption. Plain numbers, Ctrl
+assignment, Shift additive recall, ordinary double recall and menu number text
+keep their existing behavior. This aligns native unsupported-modifier isolation
+with T/P/category shortcuts; it does not establish original Command semantics
+or physical macOS event delivery.
+
+On unchanged production code, three authored regressions fail while the positive
+classic-shortcut test passes. A controlled logical 50 ms second chord moves the
+camera in the baseline but leaves it unchanged after the fix. Native dispatch
+checks cover 108 layout/slot/chord combinations, nine empty-selection assignment
+cases, all nine positive slots and three shared compositor camera cases. Full
+encoded Sessions remain byte-exact. `OPENYR_TEAM_COMMAND_PROOF` with
+`cargo test -p yr-app --bin openyr team_command -- --nocapture` exports frames
+and receipts from authored Sessions without retail art. Original/retail,
+physical Mac/Retina and audio-device checks remain open in #97/#98.
