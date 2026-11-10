@@ -1,0 +1,338 @@
+<h1 dir="auto">OpenYR</h1>
+<p dir="auto"><a href="https://github.com/johnnyhuy/openyr/actions/workflows/ci.yml"><img src="https://github.com/johnnyhuy/openyr/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI" style="max-width: 100%;"></a></p>
+<p dir="auto">A native Rust rewrite of <strong>Command &amp; Conquer: Red Alert 2: Yuri's Revenge</strong>,<br>
+with macOS as the primary target. OpenYR reads data from your legally owned game<br>
+install. It is a pre-alpha playable sandbox; full game and visual parity are<br>
+still in progress.</p>
+<p dir="auto"><a href="https://johnnyhuy.github.io/openyr/" rel="nofollow">Project website</a> / <a href="https://github.com/johnnyhuy/openyr/archive/refs/heads/main.zip">Source ZIP</a></p>
+<h2 dir="auto">Gameplay</h2>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th>Feature</th>
+<th>In game</th>
+<th>Preview</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Tank combat</td>
+<td>Cannon hits, damage and retail impact animations.</td>
+<td><a target="_blank" rel="noopener noreferrer nofollow" href="https://raw.githubusercontent.com/johnnyhuy/openyr/371bb427c434218bc571a819ff7797b3472725e7/proof/gameplay-showcase/combat.gif"><img src="https://raw.githubusercontent.com/johnnyhuy/openyr/371bb427c434218bc571a819ff7797b3472725e7/proof/gameplay-showcase/combat.gif" alt="Tank taking cannon hits with native impact effects" width="400" data-animated-image="" style="max-width: 100%;"></a></td>
+</tr>
+<tr>
+<td>Infantry movement</td>
+<td>Moving infantry, vehicles and animated base structures on retail terrain.</td>
+<td><a target="_blank" rel="noopener noreferrer nofollow" href="https://raw.githubusercontent.com/johnnyhuy/openyr/371bb427c434218bc571a819ff7797b3472725e7/proof/gameplay-showcase/movement.gif"><img src="https://raw.githubusercontent.com/johnnyhuy/openyr/371bb427c434218bc571a819ff7797b3472725e7/proof/gameplay-showcase/movement.gif" alt="Infantry moving around the base on EB1" width="400" data-animated-image="" style="max-width: 100%;"></a></td>
+</tr>
+<tr>
+<td>Base operations</td>
+<td>Repairing damage and selling structures with sidebar feedback.</td>
+<td><a target="_blank" rel="noopener noreferrer nofollow" href="https://raw.githubusercontent.com/johnnyhuy/openyr/371bb427c434218bc571a819ff7797b3472725e7/proof/gameplay-showcase/base-operations.gif"><img src="https://raw.githubusercontent.com/johnnyhuy/openyr/371bb427c434218bc571a819ff7797b3472725e7/proof/gameplay-showcase/base-operations.gif" alt="Native repair and sale states across sampled simulation ticks" width="400" data-animated-image="" style="max-width: 100%;"></a></td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<p dir="auto">Gameplay previews come from earlier OpenYR builds. <a href="docs/demos.md">Capture sources and limits</a><br>
+record the versions and sampled-tick presentation.</p>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th>System</th>
+<th>Implemented behavior</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Selection and orders</td>
+<td>Click/box selection, control groups, attack-move, contextual cursors, target brackets and order feedback.</td>
+</tr>
+<tr>
+<td>Combat and economy</td>
+<td>Deterministic movement, weapon damage, harvesting, owner credits and basic skirmish AI.</td>
+</tr>
+<tr>
+<td>Production and structures</td>
+<td>Unit/building queues, hold/resume/cancel, READY placement, repair and sell.</td>
+</tr>
+<tr>
+<td>Sidebar</td>
+<td>Retail cameos, per-category scrolling, powered radar and a live power meter.</td>
+</tr>
+<tr>
+<td>Audio</td>
+<td>Theme music, unit voices, weapon reports, EVA, mute and device recovery.</td>
+</tr>
+<tr>
+<td>Saves</td>
+<td>Compatibility checks, atomic writes, saved setup restoration and visible success/error feedback.</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<h2 dir="auto">Menus and match setup</h2>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th>Feature</th>
+<th>In game</th>
+<th>Preview</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Main menu</td>
+<td>Animated retail shell, Single Player, settings and return from a match.</td>
+<td><a target="_blank" rel="noopener noreferrer nofollow" href="https://raw.githubusercontent.com/johnnyhuy/openyr/1d3c9840cfa1293881ee093db9aec3e72a253235/proof/readme-features/main-menu.gif"><img src="https://raw.githubusercontent.com/johnnyhuy/openyr/1d3c9840cfa1293881ee093db9aec3e72a253235/proof/readme-features/main-menu.gif" alt="Animated OpenYR main menu" width="320" data-animated-image="" style="max-width: 100%;"></a></td>
+</tr>
+<tr>
+<td>Skirmish setup</td>
+<td>Installed map catalog, two participants, nine Allied/Soviet countries, colors, start positions, teams, credits, starting units and speed.</td>
+<td><a target="_blank" rel="noopener noreferrer nofollow" href="https://raw.githubusercontent.com/johnnyhuy/openyr/c7deba4c12ab133026c00570e4a2c78d7fa3fa65/proof/native-demo/skirmish.png"><img src="https://raw.githubusercontent.com/johnnyhuy/openyr/c7deba4c12ab133026c00570e4a2c78d7fa3fa65/proof/native-demo/skirmish.png" alt="Skirmish player and map setup" width="320" style="max-width: 100%;"></a></td>
+</tr>
+<tr>
+<td>Match loading</td>
+<td>Country artwork, selected-map preview, progress and cancellation before entering the battlefield.</td>
+<td><a target="_blank" rel="noopener noreferrer nofollow" href="https://raw.githubusercontent.com/johnnyhuy/openyr/1d3c9840cfa1293881ee093db9aec3e72a253235/proof/readme-features/loading.gif"><img src="https://raw.githubusercontent.com/johnnyhuy/openyr/1d3c9840cfa1293881ee093db9aec3e72a253235/proof/readme-features/loading.gif" alt="Skirmish setup, country loading screen and match entry" width="320" data-animated-image="" style="max-width: 100%;"></a></td>
+</tr>
+<tr>
+<td>Saved matches</td>
+<td>Named save/load/delete, F5/F9, overwrite confirmation, recovery and Ctrl/Command+A name editing.</td>
+<td><a target="_blank" rel="noopener noreferrer nofollow" href="https://raw.githubusercontent.com/johnnyhuy/openyr/1d3c9840cfa1293881ee093db9aec3e72a253235/proof/readme-features/save-name.gif"><img src="https://raw.githubusercontent.com/johnnyhuy/openyr/1d3c9840cfa1293881ee093db9aec3e72a253235/proof/readme-features/save-name.gif" alt="Selecting and replacing a save name, then saving the match" width="320" data-animated-image="" style="max-width: 100%;"></a></td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<p dir="auto">Superweapon activation, country special abilities, broader game modes, original<br>
+AI and remaining effects are unfinished. Original animation timing and physical<br>
+Mac/Retina input verification also remain open. EB1.MMX is the main regression<br>
+map; addon and roguelite work follow the core playable baseline. See the<br>
+<a href="docs/roadmap.md">roadmap</a> and <a href="docs/formats/front-menu.md">menu observations</a>.</p>
+<h2 dir="auto">Build and launch</h2>
+<p dir="auto">Use <a href="https://mise.jdx.dev/getting-started.html" rel="nofollow">mise</a> to install the project tools.<br>
+Rust follows <code class="notranslate">rust-toolchain.toml</code> (stable with <code class="notranslate">rustfmt</code>, <code class="notranslate">clippy</code> and LLVM tools);<br>
+<code class="notranslate">mise.toml</code> selects Python 3.13 and defines the development tasks. Git is also<br>
+required. Linux contributors also need<br>
+<code class="notranslate">pkg-config</code> and ALSA development headers, such as <code class="notranslate">libasound2-dev</code> on Debian/Ubuntu.<br>
+A desktop display is needed for the interactive window; headless runs can use<br>
+<code class="notranslate">--ticks</code> or <code class="notranslate">--frames</code>.</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">mise trust
+mise install
+mise run build
+OPENYR_GAMEDIR=<span class="pl-s"><span class="pl-pds">"</span>/path/to/RA2<span class="pl-pds">"</span></span> mise run run</pre></div>
+<p dir="auto">Launch without game arguments to open the main menu. <code class="notranslate">OPENYR_GAMEDIR</code> selects<br>
+an install explicitly. On macOS, OpenYR also discovers the usual<br>
+<code class="notranslate">~/Games/RA2YR/prefix/drive_c/Westwood/RA2</code> location or offers a folder picker and<br>
+remembers your choice. Select the game-data folder containing the MIX archives,<br>
+not the Windows executable. See <a href="docs/macos-app.md">game-data discovery and packaging</a>.</p>
+<p dir="auto">On macOS, build a Finder-launchable app:</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">mise run package
+open target/OpenYR.app</pre></div>
+<p dir="auto">For later launches, double-click the app. Its package contains the engine and<br>
+launcher; it reads your game data from the selected install.</p>
+<p dir="auto">Start the EB1 sandbox directly with explicit arguments:</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">mise run run -- <span class="pl-s"><span class="pl-pds">"</span>/path/to/RA2<span class="pl-pds">"</span></span> EB1.MMX</pre></div>
+<p dir="auto">The workspace defaults to <code class="notranslate">yr-app</code>. Use <code class="notranslate">-p mix-dump</code> for asset inspection or<br>
+<code class="notranslate">-p sim-bench</code> for the simulation benchmark.</p>
+<h2 dir="auto">Controls and saved matches</h2>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th>Input</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Left-click / drag</td>
+<td>Select units or box-select; click a destination/target to order selected units</td>
+</tr>
+<tr>
+<td>Right-click</td>
+<td>Cancel the current mode or selection</td>
+</tr>
+<tr>
+<td>Right-drag / arrow keys</td>
+<td>Pan the camera</td>
+</tr>
+<tr>
+<td>Mouse wheel</td>
+<td>Zoom the world; scroll lists/sidebar where applicable</td>
+</tr>
+<tr>
+<td>Ctrl+1-9 / 1-9</td>
+<td>Assign / recall a team; Shift+number adds it, double recall centers the camera</td>
+</tr>
+<tr>
+<td>A, then click / Ctrl+Shift+click</td>
+<td>Attack-move</td>
+</tr>
+<tr>
+<td>T</td>
+<td>Expand selection to visible owned units of matching types</td>
+</tr>
+<tr>
+<td>P</td>
+<td>Select all living owned units across the battlefield</td>
+</tr>
+<tr>
+<td>N</td>
+<td>Select and center the next owned unit in creation order</td>
+</tr>
+<tr>
+<td>F</td>
+<td>Toggle camera follow for a selected owned unit</td>
+</tr>
+<tr>
+<td>H</td>
+<td>Center the camera on an owned construction yard</td>
+</tr>
+<tr>
+<td>S / Ctrl+H</td>
+<td>Stop / harvest with eligible selected units</td>
+</tr>
+<tr>
+<td>Q / W / E / R</td>
+<td>Structures / defences / infantry / vehicles tab</td>
+</tr>
+<tr>
+<td>K / L</td>
+<td>Repair / sell mode</td>
+</tr>
+<tr>
+<td>M</td>
+<td>Toggle mute</td>
+</tr>
+<tr>
+<td>Escape</td>
+<td>Cancel an active command, then open Pause</td>
+</tr>
+<tr>
+<td>F5 / F9</td>
+<td>Save / confirm loading the active quicksave target</td>
+</tr>
+<tr>
+<td>Ctrl+A / Command+A in name fields</td>
+<td>Select the whole save/player name for replacement</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<p dir="auto">Command-modified keys do not issue match commands; menu name fields retain Command+A.</p>
+<p dir="auto">Left-click a sidebar item to build, resume held work or pick up a READY structure.<br>
+Right-click holds production; a second right-click cancels it. Menus pause the<br>
+simulation without catch-up on resume. Tab selects controls, and arrows navigate<br>
+saved-match lists. Edge scrolling is optional in Controls.</p>
+<p dir="auto">Pause provides named saves, load/delete, restart and return to Main Menu.<br>
+Saved matches are also available from Single Player. The default F5/F9 file is<br>
+<code class="notranslate">~/Library/Application Support/OpenYR/quicksave.oyrsave</code>; loading a named match<br>
+makes that file the new target. A successful fresh front-menu Start uses<br>
+<code class="notranslate">quicksave.oyrsave</code> in the current save folder, protecting the earlier named slot.<br>
+In-match restart retains its active target. Successful menu loads confirm the save<br>
+name and restored tick. Failures retain the current match with a recovery route.</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">mise run run -- <span class="pl-s"><span class="pl-pds">"</span>/path/to/RA2<span class="pl-pds">"</span></span> EB1.MMX --ticks 900 --save /tmp/match.oyrsave
+mise run run -- <span class="pl-s"><span class="pl-pds">"</span>/path/to/RA2<span class="pl-pds">"</span></span> EB1.MMX --load /tmp/match.oyrsave --ticks 3000
+mise run run -- <span class="pl-s"><span class="pl-pds">"</span>/path/to/RA2<span class="pl-pds">"</span></span> EB1.MMX --load /tmp/match.oyrsave</pre></div>
+<p dir="auto">Ticks are absolute: the second command resumes the saved state through tick 3000.<br>
+<code class="notranslate">--save</code> without ticks writes the starting state headlessly. Explicit CLI launches<br>
+bypass the front menu. Keep saves outside Git because they contain retail-derived<br>
+data. See <a href="docs/formats/save.md">save compatibility</a>, <a href="docs/formats/menus.md">menu behavior</a><br>
+and <a href="docs/control-groups.md">team controls</a>.</p>
+<h2 dir="auto">Development and proof</h2>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">mise run check</pre></div>
+<p dir="auto"><code class="notranslate">mise tasks</code> lists individual build, run, test, clippy, fmt, proof and packaging<br>
+tasks. <code class="notranslate">check</code> runs formatting, Clippy, workspace tests and proof-helper tests.<br>
+CI uses the same mise configuration and tasks. For ad hoc commands, use<br>
+<code class="notranslate">mise exec -- cargo ...</code> or activate mise in your shell; direct Cargo commands<br>
+remain supported through <code class="notranslate">rust-toolchain.toml</code>. Keep local paths and credentials<br>
+out of the shared configuration.</p>
+<p dir="auto">Retail tests use <code class="notranslate">~/Games/RA2YR/prefix/drive_c/Westwood/RA2</code> when available and<br>
+self-skip without it. CI checks the code on macOS without retail data; that is<br>
+separate from physical Mac, Retina or audio-device verification.</p>
+<p dir="auto">For runtime proof, commit your source and use a new isolated output directory:</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">mise run proof:build -- --output .tmp/proof-build-001
+mise run proof:run -- --receipt .tmp/proof-build-001/receipt.json -- \
+  <span class="pl-s"><span class="pl-pds">"</span>/path/to/RA2<span class="pl-pds">"</span></span> EB1.MMX --frames /tmp/openyr-proof 300 900 1500</pre></div>
+<p dir="auto">The helper records source and executable hashes and refuses changed artifacts.<br>
+This avoids stale executables from shared Cargo target directories. Frame exports<br>
+include PNGs, <code class="notranslate">audio.wav</code> and <code class="notranslate">audio-cues.tsv</code>; keep retail-derived outputs outside<br>
+Git. <a href="docs/runtime-proof.md">Runtime proof instructions</a> and <a href="AGENTS.md">contributor rules</a><br>
+cover verification and publishing evidence.</p>
+<p dir="auto">Inspect your own assets with <code class="notranslate">mix-dump</code>:</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">mise <span class="pl-c1">exec</span> -- cargo run --locked -p mix-dump -- list <span class="pl-s"><span class="pl-pds">"</span>/path/to/RA2/langmd.mix<span class="pl-pds">"</span></span>
+mise <span class="pl-c1">exec</span> -- cargo run --locked -p mix-dump -- rules <span class="pl-s"><span class="pl-pds">"</span>/path/to/RA2<span class="pl-pds">"</span></span> NukeSpecial
+mise <span class="pl-c1">exec</span> -- cargo run --release --locked -p mix-dump -- scan /path/to/RA2/<span class="pl-k">*</span>.mix</pre></div>
+<h2 dir="auto">Repository layout</h2>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th>Path</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code class="notranslate">crates/yr-formats</code></td>
+<td>Bounded format parsing</td>
+</tr>
+<tr>
+<td><code class="notranslate">crates/yr-assets</code></td>
+<td>Game-install VFS and archive lookup</td>
+</tr>
+<tr>
+<td><code class="notranslate">crates/yr-rules</code></td>
+<td>Typed rules and supporting game data</td>
+</tr>
+<tr>
+<td><code class="notranslate">crates/yr-sim</code></td>
+<td>Deterministic integer simulation</td>
+</tr>
+<tr>
+<td><code class="notranslate">crates/yr-render</code></td>
+<td>Retail map and object rendering</td>
+</tr>
+<tr>
+<td><code class="notranslate">crates/yr-app</code></td>
+<td>Native window, menus, input, audio and match flow</td>
+</tr>
+<tr>
+<td><code class="notranslate">tools/</code></td>
+<td>Inspection and simulation tools</td>
+</tr>
+<tr>
+<td><code class="notranslate">docs/</code></td>
+<td>Architecture, roadmap, format observations and research</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<h2 dir="auto">License and game content</h2>
+<p dir="auto">OpenYR is an independent, unofficial project, unaffiliated with and not endorsed<br>
+by Electronic Arts or Westwood Studios. Red Alert 2 and Yuri's Revenge were not<br>
+part of EA's 2025 source-code release. This project implements a new native<br>
+engine; it does not distribute the original game's source or executable code.</p>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th>Part</th>
+<th>License and ownership</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>OpenYR engine</td>
+<td><a href="LICENSE">GNU GPLv3</a>. The engine's source license does not grant rights to the original game content.</td>
+</tr>
+<tr>
+<td>Game data</td>
+<td>Original artwork, music, voices, maps, rules and other retail files remain the property of their respective rights holders. Supply your own legally owned install; these files are not bundled.</td>
+</tr>
+<tr>
+<td>Screenshots and GIFs</td>
+<td>Illustrations of OpenYR using retail data, hosted separately from the merged source tree. Depicted game content retains its original ownership and is not relicensed under the engine's GPL.</td>
+</tr>
+<tr>
+<td>Implementation method</td>
+<td>Clean-room work based on documented asset formats and public behavior observations. No original executable implementation or process-memory copying, and no transplanted code from YRpp, Phobos, Ares or XCC.</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<p dir="auto">The project takes other C&amp;C reimplementations as engineering precedents, not as<br>
+permission from a rights holder. See the <a href="docs/legal.md">legal context and precedents</a>,<br>
+<a href="docs/third-party.md">dependency licenses</a>, <a href="docs/architecture.md">architecture</a><br>
+and <a href="docs/demos.md">capture provenance</a>.</p>
