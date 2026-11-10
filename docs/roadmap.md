@@ -988,6 +988,13 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       clipping and visible save/load feedback. Sidebar queues and command-bar
       controls remain in #86; repair/sell remains in #94.
 
+- [x] Animate accepted menu clicks and route their supplied sound event (#344,
+      #96): bounded SDBTNANM press/persistent-control phases and MenuClick audio
+      preserve immediate navigation and disabled/cancelled/repeated/muted guards.
+      Authored frames and mixed PCM verify routing without a physical device;
+      original transition order/cadence and retail playback remain uncalibrated
+      (`docs/formats/front-menu.md`).
+
 ## M6: Fidelity pass
 
 - [ ] `parity-digest`: state-hash comparison vs Wine oracle runs

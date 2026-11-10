@@ -342,6 +342,8 @@ impl App {
         self.menu.setup.drag = None;
         self.menu.setup.popup = None;
         self.menu.pressed = None;
+        self.menu.press_phase = None;
+        self.menu.activation = None;
         self.left_down = None;
         self.right_down = None;
         self.right_panning = false;
