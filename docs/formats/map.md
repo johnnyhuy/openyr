@@ -68,6 +68,29 @@ no overlay; the matching `[OverlayDataPack]` byte is the overlay frame.
   `owner,type,health,x,y,...`; the facing field (0–255) sits at index 5
   for structures/units/aircraft and 7 for infantry.
 
+### Initial structure health
+
+New native sessions keep a pre-placed structure's full type `Strength` as
+`max_hp` and apply its map health only to current HP (#346). The scenario
+command `PlaceMapBuilding` computes `Strength * min(health, 256) / 256` with
+i128 intermediate arithmetic and integer truncation. Missing Strength defaults
+to 500; Strength is bounded to the existing snapshot range 1..=i32::MAX.
+Zero or a fraction rounding below one starts at one HP, retaining a living
+structure and its footprint. Values
+above 256 mean full health. These bounds are explicit native policies, not
+claims about original-game handling of malformed inputs.
+
+For Strength 100, health 256 starts at 100/100, 128 at 50/100, and 1 or zero
+at 1/100. The existing half-health damaged-art predicate, health pips, generator
+output and repair read this preserved maximum. Normal scenario placement and
+player production retain their existing full-health paths. Placed unit health
+interpretation is outside this structure-only fix.
+
+Authored setup tests parse structure rows and exercise native hover feedback,
+damaged-animation selection and exact match save/load. Integer boundary tests
+include maximum u16 health and i64 Strength. Retail/original health calibration
+did not run for this change. See [save.md](save.md) for compatibility.
+
 ## From tile number to artwork
 
 The theater INI lists `[TileSet0000]`, `[TileSet0001]`, ... (scan stops at

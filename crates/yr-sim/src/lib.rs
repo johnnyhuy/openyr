@@ -35,6 +35,9 @@ pub use terrain::TerrainGrid;
 /// original game's sub-cell unit.
 pub const LEPTONS_PER_CELL: i32 = 256;
 
+#[cfg(test)]
+mod map_health_tests;
+
 /// Commands are the only way to mutate the sim from outside. Applied in
 /// slice order at the start of a tick, so replays are command streams.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -94,6 +97,18 @@ pub enum Command {
         power: i64,
         owner: u8,
         role: Role,
+    },
+    /// Scenario setup: place a map structure at its authored 0..256 health
+    /// fraction. Keep the full type maximum; zero/rounded-down HP starts at one.
+    /// Fractions above 256 are full health; type HP uses the snapshot's
+    /// supported 1..=i32::MAX range.
+    PlaceMapBuilding {
+        kind: u16,
+        x: u16,
+        y: u16,
+        spec: BuildingSpec,
+        health: u16,
+        owner: u8,
     },
     /// Scenario/debug: destroy a unit or building outright.
     Destroy {
@@ -474,6 +489,20 @@ impl Sim {
                         free_unit: None,
                     };
                     self.place_structure(kind, x, y, &spec, owner);
+                }
+                Command::PlaceMapBuilding {
+                    kind,
+                    x,
+                    y,
+                    mut spec,
+                    health,
+                    owner,
+                } => {
+                    spec.hp = spec.hp.clamp(1, i64::from(i32::MAX));
+                    self.place_structure(kind, x, y, &spec, owner);
+                    // Widen before multiplying even for hostile Strength values.
+                    let hp = i128::from(spec.hp) * i128::from(health.min(256)) / 256;
+                    self.buildings.last_mut().unwrap().hp = (hp as i64).max(1);
                 }
                 Command::PlaceProduced { kind, x, y } => {
                     self.place_produced(OWNER_PLAYER, kind, x, y);

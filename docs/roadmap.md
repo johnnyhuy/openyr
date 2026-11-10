@@ -395,6 +395,14 @@ Johnny on 2026-10-31.
 
 ## M4: Simulation v1
 
+- [x] Preserve full maximum health for pre-placed damaged map structures
+      (#346): bounded map fractions affect current HP only. Authored setup,
+      damaged-art predicate, native health pips, generator/repair and save/load
+      checks cover full/half/low/zero/overfull health. Unaffected old matches
+      retain their setup key; affected old matches reject without rewriting
+      saved HP (`docs/formats/map.md`, `docs/formats/save.md`). Retail and
+      original malformed-input calibration remain unverified.
+
 - [x] Use raw leptons for physical projectile velocities and preserve
       explicit invisible instant hits (#122). Bound unsafe rules speeds and
       verify launch versus arrival, shooter death and in-flight save/load.
