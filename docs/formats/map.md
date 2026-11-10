@@ -68,6 +68,31 @@ no overlay; the matching `[OverlayDataPack]` byte is the overlay frame.
   `owner,type,health,x,y,...`; the facing field (0–255) sits at index 5
   for structures/units/aircraft and 7 for infantry.
 
+### Initial unit facing
+
+Map-authored vehicles, infantry and aircraft now initialize their simulation
+heading from the parsed facing field (#350). `MapObject::initial_facing`
+retains the parsed optional u16 for tools while supplying a bounded byte:
+missing, nonnumeric, negative or out-of-u16-range text becomes zero. Parsed
+u16 values above 255 saturate at 255. This is native malformed-input policy,
+not an original-game claim.
+
+The byte uses the existing native movement convention: zero points along cell
+-y, 64 along +x, 128 along +y and 192 along -x. Setup applies it through
+`SetMapUnitFacing` without advancing a separate tick or changing ids, health,
+ownership, positions or orders. Generated and produced units retain their
+existing default heading. Missing simulation ids are ignored.
+
+Static unit previews now use the live renderer's screen-octant quantization
+and voxel rotation adapter. SHP units select the same standing/Ready sequence
+and corresponding shadow as live sprites, with bounded missing/invalid sequence
+fallback. This intentionally changes the old raw-angle VXL and frame-zero SHP
+previews. Buildings keep their prior paths. Authored asymmetric VXL and
+independently colored directional SHP checks prove static/live pixel/anchor
+agreement, not original compass calibration, model orientation or pixel parity.
+Retail/original direction observations remain open. Baked unit-body lifetime,
+map-house remap and dynamic composition remain in #351.
+
 ### Initial structure health
 
 New native sessions keep a pre-placed structure's full type `Strength` as

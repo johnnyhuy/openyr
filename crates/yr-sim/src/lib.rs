@@ -98,6 +98,12 @@ pub enum Command {
         id: u32,
         health: u16,
     },
+    /// Scenario setup: initialize a map unit's heading in the same 256ths
+    /// convention as ordinary movement (zero is cell -y). Missing ids are ignored.
+    SetMapUnitFacing {
+        id: u32,
+        facing: u8,
+    },
     /// Place a building: footprint cells, health, armour, power
     /// (positive produces, negative drains).
     PlaceBuilding {
@@ -517,6 +523,11 @@ impl Sim {
                     spec.hp = maximum;
                     self.place_structure(kind, x, y, &spec, owner);
                     self.buildings.last_mut().unwrap().hp = hp;
+                }
+                Command::SetMapUnitFacing { id, facing } => {
+                    if let Some(unit) = self.units.iter_mut().find(|u| u.id == id) {
+                        unit.facing = facing;
+                    }
                 }
                 Command::SetMapUnitHealth { id, health } => {
                     if let Some(unit) = self.units.iter_mut().find(|u| u.id == id) {

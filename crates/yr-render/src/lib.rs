@@ -15,6 +15,8 @@ mod effects;
 pub mod png;
 mod projectiles;
 pub use projectiles::{LineTrail, ProjectileTrailer};
+#[cfg(test)]
+mod map_facing_tests;
 pub mod sprites;
 mod voxels;
 
@@ -137,6 +139,7 @@ fn render_map_layers(
         vfs.read("ARTMD.INI").ok_or("artmd.ini not found")?,
     ));
     let rules = Rules::load(&rules_ini, &art_ini);
+    let infantry = sprites::load_infantry_sequences(&vfs, &rules, &art_ini);
     let overlay_types = type_list(&rules_ini, "OverlayTypes");
 
     // Load every template the map references (clear cells use tile 0).
@@ -342,7 +345,12 @@ fn render_map_layers(
             if ok {
                 cell_job(jobs, obj.x, obj.y, None, 0, true, None);
                 let job = jobs.last_mut().unwrap();
-                job.voxel = Some((image.to_ascii_uppercase(), obj.facing.unwrap_or(0)));
+                let facing = if techno.is_some_and(|t| t.kind == yr_rules::TechnoKind::Building) {
+                    obj.facing.unwrap_or(0)
+                } else {
+                    sprites::voxel_facing(sprites::screen_octant(obj.initial_facing()))
+                };
+                job.voxel = Some((image.to_ascii_uppercase(), facing));
                 job.remap = Some(house_color(&rules_ini, &obj.owner));
                 return;
             }
@@ -403,6 +411,10 @@ fn render_map_layers(
         ) {
             let file = art_file(&image, art.map(|a| a.theater).unwrap_or(false), theater);
             cell_job(jobs, obj.x, obj.y, Some(file), 0, true, None);
+            jobs.last_mut().unwrap().frame = sprites::standing_frame(
+                infantry.get(&obj.kind.to_ascii_uppercase()),
+                obj.initial_facing(),
+            );
             jobs.last_mut().unwrap().shadow = true;
             jobs.last_mut().unwrap().remap = Some(house_color(&rules_ini, &obj.owner));
         } else {
@@ -464,7 +476,12 @@ fn render_map_layers(
         let Ok(shp) = ShpFile::parse(bytes) else {
             continue;
         };
-        let frame = if job.frame < shp.frames.len() {
+        let body_frames = if job.shadow {
+            shp.frames.len() / 2
+        } else {
+            shp.frames.len()
+        };
+        let frame = if job.frame < body_frames {
             job.frame
         } else {
             0
@@ -473,7 +490,7 @@ fn render_map_layers(
             continue;
         };
         if job.shadow && shp.frames.len() >= 2 {
-            let shadow_frame = job.frame + shp.frames.len() / 2;
+            let shadow_frame = frame + shp.frames.len() / 2;
             if shadow_frame < shp.frames.len() {
                 if let Ok(shadow) = shp.decode_frame_canvas(shadow_frame) {
                     let (ox, oy) = (cx - shp.width as i32 / 2, cy - shp.height as i32 / 2);

@@ -78,7 +78,7 @@ impl Sequence {
     }
 }
 
-struct InfantrySequences {
+pub(crate) struct InfantrySequences {
     body_frames: usize,
     ready: Option<Sequence>,
     walk: Option<Sequence>,
@@ -116,6 +116,58 @@ impl InfantrySequences {
             .and_then(|s| s.frame(facing, elapsed, self.body_frames))
             .unwrap_or(ready)
     }
+}
+
+pub(crate) fn load_infantry_sequences(
+    vfs: &AssetFs,
+    rules: &Rules,
+    art_ini: &IniFile,
+) -> HashMap<String, InfantrySequences> {
+    let mut infantry = HashMap::new();
+    for t in rules.infantry.iter() {
+        let Some(section) = t.art.as_ref().and_then(|a| art_ini.section(&a.section)) else {
+            continue;
+        };
+        let Some(sequence) = section.get("Sequence").and_then(|s| art_ini.section(s)) else {
+            continue;
+        };
+        let Some(shp) = vfs
+            .read(&format!("{}.SHP", t.image))
+            .and_then(|b| ShpFile::parse(b).ok())
+        else {
+            continue;
+        };
+        if shp.width == 0
+            || shp.height == 0
+            || shp.width > 256
+            || shp.height > 256
+            || shp.frames.len() > 4096
+            || shp.frames.len() % 2 != 0
+        {
+            continue;
+        }
+        let read = |key| sequence.get(key).and_then(Sequence::parse);
+        infantry.insert(
+            t.id.to_ascii_uppercase(),
+            InfantrySequences {
+                body_frames: shp.frames.len() / 2,
+                ready: read("Ready"),
+                walk: read("Walk"),
+                fire: read("FireUp"),
+                idle: [read("Idle1"), read("Idle2")],
+                death: [read("Die1"), read("Die2")],
+            },
+        );
+    }
+    infantry
+}
+
+pub(crate) fn standing_frame(sequences: Option<&InfantrySequences>, facing: u8) -> usize {
+    let octant = screen_octant(facing);
+    sequences.map_or_else(
+        || infantry_stand_frame(octant),
+        |s| s.frame(octant, InfantryAnimation::default()),
+    )
 }
 
 /// One decoded object image in native (scale 1) pixels.
@@ -222,42 +274,7 @@ impl SpriteBank {
                 )
             })
             .collect();
-        let mut infantry = HashMap::new();
-        for t in rules.infantry.iter() {
-            let Some(section) = t.art.as_ref().and_then(|a| art_ini.section(&a.section)) else {
-                continue;
-            };
-            let Some(sequence) = section.get("Sequence").and_then(|s| art_ini.section(s)) else {
-                continue;
-            };
-            let Some(shp) = vfs
-                .read(&format!("{}.SHP", t.image))
-                .and_then(|b| ShpFile::parse(b).ok())
-            else {
-                continue;
-            };
-            if shp.width == 0
-                || shp.height == 0
-                || shp.width > 256
-                || shp.height > 256
-                || shp.frames.len() > 4096
-                || shp.frames.len() % 2 != 0
-            {
-                continue;
-            }
-            let read = |key| sequence.get(key).and_then(Sequence::parse);
-            infantry.insert(
-                t.id.to_ascii_uppercase(),
-                InfantrySequences {
-                    body_frames: shp.frames.len() / 2,
-                    ready: read("Ready"),
-                    walk: read("Walk"),
-                    fire: read("FireUp"),
-                    idle: [read("Idle1"), read("Idle2")],
-                    death: [read("Die1"), read("Die2")],
-                },
-            );
-        }
+        let infantry = load_infantry_sequences(&vfs, &rules, &art_ini);
         Ok(SpriteBank {
             vfs,
             rules,

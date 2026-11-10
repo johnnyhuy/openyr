@@ -104,6 +104,11 @@ Johnny on 2026-10-31.
 
 ## M3: Renderer v1
 
+- [ ] Keep supported map-unit art synchronized with live state (#351): omit
+      reconstructable bodies from match backgrounds, retain static previews and
+      unsupported fallback, and verify original map-house colors, facing,
+      shadows/depth and no stale body after movement or destruction.
+
 - [x] Preserve native source detail by default (#101, #103): scale 1 retains
       60x30 TMP cells and full-size unit art at zoom 1. Explicit inspection
       scales are limited to 1/2/4. Matched-magnification retail comparisons
@@ -394,6 +399,14 @@ Johnny on 2026-10-31.
       states in shared headless proof and compare original-game behavior.
 
 ## M4: Simulation v1
+
+- [x] Preserve authored initial map-unit facing (#350): shared bounded byte
+      normalization and a scenario heading command cover vehicle, infantry and
+      aircraft setup without changing ordinary spawns/production. Static/live
+      SHP Ready/shadow and VXL direction/anchor checks use authored art. Old
+      unaffected keys survive; affected old matches reject without rewriting
+      snapshots (`docs/formats/map.md`, `docs/formats/save.md`). Native direction
+      consistency is verified; original/retail compass calibration remains open.
 
 - [x] Apply initial map-unit health fractions (#349) to vehicles, infantry
       and aircraft without reducing their type maximum. Shared bounded integer

@@ -39,6 +39,14 @@ pub struct MapObject {
     pub facing: Option<u16>,
 }
 
+impl MapObject {
+    /// Native setup policy: missing/malformed facing is zero, values above
+    /// the authored byte range saturate at 255. Keep the parsed value for tools.
+    pub fn initial_facing(&self) -> u8 {
+        self.facing.unwrap_or(0).min(255) as u8
+    }
+}
+
 #[derive(Debug)]
 pub enum MapError {
     MissingSection(&'static str),
