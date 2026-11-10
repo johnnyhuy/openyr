@@ -548,8 +548,10 @@ pub fn building_shp_candidates(image: &str, theater: Theater) -> Vec<String> {
 pub(crate) fn remap_rgba(pal: &Palette, index: u8, remap: Option<[u8; 3]>) -> [u8; 4] {
     match (remap, index) {
         (Some(base), 16..=31) => {
-            let f = 0.45 + f32::from(index - 16) * 0.055;
-            let c = |v: u8| (f32::from(v) * f).min(255.0) as u8;
+            // Keep the authored house hue without overbright clipped highlights.
+            // The softer 60-100% ramp retains all sixteen ordered shades.
+            let level = 90 + 4 * u16::from(index - 16);
+            let c = |v: u8| ((u16::from(v) * level + 75) / 150) as u8;
             [c(base[0]), c(base[1]), c(base[2]), 255]
         }
         _ => pal.rgba(index),

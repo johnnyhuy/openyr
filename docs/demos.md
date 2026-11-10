@@ -17,7 +17,7 @@ checked against GitHub release metadata.
 
 Each GIF decodes to multiple distinct frames. The original combat clip and its
 source notes are retained with the derived GIF. These examples predate later
-selection/health and starting-force revisions; they do not represent current
+selection/health, unit contrast/sampling and starting-force revisions; they do not represent current
 visual parity, physical Mac/Retina delivery or original-game timing. They have
 no audio. Game content retains its original ownership.
 

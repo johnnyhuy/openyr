@@ -109,7 +109,7 @@ The current sampling policy is
 sorts all parts together by camera depth. It keeps the authored origin as
 the ground anchor instead of normalizing every facing to 60 pixels wide.
 Live canvases grow around that origin, capped at 512x512 before allocation;
-two-pixel samples fill projection gaps. All six sampled retail models
+subpixel coverage fills projection gaps (see #342 below). All six sampled retail models
 (MTNK, HTNK, CMIN, ROBO, SHAD, ZEP) fit without clipped body pixels at eight
 facings and match the map renderer at the same ground anchor.
 
@@ -177,7 +177,7 @@ Each selected HVA/VXL pose applies its inverse transpose to the normals,
 including scale, shear and reflection, without translation. The camera
 then rotates them with the unit facing. The light direction in projected
 camera coordinates is the normalized vector `(-0.45, -0.65, 0.61)`.
-Brightness is `0.62 + 0.38 * max(dot(normal, light), 0)`, rounded to an
+The initial #82 brightness was `0.62 + 0.38 * max(dot(normal, light), 0)`, rounded to an
 8-bit multiplier and applied after palette/house remapping. Alpha, camera
 depth, sampling coverage and ground anchors remain unchanged. Isolated
 voxels, symmetric thin surfaces, invalid geometry and singular poses use
@@ -199,3 +199,35 @@ bounded sprite caching. Proof crops stay outside git.
 - XCC Utilities `vxl_file`/`hva_file`, ModEnc "VXL" and "HVA".
 - OpenRA `VxlReader.cs`/`HvaReader.cs` (GPL-3.0), cross-check only.
 - Verified against retail data as above.
+
+## Softer unit appearance and subpixel coverage (#342)
+
+The native house ramp now spans 60-100% of the selected base color instead of
+45-127.5%, so highlights retain their ordering without clipping above that
+color. Palette entries outside 16..31 retain their source RGB. Geometry lighting
+uses `0.78 + 0.22 * max(dot(normal, light), 0)` to reduce dark/light contrast.
+These are explicit presentation choices requested for the native appearance,
+not calibrated original normal-table/VPL values.
+
+Voxel points now cover a 1.5-pixel square on a half-pixel sample grid instead
+of a hard integer 2x2 stamp. Four samples resolve each native output pixel,
+averaging covered colors and retaining fractional edge coverage. Sorting and
+HVA/model transforms remain unchanged. Supersampling allocates only a visible
+model footprint capped at 512x512 output pixels (four samples each), never a
+supersampled terrain raster. Invalid frames and offscreen/extreme coordinates
+are rejected before allocation/indexing.
+
+The existing sprite alpha 128 marks an SHP ground shadow. Voxel half coverage
+uses 127 to reserve that marker, with less than 1/255 coverage difference. Other
+body coverage blends normally over the terrain; shadows still darken the ground
+once. Body pixels, including black ones, cannot become accidental shadow marks.
+The models retain their authored resolution and anchors; this improves sample
+coverage rather than inventing geometry or blurring the whole frame.
+
+Authored body/turret/barrel fixtures exercise 24 house/facing views, ordered
+house ramps, native map/live agreement, partial coverage, depth, malformed
+coordinates and bounded canvases. `OPENYR_UNIT_APPEARANCE_PROOF` with
+`cargo test -p yr-render unit_appearance_projection -- --nocapture` exports an
+authored atlas and geometry/coverage receipts. Retail reconstruction and original
+lighting/camera/sampling comparisons require the missing install; physical
+Mac/Retina verification remains open. Simulation and save fields do not change.

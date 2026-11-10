@@ -1207,15 +1207,6 @@ impl App {
         }
         drop(bank);
         for m in &markers {
-            if m.selected {
-                unit_status::draw_brackets(
-                    frame,
-                    (fw, fh),
-                    (m.wx, m.wy),
-                    m.half_w.max(8.0) + 6.0,
-                    SELECT_COL,
-                );
-            }
             // Preserve the existing selected-or-damaged visibility policy.
             if m.selected || m.hp < 1.0 {
                 unit_status::draw_health(
@@ -1371,7 +1362,21 @@ fn blit_sprite(
                     }
                 }
                 (255, SpritePass::Body) => {
-                    frame[dst..dst + 4].copy_from_slice(&s.rgba[src..src + 4])
+                    frame[dst..dst + 4].copy_from_slice(&s.rgba[src..src + 4]);
+                }
+                (alpha, SpritePass::Body)
+                    if alpha > 0 && alpha != yr_render::sprites::SHADOW_ALPHA =>
+                {
+                    let alpha = u32::from(alpha);
+                    let da = u32::from(frame[dst + 3]);
+                    let weight = alpha * 255 + da * (255 - alpha);
+                    for c in 0..3 {
+                        frame[dst + c] = ((u32::from(s.rgba[src + c]) * alpha * 255
+                            + u32::from(frame[dst + c]) * da * (255 - alpha)
+                            + weight / 2)
+                            / weight) as u8;
+                    }
+                    frame[dst + 3] = ((weight + 127) / 255) as u8;
                 }
                 (alpha, SpritePass::Effect) if alpha > 0 => {
                     for c in 0..3 {
@@ -2883,6 +2888,35 @@ mod render_tests {
         assert_eq!(frame, [50, 40, 30, 255, 100, 80, 60, 255]);
         blit_sprite(&mut frame, 2, 1, &sprite, 0.0, 0.0, 1.0, SpritePass::Body);
         assert_eq!(frame, [50, 40, 30, 255, 240, 180, 20, 255]);
+    }
+
+    #[test]
+    fn voxel_body_coverage_blends_without_becoming_a_ground_shadow() {
+        let sprite = yr_render::sprites::Sprite {
+            w: 3,
+            h: 1,
+            ax: 0,
+            ay: 0,
+            rgba: vec![220, 60, 20, 127, 0, 0, 0, 128, 220, 60, 20, 255],
+        };
+        let mut frame = [100, 100, 100, 255].repeat(3);
+        let mut mask = vec![false; 3];
+        blit_sprite(
+            &mut frame,
+            3,
+            1,
+            &sprite,
+            0.,
+            0.,
+            1.,
+            SpritePass::Shadow(&mut mask),
+        );
+        assert_eq!(mask, [false, true, false]);
+        blit_sprite(&mut frame, 3, 1, &sprite, 0., 0., 1., SpritePass::Body);
+        assert_eq!(frame, [160, 80, 60, 255, 50, 50, 50, 255, 220, 60, 20, 255]);
+        let mut clear = vec![0; 12];
+        blit_sprite(&mut clear, 3, 1, &sprite, 0., 0., 1., SpritePass::Body);
+        assert_eq!(&clear[..4], &[220, 60, 20, 127]);
     }
 
     #[test]

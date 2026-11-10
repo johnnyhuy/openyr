@@ -122,7 +122,8 @@ impl InfantrySequences {
 pub struct Sprite {
     pub w: u32,
     pub h: u32,
-    /// RGBA8; alpha is 0 (clear), [`SHADOW_ALPHA`] (shadow) or 255.
+    /// RGBA8; alpha 0 is clear, [`SHADOW_ALPHA`] is a ground shadow.
+    /// Other alpha values are body coverage; voxel antialiasing reserves 128.
     pub rgba: Vec<u8>,
     /// Sprite pixel that sits on the object's anchor: the cell centre for
     /// units, the centre of the top-left footprint cell for buildings.

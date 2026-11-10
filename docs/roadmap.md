@@ -197,6 +197,12 @@ Johnny on 2026-10-31.
       Authored limb bounds, first HVA poses, fixed camera scale and a
       shared ground anchor replace guessed attachment placement (#73).
       Normal-table lighting remains open
+- [x] Reduce unit color contrast and coarse voxel sampling (#342): bounded
+      house ramps avoid clipped highlights, softer provisional lighting keeps
+      dark faces readable, and subpixel voxel coverage preserves fractional
+      edges without whole-frame blur. Authored house/facing/depth/anchor checks
+      cover map/live agreement and shadow isolation; original/retail calibration
+      remains open (`docs/formats/vxl.md`).
 - [x] Geometry-derived voxel lighting (#82): cached local surface normals
       follow HVA poses and facings under a fixed camera light. Palette and
       house colours share bounded ambient/diffuse shading; ambiguous surfaces
@@ -681,13 +687,18 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       Retail start/loading, selection, pause/resume, save-byte invariance and
       Linux live before/after captures cover 640x480 and 1000x700; map zoom is
       preserved. Physical Retina delivery remains open under #97.
+- [x] Remove the white selected-unit outline (#343, #97), retaining health
+      pips and context-driven hover/attack previews. Shared compositor checks
+      keep cursor/cancel/reselection behavior and complete Session bytes;
+      native coverage edges remain separate from ground shadows.
 - [x] Revise native unit status toward classic UI (#312, #97): selected units
       share corner-bracket geometry with hover/attack previews; bordered health
       pips replace the flat stripe, clip to the world viewport and remain empty
       at zero health. Three-layout/three-zoom compositor and cursor/cancel checks
       preserve encoded Session bytes. Exact original geometry/colors/visibility,
       retail sprite overlap and physical Mac/Retina checks remain open
-      (`docs/order-feedback.md`, #97/#98).
+      (`docs/order-feedback.md`, #97/#98). The selected white outline was
+      subsequently removed in #343 at the user's request.
 - [x] Preview selectable and attackable world targets (#97): green/red native
       corner brackets use the existing cursor/click resolver and current entity
       ground anchors. Focus/menu/gesture/command-mode guards, Shift routing,

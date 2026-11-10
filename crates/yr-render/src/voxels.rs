@@ -182,7 +182,7 @@ fn project([x, y, z]: [f32; 3], facing: u16) -> [f32; 3] {
 }
 
 /// Draw the combined body/turret/barrel with one ground anchor and one
-/// depth ordering. Two-pixel samples fill gaps in the projected grid;
+/// depth ordering. Subpixel samples retain coverage in the projected grid;
 /// geometry-derived lighting approximates surface shading. Static map objects use
 /// frame zero; live sprites select their per-part frames separately.
 #[allow(clippy::too_many_arguments)]
@@ -244,29 +244,107 @@ fn raster(
     pal: &Palette,
     remap: Option<[u8; 3]>,
 ) {
+    if w.checked_mul(h).and_then(|n| n.checked_mul(4)) != Some(rgba.len()) {
+        return;
+    }
     points.sort_by(|a, b| a.0[2].total_cmp(&b.0[2]));
-    for ([x, y, _], color, brightness) in points {
-        // Clip before narrowing so hostile finite offsets cannot overflow.
-        let (px, py) = (f64::from(cx) + f64::from(x), f64::from(cy) + f64::from(y));
-        if px < -2.0 || py < -2.0 || px >= w as f64 || py >= h as f64 {
-            continue;
-        }
-        let (px, py) = (px.round() as i64, py.round() as i64);
-        let color = lighting::shade(crate::remap_rgba(pal, color, remap), brightness);
-        for dy in 0..2 {
-            for dx in 0..2 {
-                let (Ok(x), Ok(y)) = (usize::try_from(px + dx), usize::try_from(py + dy)) else {
+    let points: Vec<_> = points
+        .into_iter()
+        .filter_map(|([x, y, _], color, brightness)| {
+            let (px, py) = (f64::from(cx) + f64::from(x), f64::from(cy) + f64::from(y));
+            let color = lighting::shade(crate::remap_rgba(pal, color, remap), brightness);
+            (px.is_finite()
+                && py.is_finite()
+                && px >= -2.
+                && py >= -2.
+                && px < w as f64
+                && py < h as f64
+                && color[3] != 0)
+                .then_some((px, py, color))
+        })
+        .collect();
+    if points.is_empty() {
+        return;
+    }
+    let left = points
+        .iter()
+        .map(|p| (p.0 - 1.).floor())
+        .fold(w as f64, f64::min)
+        .max(0.) as usize;
+    let top = points
+        .iter()
+        .map(|p| (p.1 - 1.).floor())
+        .fold(h as f64, f64::min)
+        .max(0.) as usize;
+    let right = points
+        .iter()
+        .map(|p| (p.0 + 2.).ceil())
+        .fold(0., f64::max)
+        .min(w as f64) as usize;
+    let bottom = points
+        .iter()
+        .map(|p| (p.1 + 2.).ceil())
+        .fold(0., f64::max)
+        .min(h as f64) as usize;
+    let (width, height) = (right.saturating_sub(left), bottom.saturating_sub(top));
+    // Allocate only the visible model footprint, never a supersampled map.
+    if width == 0 || height == 0 || width > 512 || height > 512 {
+        return;
+    }
+    let (sw, sh) = (width * 2, height * 2);
+    let mut samples = vec![[0_u8; 4]; sw * sh];
+    for (px, py, color) in points {
+        let x = ((px - left as f64) * 2.).round() as i64 - 1;
+        let y = ((py - top as f64) * 2.).round() as i64 - 1;
+        // A 1.5-pixel footprint on a half-pixel grid replaces hard 2x2 stamps.
+        for dy in 0..3 {
+            for dx in 0..3 {
+                let (Ok(x), Ok(y)) = (usize::try_from(x + dx), usize::try_from(y + dy)) else {
                     continue;
                 };
-                if x < w && y < h {
-                    let at = y
-                        .checked_mul(w)
-                        .and_then(|n| n.checked_add(x))
-                        .and_then(|n| n.checked_mul(4));
-                    if let Some(pixel) = at.and_then(|at| rgba.get_mut(at..at.checked_add(4)?)) {
-                        pixel.copy_from_slice(&color);
+                if x < sw && y < sh {
+                    samples[y * sw + x] = color;
+                }
+            }
+        }
+    }
+    for y in 0..height {
+        for x in 0..width {
+            let mut sum = [0_u32; 3];
+            let mut covered = 0_u32;
+            for dy in 0..2 {
+                for dx in 0..2 {
+                    let c = samples[(y * 2 + dy) * sw + x * 2 + dx];
+                    if c[3] != 0 {
+                        covered += 1;
+                        for i in 0..3 {
+                            sum[i] += u32::from(c[i]);
+                        }
                     }
                 }
+            }
+            if covered == 0 {
+                continue;
+            }
+            let mut alpha = (covered * 255 + 2) / 4;
+            // Alpha 128 is the existing SHP ground-shadow marker. Reserve it;
+            // half-covered voxel edges use 127 (less than 1/255 coverage error).
+            if alpha == u32::from(crate::sprites::SHADOW_ALPHA) {
+                alpha -= 1;
+            }
+            let at = ((top + y) * w + left + x) * 4;
+            let dest = &mut rgba[at..at + 4];
+            let da = u32::from(dest[3]);
+            let weight = alpha * 255 + da * (255 - alpha);
+            for i in 0..3 {
+                let source = (sum[i] + covered / 2) / covered;
+                dest[i] =
+                    ((source * alpha * 255 + u32::from(dest[i]) * da * (255 - alpha) + weight / 2)
+                        / weight) as u8;
+            }
+            dest[3] = ((weight + 127) / 255) as u8;
+            if dest[3] == crate::sprites::SHADOW_ALPHA {
+                dest[3] -= 1;
             }
         }
     }
@@ -601,7 +679,7 @@ mod tests {
             &pal,
             remap,
         );
-        let expected = [[158, 77, 37, 255], [121, 16, 16, 255]];
+        let expected = [[158, 77, 37, 255], [111, 15, 15, 255]];
         for (x, expected) in [2, 6].into_iter().zip(expected) {
             let at = (2 * 10 + x) * 4;
             assert_eq!(&shaded[at..at + 4], &expected);
@@ -733,3 +811,6 @@ mod tests {
         println!("retail MTNK body/turret/barrel limits {limits:?}; ROBO source translation matches VXL base; SHAD rotor offset {:?}",m.map(|r|r[3]));
     }
 }
+
+#[cfg(test)]
+mod appearance_tests;

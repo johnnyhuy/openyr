@@ -12,7 +12,7 @@ fn classic_status_tracks_selection_cursor_cancel_and_preserves_session() {
                 .take(1600 * 1200 * 4)
                 .collect();
             point_at(&mut app, own, size);
-            // Move off the unit so hover color does not replace white selection.
+            // Move off the unit to isolate selected health from hover previews.
             let point = app.cursor;
             app.pointer_moved((point.0 + 70.0, point.1 + 70.0));
             let before = yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap();
@@ -33,11 +33,12 @@ fn classic_status_tracks_selection_cursor_cancel_and_preserves_session() {
             let x = center.0 - half.round() as u32;
             let y = center.1 - (half * 0.5).round() as u32;
             let at = ((y * size.0 + x) * 4) as usize;
-            assert_eq!(
+            assert_ne!(
                 &frame[at..at + 4],
                 &SELECT_COL,
-                "selected corner must match the hover bounds at {zoom}"
+                "selection must not draw a white outline at {zoom}"
             );
+            assert!(!frame.as_chunks::<4>().0.contains(&SELECT_COL));
             let middle = ((center.1 * size.0 + x) * 4) as usize;
             assert_ne!(
                 &frame[middle..middle + 4],
@@ -71,5 +72,5 @@ fn classic_status_tracks_selection_cursor_cancel_and_preserves_session() {
             assert!(app.pending.is_empty());
         }
     }
-    println!("Three layouts x three zooms: native selection brackets and health, Attack/Select cursor kinds, right-click deselection and reselection; complete Session bytes and pending commands unchanged. No retail cursor pixels supplied.");
+    println!("Three layouts x three zooms: selected health without a white outline, Attack/Select cursor kinds, right-click deselection and reselection; complete Session bytes and pending commands unchanged. No retail cursor pixels supplied.");
 }
