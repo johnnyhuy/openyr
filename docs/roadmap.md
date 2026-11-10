@@ -940,6 +940,13 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       preserve orders, gestures, selection and Session bytes; documented plain/
       Ctrl shortcuts remain. Physical/original calibration is still open
       (`docs/window-input.md`, `docs/order-feedback.md`).
+- [x] Add N creation-order unit navigation (#333, #97): cycle living
+      owned units by stable ID, including offscreen harvesters, with wrap and
+      bounded ground-projected camera centering. Native ordinal/empty feedback,
+      input guards and gesture/mode cleanup preserve assigned teams, READY work,
+      zoom, pending orders and Session bytes. Authored layout/zoom sequences
+      cover filters, seeds, singleton/empty worlds and stale releases; original
+      and physical/retail calibration remain open (`docs/control-groups.md`).
 - [ ] Complete world interaction and desktop UX (#97): consistent selection,
       supported control groups/hotkeys, hover/target/order feedback, bounded
       camera movement and configurable edge scrolling. Clear held input on

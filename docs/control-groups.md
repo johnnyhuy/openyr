@@ -198,3 +198,40 @@ receipts. Logical 50 ms double-recall timestamps control these tests; they are
 not original timing measurements. The live-texture lookup is retained by the
 shared helper, but physical window/Retina delivery, retail reconstruction and
 original centering/bounds calibration remain unverified here under #97/#98.
+
+## Next unit in creation order
+
+The original [Yuri's Revenge manual, printed page 5](https://gamepedia.cursecdn.com/cnc_gamepedia_en/8/8e/Red_Alert_2_-_Yuri%27s_Revenge_-_English.pdf)
+maps N to Next Unit, selecting the next unit in creation order. A deliberate
+unmodified N now selects one living owned unit at a time, using ascending stable
+simulation IDs (#333). It includes supported harvesters and offscreen units;
+buildings, enemy/neutral/dead and stale IDs are ineligible. The next eligible ID
+after the greatest currently selected eligible ID is chosen, wrapping to the
+first. If the selection has no eligible unit, navigation starts at the first.
+No separate cursor or history is persisted, and an empty eligible world clears
+selection with `No units available` feedback.
+
+The chosen unit uses the shared projected-ground camera centering and existing
+raster constraint, preserving zoom. A two-second `Next unit (position/count)`
+notice and existing changed-selection audio identify the result. Successful N
+cancels old pointer gestures, placement, repair/sell and attack-move, and ends
+team/type press timing. Assigned teams, READY work, pending orders, simulation
+and complete Session bytes remain intact; old pointer releases cannot order or
+clear the newly selected unit. Release/repeat, focus/synthetic, tracked modifier,
+menu and absent/ended-match guards retain normal text editing and routing.
+
+The manual establishes the key and creation-order direction. Stable-ID ordering,
+ownership/role filtering, mixed/empty/wrap rules, bounded camera navigation,
+cleanup/modifier policy, notice and audio triggering are native choices pending
+original-game comparison. M remains the current native mute binding; reverse or
+selection-history navigation is outside this slice. No simulation/save field or
+encoding version changes.
+
+Authored Session tests cover nine size/zoom sequences, exact projected centers
+and a bottom-bound clamp, mixed/ineligible seeds, offscreen harvesters, wrap,
+single/empty worlds, twelve mode/gesture/READY/team cases and twelve guards.
+Complete encoded Session bytes remain exact. `OPENYR_NEXT_UNIT_PROOF` with
+`cargo test -p yr-app --bin openyr next_unit -- --nocapture` exports actual
+shared-dispatch/compositor frames and state receipts at zoom 1. These use
+fallback art, not retail sprites/cursors. Original calibration, physical
+Mac/Retina input and audio-device checks remain open under #97/#98.
