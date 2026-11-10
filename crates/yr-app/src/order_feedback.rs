@@ -21,6 +21,18 @@ struct Notice {
 pub(super) struct Feedback(Option<Notice>);
 
 impl Feedback {
+    pub(super) fn unit_cycle(&mut self, position: usize, count: usize, now: Instant) {
+        self.0 = Some(Notice {
+            text: if count == 0 {
+                "No units available".into()
+            } else {
+                format!("Next unit ({position}/{count})")
+            },
+            marker: None,
+            at: now,
+        });
+    }
+
     pub(super) fn all_selection(&mut self, count: usize, now: Instant) {
         self.0 = Some(Notice {
             text: if count == 0 {
