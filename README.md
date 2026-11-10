@@ -9,15 +9,16 @@ still in progress.
 
 [Project website](https://johnnyhuy.github.io/openyr/) / [Source ZIP](https://github.com/johnnyhuy/openyr/archive/refs/heads/main.zip)
 
-## Features
+## Gameplay
 
 | Feature | In game | Preview |
 | --- | --- | --- |
-| Main menu | Animated retail shell, Single Player, settings and return from a match. | <img src="https://raw.githubusercontent.com/johnnyhuy/openyr/1d3c9840cfa1293881ee093db9aec3e72a253235/proof/readme-features/main-menu.gif" alt="Animated OpenYR main menu" width="320"> |
-| Skirmish setup | Installed map catalog, two participants, nine Allied/Soviet countries, colors, start positions, teams, credits, starting units and speed. | <img src="https://raw.githubusercontent.com/johnnyhuy/openyr/c7deba4c12ab133026c00570e4a2c78d7fa3fa65/proof/native-demo/skirmish.png" alt="Skirmish player and map setup" width="320"> |
-| Match loading | Country artwork, selected-map preview, progress and cancellation before entering the battlefield. | <img src="https://raw.githubusercontent.com/johnnyhuy/openyr/1d3c9840cfa1293881ee093db9aec3e72a253235/proof/readme-features/loading.gif" alt="Skirmish setup, country loading screen and match entry" width="320"> |
-| Battlefield | Retail terrain, SHP/VXL units and building animations, with camera pan, zoom and optional edge scrolling. | <img src="https://raw.githubusercontent.com/johnnyhuy/openyr/1d3c9840cfa1293881ee093db9aec3e72a253235/proof/readme-features/world-camera.gif" alt="Native battlefield zoom and pause controls" width="320"> |
-| Saved matches | Named save/load/delete, F5/F9, overwrite confirmation, recovery and Ctrl/Command+A name editing. | <img src="https://raw.githubusercontent.com/johnnyhuy/openyr/1d3c9840cfa1293881ee093db9aec3e72a253235/proof/readme-features/save-name.gif" alt="Selecting and replacing a save name, then saving the match" width="320"> |
+| Tank combat | Cannon hits, damage and retail impact animations. | <img src="https://raw.githubusercontent.com/johnnyhuy/openyr/371bb427c434218bc571a819ff7797b3472725e7/proof/gameplay-showcase/combat.gif" alt="Tank taking cannon hits with native impact effects" width="400"> |
+| Infantry movement | Moving infantry, vehicles and animated base structures on retail terrain. | <img src="https://raw.githubusercontent.com/johnnyhuy/openyr/371bb427c434218bc571a819ff7797b3472725e7/proof/gameplay-showcase/movement.gif" alt="Infantry moving around the base on EB1" width="400"> |
+| Base operations | Repairing damage and selling structures with sidebar feedback. | <img src="https://raw.githubusercontent.com/johnnyhuy/openyr/371bb427c434218bc571a819ff7797b3472725e7/proof/gameplay-showcase/base-operations.gif" alt="Native repair and sale states across sampled simulation ticks" width="400"> |
+
+Gameplay previews come from earlier OpenYR builds. [Capture sources and limits](docs/demos.md)
+record the versions and sampled-tick presentation.
 
 | System | Implemented behavior |
 | --- | --- |
@@ -27,6 +28,15 @@ still in progress.
 | Sidebar | Retail cameos, per-category scrolling, powered radar and a live power meter. |
 | Audio | Theme music, unit voices, weapon reports, EVA, mute and device recovery. |
 | Saves | Compatibility checks, atomic writes, saved setup restoration and visible success/error feedback. |
+
+## Menus and match setup
+
+| Feature | In game | Preview |
+| --- | --- | --- |
+| Main menu | Animated retail shell, Single Player, settings and return from a match. | <img src="https://raw.githubusercontent.com/johnnyhuy/openyr/1d3c9840cfa1293881ee093db9aec3e72a253235/proof/readme-features/main-menu.gif" alt="Animated OpenYR main menu" width="320"> |
+| Skirmish setup | Installed map catalog, two participants, nine Allied/Soviet countries, colors, start positions, teams, credits, starting units and speed. | <img src="https://raw.githubusercontent.com/johnnyhuy/openyr/c7deba4c12ab133026c00570e4a2c78d7fa3fa65/proof/native-demo/skirmish.png" alt="Skirmish player and map setup" width="320"> |
+| Match loading | Country artwork, selected-map preview, progress and cancellation before entering the battlefield. | <img src="https://raw.githubusercontent.com/johnnyhuy/openyr/1d3c9840cfa1293881ee093db9aec3e72a253235/proof/readme-features/loading.gif" alt="Skirmish setup, country loading screen and match entry" width="320"> |
+| Saved matches | Named save/load/delete, F5/F9, overwrite confirmation, recovery and Ctrl/Command+A name editing. | <img src="https://raw.githubusercontent.com/johnnyhuy/openyr/1d3c9840cfa1293881ee093db9aec3e72a253235/proof/readme-features/save-name.gif" alt="Selecting and replacing a save name, then saving the match" width="320"> |
 
 Superweapon activation, country special abilities, broader game modes, original
 AI and remaining effects are unfinished. Original animation timing and physical
