@@ -528,6 +528,25 @@ fn preferences_error_modal_cancels_world_modes_before_recovery() {
                 preferences_modal_capture(&mut app, "00-armed-click");
             }
             key(&mut app, KeyCode::KeyM, ElementState::Pressed);
+            assert_eq!(app.menu.page, Page::Closed, "Command+M is not mute");
+            assert_eq!(app.pending, pending);
+            if mode == KeyCode::KeyA {
+                assert!(app.left_down.is_some() && app.attack_move);
+            } else {
+                assert_ne!(app.service_mode, ServiceMode::None);
+            }
+            app.super_key = false;
+            app.keyboard_input(
+                PhysicalKey::Code(KeyCode::KeyM),
+                ElementState::Pressed,
+                None,
+                true,
+                false,
+            );
+            assert_eq!(app.menu.page, Page::Closed, "old repeat remains rejected");
+            key(&mut app, KeyCode::KeyM, ElementState::Released);
+            // Fresh M still reaches the real writer and modal recovery path.
+            key(&mut app, KeyCode::KeyM, ElementState::Pressed);
             assert!(
                 matches!(app.menu.page, Page::Message { ref back, .. } if **back == Page::Controls)
             );
@@ -672,3 +691,5 @@ mod all_selection;
 mod team_command;
 
 mod team_centering;
+
+mod command_world;

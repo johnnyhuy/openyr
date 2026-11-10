@@ -57,6 +57,17 @@ impl App {
             }
             return;
         }
+        // Menu editors own Command shortcuts; match bindings use their documented modifiers.
+        if self.super_key {
+            self.keys.remove(&code);
+            self.suppressed_keys.insert(code);
+            if !repeat {
+                self.groups.interrupt();
+                self.interrupt_type_press();
+            }
+            self.view.dirty = true;
+            return;
+        }
         let now = Instant::now();
         if self.group_key(code, state, repeat, now)
             || self.type_select_key(code, state, repeat, now)

@@ -298,3 +298,11 @@ left-click reselection with identical encoded Session bytes and no queued
 commands. Raster tests cover empty/full and damage-band boundaries, clipping
 and malformed/nonfinite inputs. Without retail files these checks do not
 verify cursor artwork, sprite overlap or physical input delivery.
+
+Command-modified keyboard input is rejected by the shared world dispatcher
+before tactical order handling (#331). Command+S therefore cannot append Stop
+or replace an armed action/gesture. Menu editing routes first, and documented
+plain S/Ctrl+H behavior remains available. Rejected held-key repeats cannot
+become world pan/zoom after Command release. The native isolation policy and
+protected-file/Session checks are documented in `docs/window-input.md`; no
+original-game Command semantics or physical Mac delivery are claimed.
