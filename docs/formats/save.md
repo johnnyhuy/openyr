@@ -109,6 +109,18 @@ these fingerprints are consistency checks, not cryptographic signatures.
 Display names and cameo pixels are excluded so localized labels or new
 sidebar art do not invalidate an otherwise compatible match (#64).
 
+Initial map structure health (#346) now preserves the full type maximum
+instead of reducing current and maximum HP together. Full-health structures
+with Strength in 1..=i32::MAX produce the same initial simulation bytes and
+setup key as before. Damaged, zero/rounded-down or overfull health, and
+nonpositive or oversized Strength, can intentionally change the initial state
+and its setup key. Existing match saves whose setup key changes fail the normal compatibility check
+before replacing the current session. Continue those matches with the older
+engine; no migration silently repairs their maximum HP. Raw simulation saves
+remain readable and retain their encoded current/maximum HP exactly. Match
+and simulation schema versions are unchanged. Authored tests verify both
+unaffected acceptance and affected rejection without mutating the session.
+
 The corrected American starting force (#124) changes effective gameplay
 configuration from SMCV/HARV/HTNK to AMCV/CMIN/MTNK. Its kinds, health and
 weapons produce a different setup key. Old mixed-force match saves are

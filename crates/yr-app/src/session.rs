@@ -637,17 +637,23 @@ fn setup_profile(
             .and_then(|a| a.foundation)
             .unwrap_or((1u8, 1u8));
         let (fw, fh) = (u16::from(fw), u16::from(fh));
-        cmds.push(Command::PlaceBuilding {
+        cmds.push(Command::PlaceMapBuilding {
             kind: intern(&mut kinds, &obj.kind),
             x: obj.x,
             y: obj.y,
-            w: fw,
-            h: fh,
-            hp: t.strength.unwrap_or(500) * i64::from(obj.health.max(1)) / 256,
-            armor: armor_idx(t),
-            power: t.power.unwrap_or(0),
+            spec: BuildingSpec {
+                w: fw,
+                h: fh,
+                hp: t.strength.unwrap_or(500),
+                armor: armor_idx(t),
+                power: t.power.unwrap_or(0),
+                role: Role::Combat,
+                adjacent: 0,
+                base_normal: true,
+                free_unit: None,
+            },
+            health: obj.health,
             owner: NEUTRAL,
-            role: Role::Combat,
         });
     }
     for obj in map.units.iter().chain(&map.infantry).chain(&map.aircraft) {
@@ -1379,6 +1385,73 @@ mod save_tests {
             setup_hash,
             source_map: None,
         }
+    }
+
+    #[test]
+    fn map_health_setup_change_rejects_affected_matches_without_rewriting() {
+        let make = |corrected, health: u16| {
+            let mut session = fresh("GI", 200, None);
+            let hp = 100 * i64::from(health.max(1)) / 256;
+            let spec = BuildingSpec {
+                w: 1,
+                h: 1,
+                hp: 100,
+                armor: 0,
+                power: 0,
+                role: Role::Combat,
+                adjacent: 0,
+                base_normal: true,
+                free_unit: None,
+            };
+            session.sim.step(&[if corrected {
+                Command::PlaceMapBuilding {
+                    kind: 0,
+                    x: 2,
+                    y: 3,
+                    spec,
+                    health,
+                    owner: NEUTRAL,
+                }
+            } else {
+                Command::PlaceBuilding {
+                    kind: 0,
+                    x: 2,
+                    y: 3,
+                    w: 1,
+                    h: 1,
+                    hp,
+                    armor: 0,
+                    power: 0,
+                    owner: NEUTRAL,
+                    role: Role::Combat,
+                }
+            }]);
+            session.setup_hash =
+                setup_fingerprint(&session.sim, &session.buildables, &session.kinds, &[]).unwrap();
+            session
+        };
+        let prior_full = crate::snapshot::encode(&make(false, 256u16)).unwrap();
+        let mut current_full = make(true, 256);
+        crate::snapshot::restore(&mut current_full, &prior_full).unwrap();
+        assert_eq!(crate::snapshot::encode(&current_full).unwrap(), prior_full);
+
+        let prior_half = make(false, 128);
+        let bytes = crate::snapshot::encode(&prior_half).unwrap();
+        let mut current_half = make(true, 128);
+        let before = crate::snapshot::encode(&current_half).unwrap();
+        assert!(crate::snapshot::restore(&mut current_half, &bytes)
+            .unwrap_err()
+            .contains("map, rules or engine setup"));
+        assert_eq!(crate::snapshot::encode(&current_half).unwrap(), before);
+        // Raw snapshots retain exactly what was saved, including the old maximum.
+        let old_sim = prior_half.sim.save_bytes().unwrap();
+        let restored = Sim::from_save_bytes(&old_sim).unwrap();
+        assert_eq!(
+            (restored.buildings()[0].hp, restored.buildings()[0].max_hp),
+            (50, 50)
+        );
+        assert_eq!(restored.save_bytes().unwrap(), old_sim);
+        println!("Map-health compatibility: full-health old match accepted byte-for-byte; affected old match rejected without replacement; raw old sim retains 50/50 without migration.");
     }
 
     #[test]
