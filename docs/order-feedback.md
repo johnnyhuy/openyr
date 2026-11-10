@@ -278,8 +278,14 @@ red indicate the existing above-50%, above-25% and remaining health bands.
 Zero health has no colored pip; positive fractions retain at least one pip.
 Both overlays clip to the world viewport before the sidebar. Corner length,
 bar height and pip pitch stay in UI pixels; footprint width follows map zoom,
-with health width bounded to 127 pixels. Selected-or-damaged health visibility
-is unchanged. This presentation does not change simulation or save formats.
+with health width bounded to 127 pixels. Selected and damaged objects retain
+their existing health visibility. Resolved hover previews also show health
+(#335), including healthy unselected owned units, hostile attack targets and
+repair/sell structure previews. Hover health uses the same target and guards as
+the existing brackets, including non-actionable service-target previews. It
+disappears when that preview ends; persistent attack-target brackets alone do
+not reveal a healthy target's bar. No separate hit test or selection mutation
+is introduced. This presentation does not change simulation or save formats.
 
 The public [Red Alert 2 manual, printed pages 5-6](https://static.wikia.nocookie.net/cnc_gamepedia_en/images/3/3b/CCUC-RA2-pcMANOLeUS.pdf/revision/latest)
 backs left-click selection/orders, right-click deselection/cancellation,
@@ -306,3 +312,14 @@ plain S/Ctrl+H behavior remains available. Rejected held-key repeats cannot
 become world pan/zoom after Command release. The native isolation policy and
 protected-file/Session checks are documented in `docs/window-input.md`; no
 original-game Command semantics or physical Mac delivery are claimed.
+
+Authored Session/compositor checks for hover health cover 45 layout/zoom/target
+cases: owned selection, hostile units and structures, sell and full-health
+unavailable repair previews. Thirteen guards cover pointer gestures, keyboard
+pan, placement, menus, focus/leave, edge/sidebar ownership, Shift selection,
+empty selection and ended matches. Exact existing pip raster comparisons,
+hover/away captures and retained selected/damaged visibility preserve camera,
+selection, pending orders and full encoded Session bytes. Set
+`OPENYR_HOVER_HEALTH_PROOF` with `cargo test -p yr-app --bin openyr hover_health
+-- --nocapture` for authored fallback frames and state receipts. This native
+visibility extension is not original-game health-policy calibration.
