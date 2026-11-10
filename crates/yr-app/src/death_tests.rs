@@ -10,7 +10,7 @@ fn retail_infantry_death_composition_proof() {
     }
     let dir = dir.to_str().unwrap();
     let mut app = new_app(dir.into(), "EB1.MMX".into(), 1);
-    app.map = Some(yr_render::render_map(dir, "EB1.MMX", 1).unwrap());
+    app.map = Some(yr_render::render_map_background(dir, "EB1.MMX", 1).unwrap());
     app.sprites = load_sprites(dir, "EB1.MMX");
     let mut session = app.load_session().unwrap();
     session.sim.set_ai(None);

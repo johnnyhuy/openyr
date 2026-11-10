@@ -699,3 +699,6 @@ mod next_unit;
 mod hover_health;
 
 mod unit_follow;
+
+mod building_idle;
+mod menu_click;

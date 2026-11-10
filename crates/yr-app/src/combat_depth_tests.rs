@@ -10,7 +10,7 @@ fn retail_combat_art_respects_foreground_bodies_and_reconstructs_saved_flights()
     }
     let dir = dir.to_str().unwrap();
     let mut app = new_app(dir.into(), "EB1.MMX".into(), 1);
-    app.map = Some(yr_render::render_map(dir, "EB1.MMX", 1).unwrap());
+    app.map = Some(yr_render::render_map_background(dir, "EB1.MMX", 1).unwrap());
     app.sprites = load_sprites(dir, "EB1.MMX");
     let mut session = app.load_session().unwrap();
     let grid = session.sim.terrain().unwrap().clone();

@@ -300,3 +300,31 @@ the tick-623 state for `openyr --load <file> --frames <external-dir>
 - XCC Utilities `shp_ts_file` (Olaf van der Spek) and ModEnc "SHP (TS)".
 - OpenRA `ShpTSLoader.cs` (GPL-3.0), used as a cross-check only.
 - Verified against retail data as above.
+
+## Pre-placed building idle layers (#341)
+
+The match background uses `render_map_background`, leaving reconstructable
+SHP building structures for live composition. Unsupported static art remains
+baked; the same body/layer loader controls exclusion and live capability. Ordinary `render_map` inspection and chooser
+previews retain their static object image. Neutral map structures now use the
+same body, bib, active layers, damage state, shadows and foundation ordering as
+other live buildings. Active clips already read absolute simulation ticks while
+production is idle; this fix removes the static-background exception. It does
+not invent clips for a building without an authored active attachment.
+
+The SpriteBank retains the original map house colour by building type and cell,
+because Session intentionally collapses pre-placed map structures to a neutral
+simulation owner. This lookup is presentation-only, reconstructed from the map;
+no house metadata or animation state is added to simulation or save fields.
+Neutral units remain static as before. Missing or malformed optional active
+layers are skipped while valid body/attachments remain visible.
+
+Authored tests compare match background and complete preview at identical map
+bounds, original-house versus generic-neutral remap, and two actual shared
+compositions at three layouts with no production. Idle pixels advance while
+composition preserves complete Session bytes/hash, selection and pending orders.
+Destroying the building leaves no stale baked body. Set
+`OPENYR_BUILDING_IDLE_PROOF` with `cargo test -p yr-app --bin openyr
+building_idle -- --nocapture` to export the authored frames and state receipts.
+These fixtures are not retail/original captures. Original cadence, layer depth,
+retail reconstruction and physical Mac/Retina checks remain open under #6.

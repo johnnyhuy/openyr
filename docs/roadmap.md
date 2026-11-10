@@ -197,6 +197,18 @@ Johnny on 2026-10-31.
       Authored limb bounds, first HVA poses, fixed camera scale and a
       shared ground anchor replace guessed attachment placement (#73).
       Normal-table lighting remains open
+- [x] Reduce unit color contrast and coarse voxel sampling (#342): bounded
+      house ramps avoid clipped highlights, softer provisional lighting keeps
+      dark faces readable, and subpixel voxel coverage preserves fractional
+      edges without whole-frame blur. Authored house/facing/depth/anchor checks
+      cover map/live agreement and shadow isolation; original/retail calibration
+      remains open (`docs/formats/vxl.md`).
+- [x] Animate pre-placed neutral building idle layers (#341, #6): omit
+      reconstructable SHP structures from match backgrounds and reuse live
+      body/bib/active layers, original map-house colors and existing foundation/
+      shadow ordering. Static previews and unsupported art stay baked. Authored
+      background/idle/destruction checks preserve complete Session bytes,
+      selected units and pending orders; original/retail calibration remains open.
 - [x] Geometry-derived voxel lighting (#82): cached local surface normals
       follow HVA poses and facings under a fixed camera light. Palette and
       house colours share bounded ambient/diffuse shading; ambiguous surfaces
@@ -690,7 +702,8 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       at zero health. Three-layout/three-zoom compositor and cursor/cancel checks
       preserve encoded Session bytes. Exact original geometry/colors/visibility,
       retail sprite overlap and physical Mac/Retina checks remain open
-      (`docs/order-feedback.md`, #97/#98).
+      (`docs/order-feedback.md`, #97/#98). The selected white outline was
+      subsequently removed in #343 at the user's request.
 - [x] Preview selectable and attackable world targets (#97): green/red native
       corner brackets use the existing cursor/click resolver and current entity
       ground anchors. Focus/menu/gesture/command-mode guards, Shift routing,
@@ -979,6 +992,13 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       focus/menu changes; verify resizing, Retina hit coordinates, tooltip
       clipping and visible save/load feedback. Sidebar queues and command-bar
       controls remain in #86; repair/sell remains in #94.
+
+- [x] Animate accepted menu clicks and route their supplied sound event (#344,
+      #96): bounded SDBTNANM press/persistent-control phases and MenuClick audio
+      preserve immediate navigation and disabled/cancelled/repeated/muted guards.
+      Authored frames and mixed PCM verify routing without a physical device;
+      original transition order/cadence and retail playback remain uncalibrated
+      (`docs/formats/front-menu.md`).
 
 ## M6: Fidelity pass
 

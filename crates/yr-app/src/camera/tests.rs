@@ -113,7 +113,7 @@ fn retail_camera_handlers_preserve_match_state_and_guard_gestures() {
     }
     let mut app = new_app(dir.to_string_lossy().into(), "EB1.MMX".into(), 1);
     app.session = Some(app.load_session().unwrap());
-    app.map = Some(yr_render::render_map(&app.gamedir, &app.map_name, 1).unwrap());
+    app.map = Some(yr_render::render_map_background(&app.gamedir, &app.map_name, 1).unwrap());
     app.sprites = load_sprites(&app.gamedir, &app.map_name);
     app.menu_art = yr_app::menu::Art::load(&yr_assets::AssetFs::open(&dir).unwrap());
     let saved = yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap();
@@ -288,7 +288,7 @@ fn retail_edge_cursors_share_motion_guards_and_preserve_match_bytes() {
     }
     let mut app = new_app(dir.to_string_lossy().into(), "EB1.MMX".into(), 1);
     app.session = Some(app.load_session().unwrap());
-    app.map = Some(yr_render::render_map(&app.gamedir, &app.map_name, 1).unwrap());
+    app.map = Some(yr_render::render_map_background(&app.gamedir, &app.map_name, 1).unwrap());
     app.sprites = load_sprites(&app.gamedir, &app.map_name);
     app.menu.edge_scroll = true;
     app.pointer.inside = true;

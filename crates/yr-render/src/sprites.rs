@@ -122,7 +122,8 @@ impl InfantrySequences {
 pub struct Sprite {
     pub w: u32,
     pub h: u32,
-    /// RGBA8; alpha is 0 (clear), [`SHADOW_ALPHA`] (shadow) or 255.
+    /// RGBA8; alpha 0 is clear, [`SHADOW_ALPHA`] is a ground shadow.
+    /// Other alpha values are body coverage; voxel antialiasing reserves 128.
     pub rgba: Vec<u8>,
     /// Sprite pixel that sits on the object's anchor: the cell centre for
     /// units, the centre of the top-left footprint cell for buildings.
@@ -171,6 +172,7 @@ pub struct SpriteBank {
     cache_order: VecDeque<SpriteKey>,
     voxels: HashMap<String, Option<crate::voxels::VoxelModel>>,
     buildings: HashMap<String, Option<BuildingArt>>,
+    map_structure_colors: HashMap<(String, u16, u16), [u8; 3]>,
     layers: HashMap<LayerKey, Option<Sprite>>,
     effects: crate::effects::Effects,
     projectiles: crate::projectiles::Projectiles,
@@ -205,6 +207,21 @@ impl SpriteBank {
             vfs.read("ARTMD.INI").ok_or("artmd.ini not found")?,
         ));
         let rules = Rules::load(&rules_ini, &art_ini);
+        // Map-house identity is presentation metadata. Session intentionally
+        // groups pre-placed structures under the neutral simulation owner.
+        let map_structure_colors = map
+            .structures
+            .iter()
+            .filter(|obj| {
+                crate::live_building_art(&vfs, &rules, &art_ini, &obj.kind, theater).is_some()
+            })
+            .map(|obj| {
+                (
+                    (obj.kind.to_ascii_uppercase(), obj.x, obj.y),
+                    crate::house_color(&rules_ini, &obj.owner),
+                )
+            })
+            .collect();
         let mut infantry = HashMap::new();
         for t in rules.infantry.iter() {
             let Some(section) = t.art.as_ref().and_then(|a| art_ini.section(&a.section)) else {
@@ -253,6 +270,7 @@ impl SpriteBank {
             cache_order: VecDeque::new(),
             voxels: HashMap::new(),
             buildings: HashMap::new(),
+            map_structure_colors,
             layers: HashMap::new(),
             effects: Default::default(),
             projectiles: Default::default(),
@@ -262,6 +280,14 @@ impl SpriteBank {
     /// RGB house colour of a rules house/country section (`Color=`).
     pub fn house_color(&self, house: &str) -> [u8; 3] {
         crate::house_color(&self.rules_ini, house)
+    }
+
+    /// Original map-house colour for a pre-placed structure, without adding
+    /// house names or rendering state to the simulation/save format.
+    pub fn map_structure_color(&self, kind: &str, cell: (u16, u16)) -> Option<[u8; 3]> {
+        self.map_structure_colors
+            .get(&(kind.to_ascii_uppercase(), cell.0, cell.1))
+            .copied()
     }
 
     pub fn muzzle_effect(&self, kind: &str, facing: u8) -> Option<String> {
@@ -465,21 +491,8 @@ impl SpriteBank {
     ) -> Option<BuildingSprites<'_>> {
         let id = id.to_ascii_uppercase();
         if !self.buildings.contains_key(&id) {
-            let art = self
-                .rules
-                .techno(&id)
-                .filter(|t| t.kind == TechnoKind::Building)
-                .and_then(|t| {
-                    let art = t.art.as_ref()?;
-                    BuildingArt::load(
-                        &self.vfs,
-                        &self.art_ini,
-                        &t.image,
-                        &art.section,
-                        self.theater,
-                        art.foundation.unwrap_or((1, 1)),
-                    )
-                });
+            let art =
+                crate::live_building_art(&self.vfs, &self.rules, &self.art_ini, &id, self.theater);
             self.buildings.insert(id.clone(), art);
         }
         let art = self.buildings.get(&id)?.as_ref()?;

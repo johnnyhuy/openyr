@@ -216,7 +216,7 @@ impl LoadRequest {
                     let _ = progress.send(LoadProgress::Preview(Box::new(preview)));
                 }
                 report(LoadStage::Terrain, &map_name, &session.match_config)?;
-                let map = yr_render::render_map(&self.directory, &map_name, self.scale)?;
+                let map = yr_render::render_map_background(&self.directory, &map_name, self.scale)?;
                 report(LoadStage::Artwork, &map_name, &session.match_config)?;
                 let sprites = load_sprites(&self.directory, &map_name).map(Box::new);
                 Ok(Prepared::Match {

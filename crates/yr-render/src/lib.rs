@@ -71,6 +71,26 @@ mod raster_bounds;
 /// Render `map_name` (a loose file in the game dir, or a path) at
 /// downscale `scale` (1, 2 or 4).
 pub fn render_map(gamedir: &str, map_name: &str, scale: u32) -> Result<RenderedMap, String> {
+    render_map_layers(gamedir, map_name, scale, true)
+}
+
+/// Match background. Reconstructable SHP buildings are drawn live so idle
+/// layers can advance and their bodies can disappear after destruction.
+/// Inspection and chooser previews retain the complete static `render_map`.
+pub fn render_map_background(
+    gamedir: &str,
+    map_name: &str,
+    scale: u32,
+) -> Result<RenderedMap, String> {
+    render_map_layers(gamedir, map_name, scale, false)
+}
+
+fn render_map_layers(
+    gamedir: &str,
+    map_name: &str,
+    scale: u32,
+    include_buildings: bool,
+) -> Result<RenderedMap, String> {
     if !matches!(scale, 1 | 2 | 4) {
         return Err("scale must be 1, 2 or 4".into());
     }
@@ -393,6 +413,10 @@ pub fn render_map(gamedir: &str, map_name: &str, scale: u32) -> Result<RenderedM
     for obj in map
         .structures
         .iter()
+        .filter(|obj| {
+            include_buildings
+                || live_building_art(&vfs, &rules, &art_ini, &obj.kind, theater).is_none()
+        })
         .chain(&map.units)
         .chain(&map.infantry)
         .chain(&map.aircraft)
@@ -525,6 +549,27 @@ pub fn render_map(gamedir: &str, map_name: &str, scale: u32) -> Result<RenderedM
     })
 }
 
+pub(crate) fn live_building_art(
+    vfs: &AssetFs,
+    rules: &Rules,
+    art_ini: &IniFile,
+    kind: &str,
+    theater: Theater,
+) -> Option<buildings::BuildingArt> {
+    let techno = rules
+        .techno(kind)
+        .filter(|t| t.kind == yr_rules::TechnoKind::Building)?;
+    let art = techno.art.as_ref()?;
+    buildings::BuildingArt::load(
+        vfs,
+        art_ini,
+        &techno.image,
+        &art.section,
+        theater,
+        art.foundation.unwrap_or((1, 1)),
+    )
+}
+
 /// SHP names to try for building image `image`: NewTheater art swaps the
 /// second letter for the theater letter, with the generic `G` variant
 /// as fallback (docs/formats/map.md), then the plain image name.
@@ -548,8 +593,10 @@ pub fn building_shp_candidates(image: &str, theater: Theater) -> Vec<String> {
 pub(crate) fn remap_rgba(pal: &Palette, index: u8, remap: Option<[u8; 3]>) -> [u8; 4] {
     match (remap, index) {
         (Some(base), 16..=31) => {
-            let f = 0.45 + f32::from(index - 16) * 0.055;
-            let c = |v: u8| (f32::from(v) * f).min(255.0) as u8;
+            // Keep the authored house hue without overbright clipped highlights.
+            // The softer 60-100% ramp retains all sixteen ordered shades.
+            let level = 90 + 4 * u16::from(index - 16);
+            let c = |v: u8| ((u16::from(v) * level + 75) / 150) as u8;
             [c(base[0]), c(base[1]), c(base[2]), 255]
         }
         _ => pal.rgba(index),

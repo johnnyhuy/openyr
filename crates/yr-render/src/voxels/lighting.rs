@@ -108,7 +108,7 @@ pub(super) fn brightness(normal: [f32; 3], pose: &Transform, facing: u16) -> u8 
         .map(|(n, l)| n * l)
         .sum::<f32>()
         .clamp(0., 1.);
-    ((0.62 + 0.38 * diffuse) * 255.).round() as u8
+    ((0.78 + 0.22 * diffuse) * 255.).round() as u8
 }
 
 /// Light ordinary and house-remapped colours equally, preserving alpha.
@@ -234,7 +234,7 @@ mod tests {
         let left = brightness([0., 1., 0.], &IDENTITY, 0);
         let away = brightness([0., -1., 0.], &IDENTITY, 0);
         assert!(top > left && left > away);
-        assert_eq!(away, 158); // 62% ambient when the face points away.
+        assert_eq!(away, 199); // 78% ambient keeps unlit faces readable.
         assert_eq!(brightness([0., -1., 0.], &IDENTITY, 128), left);
         let rotated = [[0., -1., 0., 0.], [1., 0., 0., 0.], [0., 0., 1., 0.]];
         assert_eq!(brightness([1., 0., 0.], &rotated, 0), left);

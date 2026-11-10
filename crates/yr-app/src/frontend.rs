@@ -79,3 +79,6 @@ pub(crate) fn start_points(ini: &yr_formats::IniFile) -> [Option<(u16, u16)>; 8]
         Some(((packed % 1000) as u16, u16::try_from(packed / 1000).ok()?))
     })
 }
+
+#[cfg(test)]
+mod click_tests;

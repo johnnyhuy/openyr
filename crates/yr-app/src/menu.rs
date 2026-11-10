@@ -147,6 +147,9 @@ pub struct State {
     /// Transient fractional rows from native menu wheel input.
     pub wheel_remainder: f64,
     pub pressed: Option<Button>,
+    /// Front-shell presentation clock only; never included in match saves.
+    pub press_phase: Option<u64>,
+    pub activation: Option<(Button, u64)>,
     pub muted: bool,
     pub zoom: u16,
     pub edge_scroll: bool,
@@ -173,6 +176,8 @@ impl Default for State {
             message_scroll: 0,
             wheel_remainder: 0.0,
             pressed: None,
+            press_phase: None,
+            activation: None,
             muted: false,
             zoom: 100,
             edge_scroll: false,
@@ -212,6 +217,8 @@ impl State {
             self.focus = 1;
         }
         self.pressed = None;
+        self.press_phase = None;
+        self.activation = None;
         self.setup.focus = None;
         self.setup.drag = None;
         self.setup.popup = None;
@@ -394,6 +401,51 @@ impl State {
             }
         }
     }
+    /// Native bounded press sequence; exact original cadence remains uncalibrated.
+    pub fn button_phase(&self, button: Button, phase: u64, hovered: bool) -> usize {
+        let start = if self.pressed == Some(button) {
+            self.press_phase
+        } else {
+            self.activation
+                .filter(|(id, at)| *id == button && phase.saturating_sub(*at) < 13)
+                .map(|(_, at)| at)
+        };
+        if let Some(start) = start {
+            4 + phase.saturating_sub(start).min(12) as usize
+        } else if self.pressed == Some(button) {
+            4
+        } else if hovered {
+            3
+        } else {
+            2
+        }
+    }
+
+    pub fn press_button(&mut self, button: Option<Button>, phase: u64) {
+        self.pressed = button;
+        self.press_phase = button.map(|_| phase);
+        self.activation = None;
+    }
+
+    /// Enabled activation is shared by mouse/keyboard native dispatch.
+    pub fn activate_feedback(&mut self, button: Button, phase: u64) -> Option<Effect> {
+        if !self
+            .buttons()
+            .iter()
+            .any(|&(id, enabled)| id == button && enabled)
+        {
+            return None;
+        }
+        let effect = self.activate(button);
+        self.press_phase = None;
+        self.activation = self
+            .buttons()
+            .iter()
+            .any(|&(id, enabled)| id == button && enabled)
+            .then_some((button, phase));
+        Some(effect)
+    }
+
     pub fn activate(&mut self, button: Button) -> Effect {
         if !self
             .buttons()

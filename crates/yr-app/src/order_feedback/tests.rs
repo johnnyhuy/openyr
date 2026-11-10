@@ -57,7 +57,7 @@ fn retail_tactical_orders_have_visible_feedback_without_changing_saved_state() {
     }
     let mut app = new_app(dir.to_string_lossy().into(), "EB1.MMX".into(), 1);
     app.session = Some(app.load_session().unwrap());
-    app.map = Some(yr_render::render_map(&app.gamedir, &app.map_name, 1).unwrap());
+    app.map = Some(yr_render::render_map_background(&app.gamedir, &app.map_name, 1).unwrap());
     app.sprites = load_sprites(&app.gamedir, &app.map_name);
     let saved = yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap();
     let sim = &app.session.as_ref().unwrap().sim;

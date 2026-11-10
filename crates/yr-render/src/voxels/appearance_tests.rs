@@ -1,0 +1,204 @@
+use super::*;
+use yr_formats::vxl::{Voxel, VxlLimb};
+
+fn block(name: &str, size: [u8; 3], origin: [f32; 3]) -> VxlLimb {
+    let mut voxels = Vec::new();
+    for z in 0..size[2] {
+        for y in 0..size[1] {
+            for x in 0..size[0] {
+                voxels.push(Voxel {
+                    x,
+                    y,
+                    z,
+                    color: if y % 4 < 2 { 16 + (x % 16) } else { 42 },
+                    normal: 0,
+                });
+            }
+        }
+    }
+    VxlLimb {
+        name: name.into(),
+        scale: 1.,
+        transform: [[1., 0., 0., 0.], [0., 1., 0., 0.], [0., 0., 1., 0.]],
+        min_bounds: origin,
+        max_bounds: std::array::from_fn(|i| origin[i] + f32::from(size[i])),
+        size,
+        normals_mode: 4,
+        voxels,
+    }
+}
+fn model() -> VoxelModel {
+    VoxelModel {
+        parts: vec![Part::new(
+            VxlFile {
+                palette: [0; 768],
+                remap: (16, 31),
+                limbs: vec![
+                    block("body", [36, 20, 8], [-18., -10., 0.]),
+                    block("turret", [12, 12, 8], [-6., -6., 8.]),
+                    block("barrel", [20, 2, 2], [0., -1., 12.]),
+                ],
+            },
+            None,
+        )],
+    }
+}
+#[test]
+fn unit_appearance_projection_has_subpixel_coverage_and_stable_anchors() {
+    let model = model();
+    let mut pal = Palette::parse(&[0; 768]).unwrap();
+    pal.entries[42] = (42, 44, 46);
+    let mut atlas = vec![0; 640 * 288 * 4];
+    for p in atlas.as_chunks_mut::<4>().0 {
+        p.copy_from_slice(&[35, 42, 35, 255]);
+    }
+    let mut partial = 0;
+    let mut views = Vec::new();
+    for (row, house) in [[240, 220, 60], [240, 60, 60], [60, 120, 240]]
+        .into_iter()
+        .enumerate()
+    {
+        for facing in 0..8 {
+            let s = sprite(&model, facing * 32, &pal, house).unwrap();
+            partial += s
+                .rgba
+                .as_chunks::<4>()
+                .0
+                .iter()
+                .filter(|p| p[3] > 0 && p[3] < 255)
+                .count();
+            assert!(s
+                .rgba
+                .as_chunks::<4>()
+                .0
+                .iter()
+                .all(|p| p[3] != crate::sprites::SHADOW_ALPHA));
+            assert!(s.w <= 512 && s.h <= 512);
+            let (x, y) = (40 + facing as usize * 80, 60 + row * 96);
+            draw_voxel(
+                &mut atlas,
+                640,
+                288,
+                x as i32,
+                y as i32,
+                &model,
+                facing * 32,
+                &pal,
+                Some(house),
+            );
+            let mut local = vec![0; s.rgba.len()];
+            draw_voxel(
+                &mut local,
+                s.w as usize,
+                s.h as usize,
+                s.ax,
+                s.ay,
+                &model,
+                facing * 32,
+                &pal,
+                Some(house),
+            );
+            assert_eq!(s.rgba, local, "map/live samples must use identical anchors");
+            views.push(format!(
+                r#"{{"facing":{},"house":{:?},"size":[{},{}],"anchor":[{},{}]}}"#,
+                facing * 32,
+                house,
+                s.w,
+                s.h,
+                s.ax,
+                s.ay
+            ));
+        }
+    }
+    if let Some(dir) = std::env::var_os("OPENYR_UNIT_APPEARANCE_PROOF") {
+        let dir = std::path::PathBuf::from(dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(
+            dir.join("unit-atlas.png"),
+            crate::png::encode_rgba(640, 288, &atlas),
+        )
+        .unwrap();
+        std::fs::write(dir.join("unit-atlas.json"),format!(r#"{{"authored_model":true,"retail_data":false,"partial_body_pixels":{},"views":[{}]}}"#,partial,views.join(","))).unwrap();
+    }
+    assert!(partial > 0, "voxel edges must retain subpixel coverage");
+    println!("24 authored model views preserve model anchors and map/live agreement, with {partial} subpixel body pixels and no false shadow markers.");
+}
+
+#[test]
+fn unit_appearance_house_ramp_is_monotonic_and_never_clips_above_base() {
+    let pal = Palette::parse(&[0; 768]).unwrap();
+    for base in [
+        [255, 255, 0],
+        [240, 60, 60],
+        [60, 120, 240],
+        [0, 0, 0],
+        [9, 17, 31],
+    ] {
+        let mut previous = [0; 3];
+        for index in 16..=31 {
+            let c = crate::remap_rgba(&pal, index, Some(base));
+            for i in 0..3 {
+                assert!(c[i] >= previous[i] && c[i] <= base[i]);
+                previous[i] = c[i];
+            }
+            assert_eq!(c[3], 255);
+        }
+        assert_eq!(previous, base);
+    }
+    for index in [0, 1, 15, 32, 42, 255] {
+        assert_eq!(
+            crate::remap_rgba(&pal, index, Some([255, 0, 0])),
+            pal.rgba(index)
+        );
+    }
+}
+
+#[test]
+fn unit_appearance_border_coverage_is_partial_and_preserves_the_ground_origin() {
+    let model = VoxelModel {
+        parts: vec![Part::new(
+            VxlFile {
+                palette: [0; 768],
+                remap: (16, 31),
+                limbs: vec![block("point", [1; 3], [-0.5; 3])],
+            },
+            None,
+        )],
+    };
+    let pal = Palette::parse(&[0; 768]).unwrap();
+    for facing in (0..256).step_by(32) {
+        let s = sprite(&model, facing, &pal, [240, 60, 60]).unwrap();
+        assert_eq!((s.w, s.h, s.ax, s.ay), (4, 4, 1, 1));
+        assert!(
+            s.rgba[3] > 0 && s.rgba[3] < 255,
+            "fractional corner coverage is retained"
+        );
+        for y in 0..s.h {
+            for x in 0..s.w {
+                let alpha = s.rgba[((y * s.w + x) * 4 + 3) as usize];
+                if x == 0 || y == 0 || x + 1 == s.w || y + 1 == s.h {
+                    assert!(alpha < 255);
+                }
+            }
+        }
+        let mut at_origin = vec![0; 8 * 8 * 4];
+        draw_voxel(
+            &mut at_origin,
+            8,
+            8,
+            4,
+            4,
+            &model,
+            facing,
+            &pal,
+            Some([240, 60, 60]),
+        );
+        for y in 0..s.h {
+            for x in 0..s.w {
+                let src = ((y * s.w + x) * 4) as usize;
+                let dst = (((y + 3) * 8 + x + 3) * 4) as usize;
+                assert_eq!(&s.rgba[src..src + 4], &at_origin[dst..dst + 4]);
+            }
+        }
+    }
+}
