@@ -1,0 +1,9 @@
+Script started on 2026-11-10 17:38:08+00:00 [COMMAND="python3 scripts/proof_build.py verify --receipt .tmp/map-health-runtime/receipt.json && python3 scripts/proof_build.py run --receipt .tmp/map-health-runtime/receipt.json -- --help" <not executed on terminal>]
+Verified: /workspace/openyr-map-health-20261111-1/.tmp/map-health-runtime/program
+Verified: /workspace/openyr-map-health-20261111-1/.tmp/map-health-runtime/program
+openyr [<gamedir> [<map> [scale]]] [--load <file>] [--save <file>] [--ticks <end-tick>] [--frames <dir> <tick>...] [--passive]
+
+Without arguments, OpenYR finds your retail install and opens the main menu.
+Set OPENYR_GAMEDIR to override the remembered or standard install.
+
+Script done on 2026-11-10 17:38:08+00:00 [COMMAND_EXIT_CODE="0"]

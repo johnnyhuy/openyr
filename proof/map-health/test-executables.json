@@ -1,0 +1,25 @@
+{
+  "source_commit": "aa6b4c44b2867c87586bfccd782aaaa219d45b73",
+  "source_tree": "56d1f57e207ce648c1f308aff32cd0fc904e5d8a",
+  "build": "CARGO_TARGET_DIR=$PWD/.tmp/check-target CARGO_BUILD_JOBS=2 cargo test --workspace --locked",
+  "executables": [
+    {
+      "name": "openyr",
+      "cargo_artifact": ".tmp/check-target/debug/deps/openyr-8539b05c03c1d83a",
+      "bytes": 200873536,
+      "sha256": "8f53cebc1e166dc6d2282dc79ccee16f9c2d2f6a3d2bf54bf1edb20ab5f08c88"
+    },
+    {
+      "name": "yr_app",
+      "cargo_artifact": ".tmp/check-target/debug/deps/yr_app-3d65909a3deb91c6",
+      "bytes": 51925320,
+      "sha256": "20b597ed3b5da089edc9c7ea0711fc45b54ae98bbfaf2d9f4cd26debbed04d02"
+    },
+    {
+      "name": "yr_sim",
+      "cargo_artifact": ".tmp/check-target/debug/deps/yr_sim-e69a4d211883ad72",
+      "bytes": 23466144,
+      "sha256": "1ea9babc24429acad657085429237c8f8c83a9a18fb942ad67f867aac5858575"
+    }
+  ]
+}

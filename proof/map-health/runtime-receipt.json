@@ -1,0 +1,28 @@
+{
+  "format": "openyr-proof-build-v1",
+  "source": {
+    "commit": "aa6b4c44b2867c87586bfccd782aaaa219d45b73",
+    "tree": "56d1f57e207ce648c1f308aff32cd0fc904e5d8a"
+  },
+  "package": "yr-app",
+  "binary": "openyr",
+  "profile": "release",
+  "cargo": "cargo 1.99.1 (5f94df478 2026-08-27)",
+  "command": [
+    "/workspace/.cargo/bin/cargo",
+    "build",
+    "--manifest-path",
+    "/workspace/openyr-map-health-20261111-1/Cargo.toml",
+    "--package",
+    "yr-app",
+    "--bin",
+    "openyr",
+    "--release",
+    "--locked",
+    "--target-dir",
+    "/workspace/openyr-map-health-20261111-1/.tmp/map-health-runtime/target-2h0w86bd",
+    "--message-format=json-render-diagnostics"
+  ],
+  "sha256": "0aa2074aeb2df64b78e27e7656dc289d60275adbcb40a43e9633a3c8f85c45d4",
+  "bytes": 14169304
+}
