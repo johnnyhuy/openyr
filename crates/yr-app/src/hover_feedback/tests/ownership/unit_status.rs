@@ -12,7 +12,7 @@ fn classic_status_tracks_selection_cursor_cancel_and_preserves_session() {
                 .take(1600 * 1200 * 4)
                 .collect();
             point_at(&mut app, own, size);
-            // Move off the unit to isolate selected health from hover previews.
+            // Move off the unit so hover color does not replace white selection.
             let point = app.cursor;
             app.pointer_moved((point.0 + 70.0, point.1 + 70.0));
             let before = yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap();
@@ -36,14 +36,11 @@ fn classic_status_tracks_selection_cursor_cancel_and_preserves_session() {
             assert_ne!(
                 &frame[at..at + 4],
                 &SELECT_COL,
-                "selection must not draw a white outline at {zoom}"
+                "selected units must not draw the white corner overlay at {zoom}"
             );
-            assert!(!frame.as_chunks::<4>().0.contains(&SELECT_COL));
-            let middle = ((center.1 * size.0 + x) * 4) as usize;
-            assert_ne!(
-                &frame[middle..middle + 4],
-                &SELECT_COL,
-                "selection must have open sides rather than a diamond"
+            assert!(
+                !frame.as_chunks::<4>().0.contains(&SELECT_COL),
+                "no white selected-object overlay anywhere at {zoom}"
             );
             assert!(frame.as_chunks::<4>().0.contains(&[0, 252, 0, 255]));
             if zoom == 1.0 {
@@ -72,5 +69,5 @@ fn classic_status_tracks_selection_cursor_cancel_and_preserves_session() {
             assert!(app.pending.is_empty());
         }
     }
-    println!("Three layouts x three zooms: selected health without a white outline, Attack/Select cursor kinds, right-click deselection and reselection; complete Session bytes and pending commands unchanged. No retail cursor pixels supplied.");
+    println!("Three layouts x three zooms: no white selected-object overlay, health retained, Attack/Select cursor kinds, right-click deselection and reselection; complete Session bytes and pending commands unchanged. No retail cursor pixels supplied.");
 }

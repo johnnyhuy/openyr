@@ -270,10 +270,10 @@ parity or physical Mac/Retina delivery.
 
 ## Unit selection and health
 
-Selected units retain their health pips without the native white corner/square
-outline (#343), as requested in the classic-UI review. Green/red contextual
-hover and attack previews still use their existing shared raster and bounds.
-Box-selection feedback and selection/command semantics are unchanged. Health is a four-pixel-high black frame with
+Selected units draw no white corner or square overlay. Selection stays
+visible through the health bar, the cursor and command feedback, while the
+green/red corner brackets remain reserved for resolved hover, service and
+attack-target previews. The old white ground diamond stays removed. Health is a four-pixel-high black frame with
 two-pixel pips, one-pixel separators and a darker lower edge. Green, yellow and
 red indicate the existing above-50%, above-25% and remaining health bands.
 Zero health has no colored pip; positive fractions retain at least one pip.
