@@ -395,6 +395,15 @@ Johnny on 2026-10-31.
 
 ## M4: Simulation v1
 
+- [x] Apply initial map-unit health fractions (#349) to vehicles, infantry
+      and aircraft without reducing their type maximum. Shared bounded integer
+      initialization, all three parsed sections, native pip/Attack feedback,
+      damage lethality and exact save/load are checked with authored fixtures.
+      Normal starting forces/production keep their path; unaffected setup keys
+      remain compatible while affected old matches reject without rewriting
+      (`docs/formats/map.md`, `docs/formats/save.md`). Retail/original and
+      physical calibration remain open.
+
 - [x] Preserve full maximum health for pre-placed damaged map structures
       (#346): bounded map fractions affect current HP only. Authored setup,
       damaged-art predicate, native health pips, generator/repair and save/load

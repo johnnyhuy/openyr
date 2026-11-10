@@ -121,6 +121,15 @@ remain readable and retain their encoded current/maximum HP exactly. Match
 and simulation schema versions are unchanged. Authored tests verify both
 unaffected acceptance and affected rejection without mutating the session.
 
+Initial map unit health (#349) now applies the previously ignored fraction for
+vehicles, infantry and aircraft. Full-health supported map units and generated
+starting units retain their existing setup state. Maps whose unit HP changes
+intentionally get a different setup key; old match files for those maps fail
+before replacing a live session. Continue them with a matching older engine.
+Valid raw old simulation snapshots still retain their encoded HP exactly, with
+no migration or schema change. Authored tests verify unaffected old-match
+acceptance, affected rejection without mutation, and unchanged raw snapshots.
+
 The corrected American starting force (#124) changes effective gameplay
 configuration from SMCV/HARV/HTNK to AMCV/CMIN/MTNK. Its kinds, health and
 weapons produce a different setup key. Old mixed-force match saves are
