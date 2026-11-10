@@ -50,13 +50,14 @@ impl App {
 
     pub(super) fn draw_attack_targets(&self, frame: &mut [u8], size: (u32, u32)) {
         for id in self.current_attack_targets() {
-            self.draw_target_brackets(
+            self.draw_target_status(
                 frame,
                 size,
                 Target {
                     id,
                     color: ENEMY_COL,
                 },
+                false,
             );
         }
     }
@@ -109,10 +110,16 @@ impl App {
         let Some(target) = self.hover_target(size) else {
             return;
         };
-        self.draw_target_brackets(frame, size, target);
+        self.draw_target_status(frame, size, target, true);
     }
 
-    fn draw_target_brackets(&self, frame: &mut [u8], size: (u32, u32), target: Target) {
+    fn draw_target_status(
+        &self,
+        frame: &mut [u8],
+        size: (u32, u32),
+        target: Target,
+        show_health: bool,
+    ) {
         let (Some(map), Some(session)) = (&self.map, &self.session) else {
             return;
         };
@@ -121,34 +128,53 @@ impl App {
             .units()
             .iter()
             .find(|u| u.id == target.id && u.hp > 0)
-            .map(|u| ((u.x, u.y), 14.0 * self.view.zoom))
+            .map(|u| {
+                (
+                    (u.x, u.y),
+                    (14.0 * self.view.zoom).max(5.0),
+                    hp_frac(u.hp, u.max_hp),
+                )
+            })
             .or_else(|| {
                 session
                     .sim
                     .buildings()
                     .iter()
                     .find(|b| b.id == target.id && b.hp > 0)
-                    .map(|b| (b.centre(), f32::from(b.size.0) + f32::from(b.size.1)))
-                    .map(|(cell, span)| {
-                        (cell, span * 15.0 / map.scale.max(1) as f32 * self.view.zoom)
+                    .map(|b| {
+                        (
+                            b.centre(),
+                            ((f32::from(b.size.0) + f32::from(b.size.1)) * 15.0
+                                / map.scale.max(1) as f32
+                                * self.view.zoom)
+                                .max(8.0),
+                            hp_frac(b.hp, b.max_hp),
+                        )
                     })
             });
-        let Some(((x, y), half)) = object else { return };
+        let Some(((x, y), half, health)) = object else {
+            return;
+        };
         let (x, y) = yr_app::interaction::ground_point(
             map,
             session.sim.terrain(),
             (x.raw() as f32 / 256.0, y.raw() as f32 / 256.0),
         );
-        draw_brackets(
-            frame,
-            size,
-            (
-                (x - self.view.cam_x) * self.view.zoom,
-                (y - self.view.cam_y) * self.view.zoom,
-            ),
-            half.max(8.0) + 6.0,
-            target.color,
+        let center = (
+            (x - self.view.cam_x) * self.view.zoom,
+            (y - self.view.cam_y) * self.view.zoom,
         );
+        draw_brackets(frame, size, center, half.max(8.0) + 6.0, target.color);
+        if show_health {
+            // Hover uses the existing status geometry without changing selection.
+            unit_status::draw_health(
+                frame,
+                size,
+                (center.0, center.1 - (half.max(8.0) + 6.0) * 0.5 - 6.0),
+                half * 2.0,
+                health,
+            );
+        }
     }
 }
 
