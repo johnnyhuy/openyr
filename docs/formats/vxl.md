@@ -231,3 +231,14 @@ coordinates and bounded canvases. `OPENYR_UNIT_APPEARANCE_PROOF` with
 authored atlas and geometry/coverage receipts. Retail reconstruction and original
 lighting/camera/sampling comparisons require the missing install; physical
 Mac/Retina verification remains open. Simulation and save fields do not change.
+
+## Static map unit heading agreement (#350)
+
+Map unit VXL jobs now pass the normalized heading through the live renderer's
+screen-octant projection and voxel rotation adapter. They share eight screen
+directions instead of the old direct raw-angle path. An authored asymmetric
+vehicle with a differently colored nose checks opposite headings, body pixels
+and ground anchors against live SpriteBank decoding. Static voxel buildings
+retain their earlier raw-angle path. Supplied model front axes and the original
+map compass convention remain uncalibrated here; no retail/original runtime
+comparison ran for this change. Dynamic map-unit lifetime remains #351.

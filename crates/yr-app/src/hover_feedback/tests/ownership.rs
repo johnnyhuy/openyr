@@ -715,5 +715,6 @@ mod unit_follow;
 
 mod building_idle;
 mod map_health;
+mod map_unit_facing;
 mod map_unit_health;
 mod menu_click;

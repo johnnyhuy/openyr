@@ -130,6 +130,15 @@ Valid raw old simulation snapshots still retain their encoded HP exactly, with
 no migration or schema change. Authored tests verify unaffected old-match
 acceptance, affected rejection without mutation, and unchanged raw snapshots.
 
+Initial map unit facing (#350) now supplies the normalized authored byte rather
+than the previous unconditional 128. A setup whose units still start at 128
+retains its old key. Other headings, including missing/malformed fields now
+using zero, intentionally change the setup key. Affected old match saves reject
+before replacing the current session; continue them with the matching older
+engine. Valid old raw simulation snapshots retain their encoded heading, with
+no schema change or migration. Authored checks verify unaffected acceptance,
+affected rejection without mutation and exact new-session save/load.
+
 The corrected American starting force (#124) changes effective gameplay
 configuration from SMCV/HARV/HTNK to AMCV/CMIN/MTNK. Its kinds, health and
 weapons produce a different setup key. Old mixed-force match saves are

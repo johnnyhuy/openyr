@@ -328,3 +328,14 @@ Destroying the building leaves no stale baked body. Set
 building_idle -- --nocapture` to export the authored frames and state receipts.
 These fixtures are not retail/original captures. Original cadence, layer depth,
 retail reconstruction and physical Mac/Retina checks remain open under #6.
+
+## Static map unit standing frames (#350)
+
+Static vehicle/infantry/aircraft SHP jobs now use the same projected heading and
+standing/Ready selection as live SpriteBank images. Sequence loading and bounds
+checks are shared; absent/invalid Ready uses the existing facing fallback and
+an unavailable body frame falls back to zero. Its shadow follows that resolved
+body frame, never the rejected index. Buildings and nonunit map layers retain
+their paths. Authored directional frames, a nonzero Ready start and shadow
+masks verify agreement. This is native consistency, not original direction or
+cadence calibration; unit-body lifetime and map-house remap remain #351.

@@ -671,6 +671,10 @@ fn setup_profile(
                 id,
                 health: obj.health,
             });
+            extra.push(Command::SetMapUnitFacing {
+                id,
+                facing: obj.initial_facing(),
+            });
         }
         cmds.extend(extra);
         taken_cells.push((obj.x, obj.y));
@@ -1390,6 +1394,58 @@ mod save_tests {
             setup_hash,
             source_map: None,
         }
+    }
+
+    #[test]
+    fn map_unit_facing_old_match_compatibility_is_explicit() {
+        let make = |facing: Option<u8>| {
+            let mut session = fresh("GI", 200, None);
+            let mut commands = vec![Command::Spawn {
+                kind: 0,
+                x: Fix::from_int(2),
+                y: Fix::from_int(3),
+                loco: Loco::Track,
+                speed: Fix::ONE,
+                hp: 100,
+                armor: 0,
+                weapon: None,
+            }];
+            if let Some(facing) = facing {
+                commands.push(Command::SetMapUnitFacing { id: 1, facing });
+            }
+            session.sim.step(&commands);
+            session.setup_hash =
+                setup_fingerprint(&session.sim, &session.buildables, &session.kinds, &[]).unwrap();
+            session
+        };
+        let old = make(None);
+        assert_eq!(old.sim.units()[0].facing, 128);
+        let bytes = crate::snapshot::encode(&old).unwrap();
+        let mut unchanged = make(Some(128));
+        crate::snapshot::restore(&mut unchanged, &bytes).unwrap();
+        assert_eq!(crate::snapshot::encode(&unchanged).unwrap(), bytes);
+        let mut changed = make(Some(0));
+        let before = crate::snapshot::encode(&changed).unwrap();
+        assert!(crate::snapshot::restore(&mut changed, &bytes)
+            .unwrap_err()
+            .contains("map, rules or engine setup"));
+        assert_eq!(crate::snapshot::encode(&changed).unwrap(), before);
+        let raw = old.sim.save_bytes().unwrap();
+        let restored = Sim::from_save_bytes(&raw).unwrap();
+        assert_eq!(restored.units()[0].facing, 128);
+        assert_eq!(restored.save_bytes().unwrap(), raw);
+        let mut current = make(Some(128));
+        let mut control = make(None);
+        current.sim.step(&[Command::SetMapUnitFacing {
+            id: u32::MAX,
+            facing: 0,
+        }]);
+        control.sim.step(&[]);
+        assert_eq!(
+            current.sim.save_bytes().unwrap(),
+            control.sim.save_bytes().unwrap()
+        );
+        println!("Facing compatibility: ordinary spawns stay 128; unchanged setup accepts old bytes, changed setup rejects without mutation; raw old heading remains 128 and missing-id initialization is a no-op.");
     }
 
     #[test]
