@@ -672,3 +672,5 @@ mod all_selection;
 mod team_command;
 
 mod team_centering;
+
+mod command_world;
