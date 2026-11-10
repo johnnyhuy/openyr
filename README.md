@@ -87,6 +87,7 @@ The workspace defaults to `yr-app`. Use `-p mix-dump` for asset inspection or
 | Ctrl+1-9 / 1-9 | Assign / recall a team; Shift+number adds it, double recall centers the camera |
 | A, then click / Ctrl+Shift+click | Attack-move |
 | T | Expand selection to visible owned units of matching types |
+| P | Select all living owned units across the battlefield |
 | H | Center the camera on an owned construction yard |
 | S / Ctrl+H | Stop / harvest with eligible selected units |
 | Q / W / E / R | Structures / defences / infantry / vehicles tab |

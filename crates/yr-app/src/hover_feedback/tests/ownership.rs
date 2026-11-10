@@ -666,3 +666,5 @@ mod base_navigation;
 mod type_interruption;
 
 mod sidebar_keys;
+
+mod all_selection;

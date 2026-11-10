@@ -112,3 +112,33 @@ key sequences, twelve accepted pointer/wheel cases, three modifier chords and
 seven positive guard cases use authored Sessions and shared composition.
 Logical 50/60 ms test timestamps control the second press/capture; they do not
 measure original-game runtime. Retail and physical Mac/Retina checks remain open.
+
+## Battlefield selection
+
+The original [Yuri's Revenge manual, printed page 5](https://gamepedia.cursecdn.com/cnc_gamepedia_en/8/8e/Red_Alert_2_-_Yuri%27s_Revenge_-_English.pdf)
+maps P to Select All, selecting all units on the battlefield. A deliberate
+unmodified P now replaces selection with every living player-owned unit,
+including supported harvesters, regardless of type, viewport or existing seeds
+(#325). Buildings, enemy/neutral units, dead IDs and stale IDs are excluded.
+An empty eligible set clears selection and displays `No units available`.
+Otherwise the existing two-second notice channel shows a unit count, and a
+changed nonempty selection uses the existing selection-audio route.
+
+Like T/team selection, P cancels stale pointer gestures, placement, repair/sell
+and attack-move. It interrupts team/type double-press timing while preserving
+assigned teams, camera/zoom, pending commands and the complete encoded Session.
+Old pointer releases cannot issue orders. Menu text input routes first; release,
+repeat, synthesized/unfocused events, tracked Shift/Control/Command chords and
+absent/ended matches do not invoke battlefield selection.
+
+The manual establishes P and its battlefield scope. Detailed ownership/role
+filters, mode/modifier/repeat policies, wording, notice lifetime and audio
+triggering remain native choices pending controlled original-game comparison.
+Authored Session regressions exercise nine size/zoom cases with mixed visible
+and offscreen types, neutral/enemy/stale/dead/building IDs and a harvester;
+twelve mode/gesture/team cases; twelve input guards; menu text; single/empty
+feedback; and byte-exact Session invariance. `OPENYR_ALL_SELECTION_PROOF` with
+`cargo test -p yr-app --bin openyr all_selection -- --nocapture` exports before/
+after shared-compositor frames and state receipts without retail artwork.
+Original role semantics, retail sprite/cursor pixels, physical Mac/Retina input
+and selection audio remain unverified by these fixtures.
