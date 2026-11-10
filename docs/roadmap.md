@@ -925,6 +925,13 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       regressions cover all nine slots, modifier combinations, ordinary
       shortcuts and shared composition. Original and physical/retail
       calibration remain open (`docs/control-groups.md`).
+- [x] Use configured frame dimensions for team centering (#328, #97):
+      share `camera_size()` so no-surface handlers honor compact frames while
+      retaining the live-texture lookup and default-size result. Authored
+      projected-midpoint checks cover all nine slots, three sizes/zooms and
+      single/mixed teams; resize/compositor proof preserves selection, teams,
+      zoom, orders and Session bytes. Existing redraw bounds and original/
+      physical calibration remain unchanged (`docs/control-groups.md`).
 - [ ] Complete world interaction and desktop UX (#97): consistent selection,
       supported control groups/hotkeys, hover/target/order feedback, bounded
       camera movement and configurable edge scrolling. Clear held input on

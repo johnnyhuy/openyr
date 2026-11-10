@@ -170,3 +170,31 @@ encoded Sessions remain byte-exact. `OPENYR_TEAM_COMMAND_PROOF` with
 `cargo test -p yr-app --bin openyr team_command -- --nocapture` exports frames
 and receipts from authored Sessions without retail art. Original/retail,
 physical Mac/Retina and audio-device checks remain open in #97/#98.
+
+## Configured-frame team centering
+
+Double recall now obtains its frame dimensions through `App::camera_size()`
+(#328). A live Pixels texture still supplies its width and height; without
+that surface the configured `frame_size` supplies them. The old no-surface
+fallback always used 1280x800, shifting compact-frame centering toward the
+sidebar or outside the frame. The centering formula still places the projected
+team bounding midpoint at the world viewport center, excluding sidebar width
+and dividing by map zoom.
+
+For anchor (600,320) at zoom 1, the raw camera request is (364,80) at 640x480,
+(284,20) at 800x600 and the unchanged (44,-80) at 1280x800. These are requests
+before the existing redraw constraint; this fix does not add a clamp or change
+the raster-bounds policy documented in `docs/camera-input.md`. Selection,
+assigned teams, queued orders, zoom and complete Session bytes are preserved.
+
+Authored regressions check the projected midpoint in screen coordinates for
+162 size/zoom/single-or-mixed/slot combinations. A default-size positive case
+retains the old coordinates, and three shared resize/recall/compositor cases
+exercise configured sizes without a Pixels surface. On unchanged production
+code the two compact-frame regressions fail while the default case passes.
+`OPENYR_TEAM_CENTERING_PROOF` with `cargo test -p yr-app --bin openyr
+team_centering -- --nocapture` exports authored fallback frames and state
+receipts. Logical 50 ms double-recall timestamps control these tests; they are
+not original timing measurements. The live-texture lookup is retained by the
+shared helper, but physical window/Retina delivery, retail reconstruction and
+original centering/bounds calibration remain unverified here under #97/#98.
