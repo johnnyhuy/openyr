@@ -1,0 +1,21 @@
+{
+  "attack_move": true,
+  "camera": [
+    44.0,
+    -80.0,
+    1.0
+  ],
+  "left_down": [
+    100.0,
+    100.0
+  ],
+  "notice": null,
+  "pending": "[Move { id: 6, x: Fix(3072), y: Fix(1024) }]",
+  "retail_art": false,
+  "selected": [
+    6
+  ],
+  "sim_hash": "30dbf338b80849ca",
+  "snapshot_bytes": 89747,
+  "tick": 3
+}

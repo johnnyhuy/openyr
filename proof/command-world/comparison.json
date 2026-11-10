@@ -1,0 +1,80 @@
+{
+  "baseline_before": {
+    "attack_move": true,
+    "camera": [
+      364.0,
+      80.0,
+      1.0
+    ],
+    "left_down": [
+      100.0,
+      100.0
+    ],
+    "notice": null,
+    "pending": "[Move { id: 6, x: Fix(3072), y: Fix(1024) }]",
+    "retail_art": false,
+    "selected": [
+      6
+    ],
+    "sim_hash": "30dbf338b80849ca",
+    "snapshot_bytes": 89747,
+    "tick": 3
+  },
+  "baseline_after": {
+    "attack_move": false,
+    "camera": [
+      364.0,
+      80.0,
+      1.0
+    ],
+    "left_down": null,
+    "notice": "Stop order sent (1 unit)",
+    "pending": "[Move { id: 6, x: Fix(3072), y: Fix(1024) }, Stop { id: 6 }]",
+    "retail_art": false,
+    "selected": [
+      6
+    ],
+    "sim_hash": "30dbf338b80849ca",
+    "snapshot_bytes": 89747,
+    "tick": 3
+  },
+  "fixed_cases": [
+    {
+      "width": 640,
+      "metadata_equal": true,
+      "rgba_equal": true,
+      "pending": "[Move { id: 6, x: Fix(3072), y: Fix(1024) }]",
+      "attack_move": true,
+      "left_down": [
+        100.0,
+        100.0
+      ]
+    },
+    {
+      "width": 800,
+      "metadata_equal": true,
+      "rgba_equal": true,
+      "pending": "[Move { id: 6, x: Fix(3072), y: Fix(1024) }]",
+      "attack_move": true,
+      "left_down": [
+        100.0,
+        100.0
+      ]
+    },
+    {
+      "width": 1280,
+      "metadata_equal": true,
+      "rgba_equal": true,
+      "pending": "[Move { id: 6, x: Fix(3072), y: Fix(1024) }]",
+      "attack_move": true,
+      "left_down": [
+        100.0,
+        100.0
+      ]
+    }
+  ],
+  "baseline_fixed_before_rgba_equal": true,
+  "gif_exact_rgb": true,
+  "gif_frame_ms": 1400,
+  "limits": "Pending commands are captured before simulation steps. Full Session bytes are asserted within fixed regressions; cross-run hash/length equality is not full snapshot equality. GIF compares separate native handler/compositor runs, not physical or original runtime timing."
+}
