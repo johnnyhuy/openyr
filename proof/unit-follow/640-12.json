@@ -1,0 +1,21 @@
+{
+  "camera": [
+    124.0,
+    155.0,
+    1.0
+  ],
+  "cell_raw": [
+    1152,
+    3200
+  ],
+  "follow": 6,
+  "pending": "[Stop { id: 6 }]",
+  "retail_art": false,
+  "selected": [
+    6,
+    7
+  ],
+  "sim_hash": "ef067a76f8fa60c1",
+  "snapshot_bytes": 89748,
+  "tick": 15
+}

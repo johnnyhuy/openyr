@@ -1,0 +1,12 @@
+   Compiling yr-app v0.1.0 (/workspace/openyr-core-sweep-20261110-7/crates/yr-app)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.99s
+     Running unittests src/main.rs (/workspace/openyr-next-unit-20261110-5/.tmp/cargo-target/debug/deps/openyr-8539b05c03c1d83a)
+
+running 4 tests
+test hover_feedback::tests::ownership::unit_follow::unit_follow_cleans_old_modes_and_keeps_ready_work_orders_and_teams ... ok
+test hover_feedback::tests::ownership::unit_follow::unit_follow_tracks_moving_subcell_ground_positions_without_changing_saved_state ... ok
+test hover_feedback::tests::ownership::unit_follow::unit_follow_retains_keyboard_guards_and_filters_selection_without_replacing_it ... ok
+test hover_feedback::tests::ownership::unit_follow::unit_follow_stops_for_manual_input_context_and_invalid_targets ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 200 filtered out; finished in 17.13s
+

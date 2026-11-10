@@ -1,0 +1,9 @@
+{
+  "source_commit": "e7d6c2afb1168efcf1532398fadf01a6ac6662db",
+  "source_tree": "39ab2df5b3b0177eb8f1fba4fd304139c0428351",
+  "build_command": "CARGO_TARGET_DIR=/workspace/openyr-next-unit-20261110-5/.tmp/cargo-target CARGO_BUILD_JOBS=2 mise run check",
+  "cargo_artifact": "/workspace/openyr-next-unit-20261110-5/.tmp/cargo-target/debug/deps/openyr-8539b05c03c1d83a",
+  "program": ".tmp/unit-follow-compositor-program",
+  "bytes": 199537784,
+  "sha256": "c50e4b561a67f73a1a9d21b1241e5044f4b7de937b2c023306d5007b387cc04c"
+}
