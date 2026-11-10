@@ -1,0 +1,19 @@
+{
+  "source_commit": "e02e717c863d2b9bff940d61f801c2a458dfc9ee",
+  "source_tree": "494a87d51a5a638f2112ec24db335ffb13ab91c7",
+  "build": "CARGO_TARGET_DIR=$PWD/.tmp/check-target CARGO_BUILD_JOBS=2 mise run check",
+  "executables": [
+    {
+      "name": "openyr",
+      "cargo_artifact": ".tmp/check-target/debug/deps/openyr-8539b05c03c1d83a",
+      "bytes": 202290232,
+      "sha256": "02081b9b935d562087aaa9ecdf33b35a71c9bdbbb79bafb5e8854ce58936b460"
+    },
+    {
+      "name": "yr_app",
+      "cargo_artifact": ".tmp/check-target/debug/deps/yr_app-3d65909a3deb91c6",
+      "bytes": 52535736,
+      "sha256": "75740463bd26a62cdfc49361e0542db58f249abed8ab1b0a4ef5e502220b0e9e"
+    }
+  ]
+}

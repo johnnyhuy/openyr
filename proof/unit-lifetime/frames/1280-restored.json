@@ -1,0 +1,65 @@
+{
+  "body_pixels": 68,
+  "fractional_pixels": 17,
+  "hash": "ec0d81fd2dc8a414",
+  "phase": "restored",
+  "retail": false,
+  "selected": [],
+  "shadow_pixels": 2,
+  "snapshot_bytes": 90125,
+  "tick": 11,
+  "units": [
+    {
+      "facing": 128,
+      "house": "FixtureHouse",
+      "hp": 50,
+      "id": 1,
+      "kind": "MTNK",
+      "max_hp": 100,
+      "owner": 2,
+      "position": [
+        5248,
+        6016
+      ]
+    },
+    {
+      "facing": 0,
+      "house": "FixtureHouse",
+      "hp": 50,
+      "id": 2,
+      "kind": "CMIN",
+      "max_hp": 100,
+      "owner": 2,
+      "position": [
+        6016,
+        5248
+      ]
+    },
+    {
+      "facing": 64,
+      "house": "FixtureHouse",
+      "hp": 50,
+      "id": 3,
+      "kind": "E1",
+      "max_hp": 100,
+      "owner": 2,
+      "position": [
+        5504,
+        5248
+      ]
+    },
+    {
+      "facing": 128,
+      "house": "FixtureHouse",
+      "hp": 50,
+      "id": 4,
+      "kind": "ORCA",
+      "max_hp": 100,
+      "owner": 2,
+      "position": [
+        5760,
+        5248
+      ]
+    }
+  ]
+}

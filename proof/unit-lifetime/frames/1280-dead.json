@@ -1,0 +1,26 @@
+{
+  "body_pixels": 0,
+  "fractional_pixels": 0,
+  "hash": "42a23b1a3a625a89",
+  "phase": "dead",
+  "retail": false,
+  "selected": [],
+  "shadow_pixels": 0,
+  "snapshot_bytes": 89372,
+  "tick": 13,
+  "units": [
+    {
+      "facing": 0,
+      "house": "FixtureHouse",
+      "hp": 50,
+      "id": 2,
+      "kind": "CMIN",
+      "max_hp": 100,
+      "owner": 2,
+      "position": [
+        6016,
+        5248
+      ]
+    }
+  ]
+}
