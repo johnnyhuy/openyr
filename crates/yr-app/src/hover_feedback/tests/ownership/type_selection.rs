@@ -1,6 +1,6 @@
 use super::*;
 
-fn spawn(app: &mut App, kind: u16, cell: (i32, i32), owner: u8) -> u32 {
+pub(super) fn spawn(app: &mut App, kind: u16, cell: (i32, i32), owner: u8) -> u32 {
     let sim = &mut app.session.as_mut().unwrap().sim;
     let id = sim.next_id_peek();
     sim.step(&[
