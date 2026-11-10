@@ -1,0 +1,10 @@
+{
+  "source_commit": "c8732feff89486ad9bec7367ca0df8202069630d",
+  "source_tree": "eac8df81e01247762ea4a8cd25384abaf9d6b214",
+  "build_command": "CARGO_TARGET_DIR=$PWD/.tmp/cargo-target CARGO_BUILD_JOBS=2 mise run check",
+  "cargo_artifact": ".tmp/cargo-target/debug/deps/openyr-8539b05c03c1d83a",
+  "program": ".tmp/fixed-compositor-program",
+  "bytes": 197620576,
+  "sha256": "3cf200f352e3219dd40f00d81101c0619e0a03152e8f29780d9bd18f397ce900",
+  "capture": "Authored Session; native keyboard dispatcher and shared group handler/compositor. No retail art."
+}
