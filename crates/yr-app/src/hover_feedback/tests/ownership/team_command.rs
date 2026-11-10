@@ -121,7 +121,12 @@ fn team_command_chords_cannot_center_or_bridge_a_plain_recall_pair() {
         let before = saved(&app);
         proof(&app, &format!("{}-before", size.0));
         app.super_key = true;
-        tap(&mut app, KeyCode::Digit1);
+        assert!(app.group_key(
+            KeyCode::Digit1,
+            ElementState::Pressed,
+            false,
+            now + Duration::from_millis(50)
+        ));
         proof(&app, &format!("{}-after", size.0));
         assert_eq!(
             (app.view.cam_x, app.view.cam_y, app.view.zoom),
@@ -134,7 +139,7 @@ fn team_command_chords_cannot_center_or_bridge_a_plain_recall_pair() {
             KeyCode::Digit1,
             ElementState::Pressed,
             false,
-            now + Duration::from_millis(50)
+            now + Duration::from_millis(100)
         ));
         assert_eq!(
             (app.view.cam_x, app.view.cam_y, app.view.zoom),
