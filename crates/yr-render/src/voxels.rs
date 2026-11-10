@@ -767,9 +767,11 @@ mod tests {
                         if pixel[3] == 0 {
                             continue;
                         }
+                        // Fractional edge coverage may reach a canvas border;
+                        // opaque body samples must retain the existing margin.
                         assert!(
-                            x > 0 && y > 0 && x + 1 < s.w && y + 1 < s.h,
-                            "{id} sprite clipped at {facing}"
+                            pixel[3] < 255 || (x > 0 && y > 0 && x + 1 < s.w && y + 1 < s.h),
+                            "{id} opaque sprite body clipped at {facing}"
                         );
                         let (dx, dy) = (x as i32 + 128 - s.ax, y as i32 + 128 - s.ay);
                         assert!((0..256).contains(&dx) && (0..256).contains(&dy));

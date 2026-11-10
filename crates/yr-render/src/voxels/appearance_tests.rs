@@ -152,3 +152,53 @@ fn unit_appearance_house_ramp_is_monotonic_and_never_clips_above_base() {
         );
     }
 }
+
+#[test]
+fn unit_appearance_border_coverage_is_partial_and_preserves_the_ground_origin() {
+    let model = VoxelModel {
+        parts: vec![Part::new(
+            VxlFile {
+                palette: [0; 768],
+                remap: (16, 31),
+                limbs: vec![block("point", [1; 3], [-0.5; 3])],
+            },
+            None,
+        )],
+    };
+    let pal = Palette::parse(&[0; 768]).unwrap();
+    for facing in (0..256).step_by(32) {
+        let s = sprite(&model, facing, &pal, [240, 60, 60]).unwrap();
+        assert_eq!((s.w, s.h, s.ax, s.ay), (4, 4, 1, 1));
+        assert!(
+            s.rgba[3] > 0 && s.rgba[3] < 255,
+            "fractional corner coverage is retained"
+        );
+        for y in 0..s.h {
+            for x in 0..s.w {
+                let alpha = s.rgba[((y * s.w + x) * 4 + 3) as usize];
+                if x == 0 || y == 0 || x + 1 == s.w || y + 1 == s.h {
+                    assert!(alpha < 255);
+                }
+            }
+        }
+        let mut at_origin = vec![0; 8 * 8 * 4];
+        draw_voxel(
+            &mut at_origin,
+            8,
+            8,
+            4,
+            4,
+            &model,
+            facing,
+            &pal,
+            Some([240, 60, 60]),
+        );
+        for y in 0..s.h {
+            for x in 0..s.w {
+                let src = ((y * s.w + x) * 4) as usize;
+                let dst = (((y + 3) * 8 + x + 3) * 4) as usize;
+                assert_eq!(&s.rgba[src..src + 4], &at_origin[dst..dst + 4]);
+            }
+        }
+    }
+}
