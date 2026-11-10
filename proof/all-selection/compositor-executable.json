@@ -1,0 +1,10 @@
+{
+  "source_commit": "77d217a7c8b2404ec7fe8d494fea8fb057861094",
+  "source_tree": "c063e66f78e75ee1f3332ae73acf58fcc36731aa",
+  "build_command": "CARGO_TARGET_DIR=$PWD/.tmp/cargo-target CARGO_BUILD_JOBS=2 cargo test -p yr-app --bin openyr all_selection --locked",
+  "cargo_artifact": ".tmp/cargo-target/debug/deps/openyr-8539b05c03c1d83a",
+  "program": ".tmp/all-selection-compositor-program",
+  "bytes": 197283776,
+  "sha256": "19ac65e3402b20b998d7f16f51238ea9d50c627558ed195bd0bf2a123d19fb64",
+  "capture": "Authored Session, actual keyboard dispatcher and App::compose_at. No retail art."
+}
