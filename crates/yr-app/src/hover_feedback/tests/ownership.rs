@@ -7,10 +7,14 @@ use yr_formats::{IniFile, MapFile};
 // clear TMP diamond. Public setup builds the normal catalogs, terrain, services,
 // initial bases and snapshot-capable Session without any retail files.
 fn session() -> Session {
-    session_with_map_structures("")
+    session_with_map_objects("")
 }
 
 fn session_with_map_structures(structures: &str) -> Session {
+    session_with_map_objects(&format!("[Structures]\n{structures}"))
+}
+
+fn session_with_map_objects(objects: &str) -> Session {
     let buildings = ["GACNST", "GAPOWR", "GAREFN", "GAWEAP", "GAPILE"];
     let vehicles = ["AMCV", "CMIN", "MTNK"];
     let mut text = "[MultiplayerDialogSettings]\nUnitCount=0\n[General]\nRepairRate=0.01\nRepairPercent=0.2\nRepairStep=5\nRefundPercent=0.5\nBuildSpeed=0.001\n[BuildingTypes]\n".to_string();
@@ -22,12 +26,17 @@ fn session_with_map_structures(structures: &str) -> Session {
         text.push_str(&format!("{i}={id}\n"));
     }
     text.push_str("[InfantryTypes]\n0=E1\n");
+    text.push_str("[AircraftTypes]\n0=ORCA\n");
     let mut art = String::new();
     let mut files = vec![(
         "TEMPERATMD.INI".into(),
         b"[TileSet0000]\nFileName=Clear\nTilesInSet=1\n".to_vec(),
     )];
-    for id in buildings.iter().chain(vehicles.iter()).chain(["E1"].iter()) {
+    for id in buildings
+        .iter()
+        .chain(vehicles.iter())
+        .chain(["E1", "ORCA"].iter())
+    {
         text.push_str(&format!(
             "[{id}]\nOwner=Americans\nStrength=100\nCost=100\nSpeed=4\nTechLevel=1\n"
         ));
@@ -65,7 +74,7 @@ fn session_with_map_structures(structures: &str) -> Session {
     files.push(("CLEAR01.TEM".into(), tmp));
     let mut fs = AssetFs::from_files(files);
     let rules = yr_rules::Rules::load(&IniFile::parse(&text), &IniFile::parse(&art));
-    let mut map = MapFile::parse(&format!("[Map]\nTheater=TEMPERATE\nSize=0,0,32,32\nLocalSize=0,0,32,32\n[IsoMapPack5]\n1=CAAEABUAAAAAEQAA\n[Structures]\n{structures}")).unwrap();
+    let mut map = MapFile::parse(&format!("[Map]\nTheater=TEMPERATE\nSize=0,0,32,32\nLocalSize=0,0,32,32\n[IsoMapPack5]\n1=CAAEABUAAAAAEQAA\n{objects}")).unwrap();
     map.tiles = (0..32)
         .flat_map(|y| {
             (0..32).map(move |x| yr_formats::map::IsoTile {
@@ -706,4 +715,5 @@ mod unit_follow;
 
 mod building_idle;
 mod map_health;
+mod map_unit_health;
 mod menu_click;
