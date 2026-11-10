@@ -89,6 +89,7 @@ The workspace defaults to `yr-app`. Use `-p mix-dump` for asset inspection or
 | T | Expand selection to visible owned units of matching types |
 | P | Select all living owned units across the battlefield |
 | N | Select and center the next owned unit in creation order |
+| F | Toggle camera follow for a selected owned unit |
 | H | Center the camera on an owned construction yard |
 | S / Ctrl+H | Stop / harvest with eligible selected units |
 | Q / W / E / R | Structures / defences / infantry / vehicles tab |

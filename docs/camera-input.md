@@ -165,3 +165,42 @@ and zooms, bounds/oversized views, multiple/destroyed/enemy yards, pointer
 releases, mode preservation, input guards, Save text and actual Ctrl+H Harvest
 commands with exact Session bytes. These do not establish retail pixels,
 original-game timing, physical Mac/Retina delivery or audio-device behavior.
+
+## Follow a selected unit
+
+The [Yuri's Revenge manual, printed page 5](https://gamepedia.cursecdn.com/cnc_gamepedia_en/8/8e/Red_Alert_2_-_Yuri%27s_Revenge_-_English.pdf)
+maps F to Follow and says the viewpoint follows the selected unit. Native F
+now toggles follow for the lowest stable ID among living owned selected units
+(#337). Mixed selection is preserved; enemy, neutral, building and stale IDs
+cannot become the target. An ineligible selection reports `Select a unit to
+follow`. Entry and toggle-off report `Following unit` and `Follow stopped`
+through the existing two-second feedback channel.
+
+Entry cancels old gestures, type/team press timing and placement/service/
+attack-move modes. Each redraw after simulation advancement centers the target's
+current raw subcell ground position with terrain lift, excluding sidebar width
+and applying the existing raster bounds. Zoom is retained. Stationary updates
+need no new composition; no simulation commands, RNG use, save fields or
+encoding changes are introduced. Following is transient interface state.
+
+F respects focused/deliberate/nonrepeat, tracked modifier and ongoing-match
+routing, and cannot interrupt a held keyboard pan. Menu text editing retains F.
+Existing pointer/camera cleanup stops follow, including manual arrow input,
+right press/drag, zoom, team/type/base/next-unit navigation, mode switches,
+focus/leave/resize and menus. Explicit recentering and new world left presses
+also stop it; a new edge-scroll intent stops it even at a blocked boundary.
+Missing/dead/unowned/deselected targets and absent/ended matches end following
+on the next camera update. Ordinary sidebar production can continue; picking
+up a READY structure stops following before placement. Follow does not resume
+automatically after cancellation or a load/menu transition.
+
+The key and following behavior are documented by the manual. Target choice,
+toggle/cancellation policy, exact centering/bounds, guards and notices are native
+choices pending original-game observation. Authored checks cover nine moving
+layout/zoom sequences, subcell/height/bounds cases, sixty cancellation cases,
+eleven guards, mixed selection and actual sidebar/READY/assigned-team behavior.
+Each camera update preserves complete post-step Session bytes, selection,
+zoom and pending orders. `OPENYR_UNIT_FOLLOW_PROOF` with `cargo test -p yr-app
+--bin openyr unit_follow -- --nocapture` exports shared-compositor frames and
+state receipts. These use authored fallback art; retail/original behavior and
+physical Mac/Retina delivery remain unverified under #97/#98.

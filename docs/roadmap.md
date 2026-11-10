@@ -954,6 +954,13 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       selected/damaged visibility, camera, orders and Session bytes. Original
       visibility policy and physical/retail calibration remain open
       (`docs/order-feedback.md`).
+- [x] Follow a selected owned unit with F (#337, #97): toggle transient
+      tracking from authoritative subcell ground positions through redraw,
+      preserving zoom and existing raster bounds. Manual gestures/camera input,
+      context changes, invalid targets and READY pickup stop follow; ordinary
+      sidebar production remains usable. Authored moving/layout/zoom, guards,
+      cancellation, READY/team and Session-byte checks pass. Original/retail and
+      physical calibration remain open (`docs/camera-input.md`).
 - [ ] Complete world interaction and desktop UX (#97): consistent selection,
       supported control groups/hotkeys, hover/target/order feedback, bounded
       camera movement and configurable edge scrolling. Clear held input on

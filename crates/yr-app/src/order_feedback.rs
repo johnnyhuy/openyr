@@ -21,6 +21,14 @@ struct Notice {
 pub(super) struct Feedback(Option<Notice>);
 
 impl Feedback {
+    pub(super) fn follow(&mut self, message: &'static str, now: Instant) {
+        self.0 = Some(Notice {
+            text: message.into(),
+            marker: None,
+            at: now,
+        });
+    }
+
     pub(super) fn unit_cycle(&mut self, position: usize, count: usize, now: Instant) {
         self.0 = Some(Notice {
             text: if count == 0 {

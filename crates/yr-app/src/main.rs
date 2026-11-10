@@ -39,6 +39,7 @@ mod selection_box_tests;
 mod sidebar_keys;
 mod surface_input;
 mod type_selection;
+mod unit_follow;
 mod unit_status;
 mod window_size;
 
@@ -300,6 +301,7 @@ impl App {
     }
 
     fn left_press(&mut self) {
+        self.camera.follow = None;
         // Edge arrows own the gesture, including blocked map boundaries.
         if self.edge_cursor(self.camera_size()).is_some() {
             return;
@@ -332,6 +334,7 @@ impl App {
     }
 
     fn cancel_pointer_action(&mut self) {
+        self.camera.follow = None;
         self.sidebar_view.clear_wheel();
         self.menu.wheel_remainder = 0.0;
         self.camera.edge_armed = false;
@@ -444,6 +447,7 @@ impl App {
     }
 
     fn center_world_at(&mut self, cell: (f32, f32), viewport: (u32, u32)) {
+        self.camera.follow = None;
         let Some(map) = &self.map else {
             return;
         };
@@ -549,6 +553,7 @@ impl App {
             return;
         };
         if session.ready_structure() == Some(slot) {
+            self.camera.follow = None;
             self.attack_move = false;
             self.placing = Some(slot);
             self.acknowledge_placement_start(Instant::now());
@@ -1535,7 +1540,7 @@ impl ApplicationHandler for App {
                 return;
             }
         }
-        println!("OpenYR: left-click select/order, box select, T=select visible matching types, P=select all owned units, N=next owned unit, Ctrl+1-9=assign team, 1-9=recall (twice=center), Shift+number=add team, right-click cancel, A=attack-move, S=stop, H=center base, Ctrl+H=harvest, K=repair, L=sell, M=mute, F5=save, F9=load, Esc=pause, right-drag/arrows pan, wheel zoom; sidebar: Q/W/E/R select categories, left-click build or place a ready structure, right-click hold/cancel");
+        println!("OpenYR: left-click select/order, box select, T=select visible matching types, P=select all owned units, N=next owned unit, F=follow selected unit, Ctrl+1-9=assign team, 1-9=recall (twice=center), Shift+number=add team, right-click cancel, A=attack-move, S=stop, H=center base, Ctrl+H=harvest, K=repair, L=sell, M=mute, F5=save, F9=load, Esc=pause, right-drag/arrows pan, wheel zoom; sidebar: Q/W/E/R select categories, left-click build or place a ready structure, right-click hold/cancel");
         window.request_redraw();
         self.window = Some(window);
         self.pixels = Some(pixels);

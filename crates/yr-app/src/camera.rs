@@ -11,6 +11,7 @@ const MAX_FRAME: Duration = Duration::from_millis(100);
 pub(super) struct Input {
     frame_at: Option<Instant>,
     pub(super) edge_armed: bool,
+    pub(super) follow: Option<u32>,
 }
 
 impl Input {
@@ -179,20 +180,27 @@ impl App {
                 .as_ref()
                 .is_some_and(|s| s.outcome == Outcome::Ongoing)
         {
+            self.camera.follow = None;
             return;
         }
         let keyboard = self.keyboard_pan();
         let direction = if keyboard != (0.0, 0.0) {
             self.cancel_pointer_action();
             keyboard
-        } else if let Some((direction, false)) = self.edge_scroll(size) {
+        } else if let Some((direction, blocked)) = self.edge_scroll(size) {
+            self.camera.follow = None;
             let (x, y) = direction.axes();
-            (f32::from(x), f32::from(y))
+            if blocked {
+                (0.0, 0.0)
+            } else {
+                (f32::from(x), f32::from(y))
+            }
         } else {
             (0.0, 0.0)
         };
         self.view.pan(direction, elapsed);
         self.bound_camera(size);
+        self.follow_camera(size);
     }
 }
 
