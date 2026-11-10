@@ -1,0 +1,43 @@
+{
+  "pr": 345,
+  "release": "untagged-f19622c3290ef9a17009",
+  "runtime_performed_by": "separate worker; not this cloud environment",
+  "assets": [
+    {
+      "name": "frame-00300.png",
+      "bytes": 4097178,
+      "sha256": "e5c123c5018183002d5637a16aafad897a6bf38544314c9440e1e87ed12281d0",
+      "size": [
+        1280,
+        800
+      ]
+    },
+    {
+      "name": "frame-00900.png",
+      "bytes": 4097178,
+      "sha256": "3f03a7d674f8271d572eb2cfd2f33d364b69ebfa8c501b8c43c9ebf135454c9a",
+      "size": [
+        1280,
+        800
+      ]
+    },
+    {
+      "name": "frame-01500.png",
+      "bytes": 4097178,
+      "sha256": "39037532aa1fcbbf65ad684080c51b724087ec85fcb2126f82bfbfd339ba3691",
+      "size": [
+        1280,
+        800
+      ]
+    },
+    {
+      "name": "frame-03000.png",
+      "bytes": 4097178,
+      "sha256": "4efc67662488b964ddd728f7f7ab63305fe44faec1e9dda92a86a09c9eb51039",
+      "size": [
+        1280,
+        800
+      ]
+    }
+  ]
+}

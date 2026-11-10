@@ -1,0 +1,35 @@
+Script started on 2026-11-10 16:09:07+00:00 [COMMAND=".tmp/programs/yr_app menu_click --nocapture && .tmp/programs/openyr menu_click --nocapture" <not executed on terminal>]
+
+running 2 tests
+test frontend::click_tests::menu_click_animation_tolerates_missing_or_short_optional_sheet ... ok
+Authored front shell: held frames 4-16 cap safely; accepted persistent control animates then returns to normal; navigation and disabled controls keep their semantics.
+test frontend::click_tests::menu_click_animation_advances_caps_and_releases_without_changing_actions ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 121 filtered out; finished in 0.71s
+
+
+running 1 test
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: RA2MD.CSF missing; using rules names in the sidebar
+OpenYR: sidebar MTNK has no usable CSF value for <no UIName>; using MTNK
+OpenYR: sidebar CMIN has no usable CSF value for <no UIName>; using CMIN
+OpenYR: sidebar E1 has no usable CSF value for <no UIName>; using E1
+OpenYR: sidebar GAPOWR has no usable CSF value for <no UIName>; using GAPOWR
+OpenYR: sidebar GAREFN has no usable CSF value for <no UIName>; using GAREFN
+OpenYR: sidebar GAWEAP has no usable CSF value for <no UIName>; using GAWEAP
+OpenYR: sidebar GAPILE has no usable CSF value for <no UIName>; using GAPILE
+OpenYR: cursor art unavailable; keeping the system pointer
+Native mouse and keyboard accepted activations emit exactly two authored MenuClick cues with nonzero mixed PCM; disabled/cancelled/repeated/muted actions remain silent and Session bytes stay exact. No audio device is exercised.
+test hover_feedback::tests::ownership::menu_click::menu_click_audio_follows_accepted_native_mouse_keyboard_and_mute_routing ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 207 filtered out; finished in 0.03s
+
+
+Script done on 2026-11-10 16:09:08+00:00 [COMMAND_EXIT_CODE="0"]

@@ -1,0 +1,18 @@
+{
+  "building": 8,
+  "map_house_remap": [
+    0,
+    47,
+    200
+  ],
+  "owner": "neutral",
+  "pending": "[Stop { id: 6 }]",
+  "production_idle": true,
+  "retail_art": false,
+  "selected": [
+    6
+  ],
+  "sim_hash": "dddb951698f0a6fe",
+  "snapshot_bytes": 89879,
+  "tick": 5
+}

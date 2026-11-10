@@ -1,0 +1,9 @@
+{
+  "production_commit": "c9f730f92ab6f8d1b441905905116be89779983e",
+  "fixture_commit": "9949defe509da5509a9f40121f958c4cceb3133c",
+  "fixture_sha256": "1ee9d45203538066ff27cc2c338d4b7e55800b056e08945d1bd873687e54b56c",
+  "program": ".tmp/baseline-renderer-tests",
+  "program_bytes": 30821048,
+  "program_sha256": "2e6912092e7aa8bb78a46d995cd82f651f44bdf0446015fb766ed09940d2c887",
+  "expected_result": "one failed subpixel-coverage assertion after exporting all authored views; 0 partial pixels"
+}

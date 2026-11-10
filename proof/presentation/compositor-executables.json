@@ -1,0 +1,26 @@
+{
+  "source_commit": "ad1e1a858cd0d8267bb68f5c845dcce739089db2",
+  "source_tree": "2ec63227bde70ae310490c98682a48c71c02df6a",
+  "build_command": "CARGO_TARGET_DIR=$PWD/.tmp/check-target CARGO_BUILD_JOBS=2 mise run check",
+  "private_target": true,
+  "programs": {
+    "yr_app": {
+      "cargo_artifact": ".tmp/check-target/debug/deps/yr_app-3d65909a3deb91c6",
+      "program": ".tmp/programs/yr_app",
+      "bytes": 51904648,
+      "sha256": "d3ed8e48d8e2c12c97319c0606319cfc40e42631ce882bfc64eda29b25785773"
+    },
+    "openyr": {
+      "cargo_artifact": ".tmp/check-target/debug/deps/openyr-8539b05c03c1d83a",
+      "program": ".tmp/programs/openyr",
+      "bytes": 200335456,
+      "sha256": "76c75d4f6a915d0fe38248df7c1de3fde786f52da14c446f7998fe73642db572"
+    },
+    "yr_render": {
+      "cargo_artifact": ".tmp/check-target/debug/deps/yr_render-ddfd1ae686f8de65",
+      "program": ".tmp/programs/yr_render",
+      "bytes": 31207560,
+      "sha256": "ce262d38dfc8b13b5e96f433d073d05b1a041ff7b34738edcbaa76e502af5124"
+    }
+  }
+}

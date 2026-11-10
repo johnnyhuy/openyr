@@ -1,0 +1,12 @@
+Script started on 2026-11-10 16:09:05+00:00 [COMMAND=".tmp/programs/yr_render unit_appearance --nocapture" <not executed on terminal>]
+
+running 3 tests
+test voxels::appearance_tests::unit_appearance_house_ramp_is_monotonic_and_never_clips_above_base ... ok
+test voxels::appearance_tests::unit_appearance_border_coverage_is_partial_and_preserves_the_ground_origin ... ok
+24 authored model views preserve model anchors and map/live agreement, with 1842 subpixel body pixels and no false shadow markers.
+test voxels::appearance_tests::unit_appearance_projection_has_subpixel_coverage_and_stable_anchors ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 73 filtered out; finished in 1.50s
+
+
+Script done on 2026-11-10 16:09:07+00:00 [COMMAND_EXIT_CODE="0"]
