@@ -670,3 +670,5 @@ mod sidebar_keys;
 mod all_selection;
 
 mod team_command;
+
+mod team_centering;
