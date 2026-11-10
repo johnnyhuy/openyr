@@ -104,10 +104,14 @@ Johnny on 2026-10-31.
 
 ## M3: Renderer v1
 
-- [ ] Keep supported map-unit art synchronized with live state (#351): omit
-      reconstructable bodies from match backgrounds, retain static previews and
-      unsupported fallback, and verify original map-house colors, facing,
-      shadows/depth and no stale body after movement or destruction.
+- [x] Keep supported map-unit art synchronized with live state (#351): shared
+      bounded art preflight omits reconstructable bodies from match backgrounds
+      while previews and unsupported fallback stay static. Transient unit-id/
+      kind identity retains map-house colors through movement and save/load;
+      native SHP/VXL body/coverage, unioned shadows, ownership and destruction
+      checks preserve encoded matches and setup keys. Original/retail depth,
+      model orientation, animation cadence and physical checks remain open
+      (`docs/formats/map.md`, `docs/formats/shp.md`).
 
 - [x] Preserve native source detail by default (#101, #103): scale 1 retains
       60x30 TMP cells and full-size unit art at zoom 1. Explicit inspection

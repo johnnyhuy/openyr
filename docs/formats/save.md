@@ -139,6 +139,13 @@ engine. Valid old raw simulation snapshots retain their encoded heading, with
 no schema change or migration. Authored checks verify unaffected acceptance,
 affected rejection without mutation and exact new-session save/load.
 
+Map-unit live composition (#351) adds only a reconstructed id/kind-to-house
+presentation table to Session. It is absent from the match envelope, simulation
+payload and setup fingerprint. Movement and restored state still refer to the
+same stable ids; kind mismatches cannot inherit another source object's color.
+Changing or clearing this table leaves exact match bytes and setup keys intact.
+This presentation fix changes no schema or save compatibility policy.
+
 The corrected American starting force (#124) changes effective gameplay
 configuration from SMCV/HARV/HTNK to AMCV/CMIN/MTNK. Its kinds, health and
 weapons produce a different setup key. Old mixed-force match saves are

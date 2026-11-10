@@ -76,8 +76,8 @@ pub fn render_map(gamedir: &str, map_name: &str, scale: u32) -> Result<RenderedM
     render_map_layers(gamedir, map_name, scale, true)
 }
 
-/// Match background. Reconstructable SHP buildings are drawn live so idle
-/// layers can advance and their bodies can disappear after destruction.
+/// Match background. Reconstructable buildings and map units are drawn live
+/// so animation/movement and destruction never leave baked bodies behind.
 /// Inspection and chooser previews retain the complete static `render_map`.
 pub fn render_map_background(
     gamedir: &str,
@@ -91,7 +91,7 @@ fn render_map_layers(
     gamedir: &str,
     map_name: &str,
     scale: u32,
-    include_buildings: bool,
+    include_map_objects: bool,
 ) -> Result<RenderedMap, String> {
     if !matches!(scale, 1 | 2 | 4) {
         return Err("scale must be 1, 2 or 4".into());
@@ -140,6 +140,11 @@ fn render_map_layers(
     ));
     let rules = Rules::load(&rules_ini, &art_ini);
     let infantry = sprites::load_infantry_sequences(&vfs, &rules, &art_ini);
+    let live_units = if include_map_objects {
+        Default::default()
+    } else {
+        sprites::map_unit_kinds(&vfs, &rules, &infantry, &unit_pal, &map)
+    };
     let overlay_types = type_list(&rules_ini, "OverlayTypes");
 
     // Load every template the map references (clear cells use tile 0).
@@ -422,16 +427,19 @@ fn render_map_layers(
             cell_job(jobs, obj.x, obj.y, None, 0, true, Some([0, 200, 255, 255]));
         }
     };
+    let include_unit = |obj: &&yr_formats::MapObject| {
+        include_map_objects || !live_units.contains(&obj.kind.to_ascii_uppercase())
+    };
     for obj in map
         .structures
         .iter()
         .filter(|obj| {
-            include_buildings
+            include_map_objects
                 || live_building_art(&vfs, &rules, &art_ini, &obj.kind, theater).is_none()
         })
-        .chain(&map.units)
-        .chain(&map.infantry)
-        .chain(&map.aircraft)
+        .chain(map.units.iter().filter(include_unit))
+        .chain(map.infantry.iter().filter(include_unit))
+        .chain(map.aircraft.iter().filter(include_unit))
     {
         object(&mut jobs, obj, &mut shps, &vfs);
     }

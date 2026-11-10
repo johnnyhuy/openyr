@@ -717,4 +717,5 @@ mod building_idle;
 mod map_health;
 mod map_unit_facing;
 mod map_unit_health;
+mod map_unit_lifetime;
 mod menu_click;

@@ -6,7 +6,7 @@
 
 pub use crate::buildings::BuildingAnimation;
 use crate::buildings::{BuildingArt, Layer};
-use std::collections::{HashMap, VecDeque};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::fs;
 use yr_assets::{AssetFs, Theater};
 use yr_formats::{IniFile, MapFile, Palette, ShpFile};
@@ -170,6 +170,76 @@ pub(crate) fn standing_frame(sequences: Option<&InfantrySequences>, facing: u8) 
     )
 }
 
+/// Match/background eligibility uses the same native unit files and direction
+/// frames as live decoding. Check once per map type, before omitting baked art.
+pub(crate) fn map_unit_kinds(
+    vfs: &AssetFs,
+    rules: &Rules,
+    infantry: &HashMap<String, InfantrySequences>,
+    pal: &Palette,
+    map: &MapFile,
+) -> HashSet<String> {
+    let mut kinds: HashSet<String> = map
+        .units
+        .iter()
+        .chain(&map.infantry)
+        .chain(&map.aircraft)
+        .map(|obj| obj.kind.to_ascii_uppercase())
+        .collect();
+    kinds.retain(|id| {
+        let Some(t) = rules.techno(id) else {
+            return false;
+        };
+        if t.kind == TechnoKind::Building {
+            return false;
+        }
+        if t.art.as_ref().is_some_and(|a| a.voxel) {
+            let Some(model) = crate::voxels::VoxelModel::load(vfs, &t.image.to_ascii_uppercase())
+            else {
+                return false;
+            };
+            let poses = model.frames_at(0);
+            return (0..8).all(|octant| {
+                crate::voxels::animated_sprite(&model, voxel_facing(octant), &poses, pal, [170; 3])
+                    .is_some()
+            });
+        }
+        // Theater-only unit files are not yet resolved by the live SHP path.
+        if t.art.as_ref().is_some_and(|a| a.theater) {
+            return false;
+        }
+        let Some(shp) = vfs
+            .read(&format!("{}.SHP", t.image))
+            .and_then(|data| ShpFile::parse(data).ok())
+        else {
+            return false;
+        };
+        if shp.width == 0
+            || shp.height == 0
+            || shp.width > 512
+            || shp.height > 512
+            || shp.frames.is_empty()
+            || shp.frames.len() > 4096
+        {
+            return false;
+        }
+        (0..8).all(|octant| {
+            let requested = standing_frame(infantry.get(id), octant * 32);
+            let frame = if requested < shp.frames.len() / 2 {
+                requested
+            } else {
+                0
+            };
+            shp.decode_frame_canvas(frame).is_ok()
+                && (shp.frames.len() < 2
+                    || shp
+                        .decode_frame_canvas(frame + shp.frames.len() / 2)
+                        .is_ok())
+        })
+    });
+    kinds
+}
+
 /// One decoded object image in native (scale 1) pixels.
 pub struct Sprite {
     pub w: u32,
@@ -225,6 +295,7 @@ pub struct SpriteBank {
     voxels: HashMap<String, Option<crate::voxels::VoxelModel>>,
     buildings: HashMap<String, Option<BuildingArt>>,
     map_structure_colors: HashMap<(String, u16, u16), [u8; 3]>,
+    map_unit_kinds: HashSet<String>,
     layers: HashMap<LayerKey, Option<Sprite>>,
     effects: crate::effects::Effects,
     projectiles: crate::projectiles::Projectiles,
@@ -275,6 +346,7 @@ impl SpriteBank {
             })
             .collect();
         let infantry = load_infantry_sequences(&vfs, &rules, &art_ini);
+        let map_unit_kinds = map_unit_kinds(&vfs, &rules, &infantry, &unit_pal, &map);
         Ok(SpriteBank {
             vfs,
             rules,
@@ -288,10 +360,16 @@ impl SpriteBank {
             voxels: HashMap::new(),
             buildings: HashMap::new(),
             map_structure_colors,
+            map_unit_kinds,
             layers: HashMap::new(),
             effects: Default::default(),
             projectiles: Default::default(),
         })
+    }
+
+    /// This map type passed the shared live-art preflight.
+    pub fn supports_map_unit(&self, kind: &str) -> bool {
+        self.map_unit_kinds.contains(&kind.to_ascii_uppercase())
     }
 
     /// RGB house colour of a rules house/country section (`Color=`).

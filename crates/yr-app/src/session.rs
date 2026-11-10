@@ -54,6 +54,8 @@ impl StartOptions {
 }
 
 pub struct Session {
+    /// Reconstructed presentation identity, excluded from saves/setup hashes.
+    map_unit_houses: std::collections::BTreeMap<u32, (u16, String)>,
     pub match_config: MatchConfig,
     pub owner_colors: [[u8; 3]; 3],
     color_palette: [[u8; 3]; 8],
@@ -656,6 +658,7 @@ fn setup_profile(
             owner: NEUTRAL,
         });
     }
+    let mut map_unit_houses = std::collections::BTreeMap::new();
     for obj in map.units.iter().chain(&map.infantry).chain(&map.aircraft) {
         let mut extra = Vec::new();
         if let Some(id) = place_unit(
@@ -667,6 +670,7 @@ fn setup_profile(
             NEUTRAL,
             &mut extra,
         ) {
+            map_unit_houses.insert(id, (intern(&mut kinds, &obj.kind), obj.owner.clone()));
             extra.push(Command::SetMapUnitHealth {
                 id,
                 health: obj.health,
@@ -897,6 +901,7 @@ fn setup_profile(
     ];
     radar.set_colors(owner_colors);
     Ok(Session {
+        map_unit_houses,
         match_config: config.clone(),
         owner_colors,
         color_palette,
@@ -1060,6 +1065,14 @@ fn decode_cameo(
 }
 
 impl Session {
+    /// Original map-house identity follows a unit id through movement/load.
+    /// Never apply it to a different kind occupying a caller-supplied id.
+    pub fn map_unit_house(&self, unit: &yr_sim::Unit) -> Option<&str> {
+        self.map_unit_houses
+            .get(&unit.id)
+            .filter(|(kind, _)| *kind == unit.kind)
+            .map(|(_, house)| house.as_str())
+    }
     pub fn apply_match_config(&mut self, config: MatchConfig) -> Result<(), String> {
         config.validate()?;
         self.owner_colors[0] = self.color_palette[usize::from(config.players[0].color)];
@@ -1376,6 +1389,7 @@ mod save_tests {
         let kinds = vec!["E1".into()];
         let setup_hash = setup_fingerprint(&sim, &buildables, &kinds, &[]).unwrap();
         Session {
+            map_unit_houses: Default::default(),
             match_config: MatchConfig::default(),
             owner_colors: [[170; 3]; 3],
             color_palette: [[170; 3]; 8],
@@ -1394,6 +1408,38 @@ mod save_tests {
             setup_hash,
             source_map: None,
         }
+    }
+
+    #[test]
+    fn map_unit_identity_is_reconstructed_presentation_only() {
+        let mut session = fresh("GI", 200, None);
+        session.sim.step(&[Command::Spawn {
+            kind: 0,
+            x: Fix::ONE,
+            y: Fix::ONE,
+            loco: Loco::Foot,
+            speed: Fix::ONE,
+            hp: 100,
+            armor: 0,
+            weapon: None,
+        }]);
+        let before = crate::snapshot::encode(&session).unwrap();
+        let setup = session.setup_hash;
+        session
+            .map_unit_houses
+            .insert(1, (0, "FixtureHouse".into()));
+        assert_eq!(
+            session.map_unit_house(&session.sim.units()[0]),
+            Some("FixtureHouse")
+        );
+        let mut wrong_kind = session.sim.units()[0].clone();
+        wrong_kind.kind = 1;
+        assert_eq!(session.map_unit_house(&wrong_kind), None);
+        assert_eq!(crate::snapshot::encode(&session).unwrap(), before);
+        assert_eq!(session.setup_hash, setup);
+        session.map_unit_houses.clear();
+        assert_eq!(crate::snapshot::encode(&session).unwrap(), before);
+        println!("Original map-house identity changes neither encoded match bytes nor setup keys, and rejects mismatched unit kinds.");
     }
 
     #[test]
