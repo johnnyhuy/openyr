@@ -97,6 +97,8 @@ The workspace defaults to `yr-app`. Use `-p mix-dump` for asset inspection or
 | F5 / F9 | Save / confirm loading the active quicksave target |
 | Ctrl+A / Command+A in name fields | Select the whole save/player name for replacement |
 
+Command-modified keys do not issue match commands; menu name fields retain Command+A.
+
 Left-click a sidebar item to build, resume held work or pick up a READY structure.
 Right-click holds production; a second right-click cancels it. Menus pause the
 simulation without catch-up on resume. Tab selects controls, and arrows navigate

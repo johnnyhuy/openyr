@@ -932,6 +932,14 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       single/mixed teams; resize/compositor proof preserves selection, teams,
       zoom, orders and Session bytes. Existing redraw bounds and original/
       physical calibration remain unchanged (`docs/control-groups.md`).
+- [x] Isolate Command-modified keys from world actions (#331, #97): menu
+      editing routes first; rejected keys cannot submit orders, replace modes,
+      write save/preferences or change camera input. Suppression prevents old
+      repeats after modifier release and ends stale type/team timing on fresh
+      chords. Authored dispatch/compositor and actual protected-file checks
+      preserve orders, gestures, selection and Session bytes; documented plain/
+      Ctrl shortcuts remain. Physical/original calibration is still open
+      (`docs/window-input.md`, `docs/order-feedback.md`).
 - [ ] Complete world interaction and desktop UX (#97): consistent selection,
       supported control groups/hotkeys, hover/target/order feedback, bounded
       camera movement and configurable edge scrolling. Clear held input on

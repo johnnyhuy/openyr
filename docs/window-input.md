@@ -214,3 +214,35 @@ an actual right-pan, service-on/off, fresh-box sequence in the shared composer.
 receipts. These fixtures have no Session or retail art; retail service-command,
 hover-art, save reconstruction, original tracking and physical Mac/Retina checks
 remain unverified. Simulation, recipes and save schemas are unchanged.
+
+## Command keys stay outside world keyboard actions
+
+Menu routing precedes the native Command/Super guard (#331). Supported menu
+editing, including Command+A name replacement, still runs there. In a closed
+match menu, Command-modified keys cannot submit Stop, arm tactical/service modes,
+open save/load/pause, toggle mute, change zoom, start keyboard pan or select
+units/categories/teams. Tracked Control/Shift combinations with Command retain
+that isolation. Plain and documented Ctrl/Shift bindings keep their behavior.
+
+Rejected keys stay tracked as held input and their repeats are suppressed until
+release or a fresh deliberate press. Releasing Command alone cannot turn an old
+repeat into a plain world action. A rejected repeated key is also removed from
+active pan ownership; other held keys keep their existing policy. Fresh rejected
+chords end old team/type press timing, including Command+T. Repeated, synthetic,
+unfocused and modal events retain their earlier dispatch rules.
+
+These key events preserve selection, pending orders, current pointer gestures,
+armed modes, camera, tactical feedback, existing save/preference files and
+encoded Sessions. The guard changes keyboard routing only; it does not block
+pointer/wheel events or alter simulation/save schemas. Command isolation is a
+native desktop policy, not original-game modifier calibration.
+
+On unchanged production code, three regressions fail and the positive menu/plain
+command case passes. Authored checks cover 60 layout/key/chord combinations,
+27 actual save/preference/menu/camera cases, delayed pan/zoom repeats and fresh
+recovery, documented Ctrl+H and menu Command+A replacement. Full Session bytes
+and protected file bytes remain exact after the fix. Set
+`OPENYR_COMMAND_WORLD_PROOF` with `cargo test -p yr-app --bin openyr
+command_world -- --nocapture` for actual before/after shared-compositor frames
+and pending-command receipts. Retail/original, physical Mac/Retina and
+audio-device checks remain unverified under #97/#98.
