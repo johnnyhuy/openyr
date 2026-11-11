@@ -1,8 +1,0 @@
-{
-  "base_commit": "1257aed3dc108d8288964232b9c18c42d73a3f6e",
-  "test_changes": "baseline-tests.patch",
-  "bytes": 203580744,
-  "sha256": "54188ac7d06ef7fe294d8a5f47abe1a878a74646f17d33520b66689394f09170",
-  "command": "cargo test -p yr-app --bin openyr --locked remembered_directory -- --nocapture",
-  "result": "3 failed, 0 passed; production writer unchanged; test-only uncommitted patch"
-}
