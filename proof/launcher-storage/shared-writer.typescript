@@ -1,0 +1,18 @@
+Script started on 2026-11-11 23:34:42+00:00 [COMMAND=".tmp/programs/openyr preferences_storage --nocapture" <not executed on terminal>]
+
+running 5 tests
+Failed preference publication cleans its owned candidate and preserves the destination and occupied sibling.
+test preferences_storage::tests::preferences_storage_removes_only_owned_candidate_after_failed_rename ... ok
+Actual EdgeScroll preference route preserves unrelated symlink-target bytes and publishes a regular interface.json.
+test menu_flow::tests::preferences_storage::preferences_storage_preserves_a_preexisting_temporary_symlink_and_its_target ... ok
+Actual failed EdgeScroll write preserves the destination, recovers to Controls, and retries successfully after the owned obstruction is removed.
+test menu_flow::tests::preferences_storage::preferences_storage_publication_error_returns_to_controls_and_allows_retry ... ok
+All 32 occupied candidates stay intact; exhaustion preserves the existing preference destination.
+test preferences_storage::tests::preferences_storage_bounds_collision_retries_and_preserves_destination ... ok
+Exclusive preference writer skips occupied regular/directory/link candidates and preserves their bytes.
+test preferences_storage::tests::preferences_storage_skips_occupied_files_directories_and_links ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 222 filtered out; finished in 0.01s
+
+
+Script done on 2026-11-11 23:34:42+00:00 [COMMAND_EXIT_CODE="0"]

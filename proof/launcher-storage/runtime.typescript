@@ -1,0 +1,9 @@
+Script started on 2026-11-11 23:38:33+00:00 [COMMAND="python3 scripts/proof_build.py verify --receipt .tmp/launcher-storage-runtime/receipt.json && python3 scripts/proof_build.py run --receipt .tmp/launcher-storage-runtime/receipt.json -- --help" <not executed on terminal>]
+Verified: /workspace/openyr-core-audit-20261111-16/.tmp/launcher-storage-runtime/program
+Verified: /workspace/openyr-core-audit-20261111-16/.tmp/launcher-storage-runtime/program
+openyr [<gamedir> [<map> [scale]]] [--load <file>] [--save <file>] [--ticks <end-tick>] [--frames <dir> <tick>...] [--passive]
+
+Without arguments, OpenYR finds your retail install and opens the main menu.
+Set OPENYR_GAMEDIR to override the remembered or standard install.
+
+Script done on 2026-11-11 23:38:34+00:00 [COMMAND_EXIT_CODE="0"]

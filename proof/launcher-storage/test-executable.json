@@ -1,0 +1,8 @@
+{
+  "source_commit": "a3fee69812624b6f6a0b41456f94550f19389791",
+  "source_tree": "0562472b35ad3c84e16d217abaa4d7095eae24ba",
+  "cargo_artifact": ".tmp/check-target/debug/deps/openyr-8539b05c03c1d83a",
+  "bytes": 203573296,
+  "sha256": "3dcbe09d36350886fd3b9ddac98dad143224627839d9654f9e63dbb62f96c8bd",
+  "build": "cargo test --workspace --locked (mise run check, private CARGO_TARGET_DIR)"
+}

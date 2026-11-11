@@ -1,0 +1,14 @@
+Script started on 2026-11-11 23:34:42+00:00 [COMMAND=".tmp/programs/openyr remembered_directory --nocapture" <not executed on terminal>]
+
+running 3 tests
+Remembered game folder round-trips while the occupied temporary file stays intact.
+test launcher::tests::remembered_directory_preserves_occupied_temporary_file ... ok
+Failed publication preserves the destination, removes its owned scratch file and permits retry.
+Remembered game folder preserves the occupied symlink and its target bytes.
+test launcher::tests::remembered_directory_cleans_failed_publication_before_retry ... ok
+test launcher::tests::remembered_directory_preserves_temporary_symlink_target ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 224 filtered out; finished in 0.00s
+
+
+Script done on 2026-11-11 23:34:42+00:00 [COMMAND_EXIT_CODE="0"]
