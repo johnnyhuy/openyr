@@ -84,7 +84,16 @@ Johnny on 2026-10-31.
       separately. The optional retail frame/palette test needs a local install.
       Side mounting, Yuri gameplay and original presentation remain open
       (`docs/formats/menus.md`, `docs/formats/mix.md`).
-- [ ] Side-specific archives (SIDEC##) and per-file loader exceptions
+- [x] Resolve individual loose sidebar files before the selected Allied/Soviet
+      archive (#86), keeping shared archive namespaces isolated. Authored native
+      source-color crops, malformed/hostile optional-art recovery and exact
+      Session-byte checks cover both side geometries (`docs/formats/sidebar.md`).
+      Global fonts and ordinary VFS lookup are unchanged.
+- [x] Retain selected-side tab geometry when optional art fails (#358).
+      Drawing, native fallback and hit boxes share fixed Allied/Soviet dimensions;
+      malformed first-tab and palette fixtures preserve valid neighbor pixels
+      and all four tab boundaries (`docs/formats/sidebar.md`).
+- [ ] Side-specific archives (SIDEC##) and remaining original per-file loader exceptions
 - [x] MIX name database: every nested archive named; ~88% of all entries named
       via INI-derived candidates with content-kind collision rejection
 

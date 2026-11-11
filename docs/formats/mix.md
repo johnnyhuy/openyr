@@ -212,3 +212,14 @@ collection, the diagnostic limit and closed-pipe behavior (#111, #113).
 - `langmd.mix` contains a nested MIX (`flags 0x00030000`), nested MIXes must be
   recursed into (XCC `m_mix_expansion` behaviour).
 - `.mmx` files (e.g. `EB1.mix` as `EB1.mmx`) are map archives in the same format.
+
+## Native isolated side lookup
+
+The ordinary AssetFs cascade is unchanged. `read_loose` exposes only a named
+root game-directory file, with the same case-insensitive mapping used by
+`read`; it does not inspect mounted archives. The sidebar loader uses it before
+selected `SIDEC01.MIX`/`SIDEC02.MIX` entry lookup, avoiding conflicting shared
+filenames while permitting individual loose UI overrides (#86). Invalid
+optional art keeps existing bounded/fallback behavior. This is the native
+loose-first policy, not a claim that all original per-file exceptions have
+been observed. See `sidebar.md` for authored verification and remaining limits.

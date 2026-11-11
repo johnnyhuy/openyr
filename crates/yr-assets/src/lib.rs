@@ -357,6 +357,13 @@ impl AssetFs {
             .map(|(root, start, len, _)| &self.roots[root][start..start + len])
     }
 
+    /// Read only a game-directory override, without searching mounted archives.
+    /// Side-specific loaders can then consult their own isolated namespace.
+    pub fn read_loose(&self, name: &str) -> Option<&[u8]> {
+        let root = *self.loose.get(&name.to_ascii_uppercase())?;
+        Some(&self.roots[root])
+    }
+
     /// Where `name` resolves from, without reading it.
     pub fn locate(&self, name: &str) -> Option<Location> {
         self.find(name)
@@ -497,6 +504,21 @@ mod tests {
         );
         assert_eq!(fs.locate("RULESMD.INI").unwrap().source, "<loose>");
         assert!(fs.read("MISSING.SHP").is_none());
+    }
+
+    #[test]
+    fn loose_only_lookup_never_searches_mounted_namespaces() {
+        let mut files = install();
+        let archived = AssetFs::from_files(install());
+        assert!(archived.read("A.TXT").is_some());
+        assert!(archived.read_loose("a.txt").is_none());
+        assert!(archived.read_loose("B.TXT").is_none());
+        assert!(archived.read_loose("UNITTEM.PAL").is_none());
+        assert_eq!(archived.read_loose("rulesmd.ini"), Some(&b"[General]"[..]));
+        files.push(("a.TxT".into(), b"override".to_vec()));
+        let loose = AssetFs::from_files(files);
+        assert_eq!(loose.read_loose("A.txt"), Some(&b"override"[..]));
+        assert!(loose.read_loose("MISSING.SHP").is_none());
     }
 
     #[test]
