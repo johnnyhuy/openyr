@@ -1,9 +1,0 @@
-{
-  "source_commit": "5a0df600ff28fc0bbe36a3ad680b45ac6c94868d",
-  "source_tree": "d0fce36f0815ddf561c424f9621e0ff7d0772460",
-  "command": "CARGO_TARGET_DIR=$PWD/.tmp/check-target CARGO_BUILD_JOBS=2 mise run check",
-  "artifact_from_log": ".tmp/check-target/debug/deps/openyr-8539b05c03c1d83a",
-  "retained_path": "/workspace/openyr-sidebar-tab-ownership-20261111-6/.tmp/programs/openyr",
-  "size": 203219608,
-  "sha256": "0397d6ce21fdc6f17a72c6f0e6cbbc4024043cc65e67aaa111ad8e4dedc6035a"
-}
