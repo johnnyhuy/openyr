@@ -131,6 +131,7 @@ impl App {
     /// The same guarded, bounds-aware intent drives both cursor and panning.
     pub(super) fn edge_scroll(&self, size: (u32, u32)) -> Option<(Direction, bool)> {
         if !self.menu.edge_scroll
+            || self.sidebar_view.tab_pressed()
             || self.menu.visible()
             || !self.camera.edge_armed
             || !self.pointer.inside

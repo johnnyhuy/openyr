@@ -370,6 +370,13 @@ Johnny on 2026-10-31.
       Sessions, selection, camera and queued orders. Original transition
       calibration and physical/retail checks remain open
       (`docs/formats/sidebar.md`).
+- [x] Keep held sidebar tabs outside world pointer actions (#356, #86,
+      #97, #98): origin-tab ownership suppresses world action/hover previews,
+      edge scrolling and wheel actions until release or cancellation. Native
+      authored regression checks reproduce the old feedback/edge leakage,
+      preserve Session bytes and queued intents, and verify fresh click/pan/
+      zoom recovery (`docs/window-input.md`). Original and physical calibration
+      remain open.
 - [ ] Complete original sidebar behavior and command bar (#86), including
       radar calibration/shroud, power-meter calibration, repair/sell fidelity, text calibration,
       button transitions,

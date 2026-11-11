@@ -391,6 +391,7 @@ impl App {
     /// Feedback follows the native gesture owner, including before a redraw.
     fn world_pointer_busy(&self) -> bool {
         self.keyboard_pan() != (0.0, 0.0)
+            || self.sidebar_view.tab_pressed()
             || self.left_down.is_some()
             || self.right_down.is_some()
             || self.right_panning
@@ -664,6 +665,7 @@ impl App {
 
     fn match_wheel(&mut self, delta: MouseScrollDelta, size: (u32, u32)) {
         if !self.pointer.focused
+            || self.sidebar_view.tab_pressed()
             || !self.pointer.inside
             || self.menu.visible()
             || self.left_down.is_some()

@@ -76,6 +76,14 @@ focus loss, right press, modal cleanup and category shortcuts discard it.
 The fallback panel uses a dark top/left inset when tab art is unavailable.
 This state is transient View data and does not enter saved matches.
 
+The tab remains the pointer owner while held, including outside its hit box
+(#356). World action cursors, prospective hover brackets/health, edge scrolling
+and match wheels stay suppressed. Release restores those routes without
+submitting a world order; ordinary cancellation also clears ownership. This
+shares the existing gesture guards rather than adding a second input clock.
+Current attack-target feedback and selected/damaged health retain their normal
+policies. See `docs/window-input.md` for authored regression evidence.
+
 Authored five-frame SHP/MIX fixtures exercise both Allied and Soviet tab
 geometry through native pointer handlers and the shared compositor at two
 layouts. Exact interior color crops cover both press variants and leave/

@@ -21,7 +21,9 @@ the edge width. This does not add pointer confinement on macOS.
 Edges require a focused window, an ongoing match, and fresh pointer movement
 inside the window after focus loss, window leave, menu entry or gesture
 cancellation. Menus, left/right presses, box selection, right dragging and radar
-dragging suppress edge movement. Arrow panning takes priority and cancels mouse
+dragging suppress edge movement. Held sidebar category tabs also retain
+pointer ownership outside the panel (#356), suppressing edge and wheel
+actions until release or cancellation (`docs/window-input.md`). Arrow panning takes priority and cancels mouse
 gestures; zooming also cancels gestures. Releasing a stale press after either
 operation cannot issue a world order. Right dragging retains its own pixel-delta
 movement and applies the same bounds.
