@@ -1,4 +1,4 @@
-//! Exclusive sibling replacement for the app's interface preferences.
+//! Exclusive sibling replacement for the app's JSON preferences.
 use std::ffi::OsStr;
 use std::io::Write;
 use std::path::{Path, PathBuf};

@@ -2,7 +2,7 @@ use super::*;
 use std::io::Read;
 use yr_app::menu::{Effect, Intent, Layout, Page};
 mod loading;
-mod preferences_storage;
+use crate::preferences_storage;
 pub(super) use loading::LoadKind;
 
 pub(super) enum LoadProgress {

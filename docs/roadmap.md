@@ -569,6 +569,12 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       retail data or a remembered folder chosen through macOS. Startup errors
       appear in a native alert; Finder logs live in `~/Library/Logs/OpenYR`.
       Explicit CLI and headless commands still work (`docs/macos-app.md`).
+- [x] Preserve occupied files when remembering the game-data folder (#362,
+      #96): share the interface preference writer's bounded exclusive creation,
+      synced replacement and owned cleanup. Actual scratch files verify occupied
+      files, Unix symlink targets, failed publication and retry without changing
+      discovery order or JSON. Native macOS chooser delivery remains unverified
+      (`docs/macos-app.md`).
 - [x] In-match menu flow (#108): retail Allied pause plates and controls,
       named save/load with confirmation, restart/quit, actual mute/zoom settings,
       recoverable loading/errors and Won/Lost actions. Menus stop sim ticks

@@ -245,7 +245,8 @@ modify the containing directory.
 Reads retain their 16 KiB limit, strict fields and zoom bounds; JSON and game save
 formats are unchanged. Actual native EdgeScroll handler tests use owned scratch
 files to verify Unix symlink-target preservation, reopening, failed publication,
-Controls recovery and retry. Separate helper tests cover occupied candidates,
+Controls recovery and retry. The launcher shares this writer for its remembered JSON game-directory path
+(#362; `docs/macos-app.md`). Separate helper tests cover occupied candidates,
 32-collision exhaustion and owned cleanup. No retail assets or physical desktop
 are needed for these filesystem checks; physical Mac delivery remains unverified.
 Preference/save/load errors remain visible with a route back to the match.
