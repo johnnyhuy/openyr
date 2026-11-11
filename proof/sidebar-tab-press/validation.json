@@ -1,0 +1,77 @@
+{
+  "rust_passed": 653,
+  "rust_failed": 0,
+  "rust_ignored": 1,
+  "python_proof_tests_passed": 3,
+  "strict_clippy": "passed",
+  "fmt": "passed",
+  "native_sidebar_press_tests_passed": 3,
+  "retail_data_available": false,
+  "retail_archive_scan": "not run",
+  "physical_mac_retina_audio_original_runtime": "not run",
+  "frames": [
+    {
+      "file": "frames/00-before.png",
+      "dimensions": [
+        640,
+        480
+      ],
+      "size": 1229438,
+      "sha256": "15cc8919a9c2bb66461d45ea6fbd7c17c7040d1d508387bbae68098f1c13a1aa"
+    },
+    {
+      "file": "frames/01-held.png",
+      "dimensions": [
+        640,
+        480
+      ],
+      "size": 1229438,
+      "sha256": "ce0071dedc4efd9680d476ccfbab115b963f72289e6633a96786f5c1dfd1c619"
+    },
+    {
+      "file": "frames/02-outside.png",
+      "dimensions": [
+        640,
+        480
+      ],
+      "size": 1229438,
+      "sha256": "783ccc982aff7f22233a067e45d15b99562355aba09a6039a2ade7995d35612e"
+    },
+    {
+      "file": "frames/03-reentered.png",
+      "dimensions": [
+        640,
+        480
+      ],
+      "size": 1229438,
+      "sha256": "ce0071dedc4efd9680d476ccfbab115b963f72289e6633a96786f5c1dfd1c619"
+    },
+    {
+      "file": "frames/04-released.png",
+      "dimensions": [
+        640,
+        480
+      ],
+      "size": 1229438,
+      "sha256": "783ccc982aff7f22233a067e45d15b99562355aba09a6039a2ade7995d35612e"
+    },
+    {
+      "file": "frames/05-cancelled.png",
+      "dimensions": [
+        640,
+        480
+      ],
+      "size": 1229438,
+      "sha256": "783ccc982aff7f22233a067e45d15b99562355aba09a6039a2ade7995d35612e"
+    },
+    {
+      "file": "frames/06-no-rearm.png",
+      "dimensions": [
+        640,
+        480
+      ],
+      "size": 1229438,
+      "sha256": "783ccc982aff7f22233a067e45d15b99562355aba09a6039a2ade7995d35612e"
+    }
+  ]
+}
