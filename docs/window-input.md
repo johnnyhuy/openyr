@@ -246,3 +246,25 @@ and protected file bytes remain exact after the fix. Set
 command_world -- --nocapture` for actual before/after shared-compositor frames
 and pending-command receipts. Retail/original, physical Mac/Retina and
 audio-device checks remain unverified under #97/#98.
+
+## Held sidebar category ownership
+
+The category-tab gesture introduced in #355 now participates in the shared
+world-pointer, edge-scroll and match-wheel guards (#356). The origin tab owns
+input until Left release or normal pointer cleanup, even when dragged into the
+world and its held artwork is no longer visible. Such a drag cannot advertise
+Select/Attack hover, pan at an edge, zoom the map or scroll a sidebar category.
+Release restores normal routes without arming a world click; fresh clicks,
+edge motion and wheel input work normally. No simulation, snapshot, input
+binding, camera-speed or original timing policy changes.
+
+On unchanged production code, two authored native tests fail on leaked Select
+and edge-scroll cursors. Fixed handlers cover twelve layout/zoom/select/attack
+sequences, six edge cases and 24 world/sidebar wheel cases, including exact
+Session-byte, selection, camera and queued-intent preservation while held.
+Existing tab tests retain pointer/focus/modal/right-click/shortcut cancellation
+coverage. `OPENYR_SIDEBAR_OWNERSHIP_PROOF=<directory>` with
+`cargo test -p yr-app --bin openyr sidebar_tab_ownership -- --nocapture` exports
+held/released shared-compositor frames and cursor/state receipts. These are
+authored fixtures, not retail or original-game comparisons. Physical
+Mac/Retina delivery and original gesture calibration remain open in #97/#98.

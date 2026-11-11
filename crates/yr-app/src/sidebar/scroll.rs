@@ -65,6 +65,11 @@ impl View {
         self.press_inside = false;
     }
 
+    /// The origin tab owns the gesture even while its held art is not visible.
+    pub fn tab_pressed(self) -> bool {
+        self.pressed.is_some()
+    }
+
     pub fn track_press(&mut self, hovered: Option<Category>) {
         self.press_inside = self.pressed.is_some_and(|(tab, _)| Some(tab) == hovered);
     }
