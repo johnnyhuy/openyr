@@ -11,6 +11,7 @@ pub(crate) struct Image {
 
 #[derive(Default)]
 pub struct SidebarArt {
+    pub(super) tab_size: Option<(u16, u16)>,
     pub(crate) font: Option<UnicodeFont>,
     pub(super) credits: Option<Image>,
     pub(super) top: Option<Image>,
@@ -31,6 +32,10 @@ impl SidebarArt {
         Self::load_for_side(fs, crate::match_config::Side::Allied)
     }
     pub fn load_for_side(fs: &AssetFs, side: crate::match_config::Side) -> Self {
+        let (control_w, control_h, pip_w, tab_w, tab_h) = match side {
+            crate::match_config::Side::Allied => (64, 31, 12, 28, 27),
+            crate::match_config::Side::Soviet => (52, 32, 16, 32, 28),
+        };
         let font = fs
             .read("GAME.FNT")
             .and_then(|data| match UnicodeFont::parse(data) {
@@ -48,23 +53,19 @@ impl SidebarArt {
             });
         // SIDEC archives repeat
         // filenames, so mounting all sides would silently mix their artwork.
-        let Some(bytes) = fs.read(side.sidebar()) else {
-            return Self {
-                font,
-                ..Self::default()
-            };
+        let archive = fs.read(side.sidebar()).and_then(|bytes| {
+            MixArchive::parse(bytes)
+                .inspect_err(|_| eprintln!("OpenYR: cannot decode selected sidebar archive"))
+                .ok()
+        });
+        let read = |name: &str| {
+            fs.read_loose(name)
+                .or_else(|| archive.as_ref()?.get_by_id(mix_id(name)))
         };
-        let Ok(archive) = MixArchive::parse(bytes) else {
-            eprintln!("OpenYR: cannot decode selected sidebar archive");
-            return Self {
-                font,
-                ..Self::default()
-            };
-        };
-        let read = |name: &str| archive.get_by_id(mix_id(name));
         let Some(palette) = read("SIDEBAR.PAL").and_then(Palette::parse) else {
             return Self {
                 font,
+                tab_size: Some((tab_w, tab_h)),
                 ..Self::default()
             };
         };
@@ -94,13 +95,10 @@ impl SidebarArt {
                 .collect::<Option<Vec<_>>>()
                 .unwrap_or_default()
         };
-        let (control_w, control_h, pip_w, tab_w, tab_h) = match side {
-            crate::match_config::Side::Allied => (64, 31, 12, 28, 27),
-            crate::match_config::Side::Soviet => (52, 32, 16, 32, 28),
-        };
         let one = |name, w, h| frames(name, w, h, 1).pop();
         Self {
             font,
+            tab_size: Some((tab_w, tab_h)),
             credits: one("CREDITS.SHP", 168, 16),
             top: one("TOP.SHP", 168, 32),
             radar: frames("RADAR.SHP", 168, 110, 33),

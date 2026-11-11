@@ -1,9 +1,34 @@
 # Allied sidebar art
 
-The sandbox uses the Americans. Its UI reads `SIDEC01.MIX` through the
-normal VFS, then resolves the following names inside that archive. It does
-not mount every faction archive into the world namespace. In this install
-`SIDEC01.MIX` comes from `RA2.MIX`; its palette is `SIDEBAR.PAL`.
+The selected Allied or Soviet side reads `SIDEC01.MIX` or `SIDEC02.MIX`
+through the normal VFS. Individual sidebar filenames first consult loose
+files in the game directory, then that selected archive. They never search
+other mounted namespaces, which contain conflicting side filenames. The
+Allied retail archive observed here comes from `RA2.MIX`; the sidebar palette
+is `SIDEBAR.PAL`. Global `GAME.FNT` keeps its existing ordinary VFS lookup.
+
+`AssetFs::read_loose` supplies case-insensitive borrowed bytes without a
+mounted-archive fallback. A loose sheet changes only that sheet; a loose
+`SIDEBAR.PAL` colors the resolved sheets. Missing or malformed selected MIX
+files do not prevent valid loose palette/sheet pairs from loading. A present
+invalid loose override remains authoritative: the affected sheet is omitted
+rather than silently reverting to another archive. An invalid palette omits
+all palette-dependent sidebar sheets, retaining the ordinary fallback UI and
+global font. Existing exact side-specific dimensions/frame counts and bounded
+SHP decoding remain in effect. Tab drawing, fallback cells and session hit
+boxes retain the selected side's 28x27 or 32x28 geometry even when `TAB00`
+or the entire palette is unavailable (#358). Valid neighboring sheets cannot
+move because a different optional sheet failed. As before, physical empty files are ignored
+when the VFS opens the install; overrides are read at load, not hot reloaded.
+
+Authored MIX/SHP/PAL fixtures check Allied and Soviet source-color crops at
+two layouts, misleading shared-archive names, independent overrides, absent/
+malformed side archives, and invalid/oversized optional sheets. Replacing
+sidebar art preserves complete encoded Session bytes. Set
+`OPENYR_SIDEBAR_OVERRIDES_PROOF=<directory>` with
+`cargo test -p yr-app --bin openyr sidebar_loose_overrides -- --nocapture`
+to export shared-compositor frames. These verify native resolution policy,
+not retail pixels, original loader exceptions or physical desktop behavior.
 
 ## Retail observations
 
@@ -137,8 +162,8 @@ cadence, radar colors, scaling and shroud still need comparison. Power-meter
 calibration, original repair/sell timing and animations, top-strip controls,
 the bottom command bar, exact text spacing and colors,
 hover/disabled tab transitions and pressed-state calibration, queue-hold calibration and original
-scroll-control styling/timing remain UI fidelity work. Other factions and loose
-per-file sidebar overrides are not yet selected by this Allied loader.
+scroll-control styling/timing remain UI fidelity work. Yuri and remaining original per-file loader exceptions are still unsupported;
+loose overrides now precede the selected Allied/Soviet archive as described above.
 
 The production-clock mask order and geometry are retail-verified. The
 exact original progress rounding, darkening table and tooltip appearance

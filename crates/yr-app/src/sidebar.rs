@@ -94,11 +94,8 @@ pub fn tab_at(width: u32, pos: (f64, f64)) -> Option<Category> {
 }
 
 fn tab_rect(width: u32, session: &Session, category: Category) -> (i32, i32, i32, i32) {
-    let (w, h) = session.sidebar_art.tabs[0]
-        .first()
-        .map_or((28, TAB_H), |image| {
-            (image.width as i32, image.height as i32)
-        });
+    let (w, h) = session.sidebar_art.tab_size.unwrap_or((28, TAB_H as u16));
+    let (w, h) = (i32::from(w), i32::from(h));
     let index = Category::ALL.iter().position(|&c| c == category).unwrap() as i32;
     (
         width.saturating_sub(WIDTH) as i32 + 26 + index * w,
@@ -205,7 +202,7 @@ pub fn draw(
     let ready = session.ready_structure();
     let ready_tab = ready_category(session);
     for (i, tab) in Category::ALL.into_iter().enumerate() {
-        let (x, y, _, _) = tab_rect(width, session, tab);
+        let (x, y, w, h) = tab_rect(width, session, tab);
         // Retail sheet order: up, selected, disabled, pressed-up, pressed-selected.
         let selected = tab == view.category;
         let phase = view.tab_frame(tab);
@@ -215,15 +212,15 @@ pub fn draw(
         {
             canvas.image((x, y), image);
         } else {
-            canvas.rect((x, y), (28, TAB_H), if selected { GOLD } else { PANEL });
+            canvas.rect((x, y), (w, h), if selected { GOLD } else { PANEL });
             canvas.text((x + 10, y + 10), &i.to_string(), TEXT, 1);
             if phase >= 3 {
-                canvas.rect((x, y), (28, 2), [0, 0, 0, 255]);
-                canvas.rect((x, y), (2, TAB_H), [0, 0, 0, 255]);
+                canvas.rect((x, y), (w, 2), [0, 0, 0, 255]);
+                canvas.rect((x, y), (2, h), [0, 0, 0, 255]);
             }
         }
         if ready_tab == Some(tab) {
-            canvas.rect((x + 3, y + TAB_H - 3), (22, 2), [96, 255, 96, 255]);
+            canvas.rect((x + 3, y + h - 3), (w - 6, 2), [96, 255, 96, 255]);
         }
     }
     for (i, slot) in view.visible_slots(session, height) {
