@@ -1,0 +1,36 @@
+   Compiling version_check v0.9.5
+   Compiling autocfg v1.5.1
+   Compiling generic-array v0.14.7
+   Compiling typenum v1.20.1
+   Compiling num-traits v0.2.19
+   Compiling libc v0.2.191
+   Compiling num-integer v0.1.47
+   Compiling crypto-common v0.1.7
+   Compiling inout v0.1.4
+   Compiling cipher v0.4.4
+   Compiling byteorder v1.5.0
+   Compiling num-bigint v0.4.8
+   Compiling blowfish v0.9.1
+   Compiling yr-formats v0.1.0 (/workspace/openyr-ambiguous-loose-files-20261111-8/crates/yr-formats)
+   Compiling memmap2 v0.9.11
+   Compiling yr-assets v0.1.0 (/workspace/openyr-ambiguous-loose-files-20261111-8/crates/yr-assets)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.99s
+     Running unittests src/lib.rs (.tmp/check-target/debug/deps/yr_assets-9531e89f5c38dc69)
+
+running 2 tests
+
+thread 'loose_open_tests::loose_open_rejects_ambiguous_case_names_in_either_creation_order_without_writes' (619438) panicked at crates/yr-assets/src/loose_open_tests.rs:61:26:
+ambiguous loose files must not silently select one
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+Unique mixed-case files retain exact loose/read bytes; empty files and directories stay ignored.
+test loose_open_tests::loose_open_rejects_ambiguous_case_names_in_either_creation_order_without_writes ... FAILED
+test loose_open_tests::loose_open_retains_unique_lookup_empty_file_and_directory_policies ... ok
+
+failures:
+
+failures:
+    loose_open_tests::loose_open_rejects_ambiguous_case_names_in_either_creation_order_without_writes
+
+test result: FAILED. 1 passed; 1 failed; 0 ignored; 0 measured; 4 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p yr-assets --lib`
