@@ -31,6 +31,16 @@ again if the install is outside the standard location. Cancel exits normally.
 The picker uses the standard
 [AppleScript folder command and cancellation handling](https://developer.apple.com/library/archive/documentation/AppleScript/Conceptual/AppleScriptLangGuide/reference/ASLR_cmds.html).
 
+Remembering the folder uses the same exclusive sibling replacement as interface
+preferences (#362). At most 32 process/serial candidates are attempted with
+`create_new`; occupied files, directories and symlinks are skipped. The owned
+file is written and synced before rename, and removed on publication failure.
+Legacy `game-directory.<pid>.tmp` siblings are left untouched. Existing JSON
+path strings and the 16 KiB read limit are unchanged. Linux scratch-file tests
+verify occupied file and Unix symlink-target preservation, failed publication,
+cleanup and retry. They do not establish native macOS chooser behavior or safety
+against a concurrent actor who can replace entries in the containing directory.
+
 The app shows a native alert if startup fails, including invalid data or
 display initialization errors. Audio failures keep the existing silent-match
 fallback. Finder launches write `~/Library/Logs/OpenYR/openyr.log`; the previous

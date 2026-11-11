@@ -29,6 +29,7 @@ mod menu_flow;
 mod missile_tests;
 mod next_unit;
 mod order_feedback;
+mod preferences_storage;
 #[cfg(test)]
 mod production_tests;
 #[cfg(test)]

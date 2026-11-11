@@ -80,10 +80,7 @@ fn discover(home: Option<&Path>, override_path: Option<&Path>) -> Result<Option<
 fn remember(home: &Path, path: &Path) -> Result<(), String> {
     let file = preferences(home);
     let bytes = serde_json::to_vec(path).map_err(|e| e.to_string())?;
-    std::fs::create_dir_all(file.parent().unwrap()).map_err(|e| e.to_string())?;
-    let temporary = file.with_extension(format!("{}.tmp", std::process::id()));
-    std::fs::write(&temporary, bytes)
-        .and_then(|()| std::fs::rename(&temporary, file))
+    crate::preferences_storage::write(&file, &bytes)
         .map_err(|e| format!("cannot remember game directory: {e}"))
 }
 
@@ -211,6 +208,95 @@ pub fn show_error(message: &str) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    struct Scratch(PathBuf);
+    impl Scratch {
+        fn new() -> Self {
+            let root = std::env::temp_dir().join(format!(
+                "openyr-launcher-storage-{}-{}",
+                std::process::id(),
+                std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap()
+                    .as_nanos()
+            ));
+            std::fs::create_dir_all(preferences(&root).parent().unwrap()).unwrap();
+            Self(root)
+        }
+        fn legacy_temporary(&self) -> PathBuf {
+            preferences(&self.0).with_extension(format!("{}.tmp", std::process::id()))
+        }
+    }
+    impl Drop for Scratch {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.0);
+        }
+    }
+
+    #[test]
+    fn remembered_directory_preserves_occupied_temporary_file() {
+        let scratch = Scratch::new();
+        let temporary = scratch.legacy_temporary();
+        std::fs::write(&temporary, b"unrelated bytes").unwrap();
+        let game = scratch.0.join("game with spaces");
+        remember(&scratch.0, &game).unwrap();
+        assert_eq!(std::fs::read(&temporary).unwrap(), b"unrelated bytes");
+        assert_eq!(remembered(&scratch.0), Some(game));
+        println!(
+            "Remembered game folder round-trips while the occupied temporary file stays intact."
+        );
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn remembered_directory_preserves_temporary_symlink_target() {
+        let scratch = Scratch::new();
+        let unrelated = scratch.0.join("unrelated");
+        std::fs::write(&unrelated, b"protected target bytes").unwrap();
+        let temporary = scratch.legacy_temporary();
+        std::os::unix::fs::symlink(&unrelated, &temporary).unwrap();
+        let game = scratch.0.join("custom game");
+        remember(&scratch.0, &game).unwrap();
+        assert_eq!(
+            std::fs::read(&unrelated).unwrap(),
+            b"protected target bytes"
+        );
+        assert!(std::fs::symlink_metadata(temporary)
+            .unwrap()
+            .file_type()
+            .is_symlink());
+        assert_eq!(remembered(&scratch.0), Some(game));
+        println!("Remembered game folder preserves the occupied symlink and its target bytes.");
+    }
+
+    #[test]
+    fn remembered_directory_cleans_failed_publication_before_retry() {
+        let scratch = Scratch::new();
+        let destination = preferences(&scratch.0);
+        std::fs::create_dir(&destination).unwrap();
+        std::fs::write(destination.join("keep"), b"protected destination").unwrap();
+        let before = std::fs::read_dir(destination.parent().unwrap())
+            .unwrap()
+            .count();
+        let game = scratch.0.join("custom game");
+        assert!(remember(&scratch.0, &game)
+            .unwrap_err()
+            .contains("cannot remember game directory"));
+        assert_eq!(
+            std::fs::read(destination.join("keep")).unwrap(),
+            b"protected destination"
+        );
+        assert_eq!(
+            std::fs::read_dir(destination.parent().unwrap())
+                .unwrap()
+                .count(),
+            before
+        );
+        std::fs::remove_dir_all(&destination).unwrap();
+        remember(&scratch.0, &game).unwrap();
+        assert_eq!(remembered(&scratch.0), Some(game));
+        println!("Failed publication preserves the destination, removes its owned scratch file and permits retry.");
+    }
 
     #[test]
     #[cfg(target_os = "macos")]
