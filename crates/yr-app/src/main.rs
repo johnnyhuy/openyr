@@ -336,6 +336,7 @@ impl App {
     fn cancel_pointer_action(&mut self) {
         self.camera.follow = None;
         self.sidebar_view.clear_wheel();
+        self.sidebar_view.clear_press();
         self.menu.wheel_remainder = 0.0;
         self.camera.edge_armed = false;
         self.menu.maps.drag = None;
@@ -613,7 +614,7 @@ impl App {
             .as_ref()
             .and_then(|session| sidebar::session_tab_at(size.0, session, self.cursor))
         {
-            self.sidebar_view.select(category);
+            self.sidebar_view.press(category);
             self.service_mode = ServiceMode::None;
             self.placing = None;
             self.view.dirty = true;

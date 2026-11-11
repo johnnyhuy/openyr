@@ -66,7 +66,27 @@ full cost. Unavailable unqueued entries dim as before.
 Repair and sell use their authored normal/active sheets and shared input
 modes. See [structure service rules and limits](structure-services.md).
 
-Selected tabs use sheet frame 1 and other tabs frame 0. A green underline
+Selected tabs use sheet frame 1 and other tabs frame 0. A held left press
+uses frame 3 when the tab was previously inactive, or frame 4 when it was
+already selected. Selection still changes immediately on press. The origin
+tab alone gets held art while the pointer remains over it; moving out shows
+the normal selected art, and returning before release restores the held art.
+Release clears the phase without submitting a world order. Pointer leave,
+focus loss, right press, modal cleanup and category shortcuts discard it.
+The fallback panel uses a dark top/left inset when tab art is unavailable.
+This state is transient View data and does not enter saved matches.
+
+Authored five-frame SHP/MIX fixtures exercise both Allied and Soviet tab
+geometry through native pointer handlers and the shared compositor at two
+layouts. Exact interior color crops cover both press variants and leave/
+reenter/release, while cancellation and missing-art checks preserve complete
+Session bytes. `OPENYR_SIDEBAR_PRESS_PROOF=<external-dir>` with
+`cargo test -p yr-app --bin openyr sidebar_tab_press -- --nocapture` exports
+seven authored compositor frames. No retail bytes are used. The pre-press
+variant choice, immediate activation and reentry policy are native policies;
+original hover/disabled transitions, timing and physical input remain open.
+
+A green underline
 keeps a paid structure visible on a hidden category. The `READY` label,
 placement outline and other status presentation remain provisional.
 
@@ -108,7 +128,7 @@ minimap with navigation and a camera outline (`radar.md`). Exact transition
 cadence, radar colors, scaling and shroud still need comparison. Power-meter
 calibration, original repair/sell timing and animations, top-strip controls,
 the bottom command bar, exact text spacing and colors,
-hover/pressed/disabled tab transitions, queue-hold calibration and original
+hover/disabled tab transitions and pressed-state calibration, queue-hold calibration and original
 scroll-control styling/timing remain UI fidelity work. Other factions and loose
 per-file sidebar overrides are not yet selected by this Allied loader.
 

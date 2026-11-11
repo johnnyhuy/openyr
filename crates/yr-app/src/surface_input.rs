@@ -40,6 +40,11 @@ impl App {
         self.last_cursor = position;
         self.camera.edge_armed = !self.menu.visible();
         self.view.dirty = true;
+        self.sidebar_view.track_press(
+            self.session.as_ref().and_then(|session| {
+                sidebar::session_tab_at(self.camera_size().0, session, position)
+            }),
+        );
         if self.menu.visible() {
             let size = self.camera_size();
             let local = Layout::for_state(&self.menu, size.0, size.1).local(position);
@@ -94,6 +99,10 @@ impl App {
                 self.suppress_held_keys();
             }
             return;
+        }
+        if button == MouseButton::Left {
+            self.sidebar_view.clear_press();
+            self.view.dirty = true;
         }
         if state == ElementState::Pressed
             && matches!(button, MouseButton::Left | MouseButton::Right)

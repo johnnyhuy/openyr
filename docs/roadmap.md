@@ -363,6 +363,13 @@ Johnny on 2026-10-31.
       mouse/key comparisons, guard cases and compact scroll restoration pass.
       The manual establishes the mappings; original transitions and physical
       Mac/Retina checks remain open (`docs/formats/sidebar.md`).
+- [x] Draw authored sidebar category press states (#86): held mouse input
+      selects the pre-press inactive/selected sheet variant, tracks origin-tab
+      hover and clears on release or pointer/focus/modal cancellation. Native
+      Allied/Soviet fixture crops and fallback recovery preserve encoded
+      Sessions, selection, camera and queued orders. Original transition
+      calibration and physical/retail checks remain open
+      (`docs/formats/sidebar.md`).
 - [ ] Complete original sidebar behavior and command bar (#86), including
       radar calibration/shroud, power-meter calibration, repair/sell fidelity, text calibration,
       button transitions,
