@@ -6,6 +6,8 @@ pub struct View {
     pub category: Category,
     rows: [usize; 4],
     wheel: f64,
+    pressed: Option<(Category, bool)>,
+    press_inside: bool,
 }
 
 impl From<Category> for View {
@@ -45,8 +47,35 @@ impl View {
     }
 
     pub fn select(&mut self, category: Category) {
+        self.clear_press();
         self.category = category;
         self.clear_wheel();
+    }
+
+    /// Keep the pre-press selection for the sheet's two pressed variants.
+    pub fn press(&mut self, category: Category) {
+        let selected = self.category == category;
+        self.select(category);
+        self.pressed = Some((category, selected));
+        self.press_inside = true;
+    }
+
+    pub fn clear_press(&mut self) {
+        self.pressed = None;
+        self.press_inside = false;
+    }
+
+    pub fn track_press(&mut self, hovered: Option<Category>) {
+        self.press_inside = self.pressed.is_some_and(|(tab, _)| Some(tab) == hovered);
+    }
+
+    pub(super) fn tab_frame(self, category: Category) -> usize {
+        if let Some((tab, selected)) = self.pressed.filter(|_| self.press_inside) {
+            if tab == category {
+                return 3 + usize::from(selected);
+            }
+        }
+        usize::from(category == self.category)
     }
 
     pub fn clear_wheel(&mut self) {

@@ -208,11 +208,19 @@ pub fn draw(
         let (x, y, _, _) = tab_rect(width, session, tab);
         // Retail sheet order: up, selected, disabled, pressed-up, pressed-selected.
         let selected = tab == view.category;
-        if let Some(image) = art.tabs[i].get(usize::from(selected)) {
+        let phase = view.tab_frame(tab);
+        if let Some(image) = art.tabs[i]
+            .get(phase)
+            .or_else(|| art.tabs[i].get(usize::from(selected)))
+        {
             canvas.image((x, y), image);
         } else {
             canvas.rect((x, y), (28, TAB_H), if selected { GOLD } else { PANEL });
             canvas.text((x + 10, y + 10), &i.to_string(), TEXT, 1);
+            if phase >= 3 {
+                canvas.rect((x, y), (28, 2), [0, 0, 0, 255]);
+                canvas.rect((x, y), (2, TAB_H), [0, 0, 0, 255]);
+            }
         }
         if ready_tab == Some(tab) {
             canvas.rect((x + 3, y + TAB_H - 3), (22, 2), [96, 255, 96, 255]);
