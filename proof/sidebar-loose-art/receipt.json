@@ -1,0 +1,28 @@
+{
+  "format": "openyr-proof-build-v1",
+  "source": {
+    "commit": "72c15bf7c240b676edba8a6d57e6103499f1f15c",
+    "tree": "b90be2db29b9f356e317a2648d2d102378b3a5d2"
+  },
+  "package": "yr-app",
+  "binary": "openyr",
+  "profile": "release",
+  "cargo": "cargo 1.99.1 (5f94df478 2026-08-27)",
+  "command": [
+    "/workspace/.cargo/bin/cargo",
+    "build",
+    "--manifest-path",
+    "/workspace/openyr-sidebar-loose-art-20261111-7/Cargo.toml",
+    "--package",
+    "yr-app",
+    "--bin",
+    "openyr",
+    "--release",
+    "--locked",
+    "--target-dir",
+    "/workspace/openyr-sidebar-loose-art-20261111-7/.tmp/sidebar-overrides-runtime/target-qaydxuz5",
+    "--message-format=json-render-diagnostics"
+  ],
+  "sha256": "cfb450cbd2232cf4e0d3d96aa092352cd3cd7e415b02e4b8fdedd7425b09968d",
+  "bytes": 14202712
+}

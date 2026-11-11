@@ -1,0 +1,21 @@
+{
+  "source_commit": "72c15bf7c240b676edba8a6d57e6103499f1f15c",
+  "source_tree": "b90be2db29b9f356e317a2648d2d102378b3a5d2",
+  "command": "CARGO_TARGET_DIR=$PWD/.tmp/check-target CARGO_BUILD_JOBS=2 mise run check",
+  "executables": [
+    {
+      "name": "openyr",
+      "artifact_from_log": ".tmp/check-target/debug/deps/openyr-8539b05c03c1d83a",
+      "retained_path": "/workspace/openyr-sidebar-loose-art-20261111-7/.tmp/programs/openyr",
+      "size": 203737816,
+      "sha256": "8c9e10254dfa41689258bff85dc356d32d64306a820dfb9aeca4405296b6c04e"
+    },
+    {
+      "name": "yr_assets",
+      "artifact_from_log": ".tmp/check-target/debug/deps/yr_assets-9531e89f5c38dc69",
+      "retained_path": "/workspace/openyr-sidebar-loose-art-20261111-7/.tmp/programs/yr_assets",
+      "size": 12023432,
+      "sha256": "cf30f370679d06311c3fc1501e87802c2b6b4cb7a23beb1bd394139b9a051d5b"
+    }
+  ]
+}
