@@ -277,6 +277,14 @@ impl AssetFs {
             if file.metadata()?.len() == 0 {
                 continue;
             }
+            if fs.loose.contains_key(&name) {
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    format!(
+                        "ambiguous loose filename {name:?}: multiple nonempty regular files normalize to the same lookup name"
+                    ),
+                ));
+            }
             // SAFETY: read-only map of game data; the install must not be
             // modified while the AssetFs is alive.
             let map = unsafe { Mmap::map(&file)? };
@@ -287,7 +295,8 @@ impl AssetFs {
         Ok(fs)
     }
 
-    /// Build from in-memory loose files (tests, tools).
+    /// Build from explicitly ordered in-memory loose files (tests, tools).
+    /// Later entries replace earlier case-insensitive names in this helper.
     pub fn from_files(files: Vec<(String, Vec<u8>)>) -> AssetFs {
         let mut fs = AssetFs {
             roots: Vec::new(),
@@ -540,3 +549,6 @@ mod tests {
         assert_eq!(Theater::from_map_name("newurban"), Some(Theater::NewUrban));
     }
 }
+
+#[cfg(test)]
+mod loose_open_tests;
