@@ -1,8 +1,0 @@
-{
-  "source_commit": "22a262eab2e73a28bd2a2a10ba543bfcff6dc269",
-  "source_tree": "5d3c3f82a6fbf880f5310ea4b7c1022557ec7f23",
-  "artifact_from_log": ".tmp/check-target/debug/deps/yr_assets-9531e89f5c38dc69",
-  "retained_path": "/workspace/openyr-ambiguous-loose-files-20261111-8/.tmp/programs/yr_assets",
-  "size": 12289328,
-  "sha256": "3c2a0a83ad751d775c11ac90856de1dc0ae75e91b4fd377fd4e21791efb2682a"
-}
