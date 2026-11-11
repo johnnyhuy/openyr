@@ -78,6 +78,12 @@ Johnny on 2026-10-31.
       known-answer and hostile-header fixtures carry the checks
       (`docs/formats/wsa.md`). LCW/XOR-delta decoding remains future work.
 - [x] `yr-assets` VFS: engine-order MIX cascade, nested mounts, theaters, loose overrides
+- [x] Reject ambiguous physical loose filenames (#360) instead of letting
+      directory traversal order choose rules/art. Actual scratch installs check
+      both case-variant creation orders, unchanged source bytes, unique lookup
+      and existing empty/non-regular filtering. Explicit ordered in-memory
+      fixtures, simulation and save formats retain their policies
+      (`docs/formats/mix.md`).
 - [x] Name the seven reported Yuri side-archive entries and three Allied menu
       background plates (#311, #310). Literal entry-ID checks and authored MIX
       CLI proof verify resolution; supplied retail PNG sizes/hashes are checked

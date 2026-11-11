@@ -223,3 +223,30 @@ filenames while permitting individual loose UI overrides (#86). Invalid
 optional art keeps existing bounded/fallback behavior. This is the native
 loose-first policy, not a claim that all original per-file exceptions have
 been observed. See `sidebar.md` for authored verification and remaining limits.
+
+## Ambiguous loose filenames
+
+Physical game-directory loading rejects multiple nonempty regular files that
+normalize to the same case-insensitive lookup name (#360). A case-sensitive
+filesystem can hold both `RULESMD.INI` and `rulesmd.ini`; earlier loading silently
+kept whichever directory entry arrived last. `AssetFs::open` now returns
+`InvalidData` naming the normalized key, before mounting the cascade, instead
+of allowing traversal order to choose rules or artwork. Filename debug quoting
+keeps control characters escaped in the diagnostic. The check also uses the
+existing lossy filename normalization; normalization collisions are ambiguous
+regardless of their raw names.
+
+No file is renamed, deleted or rewritten. Empty files and non-regular entries
+remain ignored before collision checking; one nonempty file plus an empty case
+variant therefore retains the earlier policy. Unique files still resolve
+case-insensitively through `read` and `read_loose`. The explicitly ordered
+in-memory `from_files` helper retains last-entry-wins behavior for tools and
+fixtures; it has no directory-order uncertainty.
+
+This intentionally rejects previously accepted ambiguous installs, which must
+resolve their conflicting filenames before loading. It does not change MIX
+parsing, simulation or save encoding, or rewrite existing saves. Actual
+Linux scratch-directory tests check both creation orders, repeated rejection,
+source-byte preservation and ordinary lookup/filtering. Collision fixtures
+explicitly skip when the host filesystem cannot create distinct case variants.
+Retail scans, original-game behavior and physical Mac checks remain separate.
