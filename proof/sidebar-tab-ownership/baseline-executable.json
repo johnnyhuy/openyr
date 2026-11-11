@@ -1,0 +1,8 @@
+{
+  "production_base": "47de98f48f5ff436d19a1719bff2bf2b0df16337",
+  "test_only_additions": true,
+  "artifact_from_log": ".tmp/check-target/debug/deps/openyr-8539b05c03c1d83a",
+  "size": 203218288,
+  "sha256": "4375cb085d7a5d36366d84d9a33f7a40322592a75857f409bc533f151889678a",
+  "test_source_sha256": "a9690cda74cdabd902f8dee4c32e1386d9e06778184d442557d5080c07671b50"
+}
