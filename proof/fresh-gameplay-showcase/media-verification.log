@@ -1,0 +1,7 @@
+Verified all 51 remote proof blobs and all 50 manifest payloads.
+GIF response MIME: image/gif
+placement.gif 200 image/gif 3427491
+GIF response MIME: application/octet-stream
+assault.gif 200 application/octet-stream 12171793
+full-session.mp4 200 application/octet-stream 39141198
+Verified GIF frames, MP4 video/audio metadata and public content hashes.
