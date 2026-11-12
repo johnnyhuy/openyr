@@ -36,6 +36,13 @@ Size identity (XCC's validity check, byte-exact):
 Classic (Tiberian Dawn) archives have no flags word at all: they start with
 `u16 count` which is never 0, while flagged archives start with `u16 0`.
 
+Unencrypted flagged headers require all ten bytes of flags, count and data size
+before reading fields (#365). Inputs shorter than that return `TooSmall`, including
+six- to nine-byte prefixes previously capable of panicking. Authored tests reject
+every truncated prefix of zero-flag and checksum-flag archives and retain each
+complete payload. This guard does not change complete classic/encrypted parsing
+or the strict size identity.
+
 ### Encrypted headers
 
 The 80-byte `key_source` yields a 56-byte Blowfish key (XCC `get_blowfish_key`):
