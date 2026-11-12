@@ -11,10 +11,10 @@ still in progress.
 
 ## Gameplay
 
-| Feature | In game | Preview |
-| --- | --- | --- |
-| Production and placement | Power plant construction and placement, unit queues, and moving forces on EB1. | <img src="https://raw.githubusercontent.com/johnnyhuy/openyr/de23c15a4b438357fb6db4a1291efaf8d74bf102/proof/retail-regressions/placement.gif" alt="OpenYR building and placing a power plant while units move on EB1" width="400"> |
-| Battlefield assault | Attack-move orders, tank combat and active vehicle production. | <img src="https://raw.githubusercontent.com/johnnyhuy/openyr/de23c15a4b438357fb6db4a1291efaf8d74bf102/proof/retail-regressions/assault.gif" alt="OpenYR units assaulting the enemy base with vehicle production active" width="400"> |
+| Feature | Gameplay |
+| --- | --- |
+| Production and placement | <img src="https://raw.githubusercontent.com/johnnyhuy/openyr/de23c15a4b438357fb6db4a1291efaf8d74bf102/proof/retail-regressions/placement.gif" alt="OpenYR building and placing a power plant while units move on EB1" width="400"><br>Power plant construction and placement, unit queues, and moving forces on EB1. |
+| Battlefield assault | <img src="https://raw.githubusercontent.com/johnnyhuy/openyr/de23c15a4b438357fb6db4a1291efaf8d74bf102/proof/retail-regressions/assault.gif" alt="OpenYR units assaulting the enemy base with vehicle production active" width="400"><br>Attack-move orders, tank combat and active vehicle production. |
 
 [Watch the complete 3 minute 20 second gameplay recording with audio](https://raw.githubusercontent.com/johnnyhuy/openyr/de23c15a4b438357fb6db4a1291efaf8d74bf102/proof/retail-regressions/full-session.mp4).
 Captured on macOS from native OpenYR using scripted headless playback through the
