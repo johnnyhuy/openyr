@@ -113,5 +113,17 @@ Versions 1/2 reconstruct their old three-guard setup; details and limits are in
 `retail_skirmish_settings_start_save_restore_and_restart_both_participants`
 checks 5000 credits and six units per owner through Start, saved loading,
 malformed-option recovery, restart and front-menu return. Tick-1 hash
-`9a31b9137b75e27b` is retained through the custom match flow. Prior-release
-EB1 saves retain seed-42 tick-1 hash `57dac47c915b074a`.
+`b3b7b060c10d0b7d` is retained through the custom match flow. A freshly
+constructed legacy-force-profile EB1 match with seed 42 now has tick-1 hash
+`4601c68d2468f7dc` (#370). The test retains exact complete save bytes across
+loading that profile, in addition to its participant and state-hash checks.
+
+The earlier fresh-state hash `57dac47c915b074a` predates the map structure
+health and map unit heading corrections (#348, #353). Comparing the same
+retail input at `76bdc0d` and `089267c` finds exactly 44 changed scalar fields:
+41 structure maximum-health values, one zero-fraction structure's current
+health (3 becomes 1), and two map unit headings (128 becomes 0 or 160).
+Restoring those old initialization assumptions reproduces the earlier hash
+exactly. This is a fresh-construction baseline change, not a save migration.
+Affected old app setup keys remain rejected; raw simulation snapshots retain
+their saved authoritative values as described in [save.md](save.md).
