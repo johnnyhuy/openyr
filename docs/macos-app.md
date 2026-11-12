@@ -28,6 +28,16 @@ are checked without case sensitivity. A missing or malformed remembered
 location falls through to the standard install or chooser. A selected valid
 folder is remembered as a JSON path string. Delete that preference to choose
 again if the install is outside the standard location. Cancel exits normally.
+Before remembering a newly chosen folder, both the initial chooser and the menu
+Data Folder action open it through the actual asset VFS (#364). Both required
+archives must resolve as nonempty regular loose files and parse as nonempty MIX
+archives. Symlink-only archives and ambiguous nonempty loose names reject before
+changing the remembered path. Missing, empty, malformed and truncated archives
+also reject; existing discovery order and preference-write error policies remain.
+Authored Linux filesystem fixtures verify rejection, preserved preferences/source
+bytes and successful retry with mixed-case filenames. This validates container
+loading, not the presence of every rules, art, map or audio asset needed to play.
+
 The picker uses the standard
 [AppleScript folder command and cancellation handling](https://developer.apple.com/library/archive/documentation/AppleScript/Conceptual/AppleScriptLangGuide/reference/ASLR_cmds.html).
 

@@ -48,6 +48,9 @@ Johnny on 2026-10-31.
 ## M1: Asset layer (done 2026-10-17; open items carried forward)
 
 - [x] MIX reader: classic + flagged headers, SHA1 trailer, encrypted (RSA/Blowfish) headers
+- [x] Reject truncated unencrypted flagged MIX headers before reading fields
+      (#365). All short prefixes of authored zero/checksum-flag archives return
+      errors without panic; complete payloads remain intact (`docs/formats/mix.md`).
 - [x] Filename hash (TS/CRC32 variant) with known-answer tests
 - [x] CSF reader (labels, UTF-16 inverted strings)
 - [x] INI reader (sections, keys, comments, order-preserving)
@@ -574,6 +577,13 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       synced replacement and owned cleanup. Actual scratch files verify occupied
       files, Unix symlink targets, failed publication and retry without changing
       discovery order or JSON. Native macOS chooser delivery remains unverified
+      (`docs/macos-app.md`).
+- [x] Validate newly chosen game-data folders through the actual VFS (#364,
+      #96), sharing validation between initial discovery and the menu action.
+      Required regular loose archives must be nonempty and parse; ambiguous
+      loose names and symlink-only archives reject before remembering. Scratch
+      files verify unchanged preferences/source bytes and valid mixed-case retry.
+      Native chooser delivery and complete retail content remain unverified
       (`docs/macos-app.md`).
 - [x] In-match menu flow (#108): retail Allied pause plates and controls,
       named save/load with confirmation, restart/quit, actual mute/zoom settings,

@@ -165,6 +165,9 @@ impl<'a> MixArchive<'a> {
             let body_start = enc_start + enc_len;
             (count, data_size, plain, body_start)
         } else {
+            if data.len() < 4 + 6 {
+                return Err(MixError::TooSmall);
+            }
             let off = 4;
             let count = u16::from_le_bytes([data[off], data[off + 1]]) as usize;
             let data_size =
@@ -357,6 +360,37 @@ mod tests {
             MixArchive::parse(&data),
             Err(MixError::SizeMismatch { .. })
         ));
+    }
+
+    #[test]
+    fn flagged_plain_rejects_every_truncated_prefix_without_panicking() {
+        for flags in [0, FLAG_CHECKSUM] {
+            let mut bytes = flags.to_le_bytes().to_vec();
+            bytes.extend(1u16.to_le_bytes());
+            bytes.extend(3u32.to_le_bytes());
+            bytes.extend(mix_id("TEST.BIN").to_le_bytes());
+            bytes.extend(0u32.to_le_bytes());
+            bytes.extend(3u32.to_le_bytes());
+            bytes.extend([1, 2, 3]);
+            if flags == FLAG_CHECKSUM {
+                bytes.extend([0; 20]);
+            }
+            for length in 0..bytes.len() {
+                let result = MixArchive::parse(&bytes[..length]);
+                assert!(
+                    result.is_err(),
+                    "accepted prefix {length}, flags {flags:#x}"
+                );
+                if length < 10 {
+                    assert!(matches!(result, Err(MixError::TooSmall)));
+                }
+            }
+            assert_eq!(
+                MixArchive::parse(&bytes).unwrap().get("test.bin"),
+                Some(&[1, 2, 3][..])
+            );
+            println!("All {} truncated prefixes reject without panic for flags {flags:#x}; complete archive preserves payload.", bytes.len());
+        }
     }
 
     #[test]

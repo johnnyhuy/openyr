@@ -118,26 +118,24 @@ pub fn choose_and_remember_install() -> Result<Option<String>, String> {
     .map(Some)
 }
 
-fn accept_install(path: &Path, home: Option<&Path>) -> Result<String, String> {
-    if !is_install(path) {
-        return Err("The selected folder needs ra2.mix and ra2md.mix".into());
-    }
+fn validate_install(path: &Path) -> Result<String, String> {
+    let fs = yr_assets::AssetFs::open(path).map_err(|e| e.to_string())?;
     for name in ["ra2.mix", "ra2md.mix"] {
-        let file = std::fs::read_dir(path)
-            .map_err(|e| e.to_string())?
-            .flatten()
-            .find(|e| e.file_name().to_string_lossy().eq_ignore_ascii_case(name))
-            .ok_or("A required game archive is missing")?;
-        let bytes = std::fs::read(file.path()).map_err(|e| e.to_string())?;
-        let archive = yr_formats::MixArchive::parse(&bytes).map_err(|e| format!("{name}: {e}"))?;
+        let bytes = fs
+            .read_loose(name)
+            .ok_or_else(|| format!("The selected folder needs a nonempty regular {name}"))?;
+        let archive = yr_formats::MixArchive::parse(bytes).map_err(|e| format!("{name}: {e}"))?;
         if archive.entries().is_empty() {
             return Err(format!("{name} is empty"));
         }
     }
-    let text = path
-        .to_str()
-        .ok_or("Game directory path must be UTF-8")?
-        .to_string();
+    path.to_str()
+        .map(str::to_owned)
+        .ok_or_else(|| "Game directory path must be UTF-8".into())
+}
+
+fn accept_install(path: &Path, home: Option<&Path>) -> Result<String, String> {
+    let text = validate_install(path)?;
     if let Some(home) = home {
         remember(home, path)?;
     }
@@ -153,9 +151,7 @@ fn default_directory(interactive: bool) -> Result<Option<String>, String> {
             let Some(path) = choose_install()? else {
                 return Ok(None);
             };
-            if !is_install(&path) {
-                return Err("the selected folder needs both ra2.mix and ra2md.mix; open OpenYR again to choose another folder".into());
-            }
+            validate_install(&path)?;
             if let Some(home) = home {
                 if let Err(e) = remember(&home, &path) {
                     eprintln!("OpenYR: {e}");
@@ -327,6 +323,100 @@ mod tests {
             );
             std::fs::remove_file(&path).unwrap();
         }
+    }
+
+    fn fixture_install(path: &Path) {
+        std::fs::create_dir_all(path).unwrap();
+        let mut bytes = Vec::new();
+        bytes.extend(1u16.to_le_bytes());
+        bytes.extend(4u32.to_le_bytes());
+        bytes.extend(yr_formats::mix_id("DUMMY").to_le_bytes());
+        bytes.extend(0u32.to_le_bytes());
+        bytes.extend(4u32.to_le_bytes());
+        bytes.extend(b"DATA");
+        for name in ["RA2.MIX", "ra2md.mix"] {
+            std::fs::write(path.join(name), &bytes).unwrap();
+        }
+    }
+
+    #[test]
+    fn selected_install_rejects_ambiguous_files_before_remembering() {
+        for names in [
+            ["RULESMD.INI", "rulesmd.ini"],
+            ["rulesmd.ini", "RULESMD.INI"],
+        ] {
+            let scratch = Scratch::new();
+            let previous = scratch.0.join("previous");
+            fixture_install(&previous);
+            accept_install(&previous, Some(&scratch.0)).unwrap();
+            let selected = scratch.0.join("selected");
+            fixture_install(&selected);
+            std::fs::write(selected.join(names[0]), b"first rules").unwrap();
+            std::fs::write(selected.join(names[1]), b"second rules").unwrap();
+            // A case-insensitive volume cannot represent this collision.
+            if std::fs::read(selected.join(names[0])).unwrap() == b"second rules" {
+                continue;
+            }
+            let before = std::fs::read(preferences(&scratch.0)).unwrap();
+            assert!(accept_install(&selected, Some(&scratch.0)).is_err());
+            assert_eq!(std::fs::read(preferences(&scratch.0)).unwrap(), before);
+            assert_eq!(remembered(&scratch.0), Some(previous));
+            assert_eq!(
+                std::fs::read(selected.join(names[0])).unwrap(),
+                b"first rules"
+            );
+            assert_eq!(
+                std::fs::read(selected.join(names[1])).unwrap(),
+                b"second rules"
+            );
+        }
+        println!("Both ambiguous loose-file creation orders reject before changing the remembered folder or source bytes.");
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn selected_install_rejects_symlink_archives_before_remembering() {
+        let scratch = Scratch::new();
+        let previous = scratch.0.join("previous");
+        fixture_install(&previous);
+        accept_install(&previous, Some(&scratch.0)).unwrap();
+        let selected = scratch.0.join("selected");
+        fixture_install(&selected);
+        let archive = selected.join("ra2md.mix");
+        std::fs::remove_file(&archive).unwrap();
+        std::os::unix::fs::symlink(previous.join("ra2md.mix"), &archive).unwrap();
+        let before = std::fs::read(preferences(&scratch.0)).unwrap();
+        assert!(accept_install(&selected, Some(&scratch.0)).is_err());
+        assert_eq!(std::fs::read(preferences(&scratch.0)).unwrap(), before);
+        assert_eq!(remembered(&scratch.0), Some(previous));
+        assert!(std::fs::symlink_metadata(archive)
+            .unwrap()
+            .file_type()
+            .is_symlink());
+        println!("A required archive ignored by the actual VFS rejects without replacing the remembered folder or symlink.");
+    }
+
+    #[test]
+    fn selected_install_retains_previous_folder_on_invalid_archives_then_recovers() {
+        let scratch = Scratch::new();
+        let previous = scratch.0.join("previous");
+        fixture_install(&previous);
+        accept_install(&previous, Some(&scratch.0)).unwrap();
+        let before = std::fs::read(preferences(&scratch.0)).unwrap();
+        let selected = scratch.0.join("selected");
+        fixture_install(&selected);
+        for bytes in [&b""[..], &b"invalid MIX"[..], &[0u8; 6][..], &[0u8; 10][..]] {
+            std::fs::write(selected.join("ra2md.mix"), bytes).unwrap();
+            assert!(accept_install(&selected, Some(&scratch.0)).is_err());
+            assert_eq!(std::fs::read(preferences(&scratch.0)).unwrap(), before);
+        }
+        fixture_install(&selected);
+        assert_eq!(
+            accept_install(&selected, Some(&scratch.0)).unwrap(),
+            selected.to_str().unwrap()
+        );
+        assert_eq!(remembered(&scratch.0), Some(selected));
+        println!("Empty, malformed, truncated and entryless required archives preserve the previous folder; valid mixed-case archives recover.");
     }
 
     #[test]
