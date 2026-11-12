@@ -284,13 +284,21 @@ fn infantry_deaths_match_retail_body_shadow_and_house_pixels() {
                         );
                         for (p, &index) in body.iter().enumerate() {
                             let expected = if (16..=31).contains(&index) {
-                                let factor = 0.45 + f32::from(index - 16) * 0.055;
-                                [
-                                    (f32::from(remap[0]) * factor).min(255.0) as u8,
-                                    (f32::from(remap[1]) * factor).min(255.0) as u8,
-                                    (f32::from(remap[2]) * factor).min(255.0) as u8,
-                                    255,
-                                ]
+                                // Independent samples of the shipped 60-100% ramp,
+                                // with rounded channels and no clipped highlights.
+                                let strong = [
+                                    132, 138, 144, 150, 155, 161, 167, 173, 179, 185, 191, 197,
+                                    202, 208, 214, 220,
+                                ];
+                                let weak = [
+                                    18, 19, 20, 20, 21, 22, 23, 24, 24, 25, 26, 27, 28, 28, 29, 30,
+                                ];
+                                let shade = usize::from(index - 16);
+                                if remap[0] == 220 {
+                                    [strong[shade], weak[shade], weak[shade], 255]
+                                } else {
+                                    [weak[shade], weak[shade], strong[shade], 255]
+                                }
                             } else if index != 0 {
                                 palette.rgba(index)
                             } else if shadow[p] != 0 {

@@ -393,7 +393,7 @@ fn building_mask(app: &App) -> Vec<u8> {
         );
     }
     // A front unit can cover the building too. Compare only building body
-    // pixels which are not themselves covered by a live unit's opaque art.
+    // pixels untouched by live unit art, including fractional voxel edges.
     let mut units = vec![0; mask.len()];
     for u in session.sim.units() {
         let remap = owner_remap(&bank, u.owner, Some(session));
@@ -427,7 +427,7 @@ fn building_mask(app: &App) -> Vec<u8> {
         .iter_mut()
         .zip(units.as_chunks::<4>().0)
     {
-        if unit[3] == 255 {
+        if unit[3] != 0 {
             building[3] = 0;
         }
     }

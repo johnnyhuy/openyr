@@ -81,10 +81,15 @@ still fail their setup fingerprint checks as described below.
 
 The actual-handler regression checks 5000-credit, six-unit settings for both
 owners through Start, save/load, malformed metadata, restart and return to setup.
-A retained prior-release version-2 save and equivalent version-1 payload also
-load at EB1 tick 1, seed 42, hash `57dac47c915b074a`. Their producing command,
-binary hash and save hashes are recorded in external proof. Save files are not
-repository fixtures or distributed proof assets.
+A prior-release version-2 save and equivalent version-1 payload previously
+loaded at EB1 tick 1, seed 42, hash `57dac47c915b074a`. That historical EB1 setup
+is intentionally incompatible after the initial map health/heading corrections
+below. The optional `OPENYR_LEGACY_SETUP_PROOF` fixture now verifies both old
+files reject with a setup mismatch, preserving their source bytes and exact
+raw simulation snapshots (#370). Fresh legacy-profile EB1 saves round-trip complete bytes at
+hash `4601c68d2468f7dc`. The historical-state comparison is described in
+[skirmish-setup.md](skirmish-setup.md). Save files remain outside Git and are
+not distributed proof assets.
 
 The simulation snapshot starts with `OYRSIM\0\0` (8 bytes), then a
 little-endian u32 version (currently 3), then UTF-8 JSON of `Sim`.

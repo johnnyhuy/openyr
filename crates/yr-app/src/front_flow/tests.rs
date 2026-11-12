@@ -280,8 +280,8 @@ fn retail_skirmish_settings_start_save_restore_and_restart_both_participants() {
     .unwrap();
     assert_eq!(
         old.sim.state_hash(),
-        0x57dac47c915b074a,
-        "the prior shipped EB1 tick-1 state is retained"
+        0x4601c68d2468f7dc,
+        "fresh legacy-profile EB1 includes corrected map health and headings"
     );
     let path = temp.join("Legacy.oyrsave");
     yr_app::snapshot::save(&old, &path).unwrap();
@@ -289,6 +289,11 @@ fn retail_skirmish_settings_start_save_restore_and_restart_both_participants() {
         .unwrap()
         .0;
     assert_eq!(legacy.sim.state_hash(), old.sim.state_hash());
+    assert_eq!(
+        yr_app::snapshot::encode(&legacy).unwrap(),
+        std::fs::read(&path).unwrap(),
+        "the current legacy profile round-trips complete saved bytes"
+    );
     assert_eq!(legacy.start_options, legacy_options);
     assert_eq!(
         legacy
@@ -301,19 +306,27 @@ fn retail_skirmish_settings_start_save_restore_and_restart_both_participants() {
     );
     if let Some(folder) = std::env::var_os("OPENYR_LEGACY_SETUP_PROOF") {
         for name in ["EB1-v1.oyrsave", "EB1-v2.oyrsave"] {
-            let session = yr_app::snapshot::load_from_menu(
-                directory.to_str().unwrap(),
-                "EB1.MMX",
-                &PathBuf::from(&folder).join(name),
-            )
-            .unwrap()
-            .0;
-            assert_eq!(session.sim.state_hash(), 0x57dac47c915b074a);
-            assert!(!session.start_options.shared_forces);
-            println!("Prior-release {name} loaded with exact tick1 hash 57dac47c915b074a.");
+            let path = PathBuf::from(&folder).join(name);
+            let bytes = std::fs::read(&path).unwrap();
+            let version = u32::from_le_bytes(bytes[8..12].try_into().unwrap());
+            let payload = match version {
+                1 => 37,
+                2 => 39 + usize::from(u16::from_le_bytes(bytes[37..39].try_into().unwrap())),
+                _ => panic!("expected a historical version-1/2 fixture"),
+            };
+            let raw = yr_sim::Sim::from_save_bytes(&bytes[payload..]).unwrap();
+            assert_eq!(raw.state_hash(), 0x57dac47c915b074a);
+            assert_eq!(raw.save_bytes().unwrap(), bytes[payload..]);
+            let error =
+                yr_app::snapshot::load_from_menu(directory.to_str().unwrap(), "EB1.MMX", &path)
+                    .err()
+                    .expect("pre-correction EB1 setup must be rejected");
+            assert!(error.contains("map, rules or engine setup"), "{error}");
+            assert_eq!(std::fs::read(&path).unwrap(), bytes);
+            println!("Pre-correction {name} rejected; source file and raw snapshot retained.");
         }
     }
-    println!("Configured credits=5000 units=6 for both owners; tick1 hash={initial_hash:016x}; legacy EB1 seed42 hash=57dac47c915b074a retained.");
+    println!("Configured credits=5000 units=6 for both owners; tick1 hash={initial_hash:016x}; fresh legacy-profile EB1 seed42 hash=4601c68d2468f7dc; saved state retained.");
     drop(app);
     std::fs::remove_dir_all(temp).unwrap();
 }

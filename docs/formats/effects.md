@@ -654,7 +654,10 @@ one-health vehicle beside a Construction Yard, once behind it and once in
 front. Sampled flight/clip ticks compare opaque foreground-building pixels
 to both a combat-hidden baseline and the previous overlay composition. Live unit
 coverage is excluded from this building-specific mask because those units
-have their own world depth. The flight, muzzle, impact and destruction all
+have their own world depth. This includes every nonzero body alpha, not only
+opaque pixels: partially covered voxel edges also mix foreground unit color
+into the baseline (#369). Rear/front overlap and the separate trail occlusion
+checks must still exercise visible building pixels. The flight, muzzle, impact and destruction all
 come from simulation events. A saved flight reconstructs with a fresh sprite
 bank; repeated compositions preserve the hash and complete save bytes.
 Building impacts also retain their own body coverage, and event-routing
