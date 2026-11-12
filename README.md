@@ -13,12 +13,15 @@ still in progress.
 
 | Feature | In game | Preview |
 | --- | --- | --- |
-| Tank combat | Cannon hits, damage and retail impact animations. | <img src="https://raw.githubusercontent.com/johnnyhuy/openyr/371bb427c434218bc571a819ff7797b3472725e7/proof/gameplay-showcase/combat.gif" alt="Tank taking cannon hits with native impact effects" width="400"> |
-| Infantry movement | Moving infantry, vehicles and animated base structures on retail terrain. | <img src="https://raw.githubusercontent.com/johnnyhuy/openyr/371bb427c434218bc571a819ff7797b3472725e7/proof/gameplay-showcase/movement.gif" alt="Infantry moving around the base on EB1" width="400"> |
-| Base operations | Repairing damage and selling structures with sidebar feedback. | <img src="https://raw.githubusercontent.com/johnnyhuy/openyr/371bb427c434218bc571a819ff7797b3472725e7/proof/gameplay-showcase/base-operations.gif" alt="Native repair and sale states across sampled simulation ticks" width="400"> |
+| Production and placement | Power plant construction and placement, unit queues, and moving forces on EB1. | <img src="https://raw.githubusercontent.com/johnnyhuy/openyr/de23c15a4b438357fb6db4a1291efaf8d74bf102/proof/retail-regressions/placement.gif" alt="OpenYR building and placing a power plant while units move on EB1" width="400"> |
+| Battlefield assault | Attack-move orders, tank combat and active vehicle production. | <img src="https://raw.githubusercontent.com/johnnyhuy/openyr/de23c15a4b438357fb6db4a1291efaf8d74bf102/proof/retail-regressions/assault.gif" alt="OpenYR units assaulting the enemy base with vehicle production active" width="400"> |
 
-Gameplay previews come from earlier OpenYR builds. [Capture sources and limits](docs/demos.md)
-record the versions and sampled-tick presentation.
+[Watch the complete 3 minute 20 second gameplay recording with audio](https://raw.githubusercontent.com/johnnyhuy/openyr/de23c15a4b438357fb6db4a1291efaf8d74bf102/proof/retail-regressions/full-session.mp4).
+Captured on macOS from native OpenYR using scripted headless playback through the
+same compositor as the window. It retains every tick from 2 through 3000 at 15 fps;
+the GIFs show ticks 500-619 and 1400-1579. This is gameplay output, not an interactive
+desktop recording or evidence of original-game timing. [Capture sources, build
+receipts and limits](docs/demos.md) identify the source versions and exact media.
 
 | System | Implemented behavior |
 | --- | --- |
