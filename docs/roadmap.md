@@ -13,9 +13,11 @@ Johnny on 2026-10-31.
 
 ## M0: Research and repo (baseline done)
 
-- [x] Restore retail-backed depth and setup regressions (#369, #370).
+- [x] Restore retail-backed presentation and setup regressions (#369, #370, #371).
       Exclude fractional live-unit coverage from the building-only pixel mask;
-      retain real rear/front overlap, saved-flight and trail checks. Explain
+      retain real rear/front overlap, saved-flight and trail checks. Pin the
+      bounded infantry death house ramp while checking source bodies/shadows.
+      Explain
       the corrected EB1 initialization hash with a historical-state comparison
       and retain complete legacy-profile save bytes through native loading
       (`docs/formats/effects.md`, `docs/formats/skirmish-setup.md`).
