@@ -1,0 +1,8 @@
+{
+  "base_commit": "7f1a2decc05b099977fd7cc8fccd70836b949905",
+  "test_changes": "baseline-tests.patch",
+  "bytes": 203682248,
+  "sha256": "4f82890fd31dcfcc679bd73d32cd76183e795d57af95b9f311a15bd356e7df4a",
+  "command": "cargo test -p yr-app --bin openyr --locked selected_install -- --nocapture",
+  "result": "1 passed; 3 failed (two invalid-folder acceptance assertions and one flagged-header parser panic); production unchanged, uncommitted test-only patch"
+}

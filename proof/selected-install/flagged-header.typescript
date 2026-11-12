@@ -1,0 +1,12 @@
+Script started on 2026-11-12 01:32:19+00:00 [COMMAND=".tmp/programs/yr_formats flagged_plain --nocapture" <not executed on terminal>]
+
+running 2 tests
+All 25 truncated prefixes reject without panic for flags 0x0; complete archive preserves payload.
+All 45 truncated prefixes reject without panic for flags 0x10000; complete archive preserves payload.
+test mix::tests::flagged_plain_round_trip ... ok
+test mix::tests::flagged_plain_rejects_every_truncated_prefix_without_panicking ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 72 filtered out; finished in 0.00s
+
+
+Script done on 2026-11-12 01:32:19+00:00 [COMMAND_EXIT_CODE="0"]

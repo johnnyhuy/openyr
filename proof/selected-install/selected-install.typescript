@@ -1,0 +1,15 @@
+Script started on 2026-11-12 01:32:19+00:00 [COMMAND=".tmp/programs/openyr selected_install --nocapture" <not executed on terminal>]
+
+running 4 tests
+A required archive ignored by the actual VFS rejects without replacing the remembered folder or symlink.
+test launcher::tests::selected_install_rejects_symlink_archives_before_remembering ... ok
+test launcher::tests::selected_install_is_validated_before_remembering ... ok
+Both ambiguous loose-file creation orders reject before changing the remembered folder or source bytes.
+test launcher::tests::selected_install_rejects_ambiguous_files_before_remembering ... ok
+Empty, malformed, truncated and entryless required archives preserve the previous folder; valid mixed-case archives recover.
+test launcher::tests::selected_install_retains_previous_folder_on_invalid_archives_then_recovers ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 226 filtered out; finished in 0.01s
+
+
+Script done on 2026-11-12 01:32:19+00:00 [COMMAND_EXIT_CODE="0"]

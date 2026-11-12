@@ -1,0 +1,34 @@
+{
+  "source_commit": "b035f1830d8c69219df2c60bec2f2381d54ca098",
+  "source_tree": "ca21a72c74b280791ff9153941c6cebabe204282",
+  "commands": [
+    {
+      "command": "cargo test --workspace --locked",
+      "result": "668 passed, 0 failed, 1 existing audio-device test ignored"
+    },
+    {
+      "command": "cargo clippy --workspace --all-targets --locked -- -D warnings",
+      "result": "passed"
+    },
+    {
+      "command": "cargo fmt --all --check",
+      "result": "passed"
+    },
+    {
+      "command": "python3 -m unittest discover -s scripts -p 'test_*.py' -v",
+      "result": "3 passed"
+    },
+    {
+      "command": ".tmp/programs/openyr selected_install --nocapture",
+      "result": "4 passed"
+    },
+    {
+      "command": ".tmp/programs/yr_formats flagged_plain --nocapture",
+      "result": "2 passed; 70 truncated prefixes rejected, complete payloads preserved"
+    }
+  ],
+  "issues": [
+    364,
+    365
+  ]
+}

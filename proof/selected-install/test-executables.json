@@ -1,0 +1,19 @@
+{
+  "source_commit": "b035f1830d8c69219df2c60bec2f2381d54ca098",
+  "source_tree": "ca21a72c74b280791ff9153941c6cebabe204282",
+  "command": "cargo test --workspace --locked through mise run check, private CARGO_TARGET_DIR",
+  "artifacts": [
+    {
+      "program": "openyr",
+      "cargo_artifact": ".tmp/check-target/debug/deps/openyr-8539b05c03c1d83a",
+      "bytes": 203648336,
+      "sha256": "fd3e94dfc8659c5539c1cf98b7911472a4a0cab301b12b7e6cb6ba99f628d1c0"
+    },
+    {
+      "program": "yr_formats",
+      "cargo_artifact": ".tmp/check-target/debug/deps/yr_formats-0e772dec0ccadab9",
+      "bytes": 13970232,
+      "sha256": "bd962f98c3f0ead1c997f112c699375596514fe6f9131ec8221dae3a624a8b24"
+    }
+  ]
+}
