@@ -1,0 +1,571 @@
+   Compiling libc v0.2.191
+   Compiling serde_core v1.0.229
+   Compiling proc-macro2 v1.0.107
+   Compiling quote v1.0.47
+   Compiling unicode-ident v1.0.27
+   Compiling autocfg v1.5.1
+   Compiling version_check v0.9.5
+   Compiling typenum v1.20.1
+   Compiling byteorder v1.5.0
+   Compiling generic-array v0.14.7
+   Compiling serde v1.0.229
+   Compiling num-traits v0.2.19
+   Compiling objc2-encode v4.1.0
+   Compiling zmij v1.0.23
+   Compiling serde_json v1.0.154
+   Compiling itoa v1.0.18
+   Compiling memchr v2.8.3
+   Compiling syn v3.0.9
+   Compiling cfg-if v1.0.5
+   Compiling crypto-common v0.1.7
+   Compiling inout v0.1.4
+   Compiling objc2 v0.6.5
+   Compiling cipher v0.4.4
+   Compiling scopeguard v1.2.0
+   Compiling smallvec v1.16.3
+   Compiling memmap2 v0.9.11
+   Compiling num-integer v0.1.47
+   Compiling cfg_aliases v0.1.1
+   Compiling blowfish v0.9.1
+   Compiling shlex v2.0.1
+   Compiling find-msvc-tools v0.1.14
+   Compiling core-foundation-sys v0.8.7
+   Compiling bitflags v1.3.2
+   Compiling foreign-types-shared v0.3.1
+   Compiling num-bigint v0.4.8
+   Compiling cc v1.8.0
+   Compiling core-foundation v0.9.4
+   Compiling syn v2.0.119
+   Compiling paste v1.0.15
+   Compiling core-graphics-types v0.1.3
+   Compiling log v0.4.34
+   Compiling objc-sys v0.3.5
+   Compiling rustversion v1.0.23
+   Compiling thiserror v1.0.69
+   Compiling parking_lot_core v0.9.12
+   Compiling yr-formats v0.1.0 (/Users/johnny/.paseo/worktrees/0vvslhv7/immense-fireant/crates/yr-formats)
+   Compiling bitflags v2.13.2
+   Compiling malloc_buf v0.0.6
+   Compiling equivalent v1.0.3
+   Compiling unicode-width v0.1.14
+   Compiling bit-vec v0.6.3
+   Compiling hashbrown v0.17.1
+   Compiling termcolor v1.4.1
+   Compiling bit-set v0.5.3
+   Compiling objc_exception v0.1.2
+   Compiling codespan-reporting v0.11.1
+   Compiling thiserror-impl v1.0.69
+   Compiling yr-assets v0.1.0 (/Users/johnny/.paseo/worktrees/0vvslhv7/immense-fireant/crates/yr-assets)
+   Compiling indexmap v2.14.2
+   Compiling objc v0.2.7
+   Compiling serde_derive v1.0.229
+   Compiling foreign-types-macros v0.2.4
+   Compiling dispatch2 v0.3.1
+   Compiling block2 v0.6.2
+   Compiling wgpu-hal v0.19.5
+   Compiling lock_api v0.4.14
+   Compiling block v0.1.6
+   Compiling foreign-types v0.5.0
+   Compiling unicode-xid v0.2.6
+   Compiling hexf-parse v0.2.1
+   Compiling crc32fast v1.5.3
+   Compiling rustc-hash v1.1.0
+   Compiling raw-window-handle v0.6.2
+   Compiling parking_lot v0.12.5
+   Compiling naga v0.19.2
+   Compiling metal v0.27.0
+   Compiling objc2-core-foundation v0.3.2
+   Compiling encoding_rs v0.8.44
+   Compiling objc2 v0.5.3
+   Compiling wgpu-types v0.19.2
+   Compiling objc2-foundation v0.3.2
+   Compiling objc2-core-audio-types v0.3.2
+   Compiling wgpu-core v0.19.4
+   Compiling libloading v0.8.9
+   Compiling bytemuck v1.25.2
+   Compiling once_cell v1.21.4
+   Compiling simd-adler32 v0.3.10
+   Compiling arrayvec v0.7.8
+   Compiling adler2 v2.0.1
+   Compiling profiling v1.0.18
+   Compiling miniz_oxide v0.9.1
+   Compiling safe_arch v0.7.4
+   Compiling block2 v0.5.1
+   Compiling wgpu v0.19.4
+   Compiling parking_lot_core v0.10.0
+   Compiling lock_api v0.5.0
+   Compiling thiserror v2.0.21
+   Compiling objc2-core-audio v0.3.2
+   Compiling dispatch v0.2.0
+   Compiling libm v0.2.16
+   Compiling simdutf8 v0.1.5
+   Compiling multiversion_no_op v1.0.0
+   Compiling cfg_aliases v0.2.2
+   Compiling objc2-foundation v0.2.2
+   Compiling winit v0.30.13
+   Compiling objc2-audio-toolbox v0.3.2
+   Compiling yr-rules v0.1.0 (/Users/johnny/.paseo/worktrees/0vvslhv7/immense-fireant/crates/yr-rules)
+   Compiling parking_lot v0.13.0
+   Compiling flate2 v1.1.10
+   Compiling yr-sim v0.1.0 (/Users/johnny/.paseo/worktrees/0vvslhv7/immense-fireant/crates/yr-sim)
+   Compiling wide v0.7.33
+   Compiling thiserror-impl v2.0.21
+   Compiling cpal v0.18.2
+   Compiling tracing-core v0.1.36
+   Compiling static_assertions v1.1.0
+   Compiling pin-project-lite v0.2.17
+   Compiling ultraviolet v0.9.2
+   Compiling tracing v0.1.44
+   Compiling infinitier_datasource v0.0.17
+   Compiling coreaudio-rs v0.14.2
+   Compiling yr-render v0.1.0 (/Users/johnny/.paseo/worktrees/0vvslhv7/immense-fireant/crates/yr-render)
+   Compiling core-graphics v0.23.2
+   Compiling hound v3.5.1
+   Compiling cursor-icon v1.2.0
+   Compiling objc2-app-kit v0.2.2
+   Compiling dasp_sample v0.11.0
+   Compiling smol_str v0.2.2
+   Compiling pollster v0.3.0
+   Compiling dpi v0.1.2
+   Compiling mach2 v0.6.0
+   Compiling infinitier_bik_decoder v0.0.17
+   Compiling font8x8 v0.3.1
+   Compiling sim-bench v0.1.0 (/Users/johnny/.paseo/worktrees/0vvslhv7/immense-fireant/tools/sim-bench)
+   Compiling mix-dump v0.1.0 (/Users/johnny/.paseo/worktrees/0vvslhv7/immense-fireant/tools/mix-dump)
+   Compiling pixels v0.15.0
+   Compiling yr-app v0.1.0 (/Users/johnny/.paseo/worktrees/0vvslhv7/immense-fireant/crates/yr-app)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 38.57s
+warning: the following packages contain code that will be rejected by a future version of Rust: block v0.1.6
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
+     Running unittests src/main.rs (target/debug/deps/mix_dump-66a8331f58925797)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/cli.rs (target/debug/deps/cli-8a7d12658306c8f3)
+
+running 13 tests
+test invalid_usage_keeps_its_exit_code ... ok
+test extraction_errors_still_fail_with_closed_stdout ... ok
+test extraction_finishes_before_accepting_closed_stdout ... ok
+test input_errors_still_fail_with_closed_stdout ... ok
+test other_stdout_errors_still_fail ... ok
+test scan_accepts_closed_stdout_even_when_assets_are_invalid ... ok
+test scan_counts_errors_beyond_the_diagnostic_limit ... ok
+test a_consumer_can_stop_after_the_header ... ok
+test scan_fails_for_a_malformed_csf ... ok
+test scan_reports_nested_asset_errors_and_continues_to_valid_assets ... ok
+test scan_fails_for_an_invalid_archive_after_printing_the_census ... ok
+test inspection_commands_accept_an_already_closed_stdout ... ok
+test inspection_output_is_complete ... ok
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.43s
+
+     Running unittests src/main.rs (target/debug/deps/sim_bench-5049f8a1f04f2d13)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/debug/deps/yr_app-dbafd47a9429fbb2)
+
+running 127 tests
+test animation::tests::movement_uses_positions_and_freezes_between_sim_ticks ... ok
+test animation::tests::shots_restart_the_clip_and_dead_units_release_their_clocks ... ok
+test animation::tests::building_production_uses_host_progress_stalls_and_stops_when_ready ... ok
+test audio::mixer::tests::music_wraps_and_mono_fills_both_channels ... ok
+test audio::mixer::tests::resamples_and_preserves_stereo_then_ends ... ok
+test audio::mixer::tests::invalid_pcm_is_silent ... ok
+test audio::output::tests::native_output_recovers_and_preserves_mute ... ignored, opens the native output device and plays the retail theme
+test audio::mixer::tests::voices_are_bounded_responses_replace_and_eva_queues ... ok
+test audio::bank::tests::definitions_strip_dollar_cycle_samples_and_apply_volume ... ok
+test audio::bank::tests::bank_indices_stay_paired_and_incomplete_loose_override_does_not_hide_ra2 ... ok
+test audio::output::tests::callback_preserves_error_kind_and_backend_message ... ok
+test audio::output::tests::recoverable_callback_notification_keeps_playback ... ok
+test audio::output::tests::disconnect_retries_then_restarts_music_without_stale_speech ... ok
+test audio::output::tests::startup_outage_uses_capped_backoff_and_permanent_errors_stop_retries ... ok
+test cursor::tests::bounded_cursor_decode_rejects_hostile_sheets ... ok
+test cursor::tests::lifecycle_edges_clipping_and_tick_clock_are_bounded ... ok
+test cursor::tests::scroll_canvases_remain_inside_each_viewport_edge ... ok
+test audio::output::tests::slow_device_open_does_not_block_app_or_mute ... ok
+test cursor::tests::retail_yr_and_ra2_frames_palette_and_final_hotspot_pixels_match_source ... ok
+test frontend::click_tests::menu_click_animation_advances_caps_and_releases_without_changing_actions ... ok
+test frontend::click_tests::menu_click_animation_tolerates_missing_or_short_optional_sheet ... ok
+test frontend::message::tests::compositor_paints_a_complete_measured_line_beyond_old_character_caps ... ok
+test frontend::message::tests::fallback_messages_keep_words_paragraphs_and_every_long_token_character ... ok
+test audio::bank::tests::retail_menu_uses_the_declared_intro_theme_even_when_not_in_the_normal_playlist ... ok
+test frontend::tests::front_navigation_geometry_and_disabled_modes_are_consistent ... ok
+test frontend::tests::preview_client_fits_both_axes_and_keeps_invalid_images_black ... ok
+test effects::tests::retail_building_impacts_and_destruction_retain_their_foundation ... ok
+test effects::tests::retail_projectile_trailer_history_is_bounded_and_ignores_missing_provenance ... ok
+test effects::tests::retail_effects_follow_shots_deaths_and_leave_sim_and_saves_unchanged ... ok
+test effects::tests::retail_infantry_deaths_use_lethal_weapon_after_saved_flight_and_shooter_loss ... ok
+test effects::tests::retail_impacts_use_the_fired_weapon_after_shooter_death_and_restore ... ok
+test effects::tests::retail_line_trail_history_is_bounded_and_expires_without_draws ... ok
+test frontend::tests::preview_markers_clip_to_the_control_and_keep_sparse_start_numbers ... ok
+test frontend::tests::retail_marker_art_matches_original_sprite_and_digit_pixels ... ok
+test frontend::tests::retail_chooser_backdrop_matches_original_unobstructed_pixels ... ok
+test frontend::tests::retail_front_static_regions_match_original_renderer_observations ... ok
+test frontend::tests::retail_front_headings_match_original_renderer_captures ... ok
+test frontend::message::tests::retail_recovery_messages_use_font_width_and_stay_inside_the_panel ... ok
+test frontend::tests::start_point_indices_are_bounded_and_keep_authored_cells ... ok
+test frontend::tests::retail_shell_uses_its_own_button_palette_and_preserves_source_pixels ... ok
+test interaction::projection_tests::lifted_ground_centres_hit_their_drawn_cell_at_every_supported_scale ... ok
+test interaction::tests::absent_tiles_produce_blocked_cursor_and_no_world_orders ... ok
+test interaction::tests::resource_cells_offer_harvest_only_to_harvesters ... ok
+test interaction::tests::same_resolver_selects_and_filters_click_commands_by_ownership_weapon_and_route ... ok
+test interaction::tests::selection_only::selection_only_cursor_never_promises_a_world_order ... ok
+test frontend::tests::retail_skirmish_backdrop_matches_original_unobstructed_lower_body ... ok
+test loading::tests::loading_rejects_overflowing_pcx_flags_and_recovers_with_complete_art ... ok
+test loading::tests::long_briefs_missing_flags_and_client_progress_remain_bounded ... ok
+test loading::tests::preview_keeps_its_aspect_ratio_and_invalid_art_stays_recoverable ... ok
+test frontend::tests::retail_setup_sliders_match_complete_original_captures ... ok
+test loading::tests::loading_cancel_hit_matches_the_visible_control_on_front_and_pause_surfaces ... ok
+test frontend::tests::retail_skirmish_preview_matches_original_unoccluded_pixels ... ok
+test loading::tests::unresolved_saved_identity_does_not_show_the_previous_country_or_names ... ok
+test localization::tests::localized_names_and_missing_null_empty_or_unreadable_strings ... ok
+test match_config::tests::participants_reject_invalid_names_and_conflicting_choices ... ok
+test menu::art::tests::optional_menu_art_rejects_hostile_or_unexpected_canvases ... ok
+test frontend::tests::retail_chooser_previews_match_complete_original_regions ... ok
+test menu::confirmation::tests::filename_labels_quote_the_basename_without_exposing_directories ... ok
+test menu::confirmation::tests::filename_wrapping_preserves_unicode_spaces_and_every_reachable_line ... ok
+test menu::draw::tests::save_edit_text_keeps_caret_unicode_and_short_names_within_measured_width ... ok
+test menu::maps::tests::list_selection_scrolling_and_dragging_stay_within_the_catalog ... ok
+test menu::maps::tests::packet_uses_active_order_and_exact_mode_tokens ... ok
+test menu::message::tests::oversized_unicode_glyphs_always_advance ... ok
+test menu::message::tests::pause_compositor_paints_a_complete_line_beyond_the_old_character_cap ... ok
+test menu::message::tests::pause_wrap_scroll_and_resize_preserve_the_complete_diagnostic ... ok
+test menu::setup::tests::participant_popup_skips_conflicts_and_keeps_authored_start_indices ... ok
+test menu::setup::tests::rules_limits_dragging_and_overrides_remain_bounded ... ok
+test frontend::tests::retail_preview_start_markers_match_complete_original_regions ... ok
+test loading::tests::retail_loading_glyph_masks_and_badge_match_public_original_capture ... ok
+test menu::tests::modal_navigation_skips_disabled_controls_and_confirms_discard ... ok
+test menu::tests::names_geometry_and_small_surface_hits_are_bounded ... ok
+test menu::tests::retail_dialog_and_control_pixels_use_the_scoped_source_palettes ... ok
+test menu::tests::confirmations_distinguish_their_target_save_files ... ok
+test menu::tests::selected_save_name_replacement_filtering_and_navigation_keep_filename_rules ... ok
+test menu::tests::slot_listing_stays_bounded_and_never_follows_symlinks ... ok
+test menu::tests::slot_navigation_bounds_large_deltas_without_overflow ... ok
+test movie::retail_tests::malformed_video_payload_reports_an_error_from_the_worker ... ok
+test loading::tests::retail_country_choices_preserve_each_source_map_and_selected_bar_color ... ok
+test movie::tests::limited_range_packed_black_white_and_truncated_planes ... ok
+test movie::tests::rational_clock_has_no_per_frame_rounding_drift ... ok
+test movie::tests::retail_signed_terms_match_original_packed_color_samples ... ok
+test service::tests::map_flags_and_hostile_repair_globals_are_respected ... ok
+test session::save_tests::building_tab_uses_buildcat_instead_of_weapon_or_power ... ok
+test session::save_tests::localized_labels_and_new_cameos_load_but_changed_gameplay_rejects ... ok
+test session::save_tests::map_health_setup_change_rejects_affected_matches_without_rewriting ... ok
+test session::save_tests::map_unit_facing_old_match_compatibility_is_explicit ... ok
+test session::save_tests::map_unit_health_save_compatibility_preserves_unaffected_matches ... ok
+test session::save_tests::map_unit_identity_is_reconstructed_presentation_only ... ok
+test session::save_tests::saved_map_metadata_preserves_legacy_payload_and_gameplay_hashes ... ok
+test session::save_tests::setup_free_cells_skip_sparse_holes ... ok
+test loading::tests::retail_loading_preserves_the_stock_country_map_and_uses_the_selected_preview ... ok
+test session::save_tests::sparse_terrain_changes_setup_keys_and_rejects_old_rectangular_matches ... ok
+test session::starting_force_tests::configured_force_counts_include_zero_and_more_than_ten ... ok
+test session::starting_force_tests::generated_country_checks_owner_required_forbidden_and_kind ... ok
+test menu::tests::long_save_names_keep_the_edited_suffix_visible ... ok
+test sidebar::power::tests::fallback_and_demand_marker_stay_in_the_channel_on_small_windows ... ok
+test sidebar::power::tests::levels_handle_empty_deficit_balance_surplus_and_extreme_totals ... ok
+test sidebar::art::tests::retail_soviet_controls_use_source_dimensions_and_bounded_hits ... ok
+test sidebar::radar::tests::clock_uses_sim_ticks_reverses_without_jumps_and_freezes_on_redraw ... ok
+test sidebar::radar::tests::letterboxing_targets_only_painted_cells ... ok
+test sidebar::radar::tests::map_extent_budget_revalidates_programmatic_radar_maps_before_loading ... ok
+test menu::tests::save_name_selection_is_visible_only_inside_the_editor_at_three_sizes ... ok
+test sidebar::radar::tests::tileset_budget_error_reaches_radar_terrain_loading ... ok
+test sidebar::scroll::tests::only_complete_rows_fit_above_the_bottom_cap ... ok
+test sidebar::tests::clock_is_bounded_by_actual_progress_including_extreme_values ... ok
+test sidebar::tests::full_power_duration_rounding_is_bounded ... ok
+test sidebar::tests::native_tab_and_cameo_geometry_excludes_gutters ... ok
+test sidebar::text::hostile_layout_tests::zero_width_glyphs_cannot_expand_tooltip_allocation ... ok
+test sidebar::text::retail_tests::retail_text_pixels_metrics_and_wide_tooltips_match_game_font ... ok
+test sidebar::text::tests::fallback_names_and_long_words_stay_inside_tooltips ... ok
+test snapshot::options_tests::configured_header_rejects_hostile_and_truncated_options ... ok
+test snapshot::participant_tests::participant_metadata_is_bounded_and_validated_before_reconstruction ... ok
+test frontend::warning_tests::retail_warning_frames_match_original_capture_well_and_wrap ... ok
+test snapshot::storage::tests::legal_254_byte_unicode_target_can_be_saved_and_replaced ... ok
+test snapshot::storage::tests::occupied_symlink_candidates_are_not_followed ... ok
+test snapshot::storage::tests::legal_255_byte_ascii_target_can_be_saved_and_replaced ... ok
+test snapshot::storage::tests::rename_failure_removes_only_the_owned_temporary_file ... ok
+test snapshot::storage::tests::temporary_candidate_cannot_publish_the_destination_before_replacement ... ok
+test snapshot::tests::saved_map_header_bounds_lengths_and_rejects_paths ... ok
+test trails::tests::segments_clip_before_rasterizing_and_preserve_alpha_and_sidebar ... ok
+test snapshot::storage::tests::occupied_temporary_candidates_are_never_truncated_and_retries_are_bounded ... ok
+test sidebar::radar::tests::retail_radar_frames_rules_power_live_map_and_save_roundtrip ... ok
+test frontend::tests::retail_battle_catalog_previews_every_available_map ... ok
+test sidebar::power::tests::retail_power_source_pixels_placement_destruction_ownership_and_save_load ... ok
+test sidebar::art::tests::retail_sidebar_matches_source_pixels_and_all_clock_phases ... ok
+test menu::confirmation::tests::confirmation_targets_wrap_inside_both_skins_with_fallback_and_retail_fonts ... ok
+test movie::retail_tests::retail_video_planes_match_optional_independent_oracle_and_export_rgb_frames ... ok
+
+test result: ok. 126 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 33.81s
+
+     Running unittests src/main.rs (target/debug/deps/openyr-63cf94e3597c97b4)
+
+running 230 tests
+test camera::tests::edge_zones_reject_sidebar_outside_letterboxing_and_invalid_points ... ok
+test camera::tests::pan_distance_is_independent_of_redraw_rate_zoom_and_diagonal ... ok
+test camera::tests::scroll_directions_follow_bounds_for_every_zoom_and_viewport ... ok
+test control_groups::tests::teams_replace_extend_and_prune_without_crossing_slots ... ok
+test camera::tests::camera_bounds_center_small_maps_and_exclude_sidebar_width ... ok
+test control_groups::tests::centering_requires_two_deliberate_same_team_recalls_within_the_native_window ... ok
+test front_flow::tests::initial_camera_center_excludes_the_sidebar_and_accounts_for_zoom ... ok
+test front_flow::tests::movie_failure::movie_failure_recovery_drops_queued_retry_and_clears_input ... ok
+test front_flow::tests::movie_failure::movie_failure_recovery_ignores_late_load_results_and_progress ... ok
+test front_flow::tests::retail_front_art_reload_replaces_cached_pause_menu_art ... ok
+test camera::tests::retail_edge_cursors_share_motion_guards_and_preserve_match_bytes ... ok
+test camera::tests::retail_camera_handlers_preserve_match_state_and_guard_gestures ... ok
+test front_flow::tests::retail_front_recovery_messages_wrap_scroll_and_return_through_actual_handlers ... ok
+test control_groups::tests::retail_team_keys_preserve_match_state_and_drive_selection_orders_and_camera ... ok
+test front_flow::tests::retail_skirmish_heading_tracks_dialog_refreshes ... ok
+test front_flow::tests::retail_main_menu_cancel_and_immediate_retry_enters_the_requested_match ... ok
+test hover_feedback::current_tests::inactive_scenes_have_no_current_attack_targets ... ok
+test front_flow::tests::retail_battle_map_chooser_previews_cancels_and_commits_the_selected_map ... ok
+test hover_feedback::tests::brackets_clip_to_world_keep_fixed_corners_and_reject_invalid_frames ... ok
+test hover_feedback::tests::ownership::all_selection::select_all_cleans_gestures_modes_and_timing_but_retains_ready_work_and_teams ... ok
+test front_flow::tests::retail_front_menu_preview_start_save_return_load_cancel_options_and_exit ... ok
+test hover_feedback::tests::ownership::all_selection::select_all_guards_preserve_selection_and_menu_name_input ... ok
+test hover_feedback::tests::ownership::all_selection::select_all_handles_empty_and_single_unit_feedback ... ok
+test hover_feedback::tests::ownership::base_navigation::base_binding_guards_menu_text_and_ctrl_h_harvest_dispatch ... ok
+test front_flow::tests::retail_participant_controls_reach_loading_match_and_restart ... ok
+test hover_feedback::tests::ownership::base_navigation::base_shortcut_centers_the_drawn_yard_without_changing_match_state ... ok
+test hover_feedback::tests::ownership::all_selection::select_all_covers_mixed_offscreen_and_harvester_units_without_changing_match ... ok
+test hover_feedback::tests::ownership::building_idle::building_idle_background_excludes_known_structures_but_preview_keeps_them ... ok
+test hover_feedback::tests::ownership::base_navigation::base_shortcut_clamps_prefers_oldest_owned_yard_and_reports_no_base ... ok
+test hover_feedback::tests::ownership::building_idle::building_idle_neutral_layers_animate_without_production_or_saved_state_changes ... ok
+test hover_feedback::tests::ownership::command_world::command_world_menu_editing_and_documented_plain_commands_still_work ... ok
+test hover_feedback::tests::ownership::command_world::command_world_repeats_need_release_or_a_fresh_plain_press ... ok
+test hover_feedback::tests::ownership::command_world::command_world_storage_menu_and_camera_routes_stay_inert ... ok
+test hover_feedback::tests::ownership::command_world::command_world_chords_preserve_orders_modes_and_pointer_gestures ... ok
+test hover_feedback::current_tests::retail_current_targets_follow_sim_selection_and_lifecycle_without_changing_saves ... ok
+test hover_feedback::tests::ownership::base_navigation::base_navigation_preserves_modes_and_cancels_old_pointer_releases ... ok
+test hover_feedback::tests::ownership::map_unit_facing::map_unit_facing_setup_preserves_headings_and_exact_save_bytes ... ok
+test hover_feedback::tests::ownership::map_unit_health::map_unit_health_applies_to_vehicle_infantry_and_aircraft_setup ... ok
+test hover_feedback::tests::ownership::hover_health::hover_health_respects_input_ownership_and_keeps_prior_visibility ... ok
+test hover_feedback::tests::ownership::map_unit_lifetime::map_unit_lifetime_background_retains_preview_and_unsupported_fallback ... ok
+test hover_feedback::tests::ownership::map_unit_lifetime::map_unit_lifetime_missing_bank_uses_a_marker_without_mutating_state ... ok
+test combat_depth_tests::retail_combat_art_respects_foreground_bodies_and_reconstructs_saved_flights ... FAILED
+test hover_feedback::tests::ownership::map_unit_lifetime::map_unit_lifetime_native_healthy_damage_movement_load_owner_and_destruction ... ok
+test front_flow::tests::retail_front_menu_restores_the_saved_map_instead_of_the_default ... ok
+test hover_feedback::tests::ownership::menu_click::menu_click_audio_follows_accepted_native_mouse_keyboard_and_mute_routing ... ok
+test hover_feedback::tests::ownership::map_unit_lifetime::map_unit_lifetime_overlapping_shadows_darken_once ... ok
+test hover_feedback::tests::ownership::modal_repeat::dropdown_close_suppresses_the_arrow_that_was_held_inside_it ... ok
+test hover_feedback::tests::ownership::modal_repeat::focus_and_prepared_match_commit_do_not_revive_held_keys ... ok
+test hover_feedback::tests::ownership::modal_repeat::modal_transition_requires_a_fresh_press_before_save_name_edits ... ok
+test hover_feedback::tests::ownership::new_match_saves::new_match_save_target_keeps_loaded_and_in_match_restart_policies ... ok
+test hover_feedback::tests::ownership::new_match_saves::new_match_save_target_waits_for_success_not_preview_failure_or_cancellation ... ok
+test hover_feedback::tests::ownership::new_match_saves::new_match_save_target_preserves_named_file_and_writes_fresh_quicksave ... ok
+test hover_feedback::tests::ownership::modal_repeat::menu_keys_do_not_rearm_world_pan_or_zoom_after_keyboard_or_pointer_resume ... ok
+test hover_feedback::tests::ownership::next_unit::next_unit_cancels_old_gestures_modes_and_timing_but_keeps_ready_work_and_teams ... ok
+test hover_feedback::tests::ownership::next_unit::next_unit_handles_singleton_and_empty_world_without_extra_state ... ok
+test hover_feedback::tests::ownership::next_unit::next_unit_guards_preserve_selection_camera_and_menu_text ... ok
+test hover_feedback::tests::ownership::placement::placement_mode_new_attack_move_replaces_placement_but_production_does_not ... ok
+test hover_feedback::tests::ownership::placement::placement_mode_native_compositor_proof ... ok
+test hover_feedback::tests::ownership::preferences_error_modal_cancels_world_modes_before_recovery ... ok
+test hover_feedback::tests::ownership::preferences_error_modal_keeps_successful_live_mute_nonmodal ... ok
+test hover_feedback::tests::ownership::save_catalog::save_catalog_keeps_a_new_named_save_reachable_after_sixty_four_slots ... ok
+test hover_feedback::tests::ownership::placement::placement_mode_pickup_and_completion_do_not_resurrect_attack_move ... ok
+test hover_feedback::tests::ownership::next_unit::next_unit_cycles_creation_order_filters_and_wraps_without_simulation_changes ... ok
+test hover_feedback::tests::ownership::save_catalog::save_catalog_retains_the_directory_scan_bound_and_no_follow_filtering ... ok
+test hover_feedback::tests::ownership::map_health::map_health_setup_roundtrip_animation_and_native_feedback ... ok
+test hover_feedback::tests::ownership::sidebar_keys::category_keys_retain_rows_and_reset_fractional_wheel_input ... ok
+test hover_feedback::tests::ownership::sidebar_keys::category_keys_cancel_old_gestures_and_placement_without_losing_ready_work ... ok
+test hover_feedback::tests::ownership::sidebar_keys::category_keys_respect_guards_and_leave_menu_text_available ... ok
+test front_flow::tests::retail_skirmish_settings_start_save_restore_and_restart_both_participants ... FAILED
+test hover_feedback::tests::ownership::sidebar_overrides::sidebar_loose_overrides_work_without_a_valid_side_archive ... ok
+test hover_feedback::tests::ownership::hover_health::hover_health_shows_healthy_selection_attack_and_structure_previews ... ok
+test hover_feedback::tests::ownership::sidebar_overrides::sidebar_loose_overrides_preserve_selected_archive_isolation_and_session_bytes ... ok
+test hover_feedback::tests::ownership::sidebar_press::sidebar_tab_press_fallback_recovers_exact_selected_pixels ... ok
+test hover_feedback::tests::ownership::sidebar_press::sidebar_tab_press_cancels_on_pointer_focus_menu_right_press_and_shortcuts ... ok
+test hover_feedback::tests::ownership::sidebar_overrides::sidebar_loose_overrides_bound_bad_art_without_falling_through_to_other_archives ... ok
+test hover_feedback::tests::ownership::team_centering::team_centering_default_frame_retains_existing_coordinates ... ok
+test hover_feedback::tests::ownership::team_centering::team_centering_compositor_uses_frame_changed_without_a_pixels_surface ... ok
+test hover_feedback::tests::ownership::team_command::team_command_chords_cannot_center_or_bridge_a_plain_recall_pair ... ok
+test hover_feedback::tests::ownership::sidebar_ownership::sidebar_tab_ownership_blocks_edge_pan_and_wheel_without_cancelling_press ... ok
+test hover_feedback::tests::ownership::team_command::team_command_control_cannot_clear_a_team_with_empty_selection ... ok
+test hover_feedback::tests::ownership::team_command::team_command_guards_keep_classic_shortcuts_and_menu_input_working ... ok
+test hover_feedback::tests::ownership::team_command::team_command_chords_preserve_selection_modes_gestures_and_membership ... ok
+test hover_feedback::tests::ownership::sidebar_keys::category_keys_match_mouse_tab_composition_and_preserve_match ... ok
+test hover_feedback::tests::ownership::map_unit_health::map_unit_health_native_pips_and_pending_orders_preserve_session ... ok
+test hover_feedback::tests::ownership::team_centering::team_centering_matches_configured_viewport_for_all_slots_and_zoom ... ok
+test hover_feedback::tests::ownership::type_selection::double_press_type_selection_expands_across_the_map ... ok
+test hover_feedback::tests::ownership::type_selection::double_press_type_selection_needs_same_selection_inside_the_window ... ok
+test hover_feedback::tests::ownership::type_selection::mixed_type_selection_retains_owned_seeds_and_cancels_old_gestures_only ... ok
+test hover_feedback::tests::ownership::type_interruption::accepted_pointer_and_wheel_input_interrupt_type_sequence ... ok
+test hover_feedback::tests::ownership::type_selection::type_selection_respects_repeat_focus_modifiers_outcome_and_menu_text ... ok
+test hover_feedback::tests::ownership::type_selection::type_selection_uses_half_open_world_edges_at_low_and_high_zoom ... ok
+test hover_feedback::tests::ownership::sidebar_ownership::sidebar_tab_ownership_suppresses_world_feedback_until_release ... ok
+test hover_feedback::tests::ownership::type_interruption::rejected_modified_t_cannot_complete_a_later_plain_t_pair ... ok
+test hover_feedback::tests::ownership::unit_follow::unit_follow_cleans_old_modes_and_keeps_ready_work_orders_and_teams ... ok
+test hover_feedback::tests::ownership::type_interruption::ignored_events_and_pointer_motion_keep_consecutive_t_working ... ok
+test hover_feedback::tests::ownership::sidebar_press::sidebar_tab_press_uses_authored_variants_and_tracks_origin_through_release ... ok
+test hover_feedback::tests::ownership::type_selection::type_selection_expands_visible_owned_types_without_mutating_the_match ... ok
+test hover_feedback::tests::ownership::world_feedback_ownership_handles_net_zero_right_press_and_existing_routes ... ok
+test hover_feedback::tests::ownership::world_feedback_ownership_keeps_committed_targets_and_clears_on_focus_loss ... ok
+test hover_feedback::tests::ownership::world_feedback_ownership_matches_ignored_keyboard_pan_clicks ... ok
+test hover_feedback::tests::ownership::unit_follow::unit_follow_retains_keyboard_guards_and_filters_selection_without_replacing_it ... ok
+test hover_feedback::tests::ownership::unit_status::classic_status_tracks_selection_cursor_cancel_and_preserves_session ... ok
+test input_tests::focus_input_tests::focus_loss_clears_held_input_modes_and_pointer_ownership_but_keeps_selection ... ok
+test input_tests::focus_input_tests::right_click_cancels_modes_before_selection_and_cancels_gestures_without_orders ... ok
+test hover_feedback::tests::ownership::type_interruption::fresh_keys_between_t_presses_restart_viewport_selection ... ok
+test keyboard_input::tests::attack_move::attack_move_key_cancels_conflicting_modes_and_stale_pointer_gestures ... ok
+test hover_feedback::tests::ownership::world_feedback_ownership_covers_real_actions_modes_and_saved_session ... ok
+test keyboard_input::tests::attack_move::attack_move_key_repeat_cannot_rearm_after_an_order ... ok
+test keyboard_input::tests::attack_move::attack_move_key_repeat_respects_cancellation_focus_and_menu_guards ... ok
+test keyboard_input::tests::attack_move::attack_move_key_removes_the_old_rubber_band_before_stale_release ... ok
+test hover_feedback::tests::ownership::unit_follow::unit_follow_tracks_moving_subcell_ground_positions_without_changing_saved_state ... ok
+test hover_feedback::tests::retail_hover_previews_match_clicks_and_guard_lifecycle_without_changing_saves ... ok
+test keyboard_input::tests::focus_return_repeats_stay_suppressed_until_release_or_a_fresh_press ... ok
+test keyboard_input::tests::guarded_presses_do_not_edit_or_navigate_menus_and_releases_still_clear_keys ... ok
+test keyboard_input::tests::service_tracking::service_mode_pan_cleanup_obeys_repeat_synthetic_focus_and_menu_guards ... ok
+test keyboard_input::tests::camera_tracking::camera_key_cancels_box_before_redraw_and_stale_release ... ok
+test keyboard_input::tests::service_tracking::service_mode_pan_cleanup_preserves_mode_toggles_selection_and_queued_intents ... ok
+test keyboard_input::tests::synthesized_enter_cannot_delete_a_save_but_a_deliberate_press_can ... ok
+test keyboard_input::tests::synthesized_or_unfocused_presses_cannot_open_load_or_arm_world_input ... ok
+test launcher::tests::arguments_preserve_explicit_paths_and_headless_options ... ok
+test keyboard_input::tests::camera_tracking::camera_key_tracking_cleanup_keeps_keyboard_dispatch_guards ... ok
+test launcher::tests::discovery_checks_overrides_remembers_paths_and_recovers_from_stale_preferences ... ok
+test launcher::tests::remembered_directory_cleans_failed_publication_before_retry ... ok
+test launcher::tests::remembered_directory_preserves_occupied_temporary_file ... ok
+test launcher::tests::remembered_directory_preserves_temporary_symlink_target ... ok
+test launcher::tests::selected_install_is_validated_before_remembering ... ok
+test launcher::tests::selected_install_rejects_ambiguous_files_before_remembering ... ok
+test launcher::tests::selected_install_rejects_symlink_archives_before_remembering ... ok
+test launcher::tests::selected_install_retains_previous_folder_on_invalid_archives_then_recovers ... ok
+test menu_flow::loading::tests::cancelling_a_queued_retry_drops_it_and_ignores_stale_progress ... ok
+test menu_flow::loading::tests::retry_keeps_its_map_options_and_recovery_route_until_worker_finishes ... ok
+test keyboard_input::tests::service_tracking::service_mode_pan_cleanup_restores_a_visible_fresh_box_gesture ... ok
+test menu_flow::tests::confirmation_scrolling_preserves_button_navigation_and_decline ... ok
+test menu_flow::tests::delete_slots_rejects_stale_symlink_directory_and_outside_targets ... ok
+test menu_flow::tests::delete_slots_requires_confirmation_and_refreshes_scrolling_in_both_flows ... ok
+test menu_flow::tests::escape_cancels_commands_before_pause_and_modal_clicks_do_not_become_orders ... ok
+test menu_flow::tests::keyboard_tracking::menu_keyboard_tracking_interrupt_prevents_stale_confirmation_delete ... ok
+test menu_flow::tests::keyboard_tracking::menu_keyboard_tracking_interrupt_stops_slider_and_map_thumb_drags ... ok
+test menu_flow::tests::keyboard_tracking::menu_keyboard_tracking_preserves_popup_navigation_and_synthetic_key_guards ... ok
+test menu_flow::tests::list_keys::saved_list_keys_handle_short_empty_and_unselected_lists ... ok
+test menu_flow::tests::list_keys::saved_list_keys_obey_focus_guards_and_leave_save_editor_alone ... ok
+test menu_flow::loading::tests::saved_map_preview_replaces_the_old_thumbnail_only_for_the_active_load ... ok
+test menu_flow::tests::name_shortcuts_replace_clear_bound_and_reset_in_save_and_both_player_fields ... ok
+test menu_flow::tests::preferences_are_bounded_and_errors_remain_recoverable ... ok
+test menu_flow::tests::preferences_storage::preferences_storage_preserves_a_preexisting_temporary_symlink_and_its_target ... ok
+test menu_flow::tests::preferences_storage::preferences_storage_publication_error_returns_to_controls_and_allows_retry ... ok
+test menu_flow::tests::list_keys::saved_list_keys_page_and_reveal_exact_confirmation_targets ... ok
+test launcher::tests::native_dialog_scripts_compile_without_opening_ui ... ok
+test input_tests::retail_pointer_tests::retail_left_orders_right_cancels_drag_does_not_order_and_service_cursors_share_validation ... ok
+test menu_flow::tests::retail_long_save_name_edits_preserve_the_complete_filename_and_match ... ok
+test hover_feedback::tests::retail_service_hover_previews_match_clicks_without_changing_saves ... ok
+test menu_flow::tests::retail_name_shortcut_save_preserves_complete_match_bytes ... ok
+test menu_flow::tests::retail_delete_saved_matches_keeps_live_state_and_supports_front_menus ... ok
+test menu_flow::tests::retail_pause_recovery_scrolling_keeps_the_match_and_routes_inputs ... ok
+test menu_flow::tests::save_identity::accepted_name_edits_clear_selected_identity_but_ignored_input_does_not ... ok
+test menu_flow::tests::save_identity::mismatched_in_memory_selection_cannot_derive_or_retain_an_overwrite_target ... ok
+test menu_flow::tests::save_identity::selecting_a_save_keeps_the_actual_path_through_confirmation_and_decline ... ok
+test menu_flow::tests::save_identity::stale_selected_targets_do_not_fall_back_to_a_sibling_or_outside_path ... ok
+test menu_flow::tests::save_name_select_all_does_not_insert_shortcut_text ... ok
+test menu_flow::tests::retail_quicksave_clears_modal_input_on_success_and_failure ... ok
+test menu_flow::tests::retail_confirmation_targets_preserve_save_load_delete_and_match_bytes ... ok
+test menu_flow::tests::retail_menu_pause_save_overwrite_async_load_cancel_restart_and_results ... ok
+test keyboard_input::tests::camera_tracking::camera_keys_cancel_all_pointer_tracking_without_waiting_for_redraw ... ok
+test order_feedback::placement_tests::placement_notice_requires_an_action_or_mode_and_expires ... ok
+test menu_flow::tests::retail_saved_load_success_is_visible_only_after_committing_the_match ... ok
+test order_feedback::production_tests::production_feedback_maps_commands_and_expires ... ok
+test hover_feedback::tests::ownership::unit_follow::unit_follow_stops_for_manual_input_context_and_invalid_targets ... ok
+test order_feedback::radar_tests::radar_notices_preserve_the_existing_command_sequence_and_clear_on_navigation ... ok
+test order_feedback::production_tests::retail_sidebar_clicks_acknowledge_queue_hold_resume_and_cancel ... ok
+test order_feedback::radar_tests::retail_radar_input_acknowledges_orders_with_unchanged_commands_and_save_bytes ... ok
+test order_feedback::service_tests::service_feedback_requires_a_service_action_and_expires ... ok
+test order_feedback::tests::harvest_orders_name_the_action_in_feedback ... ok
+test order_feedback::tests::load_notice_bounds_names_omits_paths_and_uses_the_existing_expiry ... ok
+test order_feedback::tests::notice_expiry_and_inactive_keyboard_input_do_not_submit_commands ... ok
+test missile_tests::retail_missiles_draw_from_saved_motion_after_shooter_loss ... ok
+test preferences_storage::tests::preferences_storage_bounds_collision_retries_and_preserves_destination ... ok
+test preferences_storage::tests::preferences_storage_removes_only_owned_candidate_after_failed_rename ... ok
+test preferences_storage::tests::preferences_storage_skips_occupied_files_directories_and_links ... ok
+test order_feedback::tests::retail_tactical_orders_have_visible_feedback_without_changing_saved_state ... ok
+test render_tests::default_view_keeps_native_art_pixels ... ok
+test render_tests::effect_translucency_blends_color_without_painting_a_shadow ... ok
+test render_tests::elevated_camera_targets_land_at_the_drawn_world_viewport_center ... ok
+test render_tests::extreme_attachment_offsets_clip_without_coordinate_overflow ... ok
+test render_tests::ground_camera_without_an_authored_height_keeps_flat_centering ... ok
+test render_tests::radar_navigation_centers_the_world_camera_at_every_zoom ... ok
+test render_tests::radar_orders_use_commands_and_preserve_selection ... ok
+test render_tests::render_scale_validation_matches_the_renderer ... ok
+test death_tests::retail_infantry_death_composition_proof has been running for over 60 seconds
+test missile_tests::retail_animated_projectile_cycles_and_rebuilds_after_load ... ok
+test production_tests::retail_sidebar_holds_resumes_cancels_and_restores_paid_work ... ok
+test order_feedback::placement_tests::retail_placement_notices_preserve_ready_queue_commands_and_complete_snapshots ... ok
+test render_tests::save_load_options_mix_with_absolute_frame_ticks ... ok
+test render_tests::shadow_union_darkens_ground_once_and_leaves_body_to_its_pass ... ok
+test render_tests::voxel_body_coverage_blends_without_becoming_a_ground_shadow ... ok
+test render_tests::retail_sparse_boundary_cursor_proof ... ok
+test selection_box_tests::box_selection_follows_the_drawn_subcell_unit_anchor ... ok
+test selection_box_tests::box_selection_tracks_actual_sim_movement_without_mutating_it ... ok
+test selection_box_tests::selection_box_bounds_reject_invalid_extents_and_keep_viewport_edges_half_open ... ok
+test selection_box_tests::selection_box_does_not_paint_over_the_sidebar ... ok
+test selection_box_tests::selection_box_picker_excludes_hidden_and_enemy_anchors_without_changing_sim ... ok
+test service_input_tests::service_modes_cancel_placement_and_stale_pointer_orders ... ok
+test surface_input::tests::cancel::right_cancellation_removes_the_rubber_band_and_stale_left_release_stays_inert ... ok
+test surface_input::tests::cancel::right_press_cancels_left_and_radar_gestures_before_all_match_routes ... ok
+test surface_input::tests::cancel::world_right_gesture_owns_conflicting_left_presses_until_release ... ok
+test surface_input::tests::drag::click_jitter_uses_press_displacement_and_out_and_back_remains_a_drag ... ok
+test surface_input::tests::drag::small_drags_respect_bounds_and_invalidation_rejects_stale_releases ... ok
+test surface_input::tests::drag::small_motion_drags_pan_without_losing_threshold_pixels_or_selection ... ok
+test surface_input::tests::invalid_surface_mapping_cancels_every_pointer_gesture ... ok
+test surface_input::tests::keyboard_pan::held_camera_key_box_feedback_returns_after_key_up ... ok
+test surface_input::tests::keyboard_pan::held_camera_key_rejects_new_world_gestures_before_redraw ... ok
+test surface_input::tests::keyboard_pan::keyboard_pan_ownership_uses_net_direction_and_keeps_sidebar_and_menu_routes ... ok
+test surface_input::tests::menu_motion_keeps_the_first_match_pan_delta_local ... ok
+test surface_input::tests::menu_wheel_accumulates_pixel_and_fractional_line_motion ... ok
+test surface_input::tests::menu_wheel_discards_partial_gestures_on_input_and_page_changes ... ok
+test surface_input::tests::menu_wheel_preserves_slots_and_scrolls_dialogs_by_complete_rows ... ok
+test surface_input::tests::retail_pointer_guards_preserve_match_saves_and_valid_world_actions ... ok
+test surface_input::tests::surface_change_between_press_and_release_cannot_activate_a_menu_control ... ok
+test surface_input::tests::wheel_requires_fresh_in_frame_motion_and_ignores_empty_or_invalid_deltas ... ok
+test unit_status::tests::health_clips_world_edges_and_rejects_nonfinite_or_malformed_inputs ... ok
+test scrolling_tests::retail_sidebar_scrolling_reaches_every_slot_and_routes_production_without_zoom ... ok
+test window_size::tests::compact_menu_buttons_and_slider_drags_use_the_same_frame_as_drawing ... ok
+test window_size::tests::frames_fit_physical_and_logical_bounds_without_unbounded_allocations ... ok
+test window_size::tests::resize_preserves_zoom_and_cancels_old_gestures_even_when_minimized ... ok
+test unit_status::tests::health_pips_have_exact_empty_full_and_damage_boundaries ... ok
+test missile_tests::retail_line_trails_follow_actual_flight_and_restart_after_load ... ok
+test render_tests::retail_elevated_camera_uses_the_drawn_anchor_for_centering_and_selection ... ok
+test order_feedback::service_tests::retail_service_notices_match_guarded_clicks_and_preserve_commands_and_saves ... ok
+test window_size::tests::retail_compact_start_loading_sidebar_selection_and_pause_share_dimensions ... ok
+test render_tests::retail_native_detail_and_event_effect_proof ... ok
+test missile_tests::retail_projectile_trailers_follow_flight_and_rebuild_after_load has been running for over 60 seconds
+test missile_tests::retail_projectile_trailers_follow_flight_and_rebuild_after_load ... ok
+test death_tests::retail_infantry_death_composition_proof ... ok
+
+failures:
+
+---- combat_depth_tests::retail_combat_art_respects_foreground_bodies_and_reconstructs_saved_flights stdout ----
+OpenYR: match OpenYR: EB1.MMX | $0 | tick 4 | AI groups 0 | 0 selected | Won
+rear=true, overlapping combat art {"TWLT070"}
+
+thread 'combat_depth_tests::retail_combat_art_respects_foreground_bodies_and_reconstructs_saved_flights' (106460257) panicked at crates/yr-app/src/combat_depth_tests.rs:197:17:
+assertion `left == right` failed: foreground body at tick 4, rear=false, pixel 680146
+  left: [112, 100, 78]
+ right: [113, 97, 60]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- front_flow::tests::retail_skirmish_settings_start_save_restore_and_restart_both_participants stdout ----
+OpenYR: native main menu ready; match not started
+OpenYR: saved /var/folders/j2/5pzrt_0s7v1cb4j8h5f4bp3c0000gn/T/openyr-setup-options-45156/Settings.oyrsave at tick 1, hash b3b7b060c10d0b7d, Ongoing
+OpenYR: native main menu ready; match not started
+OpenYR: loaded /var/folders/j2/5pzrt_0s7v1cb4j8h5f4bp3c0000gn/T/openyr-setup-options-45156/Settings.oyrsave at tick 1, hash b3b7b060c10d0b7d, Ongoing
+OpenYR: native main menu ready; match not started
+
+thread 'front_flow::tests::retail_skirmish_settings_start_save_restore_and_restart_both_participants' (106460994) panicked at crates/yr-app/src/front_flow/tests.rs:281:5:
+assertion `left == right` failed: the prior shipped EB1 tick-1 state is retained
+  left: 5044531367135213532
+ right: 6330588265516304202
+
+
+failures:
+    combat_depth_tests::retail_combat_art_respects_foreground_bodies_and_reconstructs_saved_flights
+    front_flow::tests::retail_skirmish_settings_start_save_restore_and_restart_both_participants
+
+test result: FAILED. 228 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 112.90s
+
+error: test failed, to rerun pass `-p yr-app --bin openyr`

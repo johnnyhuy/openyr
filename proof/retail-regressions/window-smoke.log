@@ -1,0 +1,8 @@
+['python3', 'scripts/proof_build.py', 'run', '--receipt', '.tmp/gameplay-339-build/receipt.json', '--', '/Users/johnny/Games/RA2YR/prefix/drive_c/Westwood/RA2', 'EB1.MMX']
+Verified: /Users/johnny/.paseo/worktrees/0vvslhv7/immense-fireant/.tmp/gameplay-339-build/program
+OpenYR: rendered EB1.MMX (URBAN, 7378 tiles, 106 templates, 0 missing, 527 object SHPs, 0 markers, 3780x2115 @ scale 1)
+OpenYR: session live, 22 units, 156 buildings, $10000
+OpenYR: left-click select/order, box select, T=select visible matching types, P=select all owned units, N=next owned unit, F=follow selected unit, Ctrl+1-9=assign team, 1-9=recall (twice=center), Shift+number=add team, right-click cancel, A=attack-move, S=stop, H=center base, Ctrl+H=harvest, K=repair, L=sell, M=mute, F5=save, F9=load, Esc=pause, right-drag/arrows pan, wheel zoom; sidebar: Q/W/E/R select categories, left-click build or place a ready structure, right-click hold/cancel
+OpenYR: audio output 48000 Hz, 2 channels, F32
+Window process still running after 15 seconds: True
+Exit after controlled cleanup: -15

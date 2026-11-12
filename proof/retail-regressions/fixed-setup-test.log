@@ -1,0 +1,21 @@
+   Compiling yr-app v0.1.0 (/Users/johnny/.paseo/worktrees/0vvslhv7/immense-fireant/crates/yr-app)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.54s
+warning: the following packages contain code that will be rejected by a future version of Rust: block v0.1.6
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
+     Running unittests src/main.rs (target/debug/deps/openyr-63cf94e3597c97b4)
+
+running 1 test
+OpenYR: native main menu ready; match not started
+OpenYR: saved /var/folders/j2/5pzrt_0s7v1cb4j8h5f4bp3c0000gn/T/openyr-setup-options-8818/Settings.oyrsave at tick 1, hash b3b7b060c10d0b7d, Ongoing
+OpenYR: native main menu ready; match not started
+OpenYR: loaded /var/folders/j2/5pzrt_0s7v1cb4j8h5f4bp3c0000gn/T/openyr-setup-options-8818/Settings.oyrsave at tick 1, hash b3b7b060c10d0b7d, Ongoing
+OpenYR: native main menu ready; match not started
+OpenYR: saved /var/folders/j2/5pzrt_0s7v1cb4j8h5f4bp3c0000gn/T/openyr-setup-options-8818/Legacy.oyrsave at tick 1, hash 4601c68d2468f7dc, Ongoing
+OpenYR: loaded /var/folders/j2/5pzrt_0s7v1cb4j8h5f4bp3c0000gn/T/openyr-setup-options-8818/Legacy.oyrsave at tick 1, hash 4601c68d2468f7dc, Ongoing
+Pre-correction EB1-v1.oyrsave rejected; source file and raw snapshot retained.
+Pre-correction EB1-v2.oyrsave rejected; source file and raw snapshot retained.
+Configured credits=5000 units=6 for both owners; tick1 hash=b3b7b060c10d0b7d; fresh legacy-profile EB1 seed42 hash=4601c68d2468f7dc; saved state retained.
+test front_flow::tests::retail_skirmish_settings_start_save_restore_and_restart_both_participants ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 229 filtered out; finished in 9.40s
+
