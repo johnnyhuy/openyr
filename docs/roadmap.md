@@ -30,6 +30,11 @@ Johnny on 2026-10-31.
       failed before any steps ran. Local retail/window verification also
       exercises Apple Silicon.
 
+- [x] Retain retail-art assertions under stable Clippy 1.100 (#374). Bounded
+      iterator loops preserve both rotor matrices, all cursor/control/clock/power
+      frame counts, literal values and source-pixel checks. Runtime rendering and
+      the required warning policy stay unchanged.
+
 - [x] Guard runtime proof against shared-target executable reuse (#238).
       A bounded Cargo/worktree fixture reproduces stale output. Isolated builds
       record source tree, Cargo command and executable size/SHA256; verified
@@ -49,10 +54,13 @@ Johnny on 2026-10-31.
       verified combat, infantry movement and base-operation GIFs from earlier
       native captures. Pin media outside main and record source versions,
       conversion hashes and sampled-tick limits (`docs/demos.md`).
-- [ ] Record a fresh current-build retail gameplay session (#339). Retail
-      data is absent in the current cloud environment; retain the verified
-      executable, full recording, event times and derived in-game GIFs once
-      a legally supplied install is available.
+- [x] Publish a fresh retail-backed gameplay recording and README showcase
+      (#339, #372). The isolated native EB1 export retains every tick from
+      2-3000 with synchronized audio, scripted production/placement/attack orders,
+      full MP4 and short gameplay GIFs. Final-build sample exports match exactly;
+      README links pin verified media outside main. This is shared-compositor
+      headless playback, not interactive desktop capture, original timing or
+      physical input evidence (`docs/demos.md`).
 
 ## M1: Asset layer (done 2026-10-17; open items carried forward)
 

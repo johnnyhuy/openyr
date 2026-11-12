@@ -158,11 +158,11 @@ fn retail_dialog_and_control_pixels_use_the_scoped_source_palettes() {
         }
     }
     let buttons = ShpFile::parse(archive.get_by_id(0x2f43_f08b).unwrap()).unwrap();
-    for i in 0..3 {
+    for (i, control) in art.controls[..3].iter().enumerate() {
         let indices = buttons.decode_frame_canvas(i).unwrap();
         for (p, &index) in indices.iter().enumerate() {
             assert_eq!(
-                &art.controls[i].pixels[p * 4..p * 4 + 4],
+                &control.pixels[p * 4..p * 4 + 4],
                 &if index == 0 { [0; 4] } else { side.rgba(index) }
             );
         }

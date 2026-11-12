@@ -206,9 +206,8 @@ mod tests {
         assert_eq!(art.clock.len(), 55);
         let clock = source("GCLOCK2.SHP");
         let mut previous = 0;
-        for i in 0..55 {
+        for (i, mask) in art.clock[..55].iter().enumerate() {
             let raw = clock.decode_frame_canvas(i).unwrap();
-            let mask = &art.clock[i];
             assert_eq!(mask.len(), 60 * 48);
             for (&pixel, &coverage) in raw.iter().zip(mask) {
                 assert_eq!(coverage != 0, pixel != 0, "clock {i}");

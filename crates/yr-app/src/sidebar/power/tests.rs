@@ -217,14 +217,14 @@ fn retail_power_source_pixels_placement_destruction_ownership_and_save_load() {
     let mut session = crate::session::load(dir.to_str().unwrap(), "EB1.MMX", 42).unwrap();
     session.sim.set_ai(None);
     assert_eq!(session.sidebar_art.power.len(), 5);
-    for i in 0..5 {
+    for (i, image) in session.sidebar_art.power[..5].iter().enumerate() {
         let source: Vec<_> = raw
             .decode_frame_canvas(i)
             .unwrap()
             .into_iter()
             .flat_map(|p| pal.rgba(p))
             .collect();
-        assert_eq!(session.sidebar_art.power[i].pixels, source);
+        assert_eq!(image.pixels, source);
     }
     let initial = session.sim.power();
     assert_eq!(initial.0, 200);

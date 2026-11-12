@@ -492,9 +492,9 @@ mod tests {
         let hva = part.hva.as_ref().unwrap();
         assert_eq!((hva.frames.len(), hva.limbs.len()), (2, 3));
         assert_eq!(hva.frames[0][2], hva.frames[1][2], "fuselage stays fixed");
-        for rotor in 0..2 {
-            assert!((hva.frames[1][rotor][0][0] - 0.809017).abs() < 0.00001);
-            assert!((hva.frames[1][rotor][0][1] - 0.587785).abs() < 0.00001);
+        for rotor in &hva.frames[1][..2] {
+            assert!((rotor[0][0] - 0.809017).abs() < 0.00001);
+            assert!((rotor[0][1] - 0.587785).abs() < 0.00001);
         }
         let pal = Palette::parse(fs.read("UNITTEM.PAL").unwrap()).unwrap();
         let out = std::env::var_os("OPENYR_HVA_DUMP").map(std::path::PathBuf::from);

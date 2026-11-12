@@ -74,11 +74,11 @@ fn retail_yr_and_ra2_frames_palette_and_final_hotspot_pixels_match_source() {
         (55, 43, 517)
     );
     assert_eq!(old.frames.len(), 450);
-    for i in 0..517 {
+    for (i, pixels) in art.frames[..517].iter().enumerate() {
         let raw = source.decode_frame_canvas(i).unwrap();
         for (p, &index) in raw.iter().enumerate() {
             assert_eq!(
-                &art.frames[i][p * 4..p * 4 + 4],
+                &pixels[p * 4..p * 4 + 4],
                 &if index == 0 {
                     [0; 4]
                 } else {

@@ -1,9 +1,55 @@
 # Game demonstrations
 
 The README puts battlefield action before menus in Markdown feature tables.
-The gameplay GIFs reuse earlier verified native shared-compositor captures.
-They show engine simulation and retail rendering, with source captions retained;
-they are sampled sequences rather than a fresh current-build window recording.
+The current gameplay table uses the retail-backed EB1 recording published with
+[PR #372](https://github.com/johnnyhuy/openyr/pull/372). The recording was captured
+on macOS through the native shared compositor with scripted orders. This README
+update verifies and publishes those existing captures; it does not claim another
+engine run in the Linux documentation environment.
+
+## Current gameplay recording
+
+[Full session with synchronized audio](https://raw.githubusercontent.com/johnnyhuy/openyr/de23c15a4b438357fb6db4a1291efaf8d74bf102/proof/retail-regressions/full-session.mp4)
+retains all 2999 frames from ticks 2-3000 at 1280x800, 15 fps and 199.933 seconds.
+Tick 1 is the initial state and is outside the MP4. Frame time is `(tick - 2) / 15`
+seconds. This is scripted headless gameplay, not a desktop recording, physical
+input test or original-game trace.
+
+| README GIF | Recorded action | Retained interval |
+| --- | --- | --- |
+| Production and placement | GAPOWR and unit batches queued at tick 2; power plant placed at tick 560. | Ticks 500-619, 33.2-41.2 seconds, 120 frames at 640x400. |
+| Battlefield assault | Attack-move every 450 ticks while enemy structures remain; vehicle production stays active. | Ticks 1400-1579, 93.2-105.2 seconds, 180 frames at 640x400. |
+
+The full session also queues GAREFN at tick 1200 and places it at tick 2480
+(165.2 seconds). GIFs use 15 fps, a 128-color palette and no audio; the full MP4
+retains music, voices and combat audio. These frame times describe the native demo,
+not calibrated original-game animation or wall-clock input timing.
+
+[The frozen capture bundle](https://github.com/johnnyhuy/openyr/tree/de23c15a4b438357fb6db4a1291efaf8d74bf102/proof/retail-regressions)
+retains the full MP4, both GIFs, ticked stills, conversion commands, event/audio
+metadata, runtime receipts and a 50-payload size/SHA256 manifest. Its isolated
+recording executable is from `089267c7a45a6d4effe3bbc45464afec216ee1cc`, tree
+`0587a946fa381f05f71f59ee446ddb7f2cdceb20`. The final verification executable is
+from `de0187ce95138d27eba61481dcd90b65bc20782e`, tree
+`068003bdbf657cd9700b8c20861b583668d61c31`, which equals merged main `2adf44b`.
+That intervening change updates tests and documentation; production code is
+unchanged. All twenty final-build exports match the recording's sampled exports
+byte for byte. The separate final run reaches Lost at tick 5738 through tick 6000;
+that continuation is not included in the 199.933-second MP4.
+
+This documentation pass verifies all 51 remote blob sizes and Git IDs, all 50
+payload SHA256 digests, the README media responses and decoded animation/video
+metadata. The source frames are gameplay output; neither their reuse nor the
+rendered README checks establish a new retail run or physical Mac/Retina/audio
+verification here. The source run's native window and audio smoke checks are
+reported separately in its proof notes. Known Mac Screen Recording permission
+blocks and release-upload HTTP 401 were not retried.
+
+## Earlier captures
+
+The former README gameplay previews remain available as historical examples.
+They predate the current recording and retain their source captions and sampled
+tick limits.
 The [gameplay media and conversion manifest](https://github.com/johnnyhuy/openyr/tree/371bb427c434218bc571a819ff7797b3472725e7/proof/gameplay-showcase)
 records input/output SHA256 values, byte sizes, dimensions, frame counts and the
 FFmpeg conversion command. All inputs were downloaded again and their sizes
@@ -39,11 +85,10 @@ The Save sequence and its receipt are retained in
 The display was 1280x800 with synthetic XTest input. The README uses image URLs
 instead of MP4 playback links.
 
-A fresh current-build gameplay recording remains in #339. The present Linux
-environment has no retail install or archive to restore; only authored test MIX
-fixtures were found. The README revision reuses captures and does not establish
-a new engine run. Known blocked Mac capture paths and release uploads returning
-HTTP 401 were not retried.
+The fresh recording and README follow-up for #339 use the current recording
+above. Older examples remain historical and are not relabelled as new captures.
+The Linux documentation environment still has no retail install; the recording
+came from the separate macOS run.
 
 ## Make a fresh demo
 
