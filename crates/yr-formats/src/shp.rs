@@ -148,7 +148,7 @@ impl<'a> ShpFile<'a> {
                 for row in out.chunks_exact_mut(w) {
                     let len = row_len(&mut c)?;
                     let src = c.take(len).ok_or(ShpError::Truncated)?;
-                    unrle_zero(src, row);
+                    unrle_zero(src, row).ok_or(ShpError::BadFrame(i))?;
                 }
             }
             kind => return Err(ShpError::UnknownCompression { frame: i, kind }),
@@ -181,22 +181,27 @@ fn row_len(c: &mut Cursor) -> Result<usize, ShpError> {
 }
 
 /// Zero-run RLE: `0x00 n` = n transparent pixels, any other byte = literal.
-/// Pixels past the row width are dropped; a short row stays transparent.
-fn unrle_zero(src: &[u8], row: &mut [u8]) {
-    let mut x = 0;
+/// Retail encoders may include one extra transparent pixel at the row end.
+/// Validate every pair, including bytes after the visible width is filled.
+fn unrle_zero(src: &[u8], row: &mut [u8]) -> Option<()> {
+    let mut x = 0usize;
     let mut i = 0;
-    while i < src.len() && x < row.len() {
+    while i < src.len() {
         let b = src[i];
         i += 1;
         if b == 0 {
-            let n = src.get(i).copied().unwrap_or(0) as usize;
+            let n = usize::from(*src.get(i)?);
             i += 1;
-            x += n;
+            x = x.checked_add(n)?;
+            if x > row.len().checked_add(1)? {
+                return None;
+            }
         } else {
-            row[x] = b;
+            *row.get_mut(x)? = b;
             x += 1;
         }
     }
+    (x >= row.len()).then_some(())
 }
 
 #[cfg(test)]
@@ -246,6 +251,70 @@ mod tests {
             shp.decode_frame(0).unwrap(),
             vec![7, 0, 0, 0, 9, 0, 0, 0, 0, 5]
         );
+    }
+
+    #[test]
+    fn rejects_malformed_rle_rows_in_frame_and_canvas() {
+        for row in [
+            vec![],                 // Empty encoded row.
+            vec![7, 0],             // Missing zero-run count.
+            vec![7, 0, 6],          // Run exceeds the retail one-pixel padding.
+            vec![7, 0, 2],          // Decoded row is too short.
+            vec![1, 2, 3, 4, 5, 6], // Literal after the complete row.
+            vec![0, 5, 0],          // Incomplete run after the complete row.
+            vec![0, 5, 0, 2],       // Extra run exceeds the padding allowance.
+        ] {
+            let mut data = header(5, 1, 1);
+            data.extend(frame(0, 0, 5, 1, 3, 32));
+            data.extend(((row.len() + 2) as u16).to_le_bytes());
+            data.extend(&row);
+            let shp = ShpFile::parse(&data).unwrap();
+            assert_eq!(shp.decode_frame(0), Err(ShpError::BadFrame(0)), "{row:?}");
+            assert_eq!(
+                shp.decode_frame_canvas(0),
+                Err(ShpError::BadFrame(0)),
+                "{row:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn rle_rows_keep_exact_width_runs_and_canvas_placement() {
+        let mut data = header(260, 4, 1);
+        data.extend(frame(1, 1, 258, 2, 3, 32));
+        // The first row ends exactly; the second has retail transparent padding.
+        for row in [
+            &[0, 0, 7, 0, 255, 0, 1, 9, 0, 0][..],
+            &[7, 0, 255, 0, 1, 9, 0, 1][..],
+        ] {
+            data.extend(((row.len() + 2) as u16).to_le_bytes());
+            data.extend(row);
+        }
+        let shp = ShpFile::parse(&data).unwrap();
+        let mut expected = vec![0; 258 * 2];
+        for offset in [0, 258] {
+            expected[offset] = 7;
+            expected[offset + 257] = 9;
+        }
+        assert_eq!(shp.decode_frame(0).unwrap(), expected);
+        let canvas = shp.decode_frame_canvas(0).unwrap();
+        let mut placed = vec![0; 260 * 4];
+        placed[261..519].copy_from_slice(&expected[..258]);
+        placed[521..779].copy_from_slice(&expected[258..]);
+        assert_eq!(canvas, placed);
+    }
+
+    #[test]
+    fn rle_runs_cannot_borrow_width_or_count_bytes_from_the_next_row() {
+        for first in [vec![7, 0], vec![7, 0, 2], vec![0, 7]] {
+            let mut data = header(5, 2, 1);
+            data.extend(frame(0, 0, 5, 2, 3, 32));
+            data.extend(((first.len() + 2) as u16).to_le_bytes());
+            data.extend(first);
+            data.extend([4, 0, 0, 5]); // Complete second row of transparent pixels.
+            let shp = ShpFile::parse(&data).unwrap();
+            assert_eq!(shp.decode_frame(0), Err(ShpError::BadFrame(0)));
+        }
     }
 
     #[test]

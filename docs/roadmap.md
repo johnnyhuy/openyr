@@ -78,6 +78,10 @@ Johnny on 2026-10-31.
       keep a failing exit code. Synthetic CLI tests run without retail assets.
 - [x] PAL / colour tables (6-bit RGB palettes)
 - [x] SHP reader (cameos, buildings, infantry sprites): every retail frame decodes
+- [x] Reject malformed SHP zero-run rows (#375), including missing counts,
+      underfilled rows, nontransparent overflow and runs beyond retail padding.
+      Preserve the observed one-pixel transparent row overrun; authored
+      frame/canvas and CLI checks retain valid neighbors (`docs/formats/shp.md`).
 - [x] VXL + HVA readers (vehicles)
 - [x] TMP terrain tiles
 - [x] `mix-dump scan`: recursive census + corpus-wide parser check

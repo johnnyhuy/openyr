@@ -32,6 +32,24 @@ Compression (low byte of `flags`):
 | 2 | per row: `u16 len` (counts itself, always `w + 2`) then `w` raw bytes |
 | 3 | per row: `u16 len` (counts itself) then zero-run RLE: `00 n` = `n` transparent pixels, any other byte = literal |
 
+Type 3 rows must contain complete zero/count pairs and enough decoded pixels
+to fill their frame bounding-box width. Retail encoding permits a final
+transparent run to reach exactly one pixel beyond that width; that pixel is
+discarded. A literal outside the width, a run exceeding the one-pixel allowance,
+a missing count or an underfilled row is rejected as `BadFrame`. Row prefixes
+bound each encoded slice, so a run cannot borrow a count from the next row.
+Zero-length runs remain harmless no-ops.
+
+The #375 audit independently walked all type 3 row bytes in the 16 retail MIX
+archives, including nested archives. Of 5,778,273 rows, 624,940 ended exactly at
+the width and 5,153,333 ended one transparent pixel beyond it. None ended short,
+had an incomplete pair or placed a literal outside the width. For example,
+`expandmd01.mix/0x51d8da20`, frame 0, row 0 has width 76 and bytes
+`00 33 55 27 54 56 00 16`: 51 transparent pixels, four literals and 22
+transparent pixels, totaling 77. Requiring exact width would reject valid
+retail artwork. Authored tests retain both endings, long runs, zero-length
+runs and canvas offsets while checking malformed frame/canvas and CLI failures.
+
 ## Empirical notes (retail corpus)
 
 `mix-dump scan` over all 16 retail archives decodes every frame of 5,450 SHP
