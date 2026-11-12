@@ -162,6 +162,57 @@ fn scan_fails_for_a_malformed_csf() {
 }
 
 #[test]
+fn scan_rejects_malformed_shp_rows_and_retains_valid_neighbors() {
+    let fixture = Fixture::new();
+    let shp = |row: &[u8]| {
+        let mut data = [0u16, 5, 1, 1]
+            .into_iter()
+            .flat_map(u16::to_le_bytes)
+            .collect::<Vec<_>>();
+        for value in [0u16, 0, 5, 1] {
+            data.extend(value.to_le_bytes());
+        }
+        data.extend(3u32.to_le_bytes());
+        data.extend([0; 8]);
+        data.extend(32u32.to_le_bytes());
+        data.extend(((row.len() + 2) as u16).to_le_bytes());
+        data.extend(row);
+        data
+    };
+    let rows: [&[u8]; 6] = [
+        &[7, 0],
+        &[7, 0, 6],
+        &[7, 0, 2],
+        &[0, 5, 6],
+        &[7, 0, 4],
+        &[7, 0, 5],
+    ];
+    let payloads: Vec<_> = rows.into_iter().map(shp).collect();
+    fs::write(
+        fixture.0.join("test.mix"),
+        archive(&payloads.iter().map(Vec::as_slice).collect::<Vec<_>>()),
+    )
+    .unwrap();
+    let output = fixture.command("scan").output().unwrap();
+    assert_eq!(output.status.code(), Some(1), "{output:?}");
+    let text = String::from_utf8(output.stdout).unwrap();
+    for id in 1..=4 {
+        assert!(
+            text.contains(&format!("test.mix/0x{id:08x}: shp frame 0:")),
+            "{text}"
+        );
+    }
+    assert!(text.contains("test.mix/0x00000005 (37 B)"), "{text}");
+    assert!(text.contains("test.mix/0x00000006 (37 B)"), "{text}");
+    assert!(text.contains("errors (4):"), "{text}");
+    assert_eq!(
+        String::from_utf8(output.stderr).unwrap(),
+        "error: archive scan found 4 parser error(s)\n"
+    );
+    println!("SHP scan rejects missing counts, overflowing runs, short rows and extra literals; complete rows and retail one-pixel transparent padding stay valid.");
+}
+
+#[test]
 fn scan_counts_errors_beyond_the_diagnostic_limit() {
     let fixture = Fixture::new();
     fs::write(fixture.0.join("test.mix"), archive(&[&b"RIFF"[..]; 43])).unwrap();
