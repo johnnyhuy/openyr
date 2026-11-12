@@ -30,9 +30,10 @@ Johnny on 2026-10-31.
       failed before any steps ran. Local retail/window verification also
       exercises Apple Silicon.
 
-- [x] Retain the two rotor matrix assertions under stable Clippy 1.100 (#374).
-      Iterate the bounded two-matrix slice without changing values, tolerances,
-      fixed-fuselage coverage or runtime rendering; required warning policy stays.
+- [x] Retain retail-art assertions under stable Clippy 1.100 (#374). Bounded
+      iterator loops preserve both rotor matrices, all cursor/control/clock/power
+      frame counts, literal values and source-pixel checks. Runtime rendering and
+      the required warning policy stay unchanged.
 
 - [x] Guard runtime proof against shared-target executable reuse (#238).
       A bounded Cargo/worktree fixture reproduces stale output. Isolated builds
