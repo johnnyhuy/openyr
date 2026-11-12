@@ -1,0 +1,38 @@
+Script started on 2026-11-13 03:07:15+11:00 [COMMAND="git rev-parse HEAD HEAD^{tree} && cargo test -p yr-formats --locked pcx -- --nocapture && cargo test -p yr-app --lib --locked loading_rejects_overflowing_pcx_flags_and_recovers_with_complete_art -- --nocapture" <not executed on terminal>]
+1f3386de6e378b53a4000cc916f7fae3c6655dad
+0587a946fa381f05f71f59ee446ddb7f2cdceb20
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.11s
+     Running unittests src/lib.rs (target/debug/deps/yr_formats-0e772dec0ccadab9)
+
+running 6 tests
+test pcx::tests::hostile_dimensions_rejected_before_allocating ... ok
+test pcx::tests::paletted_with_runs_and_padding ... ok
+test pcx::tests::pcx_rejects_runs_beyond_the_declared_image ... ok
+test pcx::tests::rejects_truncated_and_foreign ... ok
+test pcx::tests::rgb_planes ... ok
+PCX: all 3,969 final-run capacities checked; exact runs and padded cross-row/plane runs decode without clipping.
+test pcx::tests::pcx_run_boundaries_preserve_exact_runs_and_cross_row_padding ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 70 filtered out; finished in 0.00s
+
+     Running tests/retail.rs (target/debug/deps/retail-1a598f24f2f4f974)
+
+running 1 test
+skip: retail corpus not present
+test pcx_both_flavours_decode ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 14 filtered out; finished in 0.00s
+
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.15s
+     Running unittests src/lib.rs (target/debug/deps/yr_app-3d65909a3deb91c6)
+
+running 1 test
+OpenYR: cursor art unavailable; keeping the system pointer
+OpenYR: cursor art unavailable; keeping the system pointer
+Loading: malformed PCX flag skipped, valid neighbor retained, replacement recovers exact authored pixels; three fallback compositions remain opaque. No retail data used.
+test loading::tests::loading_rejects_overflowing_pcx_flags_and_recovers_with_complete_art ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 127 filtered out; finished in 0.38s
+
+
+Script done on 2026-11-13 03:07:16+11:00 [COMMAND_EXIT_CODE="0"]
