@@ -30,6 +30,64 @@ fn tiny_preview() -> Preview {
 }
 
 #[test]
+fn loading_rejects_overflowing_pcx_flags_and_recovers_with_complete_art() {
+    fn flag(overflow: bool) -> Vec<u8> {
+        let mut bytes = vec![0; 128];
+        bytes[..4].copy_from_slice(&[0x0A, 5, 1, 8]);
+        bytes[8..10].copy_from_slice(&46u16.to_le_bytes());
+        bytes[10..12].copy_from_slice(&22u16.to_le_bytes());
+        bytes[65] = 1;
+        bytes[66..68].copy_from_slice(&48u16.to_le_bytes());
+        // 48 padded bytes per row, 23 rows: 17 full runs and 33 bytes.
+        for _ in 0..17 {
+            bytes.extend([0xFF, 7]);
+        }
+        bytes.extend([0xC0 | (33 + u8::from(overflow)), 7]);
+        bytes.push(0x0C);
+        bytes.extend([0; 768]);
+        let palette = bytes.len() - 768;
+        bytes[palette + 7 * 3..palette + 7 * 3 + 3].copy_from_slice(&[12, 34, 56]);
+        bytes
+    }
+    let valid = flag(false);
+    let malformed = flag(true);
+    let fs = AssetFs::from_files(vec![
+        (Country::America.flag().into(), malformed.clone()),
+        (Country::Korea.flag().into(), valid.clone()),
+    ]);
+    let art = Art::load(&fs);
+    assert_eq!(art.flags.len(), 1);
+    assert_eq!(art.flags[0].0, Country::Korea);
+    assert_eq!(fs.read(Country::America.flag()), Some(malformed.as_slice()));
+    let recovered = Art::load(&AssetFs::from_files(vec![
+        (Country::America.flag().into(), valid.clone()),
+        (Country::Korea.flag().into(), valid),
+    ]));
+    assert_eq!(recovered.flags.len(), 2);
+    assert!(recovered.flags.iter().all(|(_, image)| image
+        .pixels
+        .as_chunks::<4>()
+        .0
+        .iter()
+        .all(|p| *p == [12, 34, 56, 255])));
+    let state = state();
+    for (width, height) in [(640, 480), (800, 600), (1280, 800)] {
+        let mut frame = vec![0; (width * height * 4) as usize];
+        draw(&mut frame, width, height, &art, &state, None);
+        assert!(frame.as_chunks::<4>().0.iter().all(|p| p[3] == 255));
+        if let Some(out) = std::env::var_os("OPENYR_PCX_RUN_PROOF") {
+            std::fs::create_dir_all(&out).unwrap();
+            std::fs::write(
+                std::path::PathBuf::from(out).join(format!("loading-{width}x{height}.png")),
+                yr_render::png::encode_rgba(width, height, &frame),
+            )
+            .unwrap();
+        }
+    }
+    println!("Loading: malformed PCX flag skipped, valid neighbor retained, replacement recovers exact authored pixels; three fallback compositions remain opaque. No retail data used.");
+}
+
+#[test]
 fn preview_keeps_its_aspect_ratio_and_invalid_art_stays_recoverable() {
     let art = Art::default();
     let state = state();

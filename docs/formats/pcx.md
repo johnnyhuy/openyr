@@ -21,6 +21,21 @@ else is a literal. Runs may cross scanline and plane boundaries, so the
 decoder expands the whole stream before splitting rows. 24-bit scanlines store
 the R plane, then G, then B.
 
+The complete decoded stream is a hard boundary (#367). A run longer than the
+remaining declared bytes returns `PcxError::InvalidRun`; it is never clipped to
+make malformed artwork appear valid. Missing literal/run bytes still return
+`Truncated`. Padding and runs crossing rows or planes retain their existing
+behavior. Trailing encoded bytes after a complete image retain the existing
+policy and are not part of this check.
+
+Authored tests cover all 3,969 combinations of final run length and remaining
+capacity from 1 through 63, exact indexed/RGB image lengths, cross-row/plane
+padding and truncated pairs. Loading-screen tests omit an overflowing optional
+flag, retain its valid neighbor and recover exact source pixels after replacing
+the malformed file. Three fallback compositions remain opaque. These fixtures
+do not establish compatibility with the retail corpus or original presentation;
+the current environment has no retail install.
+
 ## Empirical notes (retail corpus)
 
 - 271 PCX files across the 16 archives, all decoding: 233 8-bit paletted and

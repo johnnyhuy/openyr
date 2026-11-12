@@ -72,6 +72,11 @@ Johnny on 2026-10-31.
 - [x] Use an actual closed pipe for CLI output tests (#202), avoiding an
       intermittent macOS socket fixture failure in the required workspace suite.
 - [x] PCX reader (8-bit paletted + 24-bit planar; all 271 retail files)
+- [x] Reject PCX RLE runs exceeding the declared complete image (#367),
+      retaining padding and cross-row/plane runs. Authored boundary and native
+      loading-flag rejection/recovery checks preserve valid neighbor pixels;
+      retail corpus revalidation remains unavailable without an install
+      (`docs/formats/pcx.md`).
 - [x] AUD / AUDIO.BAG+IDX / IMA WAV decoders, bit-exact vs ffmpeg
 - [x] Bink 1 container metadata (#110): all 146 retail Bink entries validate
       with bounded frame/track tables and packet ranges (`docs/formats/bink.md`).

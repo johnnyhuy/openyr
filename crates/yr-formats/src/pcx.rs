@@ -15,6 +15,7 @@ pub enum PcxError {
     Unsupported { bits: u8, planes: u8 },
     Truncated,
     MissingPalette,
+    InvalidRun,
 }
 
 impl std::fmt::Display for PcxError {
@@ -26,6 +27,7 @@ impl std::fmt::Display for PcxError {
             }
             PcxError::Truncated => write!(f, "truncated PCX data"),
             PcxError::MissingPalette => write!(f, "8-bit PCX without palette trailer"),
+            PcxError::InvalidRun => write!(f, "PCX run exceeds the declared image"),
         }
     }
 }
@@ -162,7 +164,10 @@ fn unrle(src: &[u8], out: &mut [u8]) -> Result<(), PcxError> {
             let n = usize::from(b & 0x3F);
             let v = *src.get(i).ok_or(PcxError::Truncated)?;
             i += 1;
-            let end = (o + n).min(out.len());
+            if n > out.len() - o {
+                return Err(PcxError::InvalidRun);
+            }
+            let end = o + n;
             out[o..end].fill(v);
             o = end;
         } else {
@@ -213,6 +218,55 @@ mod tests {
         d.extend([1, 2, 3, 4, 5, 6]); // R plane, G plane, B plane
         let img = PcxImage::parse(&d).unwrap();
         assert_eq!(img.pixels, PcxPixels::Rgb(vec![1, 3, 5, 2, 4, 6]));
+    }
+
+    #[test]
+    fn pcx_rejects_runs_beyond_the_declared_image() {
+        for planes in [1, 3] {
+            let mut data = header(1, 1, planes, 1);
+            data.extend([0xC0 | (planes + 1), 7]);
+            if planes == 1 {
+                data.push(0x0C);
+                data.extend([0; 768]);
+            }
+            assert_eq!(PcxImage::parse(&data).unwrap_err(), PcxError::InvalidRun);
+        }
+    }
+
+    #[test]
+    fn pcx_run_boundaries_preserve_exact_runs_and_cross_row_padding() {
+        for n in 1..=63u8 {
+            for remaining in 1..=63usize {
+                let mut output = vec![0; 1 + remaining];
+                let result = unrle(&[3, 0xC0 | n, 7], &mut output);
+                match usize::from(n).cmp(&remaining) {
+                    std::cmp::Ordering::Greater => assert_eq!(result, Err(PcxError::InvalidRun)),
+                    std::cmp::Ordering::Less => assert_eq!(result, Err(PcxError::Truncated)),
+                    std::cmp::Ordering::Equal => {
+                        result.unwrap();
+                        assert_eq!(output[0], 3);
+                        assert!(output[1..].iter().all(|&b| b == 7));
+                    }
+                }
+            }
+            assert_eq!(unrle(&[0xC0 | n], &mut [0]), Err(PcxError::Truncated));
+        }
+        for planes in [1, 3] {
+            // A single run spans row padding and, for RGB, plane boundaries.
+            let mut data = header(1, 2, planes, 2);
+            data.extend([0xC0 | (4 * planes), 7]);
+            if planes == 1 {
+                data.push(0x0C);
+                data.extend([0; 768]);
+            }
+            let image = PcxImage::parse(&data).unwrap();
+            assert_eq!((image.width, image.height), (1, 2));
+            match image.pixels {
+                PcxPixels::Indexed { indices, .. } => assert_eq!(indices, [7; 2]),
+                PcxPixels::Rgb(rgb) => assert_eq!(rgb, [7; 6]),
+            }
+        }
+        println!("PCX: all 3,969 final-run capacities checked; exact runs and padded cross-row/plane runs decode without clipping.");
     }
 
     #[test]
