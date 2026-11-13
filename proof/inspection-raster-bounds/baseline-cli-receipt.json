@@ -1,0 +1,28 @@
+{
+  "format": "openyr-proof-build-v1",
+  "source": {
+    "commit": "b1543ca1e806db86158606742e233142a086fcd5",
+    "tree": "b0a10ddfc76f754fdced3d28b28c9956c872caeb"
+  },
+  "package": "mix-dump",
+  "binary": "mix-dump",
+  "profile": "release",
+  "cargo": "cargo 1.100.0 (3acc79c0c 2026-11-05)",
+  "command": [
+    "/workspace/.cargo/bin/cargo",
+    "build",
+    "--manifest-path",
+    "/workspace/openyr-core-review-20261113-10/Cargo.toml",
+    "--package",
+    "mix-dump",
+    "--bin",
+    "mix-dump",
+    "--release",
+    "--locked",
+    "--target-dir",
+    "/workspace/openyr-core-review-20261113-10/.tmp/baseline-cli/target-usb15c6s",
+    "--message-format=json-render-diagnostics"
+  ],
+  "sha256": "78fc46e786215b52577fc448dd32c3dcac86c4e464f5b942dc5213e9fee5e173",
+  "bytes": 1415408
+}

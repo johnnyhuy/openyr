@@ -1,0 +1,189 @@
+$ python3 scripts/proof_build.py --repo /workspace/openyr run --receipt /workspace/openyr-core-review-20261113-10/.tmp/baseline-cli/receipt.json -- render /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/ordinary.mix:0x1 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/ordinary.mix:0x2 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/before-ordinary.png
+Verified: /workspace/openyr-core-review-20261113-10/.tmp/baseline-cli/program
+rendered /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/ordinary.mix:0x1 -> /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/before-ordinary.png (4x2)
+exit 0
+$ python3 scripts/proof_build.py --repo /workspace/openyr-core-review-20261113-10 run --receipt /workspace/openyr-core-review-20261113-10/.tmp/final-cli/receipt.json -- render /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/ordinary.mix:0x1 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/ordinary.mix:0x2 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/after-ordinary.png
+Verified: /workspace/openyr-core-review-20261113-10/.tmp/final-cli/program
+rendered /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/ordinary.mix:0x1 -> /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/after-ordinary.png (4x2)
+exit 0
+before-ordinary.png {'size': [4, 2], 'sha256': 'e3f9da943d0fdf4ff7b99293cbac605b18c7e987d4f6193c22c3c279a763ccc4', 'independent_crc_rgba': 'PASS'}
+after-ordinary.png {'size': [4, 2], 'sha256': 'e3f9da943d0fdf4ff7b99293cbac605b18c7e987d4f6193c22c3c279a763ccc4', 'independent_crc_rgba': 'PASS'}
+$ python3 scripts/proof_build.py --repo /workspace/openyr run --receipt /workspace/openyr-core-review-20261113-10/.tmp/baseline-cli/receipt.json -- render /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/negative.mix:0x1 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/negative.mix:0x2 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/before-negative.png
+Verified: /workspace/openyr-core-review-20261113-10/.tmp/baseline-cli/program
+rendered /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/negative.mix:0x1 -> /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/before-negative.png (4x2)
+exit 0
+$ python3 scripts/proof_build.py --repo /workspace/openyr-core-review-20261113-10 run --receipt /workspace/openyr-core-review-20261113-10/.tmp/final-cli/receipt.json -- render /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/negative.mix:0x1 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/negative.mix:0x2 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/after-negative.png
+Verified: /workspace/openyr-core-review-20261113-10/.tmp/final-cli/program
+rendered /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/negative.mix:0x1 -> /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/after-negative.png (4x2)
+exit 0
+before-negative.png {'size': [4, 2], 'sha256': 'e3f9da943d0fdf4ff7b99293cbac605b18c7e987d4f6193c22c3c279a763ccc4', 'independent_crc_rgba': 'PASS'}
+after-negative.png {'size': [4, 2], 'sha256': 'e3f9da943d0fdf4ff7b99293cbac605b18c7e987d4f6193c22c3c279a763ccc4', 'independent_crc_rgba': 'PASS'}
+$ python3 scripts/proof_build.py --repo /workspace/openyr run --receipt /workspace/openyr-core-review-20261113-10/.tmp/baseline-cli/receipt.json -- render /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/minimum.mix:0x1 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/minimum.mix:0x2 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/before-minimum.png
+Verified: /workspace/openyr-core-review-20261113-10/.tmp/baseline-cli/program
+rendered /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/minimum.mix:0x1 -> /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/before-minimum.png (4x2)
+exit 0
+$ python3 scripts/proof_build.py --repo /workspace/openyr-core-review-20261113-10 run --receipt /workspace/openyr-core-review-20261113-10/.tmp/final-cli/receipt.json -- render /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/minimum.mix:0x1 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/minimum.mix:0x2 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/after-minimum.png
+Verified: /workspace/openyr-core-review-20261113-10/.tmp/final-cli/program
+rendered /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/minimum.mix:0x1 -> /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/after-minimum.png (4x2)
+exit 0
+before-minimum.png {'size': [4, 2], 'sha256': 'e3f9da943d0fdf4ff7b99293cbac605b18c7e987d4f6193c22c3c279a763ccc4', 'independent_crc_rgba': 'PASS'}
+after-minimum.png {'size': [4, 2], 'sha256': 'e3f9da943d0fdf4ff7b99293cbac605b18c7e987d4f6193c22c3c279a763ccc4', 'independent_crc_rgba': 'PASS'}
+$ python3 scripts/proof_build.py --repo /workspace/openyr run --receipt /workspace/openyr-core-review-20261113-10/.tmp/baseline-cli/receipt.json -- render /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/extra.mix:0x1 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/extra.mix:0x2 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/before-extra.png
+Verified: /workspace/openyr-core-review-20261113-10/.tmp/baseline-cli/program
+rendered /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/extra.mix:0x1 -> /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/before-extra.png (4x2)
+exit 0
+$ python3 scripts/proof_build.py --repo /workspace/openyr-core-review-20261113-10 run --receipt /workspace/openyr-core-review-20261113-10/.tmp/final-cli/receipt.json -- render /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/extra.mix:0x1 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/extra.mix:0x2 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/after-extra.png
+Verified: /workspace/openyr-core-review-20261113-10/.tmp/final-cli/program
+rendered /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/extra.mix:0x1 -> /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/after-extra.png (4x2)
+exit 0
+before-extra.png {'size': [4, 2], 'sha256': 'cbfd95802f57eee7e7e9bad32beb6e77ac2638bd739d4882c2acd9d660027e8e', 'independent_crc_rgba': 'PASS'}
+after-extra.png {'size': [4, 2], 'sha256': 'cbfd95802f57eee7e7e9bad32beb6e77ac2638bd739d4882c2acd9d660027e8e', 'independent_crc_rgba': 'PASS'}
+$ python3 scripts/proof_build.py --repo /workspace/openyr run --receipt /workspace/openyr-core-review-20261113-10/.tmp/baseline-cli/receipt.json -- render /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/minimum-extra.mix:0x1 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/minimum-extra.mix:0x2 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/before-minimum-extra.png
+Verified: /workspace/openyr-core-review-20261113-10/.tmp/baseline-cli/program
+rendered /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/minimum-extra.mix:0x1 -> /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/before-minimum-extra.png (4x2)
+exit 0
+$ python3 scripts/proof_build.py --repo /workspace/openyr-core-review-20261113-10 run --receipt /workspace/openyr-core-review-20261113-10/.tmp/final-cli/receipt.json -- render /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/minimum-extra.mix:0x1 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/minimum-extra.mix:0x2 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/after-minimum-extra.png
+Verified: /workspace/openyr-core-review-20261113-10/.tmp/final-cli/program
+rendered /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/minimum-extra.mix:0x1 -> /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/after-minimum-extra.png (4x2)
+exit 0
+before-minimum-extra.png {'size': [4, 2], 'sha256': 'cbfd95802f57eee7e7e9bad32beb6e77ac2638bd739d4882c2acd9d660027e8e', 'independent_crc_rgba': 'PASS'}
+after-minimum-extra.png {'size': [4, 2], 'sha256': 'cbfd95802f57eee7e7e9bad32beb6e77ac2638bd739d4882c2acd9d660027e8e', 'independent_crc_rgba': 'PASS'}
+$ python3 scripts/proof_build.py --repo /workspace/openyr run --receipt /workspace/openyr-core-review-20261113-10/.tmp/baseline-cli/receipt.json -- render /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/empty-tmp.mix:0x1 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/empty-tmp.mix:0x2 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/before-empty-tmp.png
+Verified: /workspace/openyr-core-review-20261113-10/.tmp/baseline-cli/program
+rendered /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/empty-tmp.mix:0x1 -> /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/before-empty-tmp.png (1x1)
+exit 0
+$ python3 scripts/proof_build.py --repo /workspace/openyr-core-review-20261113-10 run --receipt /workspace/openyr-core-review-20261113-10/.tmp/final-cli/receipt.json -- render /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/empty-tmp.mix:0x1 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/empty-tmp.mix:0x2 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/after-empty-tmp.png
+Verified: /workspace/openyr-core-review-20261113-10/.tmp/final-cli/program
+rendered /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/empty-tmp.mix:0x1 -> /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/after-empty-tmp.png (1x1)
+exit 0
+before-empty-tmp.png {'size': [1, 1], 'sha256': 'eacb1a012fc0820bb358ea06380857fd97d62a420932142014ac89bcc4afbbc3', 'independent_crc_rgba': 'PASS'}
+after-empty-tmp.png {'size': [1, 1], 'sha256': 'eacb1a012fc0820bb358ea06380857fd97d62a420932142014ac89bcc4afbbc3', 'independent_crc_rgba': 'PASS'}
+$ python3 scripts/proof_build.py --repo /workspace/openyr run --receipt /workspace/openyr-core-review-20261113-10/.tmp/baseline-cli/receipt.json -- render /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/null-shp.mix:0x1 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/null-shp.mix:0x2 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/before-null-shp.png
+Verified: /workspace/openyr-core-review-20261113-10/.tmp/baseline-cli/program
+rendered /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/null-shp.mix:0x1 -> /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/before-null-shp.png (2x1)
+exit 0
+$ python3 scripts/proof_build.py --repo /workspace/openyr-core-review-20261113-10 run --receipt /workspace/openyr-core-review-20261113-10/.tmp/final-cli/receipt.json -- render /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/null-shp.mix:0x1 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/null-shp.mix:0x2 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/after-null-shp.png
+Verified: /workspace/openyr-core-review-20261113-10/.tmp/final-cli/program
+rendered /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/null-shp.mix:0x1 -> /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/after-null-shp.png (2x1)
+exit 0
+before-null-shp.png {'size': [2, 1], 'sha256': 'c510ab93b35bfebf3cabd80634cb021d3405c955b2b0a1acea9ab11ea9eb75ca', 'independent_crc_rgba': 'PASS'}
+after-null-shp.png {'size': [2, 1], 'sha256': 'c510ab93b35bfebf3cabd80634cb021d3405c955b2b0a1acea9ab11ea9eb75ca', 'independent_crc_rgba': 'PASS'}
+$ python3 scripts/proof_build.py --repo /workspace/openyr run --receipt /workspace/openyr-core-review-20261113-10/.tmp/baseline-cli/receipt.json -- render /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/colored-sheet.mix:0x1 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/colored-sheet.mix:0x2 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/before-colored-sheet.png
+Verified: /workspace/openyr-core-review-20261113-10/.tmp/baseline-cli/program
+rendered /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/colored-sheet.mix:0x1 -> /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/before-colored-sheet.png (4x2)
+exit 0
+$ python3 scripts/proof_build.py --repo /workspace/openyr-core-review-20261113-10 run --receipt /workspace/openyr-core-review-20261113-10/.tmp/final-cli/receipt.json -- render /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/colored-sheet.mix:0x1 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/colored-sheet.mix:0x2 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/after-colored-sheet.png
+Verified: /workspace/openyr-core-review-20261113-10/.tmp/final-cli/program
+rendered /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/colored-sheet.mix:0x1 -> /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/after-colored-sheet.png (4x2)
+exit 0
+before-colored-sheet.png {'size': [4, 2], 'sha256': '0ab2d16ae410f7962db874e702fcc59a045079ccddd663f2f99b9d317754fc5f', 'independent_crc_rgba': 'PASS'}
+after-colored-sheet.png {'size': [4, 2], 'sha256': '0ab2d16ae410f7962db874e702fcc59a045079ccddd663f2f99b9d317754fc5f', 'independent_crc_rgba': 'PASS'}
+$ python3 scripts/proof_build.py --repo /workspace/openyr run --receipt /workspace/openyr-core-review-20261113-10/.tmp/baseline-cli/receipt.json -- render /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/ordinary-256.mix:0x1 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/ordinary-256.mix:0x2 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/before-ordinary-256.png
+Verified: /workspace/openyr-core-review-20261113-10/.tmp/baseline-cli/program
+rendered /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/ordinary-256.mix:0x1 -> /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/before-ordinary-256.png (256x128)
+exit 0
+$ python3 scripts/proof_build.py --repo /workspace/openyr-core-review-20261113-10 run --receipt /workspace/openyr-core-review-20261113-10/.tmp/final-cli/receipt.json -- render /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/ordinary-256.mix:0x1 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/ordinary-256.mix:0x2 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/after-ordinary-256.png
+Verified: /workspace/openyr-core-review-20261113-10/.tmp/final-cli/program
+rendered /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/ordinary-256.mix:0x1 -> /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/after-ordinary-256.png (256x128)
+exit 0
+before-ordinary-256.png {'size': [256, 128], 'sha256': 'd1024a30bc5fc934322718643ccbc6ef28e39c7079b39ef08a95e367c1a664ce', 'independent_crc_rgba': 'PASS'}
+after-ordinary-256.png {'size': [256, 128], 'sha256': 'd1024a30bc5fc934322718643ccbc6ef28e39c7079b39ef08a95e367c1a664ce', 'independent_crc_rgba': 'PASS'}
+$ python3 scripts/proof_build.py --repo /workspace/openyr run --receipt /workspace/openyr-core-review-20261113-10/.tmp/baseline-cli/receipt.json -- render /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/translated-max.mix:0x1 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/translated-max.mix:0x2 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/before-translated-max.png
+Verified: /workspace/openyr-core-review-20261113-10/.tmp/baseline-cli/program
+rendered /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/translated-max.mix:0x1 -> /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/before-translated-max.png (1x1)
+exit 0
+$ python3 scripts/proof_build.py --repo /workspace/openyr-core-review-20261113-10 run --receipt /workspace/openyr-core-review-20261113-10/.tmp/final-cli/receipt.json -- render /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/translated-max.mix:0x1 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/translated-max.mix:0x2 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/after-translated-max.png
+Verified: /workspace/openyr-core-review-20261113-10/.tmp/final-cli/program
+rendered /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/translated-max.mix:0x1 -> /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/after-translated-max.png (4x2)
+exit 0
+after-translated-max.png {'size': [4, 2], 'sha256': 'e3f9da943d0fdf4ff7b99293cbac605b18c7e987d4f6193c22c3c279a763ccc4', 'independent_crc_rgba': 'PASS'}
+$ python3 scripts/proof_build.py --repo /workspace/openyr run --receipt /workspace/openyr-core-review-20261113-10/.tmp/baseline-cli/receipt.json -- render /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/translated-max-extra.mix:0x1 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/translated-max-extra.mix:0x2 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/before-translated-max-extra.png
+Verified: /workspace/openyr-core-review-20261113-10/.tmp/baseline-cli/program
+rendered /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/translated-max-extra.mix:0x1 -> /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/before-translated-max-extra.png (1x1)
+exit 0
+$ python3 scripts/proof_build.py --repo /workspace/openyr-core-review-20261113-10 run --receipt /workspace/openyr-core-review-20261113-10/.tmp/final-cli/receipt.json -- render /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/translated-max-extra.mix:0x1 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/translated-max-extra.mix:0x2 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/after-translated-max-extra.png
+Verified: /workspace/openyr-core-review-20261113-10/.tmp/final-cli/program
+rendered /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/translated-max-extra.mix:0x1 -> /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/after-translated-max-extra.png (4x2)
+exit 0
+after-translated-max-extra.png {'size': [4, 2], 'sha256': 'cbfd95802f57eee7e7e9bad32beb6e77ac2638bd739d4882c2acd9d660027e8e', 'independent_crc_rgba': 'PASS'}
+$ python3 scripts/proof_build.py --repo /workspace/openyr run --receipt /workspace/openyr-core-review-20261113-10/.tmp/baseline-cli/receipt.json -- render /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/translated-max-256.mix:0x1 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/translated-max-256.mix:0x2 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/before-translated-max-256.png
+Verified: /workspace/openyr-core-review-20261113-10/.tmp/baseline-cli/program
+rendered /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/translated-max-256.mix:0x1 -> /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/before-translated-max-256.png (1x1)
+exit 0
+$ python3 scripts/proof_build.py --repo /workspace/openyr-core-review-20261113-10 run --receipt /workspace/openyr-core-review-20261113-10/.tmp/final-cli/receipt.json -- render /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/translated-max-256.mix:0x1 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/translated-max-256.mix:0x2 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/after-translated-max-256.png
+Verified: /workspace/openyr-core-review-20261113-10/.tmp/final-cli/program
+rendered /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/translated-max-256.mix:0x1 -> /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/after-translated-max-256.png (256x128)
+exit 0
+after-translated-max-256.png {'size': [256, 128], 'sha256': 'd1024a30bc5fc934322718643ccbc6ef28e39c7079b39ef08a95e367c1a664ce', 'independent_crc_rgba': 'PASS'}
+$ python3 scripts/proof_build.py --repo /workspace/openyr run --receipt /workspace/openyr-core-review-20261113-10/.tmp/baseline-cli/receipt.json -- render /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/huge-sheet.mix:0x1 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/huge-sheet.mix:0x2 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/before-huge-sheet.png
+Verified: /workspace/openyr-core-review-20261113-10/.tmp/baseline-cli/program
+memory allocation of 17179344900 bytes failed
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+exit 250
+$ python3 scripts/proof_build.py --repo /workspace/openyr run --receipt /workspace/openyr-core-review-20261113-10/.tmp/baseline-cli/receipt.json -- render /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/huge-span.mix:0x1 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/huge-span.mix:0x2 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/before-huge-span.png
+Verified: /workspace/openyr-core-review-20261113-10/.tmp/baseline-cli/program
+memory allocation of 17179869176 bytes failed
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+exit 250
+$ python3 scripts/proof_build.py --repo /workspace/openyr run --receipt /workspace/openyr-core-review-20261113-10/.tmp/baseline-cli/receipt.json -- render /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/allocation-limit.mix:0x1 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/allocation-limit.mix:0x2 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/before-allocation-limit.png
+Verified: /workspace/openyr-core-review-20261113-10/.tmp/baseline-cli/program
+memory allocation of 268435456 bytes failed
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+exit 250
+$ python3 scripts/proof_build.py --repo /workspace/openyr-core-review-20261113-10 run --receipt /workspace/openyr-core-review-20261113-10/.tmp/final-cli/receipt.json -- render /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/huge-sheet.mix:0x1 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/huge-sheet.mix:0x2 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/after-huge-sheet-existing.png
+Verified: /workspace/openyr-core-review-20261113-10/.tmp/final-cli/program
+error: /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/huge-sheet.mix:0x1: inspection raster exceeds 1 GiB RGBA budget
+exit 1
+$ python3 scripts/proof_build.py --repo /workspace/openyr-core-review-20261113-10 run --receipt /workspace/openyr-core-review-20261113-10/.tmp/final-cli/receipt.json -- render /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/huge-sheet.mix:0x1 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/huge-sheet.mix:0x2 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/after-huge-sheet-absent.png
+Verified: /workspace/openyr-core-review-20261113-10/.tmp/final-cli/program
+error: /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/huge-sheet.mix:0x1: inspection raster exceeds 1 GiB RGBA budget
+exit 1
+$ python3 scripts/proof_build.py --repo /workspace/openyr-core-review-20261113-10 run --receipt /workspace/openyr-core-review-20261113-10/.tmp/final-cli/receipt.json -- render /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/huge-span.mix:0x1 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/huge-span.mix:0x2 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/after-huge-span-existing.png
+Verified: /workspace/openyr-core-review-20261113-10/.tmp/final-cli/program
+error: /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/huge-span.mix:0x1: inspection raster exceeds 1 GiB RGBA budget
+exit 1
+$ python3 scripts/proof_build.py --repo /workspace/openyr-core-review-20261113-10 run --receipt /workspace/openyr-core-review-20261113-10/.tmp/final-cli/receipt.json -- render /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/huge-span.mix:0x1 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/huge-span.mix:0x2 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/after-huge-span-absent.png
+Verified: /workspace/openyr-core-review-20261113-10/.tmp/final-cli/program
+error: /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/huge-span.mix:0x1: inspection raster exceeds 1 GiB RGBA budget
+exit 1
+$ python3 scripts/proof_build.py --repo /workspace/openyr-core-review-20261113-10 run --receipt /workspace/openyr-core-review-20261113-10/.tmp/final-cli/receipt.json -- render /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/opposite-span.mix:0x1 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/opposite-span.mix:0x2 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/after-opposite-span-existing.png
+Verified: /workspace/openyr-core-review-20261113-10/.tmp/final-cli/program
+error: /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/opposite-span.mix:0x1: inspection raster has unsupported PNG dimensions
+exit 1
+$ python3 scripts/proof_build.py --repo /workspace/openyr-core-review-20261113-10 run --receipt /workspace/openyr-core-review-20261113-10/.tmp/final-cli/receipt.json -- render /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/opposite-span.mix:0x1 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/opposite-span.mix:0x2 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/after-opposite-span-absent.png
+Verified: /workspace/openyr-core-review-20261113-10/.tmp/final-cli/program
+error: /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/opposite-span.mix:0x1: inspection raster has unsupported PNG dimensions
+exit 1
+$ python3 scripts/proof_build.py --repo /workspace/openyr-core-review-20261113-10 run --receipt /workspace/openyr-core-review-20261113-10/.tmp/final-cli/receipt.json -- render /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/vertical-span.mix:0x1 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/vertical-span.mix:0x2 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/after-vertical-span-existing.png
+Verified: /workspace/openyr-core-review-20261113-10/.tmp/final-cli/program
+error: /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/vertical-span.mix:0x1: inspection raster has unsupported PNG dimensions
+exit 1
+$ python3 scripts/proof_build.py --repo /workspace/openyr-core-review-20261113-10 run --receipt /workspace/openyr-core-review-20261113-10/.tmp/final-cli/receipt.json -- render /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/vertical-span.mix:0x1 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/vertical-span.mix:0x2 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/after-vertical-span-absent.png
+Verified: /workspace/openyr-core-review-20261113-10/.tmp/final-cli/program
+error: /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/vertical-span.mix:0x1: inspection raster has unsupported PNG dimensions
+exit 1
+$ python3 scripts/proof_build.py --repo /workspace/openyr-core-review-20261113-10 run --receipt /workspace/openyr-core-review-20261113-10/.tmp/final-cli/receipt.json -- render /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/far-extra.mix:0x1 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/far-extra.mix:0x2 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/after-far-extra-existing.png
+Verified: /workspace/openyr-core-review-20261113-10/.tmp/final-cli/program
+error: /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/far-extra.mix:0x1: inspection raster exceeds 1 GiB RGBA budget
+exit 1
+$ python3 scripts/proof_build.py --repo /workspace/openyr-core-review-20261113-10 run --receipt /workspace/openyr-core-review-20261113-10/.tmp/final-cli/receipt.json -- render /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/far-extra.mix:0x1 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/far-extra.mix:0x2 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/after-far-extra-absent.png
+Verified: /workspace/openyr-core-review-20261113-10/.tmp/final-cli/program
+error: /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/far-extra.mix:0x1: inspection raster exceeds 1 GiB RGBA budget
+exit 1
+$ python3 scripts/proof_build.py --repo /workspace/openyr-core-review-20261113-10 run --receipt /workspace/openyr-core-review-20261113-10/.tmp/final-cli/receipt.json -- render /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/zero-area-huge-extra.mix:0x1 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/zero-area-huge-extra.mix:0x2 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/after-zero-area-huge-extra-existing.png
+Verified: /workspace/openyr-core-review-20261113-10/.tmp/final-cli/program
+error: /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/zero-area-huge-extra.mix:0x1: inspection raster exceeds 1 GiB RGBA budget
+exit 1
+$ python3 scripts/proof_build.py --repo /workspace/openyr-core-review-20261113-10 run --receipt /workspace/openyr-core-review-20261113-10/.tmp/final-cli/receipt.json -- render /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/zero-area-huge-extra.mix:0x1 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/zero-area-huge-extra.mix:0x2 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/after-zero-area-huge-extra-absent.png
+Verified: /workspace/openyr-core-review-20261113-10/.tmp/final-cli/program
+error: /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/zero-area-huge-extra.mix:0x1: inspection raster exceeds 1 GiB RGBA budget
+exit 1
+$ python3 scripts/proof_build.py --repo /workspace/openyr-core-review-20261113-10 run --receipt /workspace/openyr-core-review-20261113-10/.tmp/final-cli/receipt.json -- render /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/allocation-limit.mix:0x1 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/allocation-limit.mix:0x2 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/after-allocation-limit-existing.png
+Verified: /workspace/openyr-core-review-20261113-10/.tmp/final-cli/program
+error: /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/allocation-limit.mix:0x1: cannot allocate inspection raster
+exit 1
+$ python3 scripts/proof_build.py --repo /workspace/openyr-core-review-20261113-10 run --receipt /workspace/openyr-core-review-20261113-10/.tmp/final-cli/receipt.json -- render /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/allocation-limit.mix:0x1 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/allocation-limit.mix:0x2 /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/after-allocation-limit-absent.png
+Verified: /workspace/openyr-core-review-20261113-10/.tmp/final-cli/program
+error: /workspace/openyr-core-review-20261113-10/.tmp/cli-proof/allocation-limit.mix:0x1: cannot allocate inspection raster
+exit 1
+PASS: nine unchanged valid PNG controls, three corrected extreme translations, three bounded baseline aborts, fourteen clean final rejection/output-preservation cases.

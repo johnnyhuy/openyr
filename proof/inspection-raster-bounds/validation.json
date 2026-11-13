@@ -1,0 +1,23 @@
+{
+  "source": "cedde990e0fe4b06fd212555d958d8d2ec6eb460",
+  "tree": "1992b0811c2bdd725ea66162107ff09de3f77662",
+  "rust_passed": 708,
+  "rust_failed": 0,
+  "rust_ignored": 1,
+  "clippy": "passed --workspace --all-targets --locked -- -D warnings",
+  "fmt": "passed --all --check",
+  "python_tests": 3,
+  "unchanged_valid_png_controls": 9,
+  "corrected_extreme_translations": 3,
+  "bounded_baseline_aborts": 3,
+  "final_rejection_preservation_checks": 14,
+  "child_address_space_bytes": 268435456,
+  "child_timeout_seconds": 10,
+  "core_dumps": false,
+  "current_retail_data": false,
+  "limits": [
+    "Retail bodies self-skip without an install; no current corpus scan/gameplay",
+    "Authored CLI/PNG proof, no native window or physical Mac/Retina/audio checks",
+    "No original executable/runtime or known blocked capture paths retried"
+  ]
+}
