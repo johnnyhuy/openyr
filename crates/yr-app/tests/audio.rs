@@ -15,7 +15,11 @@ fn retail() -> Option<PathBuf> {
 #[test]
 fn retail_theme_eva_voices_and_weapon_reports_decode() {
     let Some(dir) = retail() else { return };
-    let mut bank = SoundBank::new(AssetFs::open(&dir).unwrap(), "EB1.MMX");
+    let mut bank = SoundBank::new(
+        AssetFs::open(&dir).unwrap(),
+        "EB1.MMX",
+        yr_app::match_config::Side::Allied,
+    );
     let theme = bank.theme().expect("normal theme");
     assert_eq!(theme.sample, "BrainFre");
     assert_eq!(theme.playback.pcm.channels, 2);

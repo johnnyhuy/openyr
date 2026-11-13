@@ -1,6 +1,7 @@
 //! Retail sound definitions and lazily decoded PCM, owned by the app thread.
 
 use super::mixer::{Bus, Playback};
+use crate::match_config::Side;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 use yr_assets::AssetFs;
@@ -24,6 +25,7 @@ pub struct SoundBank {
     pub rules: IniFile,
     sounds: IniFile,
     eva: IniFile,
+    eva_side: Side,
     themes: IniFile,
     csf: Option<CsfFile>,
     banks: Vec<Bank>,
@@ -44,7 +46,7 @@ fn tokens(value: &str) -> impl Iterator<Item = &str> {
 }
 
 impl SoundBank {
-    pub fn new(fs: AssetFs, map: &str) -> Self {
+    pub fn new(fs: AssetFs, map: &str, side: Side) -> Self {
         let mut rules = read_ini(&fs, "RULESMD.INI");
         rules.merge_from(&read_ini(&fs, map));
         let mut banks = Vec::new();
@@ -89,6 +91,7 @@ impl SoundBank {
         Self {
             sounds: read_ini(&fs, "SOUNDMD.INI"),
             eva: read_ini(&fs, "EVAMD.INI"),
+            eva_side: side,
             themes: read_ini(&fs, "THEMEMD.INI"),
             csf: fs.read("RA2MD.CSF").and_then(|b| CsfFile::parse(b).ok()),
             fs,
@@ -164,7 +167,13 @@ impl SoundBank {
         let (samples, gain) = if bus == Bus::Eva {
             let name = self
                 .eva
-                .value(event, "Allied")
+                .value(
+                    event,
+                    match self.eva_side {
+                        Side::Allied => "Allied",
+                        Side::Soviet => "Russian",
+                    },
+                )
                 .map(str::to_string)
                 .or_else(|| {
                     self.csf
@@ -274,7 +283,7 @@ mod tests {
             ("a.wav".into(), wav.clone()),
             ("b.wav".into(), wav),
         ]);
-        let mut bank = SoundBank::new(fs, "map");
+        let mut bank = SoundBank::new(fs, "map", Side::Allied);
         let a = bank.cue("Select", Bus::Response).unwrap();
         assert_eq!(a.sample, "a");
         assert_eq!(a.playback.gain, 0.85);
@@ -284,6 +293,94 @@ mod tests {
         assert!(bank.cue("absent", Bus::Effect).is_none());
         assert!(bank.sample("missing").is_none());
         assert_eq!(bank.cue("EVA_UnitReady", Bus::Eva).unwrap().sample, "a");
+    }
+
+    #[test]
+    fn eva_side_selects_distinct_pcm_for_every_supported_country() {
+        use crate::match_config::Country;
+        let pcm = |sample| {
+            encode_wav(&Pcm {
+                sample_rate: 22050,
+                channels: 1,
+                samples: vec![sample, -sample],
+            })
+            .unwrap()
+        };
+        for (country, expected, samples) in [
+            (Country::America, "allied", [100, -100]),
+            (Country::Korea, "allied", [100, -100]),
+            (Country::France, "allied", [100, -100]),
+            (Country::Germany, "allied", [100, -100]),
+            (Country::Britain, "allied", [100, -100]),
+            (Country::Russia, "soviet", [200, -200]),
+            (Country::Cuba, "soviet", [200, -200]),
+            (Country::Libya, "soviet", [200, -200]),
+            (Country::Iraq, "soviet", [200, -200]),
+        ] {
+            let fs = AssetFs::from_files(vec![
+                (
+                    "EVAMD.INI".into(),
+                    b"[EVA_Training]\nAllied=allied\nRussian=soviet\n".to_vec(),
+                ),
+                (
+                    "SOUNDMD.INI".into(),
+                    b"[Click]\nSounds=click\nVolume=50\n".to_vec(),
+                ),
+                ("allied.wav".into(), pcm(100)),
+                ("soviet.wav".into(), pcm(200)),
+                ("click.wav".into(), pcm(300)),
+            ]);
+            let mut bank = SoundBank::new(fs, "map", country.side());
+            let cue = bank.cue("eva_training", Bus::Eva).unwrap();
+            assert_eq!(cue.sample, expected, "{country:?}");
+            assert_eq!(cue.playback.pcm.samples, samples, "{country:?}");
+            assert_eq!(cue.playback.bus, Bus::Eva);
+            assert_eq!(cue.playback.gain, 1.0);
+            let click = bank.cue("Click", Bus::Effect).unwrap();
+            assert_eq!(click.playback.pcm.samples, [300, -300]);
+            assert_eq!(click.playback.gain, 0.5);
+        }
+    }
+
+    #[test]
+    fn eva_missing_side_stays_silent_and_csf_fallback_remains_explicit() {
+        let wav = encode_wav(&Pcm {
+            sample_rate: 22050,
+            channels: 1,
+            samples: vec![100, -100],
+        })
+        .unwrap();
+        for (side, definition) in [
+            (Side::Allied, "Russian=available"),
+            (Side::Soviet, "Allied=available"),
+        ] {
+            let fs = AssetFs::from_files(vec![
+                (
+                    "EVAMD.INI".into(),
+                    format!(
+                        "[MissingSide]\n{definition}\n[Broken]\nAllied=absent\nRussian=absent\n"
+                    )
+                    .into_bytes(),
+                ),
+                ("available.wav".into(), wav.clone()),
+            ]);
+            let mut bank = SoundBank::new(fs, "map", side);
+            assert!(bank.cue("MissingSide", Bus::Eva).is_none());
+            assert!(bank.cue("Broken", Bus::Eva).is_none());
+            assert!(bank.cue("MissingEvent", Bus::Eva).is_none());
+            bank.csf = Some(CsfFile {
+                version: 3,
+                entries: vec![yr_formats::csf::CsfEntry {
+                    label: "VOX:Notice".into(),
+                    value: Some("Notice".into()),
+                    sound: Some("available".into()),
+                }],
+            });
+            let cue = bank.cue("vox:notice", Bus::Eva).unwrap();
+            assert_eq!(cue.sample, "available");
+            assert_eq!(cue.playback.pcm.samples, [100, -100]);
+            assert!(bank.cue("MissingSide", Bus::Eva).is_none());
+        }
     }
 
     fn mix(files: &[(&str, Vec<u8>)]) -> Vec<u8> {
@@ -333,7 +430,7 @@ mod tests {
             // This loose index must not be paired with the archive's bag.
             ("AUDIO.IDX".into(), b"corrupt loose override".to_vec()),
         ]);
-        let mut bank = SoundBank::new(fs, "map");
+        let mut bank = SoundBank::new(fs, "map", Side::Allied);
         assert_eq!(bank.sample("shared").unwrap().samples, [200]);
         assert_eq!(bank.sample("legacy").unwrap().samples, [100]);
         assert!(bank.sample("absent").is_none());
@@ -363,7 +460,7 @@ mod tests {
                     mix(&[("AUDIOMD.MIX", bank_archive("shared", 200))]),
                 ),
             ]);
-            let mut bank = SoundBank::new(fs, "map");
+            let mut bank = SoundBank::new(fs, "map", Side::Allied);
             let sample = bank.sample("shared").unwrap();
             assert_eq!(sample.samples, [200]);
             assert!(Arc::ptr_eq(&sample, &bank.sample("SHARED").unwrap()));
@@ -384,7 +481,7 @@ mod tests {
         let intro = themes.section("INTRO").unwrap();
         assert_eq!(intro.get_bool("Normal"), Some(false));
         let sample = intro.get("Sound").unwrap().to_string();
-        let mut bank = SoundBank::new(fs, "");
+        let mut bank = SoundBank::new(fs, "", Side::Allied);
         let cue = bank.menu_theme().unwrap();
         assert_eq!(cue.sample, sample);
         assert_eq!(cue.playback.bus, Bus::Music);

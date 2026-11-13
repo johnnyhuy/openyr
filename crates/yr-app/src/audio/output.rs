@@ -505,8 +505,11 @@ mod tests {
     fn native_output_recovers_and_preserves_mute() {
         let dir = std::path::PathBuf::from(std::env::var("HOME").unwrap())
             .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
-        let mut bank =
-            super::super::SoundBank::new(yr_assets::AssetFs::open(&dir).unwrap(), "EB1.MMX");
+        let mut bank = super::super::SoundBank::new(
+            yr_assets::AssetFs::open(&dir).unwrap(),
+            "EB1.MMX",
+            crate::match_config::Side::Allied,
+        );
         let theme = bank.theme().expect("retail theme");
         let muted = Arc::new(AtomicBool::new(false));
         let stats = Arc::new(Stats::default());

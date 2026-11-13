@@ -577,6 +577,12 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       M toggles mute. `--frames` exports the shared mix and a cue log alongside
       proof frames. Spatial audio, pitch variation and playlist controls remain
       fidelity work (`docs/formats/audio.md`).
+- [x] Select EVA speech from the local player's country (#398): supported
+      Allied/Soviet matches use the retail `Allied`/`Russian` keys for fresh
+      and disk-restored sessions. Authored PCM and actual retail infantry
+      production captures retain effects, CSF fallback and exact Session/save
+      bytes. Physical output and original timing remain uncalibrated
+      (`docs/formats/audio.md`).
 - [x] Diagnose and recover from live audio device interruptions (#60).
       Backend kind/message diagnostics distinguish active-stream notices
       from device loss. A separate audio worker retries transient failures

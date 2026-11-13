@@ -133,10 +133,15 @@ Observed in the retail INIs and archives:
   prefixed with `$` for voices. `GISelect` lists `$igisea` through `$igisef`.
   `Volume=85` becomes 0.85 gain. The application cycles sample variants using
   its own counter, leaving the simulation RNG untouched.
-- `evamd.ini` maps event names directly to side-specific samples. The current
-  sandbox uses `Allied`: `EVA_UnitReady` maps to `ceva062`, training to
-  `ceva066`, victory to `ceva022`, defeat to `ceva023`. CSF sound references
-  are a fallback when an EVA event is supplied as a `VOX:*` label.
+- `evamd.ini` maps event names directly to side-specific samples. The local
+  player country selects `Allied` or `Russian` (the retail key for Soviet
+  speech), including after disk save reconstruction (#398). Allied
+  `EVA_UnitReady` maps to `ceva062`, training to `ceva066`, victory to
+  `ceva022`, defeat to `ceva023`. Soviet training uses `csof066`. CSF sound
+  references remain a fallback when an EVA event is supplied as a `VOX:*`
+  label. A missing or undecodable selected-side sample stays silent; another
+  faction's voice is not substituted. The front menu retains the Allied bank
+  default and its independent intro theme. Yuri is not a supported player side.
 - Both sound banks must stay paired with their own index. In this install,
   `AUDIO.IDX` resolves to `LANGMD.MIX/AUDIOMD.MIX` (2,285 entries), while
   `LANGUAGE.MIX/AUDIO.MIX` has 1,153 more. The VFS winner is searched first,
@@ -162,6 +167,25 @@ playback can start later because speech is serialized. The WAV uses the
 same mixer as the device callback and lasts one fifteenth of a second per
 tick. It is an offline mix, not a microphone or device-loopback recording.
 These outputs contain retail audio/art and must remain outside git.
+
+## Player-side EVA checks (#398)
+
+Before the fix, actual Soviet infantry production submitted `ceva066` at tick
+1 while the retail `Russian` key specified `csof066`. The Allied control and
+its disk-restored match retained `ceva066` and the `ceva062` unit-ready cue.
+The new check exercises actual infantry production in both player sides with
+an opposite-side opponent, repeats after disk save/load, compares every
+submitted EVA sample against the selected retail key, and checks complete
+encoded Session bytes around audio construction, commands and updates.
+
+Authored checks use distinct PCM samples for all nine supported countries,
+retain effect gain and CSF-label fallback, and exercise missing-side and
+missing-sample recovery without retail data. Set `OPENYR_EVA_PROOF` to an
+external directory and run `cargo test -p yr-app --lib retail_eva_uses_player_side
+-- --nocapture` to retain four 12-second mixer WAVs, cue logs and the two input
+saves. Each run exclusively claims a new child directory. These are offline
+shared-mixer captures, not physical CoreAudio output or original-game timing
+observations. Retail audio must stay outside Git.
 
 ## Device interruptions and recovery (#60)
 

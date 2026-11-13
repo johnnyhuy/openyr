@@ -8,6 +8,7 @@ mod output;
 pub use bank::SoundBank;
 pub use output::LiveOutput;
 
+use crate::match_config::Side;
 use crate::session::{Outcome, Session};
 use bank::Cue;
 use mixer::{Bus, Mixer};
@@ -57,7 +58,12 @@ impl AudioScene {
     }
 
     fn new(dir: &str, map: &str, session: &Session, output: Output) -> Result<Self, String> {
-        let mut scene = Self::empty(dir, map, output)?;
+        let mut scene = Self::empty(
+            dir,
+            map,
+            session.match_config.players[0].country.side(),
+            output,
+        )?;
         scene.remember(session);
         if let Some(theme) = scene.bank.theme() {
             scene.emit(session.sim.tick(), theme);
@@ -73,7 +79,7 @@ impl AudioScene {
     }
 
     pub fn front_live(dir: &str) -> Result<Self, String> {
-        let mut scene = Self::empty(dir, "", Output::Live(LiveOutput::open()?))?;
+        let mut scene = Self::empty(dir, "", Side::Allied, Output::Live(LiveOutput::open()?))?;
         if let Some(theme) = scene.bank.menu_theme() {
             println!("OpenYR: menu theme {}", theme.sample);
             scene.emit(0, theme);
@@ -81,10 +87,10 @@ impl AudioScene {
         Ok(scene)
     }
 
-    fn empty(dir: &str, map: &str, output: Output) -> Result<Self, String> {
+    fn empty(dir: &str, map: &str, side: Side, output: Output) -> Result<Self, String> {
         let fs = AssetFs::open(Path::new(dir)).map_err(|e| e.to_string())?;
         let scene = Self {
-            bank: SoundBank::new(fs, map),
+            bank: SoundBank::new(fs, map, side),
             output,
             entities: BTreeMap::new(),
             cooldowns: BTreeMap::new(),
@@ -388,3 +394,6 @@ impl Recorder {
         self.log.flush()
     }
 }
+
+#[cfg(test)]
+mod tests;
