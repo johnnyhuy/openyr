@@ -206,6 +206,39 @@ fn scan_fails_for_a_malformed_csf() {
 }
 
 #[test]
+fn csf_scan_preserves_multi_value_tables_and_reports_hostile_counts() {
+    let fixture = Fixture::new();
+    let mut table = b" FSC".to_vec();
+    for n in [3u32, 1, 128, 0, 0] {
+        table.extend(n.to_le_bytes());
+    }
+    table.extend(b" LBL");
+    table.extend(128u32.to_le_bytes());
+    table.extend(4096u32.to_le_bytes());
+    table.extend(vec![b'L'; 4096]);
+    for _ in 0..128 {
+        table.extend(b"NRTS");
+    }
+    fs::write(fixture.0.join("test.mix"), archive(&[&table])).unwrap();
+    let output = fixture.command("scan").output().unwrap();
+    assert_success(&output);
+    let text = String::from_utf8(output.stdout).unwrap();
+    assert!(text.contains("csf"), "{text}");
+    assert!(!text.contains("errors ("), "{text}");
+    for offset in [8, 12, 28, 32] {
+        let mut malformed = table.clone();
+        malformed[offset..offset + 4].copy_from_slice(&u32::MAX.to_le_bytes());
+        fs::write(fixture.0.join("test.mix"), archive(&[&table, &malformed])).unwrap();
+        let output = fixture.command("scan").output().unwrap();
+        assert_eq!(output.status.code(), Some(1), "{output:?}");
+        let text = String::from_utf8(output.stdout).unwrap();
+        assert!(text.contains("test.mix/0x00000002: csf:"), "{text}");
+        assert!(text.contains("errors (1):"), "{text}");
+    }
+    println!("CSF CLI scan accepts shared-label null values and reports four hostile count/length cases beside a valid table");
+}
+
+#[test]
 fn wav_rejects_malformed_headers_without_replacing_output_and_scan_keeps_valid_neighbors() {
     use yr_formats::audio::{encode_wav, Pcm};
     let fixture = Fixture::new();

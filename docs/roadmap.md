@@ -70,6 +70,11 @@ Johnny on 2026-10-31.
       errors without panic; complete payloads remain intact (`docs/formats/mix.md`).
 - [x] Filename hash (TS/CRC32 variant) with known-answer tests
 - [x] CSF reader (labels, UTF-16 inverted strings)
+- [x] Bound multi-value CSF label storage (#401). Shared immutable names prevent
+      multiplicative allocation; checked table/local counts and byte ranges
+      reject hostile declarations. Authored parser, CLI and native localization
+      checks preserve Unicode, null/sound records and first-value lookup
+      (`docs/formats/csf.md`). Retail known-answer checks retain 5,211 entries.
 - [x] INI reader (sections, keys, comments, order-preserving)
 - [x] `mix-dump` CLI (list/extract/info/names)
 - [x] Bound composed SHP/TMP inspection rasters (#397). Wide TMP coordinates
