@@ -1,0 +1,36 @@
+{
+  "source": "213de5fa988c7be490f018b59499715b59b69f0d",
+  "tree": "b0a10ddfc76f754fdced3d28b28c9956c872caeb",
+  "rust_passed": 705,
+  "rust_failed": 0,
+  "rust_ignored": 1,
+  "clippy": "passed --workspace --all-targets --locked -- -D warnings",
+  "fmt": "passed --all --check",
+  "python_tests": 3,
+  "matrix_cases": 144,
+  "additional_controls": "ordinary Ctrl/Shift and menu Command/Unicode; exact frame/Session preservation",
+  "baseline_camera_after_modifier": [
+    260,
+    200
+  ],
+  "fixed_camera_after_modifier": [
+    230,
+    200
+  ],
+  "fixed_camera_after_stale_repeat": [
+    230,
+    200
+  ],
+  "fixed_camera_after_fresh_press": [
+    260,
+    200
+  ],
+  "retail_available": false,
+  "current_retail_checks": "skipped: reset executor has no install or retained retail files",
+  "proof_kind": "authored shared camera/compose handlers, no native window or retail art",
+  "limits": [
+    "Previous unpublished recordings were lost with executor reset",
+    "Physical Mac/Retina, live audio-device playback and original runtime not checked",
+    "Known permission-blocked capture/reference paths and HTTP 401 release uploads not retried"
+  ]
+}
