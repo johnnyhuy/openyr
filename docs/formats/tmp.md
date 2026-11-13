@@ -70,3 +70,18 @@ exercises the changed public `build_terrain` API directly. The separately
 receipt-verified CLI smoke covers `mix-dump`, whose map-art path is distinct;
 it does not establish complete Session reconstruction. Retail scans, physical
 Mac/Retina, audio and original-game behavior remain unverified without data.
+
+## Diamond geometry validation
+
+The four-pixel row progression requires a width divisible by four and a height
+of half that width (#386). Parsing accepts widths 4 through 256 with that
+geometry. It rejects 2x1, 6x3 and other incompatible headers before reading cell
+payloads. The former 2x1 acceptance underflowed the first row's horizontal origin
+and made the release render CLI panic on a tiny authored template.
+
+`diamond_rows` uses the same validation before allocation. Manually constructed
+or modified public `TmpFile` dimensions outside this range return an empty row
+table. Valid tables retain their centered first row, full-width midpoint,
+zero-width final row and exactly `width * height / 2` packed pixels. TS 48x24,
+RA2 60x30 and the existing 8x4 authored fixtures retain their layout. Invalid
+headers now fail cleanly; no simulation or save fields change.
