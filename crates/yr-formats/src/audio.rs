@@ -626,7 +626,7 @@ mod tests {
                 if channels == 1 {
                     vec![100; 3]
                 } else {
-                    vec![100, -100].repeat(3)
+                    [100, -100].repeat(3)
                 }
             );
         }
