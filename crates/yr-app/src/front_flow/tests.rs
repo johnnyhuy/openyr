@@ -768,17 +768,23 @@ fn retail_front_menu_preview_start_save_return_load_cancel_options_and_exit() {
     click(&mut app, Button::Accept);
     wait(&mut app);
     assert!(!app.menu.front && app.session.as_ref().unwrap().sim.state_hash() == hash);
-    let map = app.map.as_ref().unwrap();
-    assert!(
-        (app.view.cam_x + (WIN_W - SIDEBAR_W) as f32 / (2.0 * app.view.zoom)
-            - map.width as f32 / 2.0)
-            .abs()
-            < 0.01
+    let session = app.session.as_ref().unwrap();
+    let yard = session
+        .sim
+        .buildings()
+        .iter()
+        .find(|b| b.owner == yr_sim::OWNER_PLAYER && b.role == yr_sim::Role::ConstructionYard)
+        .unwrap();
+    let (x, y) = yard.centre();
+    let point = yr_app::interaction::ground_point(
+        app.map.as_ref().unwrap(),
+        session.sim.terrain(),
+        (x.raw() as f32 / 256.0, y.raw() as f32 / 256.0),
     );
     assert!(
-        (app.view.cam_y + WIN_H as f32 / (2.0 * app.view.zoom) - map.height as f32 / 2.0).abs()
-            < 0.01
+        (0.0..(WIN_W - SIDEBAR_W) as f32).contains(&((point.0 - app.view.cam_x) * app.view.zoom))
     );
+    assert!((0.0..WIN_H as f32).contains(&((point.1 - app.view.cam_y) * app.view.zoom)));
     app.open_menu(Page::Result(true));
     proof(&app, "12-result-return-choice");
     click(&mut app, Button::MainMenu);

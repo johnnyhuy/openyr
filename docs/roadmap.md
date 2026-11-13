@@ -1097,6 +1097,11 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       sidebar production remains usable. Authored moving/layout/zoom, guards,
       cancellation, READY/team and Session-byte checks pass. Original/retail and
       physical calibration remain open (`docs/camera-input.md`).
+- [x] Frame installed matches on the owned base (#379, #97): direct window
+      startup and completed fresh/restart/saved menu loads share terrain-aware,
+      bounded construction-yard framing, with owned-building/unit and empty-map
+      fallbacks. Zoom and exact Session/save bytes remain unchanged; original
+      framing and physical input calibration remain open (`docs/camera-input.md`).
 - [ ] Complete world interaction and desktop UX (#97): consistent selection,
       supported control groups/hotkeys, hover/target/order feedback, bounded
       camera movement and configurable edge scrolling. Clear held input on

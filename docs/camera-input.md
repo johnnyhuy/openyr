@@ -206,3 +206,18 @@ zoom and pending orders. `OPENYR_UNIT_FOLLOW_PROOF` with `cargo test -p yr-app
 --bin openyr unit_follow -- --nocapture` exports shared-compositor frames and
 state receipts. These use authored fallback art; retail/original behavior and
 physical Mac/Retina delivery remain unverified under #97/#98.
+
+## Match entry framing
+
+Direct window startup and completed menu match loads now frame the lowest-ID
+living owned construction yard (#379). Without a yard they use another living
+owned building, then the lowest-ID living owned unit; an empty owned force falls
+back to the map center. Fresh starts, restarts and restored matches share this
+policy. Saves do not contain camera coordinates, so loading frames the current
+owned force rather than restoring a historical view.
+
+Framing uses the drawn ground anchor, existing terrain lift and sidebar exclusion,
+retains zoom, and clamps to the rendered raster. It issues no input, feedback or
+simulation command and changes no save fields. H keeps its yard-only policy.
+These are native startup choices; original-game framing and physical Mac/Retina
+behavior remain uncalibrated in #97.

@@ -1191,3 +1191,55 @@ mod list_keys;
 mod keyboard_tracking;
 
 mod preferences_storage;
+
+#[test]
+fn retail_match_completion_frames_the_owned_yard_on_start_and_restore() {
+    let dir = PathBuf::from(std::env::var("HOME").unwrap_or_default())
+        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    if !dir.is_dir() {
+        return;
+    }
+    let temp = Scratch::new();
+    let mut app = new_app(dir.to_string_lossy().into(), "EB1.MMX".into(), 1);
+    app.save_path = temp.0.join("startup.oyrsave");
+    let mut saved = None;
+    for restore in [false, true] {
+        app.start_menu_load(restore.then(|| app.save_path.clone()));
+        finish_load(&mut app);
+        assert!(!app.menu.visible());
+        let session = app.session.as_ref().unwrap();
+        let yard = session
+            .sim
+            .buildings()
+            .iter()
+            .find(|b| b.owner == yr_sim::OWNER_PLAYER && b.role == yr_sim::Role::ConstructionYard)
+            .unwrap();
+        let (x, y) = yard.centre();
+        let point = yr_app::interaction::ground_point(
+            app.map.as_ref().unwrap(),
+            session.sim.terrain(),
+            (x.raw() as f32 / 256.0, y.raw() as f32 / 256.0),
+        );
+        let size = app.camera_size();
+        let map = app.map.as_ref().unwrap();
+        // EB1's yard is close enough to the raster edge to constrain Y.
+        // Verify the actual load commit against its projected target and bounds.
+        let expected = |target: f32, extent: u32, visible: u32| {
+            let spare = extent as f32 - visible as f32 / app.view.zoom;
+            if spare <= 0.0 {
+                spare / 2.0
+            } else {
+                (target - visible as f32 / (2.0 * app.view.zoom)).clamp(0.0, spare)
+            }
+        };
+        assert!((app.view.cam_x - expected(point.0, map.width, size.0 - SIDEBAR_W)).abs() < 0.01);
+        assert!((app.view.cam_y - expected(point.1, map.height, size.1)).abs() < 0.01);
+        let bytes = yr_app::snapshot::encode(session).unwrap();
+        if let Some(saved) = &saved {
+            assert_eq!(&bytes, saved);
+        } else {
+            yr_app::snapshot::save(session, &app.save_path).unwrap();
+            saved = Some(bytes);
+        }
+    }
+}

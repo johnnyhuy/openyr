@@ -166,18 +166,22 @@ fn retail_compact_start_loading_sidebar_selection_and_pause_share_dimensions() {
         }
         assert_eq!(app.menu.page, Page::Closed);
         assert_eq!(app.view.zoom, 1.25);
-        let map = app.map.as_ref().unwrap();
-        assert!(
-            ((map.width as f32 / 2.0 - app.view.cam_x) * app.view.zoom
-                - (size.0 - SIDEBAR_W) as f32 / 2.0)
-                .abs()
-                < 0.01
+        let session = app.session.as_ref().unwrap();
+        let yard = session
+            .sim
+            .buildings()
+            .iter()
+            .find(|b| b.owner == yr_sim::OWNER_PLAYER && b.role == yr_sim::Role::ConstructionYard)
+            .unwrap();
+        let (x, y) = yard.centre();
+        let point = yr_app::interaction::ground_point(
+            app.map.as_ref().unwrap(),
+            session.sim.terrain(),
+            (x.raw() as f32 / 256.0, y.raw() as f32 / 256.0),
         );
-        assert!(
-            ((map.height as f32 / 2.0 - app.view.cam_y) * app.view.zoom - size.1 as f32 / 2.0)
-                .abs()
-                < 0.01
-        );
+        assert!((0.0..(size.0 - SIDEBAR_W) as f32)
+            .contains(&((point.0 - app.view.cam_x) * app.view.zoom)));
+        assert!((0.0..size.1 as f32).contains(&((point.1 - app.view.cam_y) * app.view.zoom)));
         let saved = yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap();
         let (x, y) = sidebar::tab_origin(size.0, Category::Vehicles);
         app.pointer_moved((f64::from(x + 10), f64::from(y + 10)));

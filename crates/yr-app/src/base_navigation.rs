@@ -2,6 +2,35 @@
 use super::*;
 
 impl App {
+    /// Frame installed matches without issuing input or changing saved state.
+    pub(super) fn center_match_view(&mut self) {
+        let target = self.session.as_ref().and_then(|session| {
+            let sim = &session.sim;
+            let building = sim
+                .buildings()
+                .iter()
+                .filter(|b| b.owner == yr_sim::OWNER_PLAYER && b.hp > 0)
+                .min_by_key(|b| (b.role != yr_sim::Role::ConstructionYard, b.id));
+            // A map without a yard still starts at its owned force. Stable IDs
+            // avoid depending on entity storage order or consuming simulation RNG.
+            building.map(|b| b.centre()).or_else(|| {
+                sim.units()
+                    .iter()
+                    .filter(|u| u.owner == yr_sim::OWNER_PLAYER && u.hp > 0)
+                    .min_by_key(|u| u.id)
+                    .map(|u| (u.x, u.y))
+            })
+        });
+        let size = self.camera_size();
+        let viewport = (size.0.saturating_sub(SIDEBAR_W), size.1);
+        if let Some((x, y)) = target {
+            self.center_world_at((x.raw() as f32 / 256.0, y.raw() as f32 / 256.0), viewport);
+        } else if let Some(map) = &self.map {
+            self.view.center_map(map, viewport);
+        }
+        self.bound_camera(size);
+    }
+
     pub(super) fn base_key(&mut self, code: KeyCode, repeat: bool, now: Instant) -> bool {
         if code != KeyCode::KeyH {
             return false;
