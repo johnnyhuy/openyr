@@ -623,3 +623,153 @@ fn tmp_render_rejects_incompatible_rows_and_preserves_existing_output() {
         }
     }
 }
+
+type InspectionCell = (i32, i32, Option<(i32, i32, u32, u32)>);
+
+fn inspection_tmp(cells: &[InspectionCell]) -> Vec<u8> {
+    let mut data = [cells.len() as u32, 1, 4, 2]
+        .into_iter()
+        .flat_map(u32::to_le_bytes)
+        .collect::<Vec<_>>();
+    let mut offset = 16 + cells.len() * 4;
+    for (_, _, extra) in cells {
+        data.extend((offset as u32).to_le_bytes());
+        offset += 56 + extra.map_or(0, |(_, _, w, h)| w as usize * h as usize);
+    }
+    for &(x, y, extra) in cells {
+        data.extend(x.to_le_bytes());
+        data.extend(y.to_le_bytes());
+        let (ex, ey, ew, eh) = extra.unwrap_or((0, 0, 0, 0));
+        for value in [if extra.is_some() { 56u32 } else { 0 }, 0, 0] {
+            data.extend(value.to_le_bytes());
+        }
+        data.extend(ex.to_le_bytes());
+        data.extend(ey.to_le_bytes());
+        data.extend(ew.to_le_bytes());
+        data.extend(eh.to_le_bytes());
+        data.extend(u32::from(extra.is_some()).to_le_bytes());
+        data.extend([0; 12]);
+        data.extend([1; 4]);
+        data.extend(vec![2; ew as usize * eh as usize]);
+    }
+    assert!(yr_formats::TmpFile::parse(&data).is_ok());
+    data
+}
+
+#[test]
+fn inspection_render_budget_errors_preserve_existing_and_absent_destinations() {
+    let fixture = Fixture::new();
+    let destination = fixture.0.join("protected.png");
+    let path = fixture.0.join("input.mix");
+    let mut shp = [0u16, 65535, 65535, 1]
+        .into_iter()
+        .flat_map(u16::to_le_bytes)
+        .collect::<Vec<_>>();
+    shp.extend([0; 24]);
+    assert!(yr_formats::ShpFile::parse(&shp).is_ok());
+    let cases = [
+        shp,
+        inspection_tmp(&[(0, 0, None), (i32::MAX - 4, 0, None)]),
+        inspection_tmp(&[(i32::MIN, 0, None), (i32::MAX, 0, None)]),
+        inspection_tmp(&[(0, i32::MIN, None), (0, i32::MAX, None)]),
+        inspection_tmp(&[(0, 0, Some((i32::MAX, i32::MIN, 1, 1)))]),
+        inspection_tmp(&[(0, 0, Some((0, 0, u32::MAX, 0)))]),
+    ];
+    for data in cases {
+        fs::write(&path, archive(&[&data, &[0; 768]])).unwrap();
+        for exists in [true, false] {
+            if exists {
+                fs::write(&destination, b"protected image bytes").unwrap();
+            } else {
+                fs::remove_file(&destination).unwrap();
+            }
+            // A missing guard must fail the child, not exhaust the test host.
+            let output = Command::new("sh")
+                .args([
+                    "-c",
+                    "ulimit -c 0; ulimit -d 262144; exec \"$@\"",
+                    "bounded-render",
+                ])
+                .arg(env!("CARGO_BIN_EXE_mix-dump"))
+                .arg("render")
+                .arg(format!("{}:0x1", path.display()))
+                .arg(format!("{}:0x2", path.display()))
+                .arg(&destination)
+                .output()
+                .unwrap();
+            assert_eq!(output.status.code(), Some(1), "{output:?}");
+            assert!(output.stdout.is_empty());
+            let error = String::from_utf8(output.stderr).unwrap();
+            assert!(
+                error.contains("inspection raster") && !error.contains("panicked"),
+                "{error}"
+            );
+            if exists {
+                assert_eq!(fs::read(&destination).unwrap(), b"protected image bytes");
+            } else {
+                assert!(!destination.exists());
+            }
+        }
+    }
+}
+
+#[test]
+fn inspection_render_keeps_translated_tmp_and_empty_shp_pixels() {
+    let fixture = Fixture::new();
+    let path = fixture.0.join("input.mix");
+    let destination = fixture.0.join("image.png");
+    let mut palette = [0; 768];
+    palette[3] = 63;
+    palette[7] = 63;
+    let render = |data: &[u8]| {
+        fs::write(&path, archive(&[data, &palette])).unwrap();
+        let output = Command::new(env!("CARGO_BIN_EXE_mix-dump"))
+            .arg("render")
+            .arg(format!("{}:0x1", path.display()))
+            .arg(format!("{}:0x2", path.display()))
+            .arg(&destination)
+            .output()
+            .unwrap();
+        assert_success(&output);
+        fs::read(&destination).unwrap()
+    };
+    let red = [255, 0, 0, 255];
+    let green = [0, 255, 0, 255];
+    let clear = [0; 4];
+    for (x, y) in [(0, 0), (-4, -2), (i32::MIN, i32::MIN), (i32::MAX, i32::MAX)] {
+        let data = inspection_tmp(&[(x, y, None)]);
+        let expected = [red, red, red, red, clear, clear, clear, clear].concat();
+        assert_eq!(render(&data), yr_render::png::encode_rgba(4, 2, &expected));
+        let data = inspection_tmp(&[(x, y, Some((x, y, 2, 2)))]);
+        let expected = [green, green, red, red, green, green, clear, clear].concat();
+        assert_eq!(render(&data), yr_render::png::encode_rgba(4, 2, &expected));
+    }
+    let mut null = [0u16, 0, 0, 2]
+        .into_iter()
+        .flat_map(u16::to_le_bytes)
+        .collect::<Vec<_>>();
+    null.extend([0; 48]);
+    assert_eq!(render(&null), yr_render::png::encode_rgba(2, 1, &[0; 8]));
+    let empty_tmp = [1u32, 1, 4, 2, 0]
+        .into_iter()
+        .flat_map(u32::to_le_bytes)
+        .collect::<Vec<_>>();
+    assert_eq!(
+        render(&empty_tmp),
+        yr_render::png::encode_rgba(1, 1, &[0; 4])
+    );
+    // Two colored frames and an empty slot preserve sheet ordering and spacing.
+    let mut shp = [0u16, 2, 1, 3]
+        .into_iter()
+        .flat_map(u16::to_le_bytes)
+        .collect::<Vec<_>>();
+    for offset in [80u32, 0, 82] {
+        shp.extend([0u16, 0, 2, 1].into_iter().flat_map(u16::to_le_bytes));
+        shp.extend(1u32.to_le_bytes());
+        shp.extend([0; 8]);
+        shp.extend(offset.to_le_bytes());
+    }
+    shp.extend([1, 2, 2, 1]);
+    let expected = [red, green, clear, clear, green, red, clear, clear].concat();
+    assert_eq!(render(&shp), yr_render::png::encode_rgba(4, 2, &expected));
+}

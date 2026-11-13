@@ -52,6 +52,14 @@ runs and canvas offsets while checking malformed frame/canvas and CLI failures.
 
 ## Empirical notes (retail corpus)
 
+`mix-dump render` preflights the complete inspection sheet before decoding its
+frames (#397). Checked dimensions and a 1 GiB RGBA budget bound composition;
+fallible reservation reports failure before creating or replacing an output.
+Empty frame slots need no canvas decoding and retain their transparent sheet
+positions, including the legal 0x0 NULL.SHP case. Authored colored/empty-frame
+sheets retain exact PNG bytes. This is an inspection budget, not a format limit
+or native-rendering change; current retail verification needs the install.
+
 `mix-dump scan` over all 16 retail archives decodes every frame of 5,450 SHP
 files (83,626 non-empty frames) with zero errors:
 

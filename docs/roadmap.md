@@ -72,6 +72,13 @@ Johnny on 2026-10-31.
 - [x] CSF reader (labels, UTF-16 inverted strings)
 - [x] INI reader (sections, keys, comments, order-preserving)
 - [x] `mix-dump` CLI (list/extract/info/names)
+- [x] Bound composed SHP/TMP inspection rasters (#397). Wide TMP coordinates
+      preserve small extreme translations; checked PNG dimensions, a 1 GiB
+      budget and fallible reservation prevent unbounded sheet allocations.
+      Actual CLI errors preserve existing/absent destinations, while authored
+      translated/extra/empty-sheet controls retain their pixels. Native
+      rendering, format acceptance, simulation and saves are unchanged
+      (`docs/formats/tmp.md`, `docs/formats/shp.md`). Retail checks need data.
 - [x] Exit cleanly when an inspection output pipe closes early (#79).
       All `mix-dump` commands propagate stdout failures; BrokenPipe exits
       successfully without a panic. Input errors and other output failures

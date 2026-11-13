@@ -1,5 +1,16 @@
 # TMP isometric terrain templates (TS/RA2)
 
+`mix-dump render` computes inspection bounds and pixel offsets in wide signed
+coordinates (#397). A small template translated to `i32::MIN` or `i32::MAX`
+keeps its pixels even when its rectangle endpoint exceeds i32. The composed
+RGBA raster must have supported PNG dimensions and fit a checked 1 GiB budget;
+allocation failure is reported before opening the destination. Widely separated
+cells or extra rectangles return an inspection error instead of wrapping bounds
+or attempting unbounded allocation. Empty templates retain a transparent 1x1
+image. This inspection policy changes no parser, native renderer or save format.
+Authored pixel/extra/output-preservation controls pass; current retail corpus
+verification needs an accessible install.
+
 Terrain tiles: a template is a small grid of isometric diamond cells (one
 file per tile set entry, e.g. `CLEAR01.TEM`, `PROAD15.URB`). The extension
 selects the theater: `.TEM` temperate, `.SNO` snow, `.URB` urban, `.DES`
