@@ -1,0 +1,4 @@
+Verified: /workspace/openyr-core-review-20261113-6/.tmp/tmp-runtime/program
+OpenYR: loaded .tmp/tmp-end.oyrsave at tick 6000, hash 3082cb602467f8fc, Lost
+OpenYR: headless tick 6000, hash 3082cb602467f8fc, Lost
+OpenYR: saved .tmp/tmp-reloaded.oyrsave at tick 6000, hash 3082cb602467f8fc, Lost

@@ -1,0 +1,268 @@
+[
+  {
+    "label": "before malformed 2x1",
+    "command": [
+      "python3",
+      "scripts/proof_build.py",
+      "--repo",
+      "/workspace/openyr",
+      "run",
+      "--receipt",
+      "/workspace/openyr-menu-audit-20261113-5/.tmp/menu-enter-scan/receipt.json",
+      "--",
+      "render",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/2x1.mix:0x1",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/2x1.mix:0x2",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/before-invalid.png"
+    ],
+    "exit": 101,
+    "stdout": "Verified: /workspace/openyr-menu-audit-20261113-5/.tmp/menu-enter-scan/program\n\nthread 'main' (734085) panicked at tools/mix-dump/src/render.rs:52:13:\nrange start index 8589934588 out of range for slice of length 8\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n"
+  },
+  {
+    "label": "after malformed 2x1",
+    "command": [
+      "python3",
+      "scripts/proof_build.py",
+      "--repo",
+      "/workspace/openyr-core-review-20261113-6",
+      "run",
+      "--receipt",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-scan/receipt.json",
+      "--",
+      "render",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/2x1.mix:0x1",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/2x1.mix:0x2",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/after-invalid-2.png"
+    ],
+    "exit": 1,
+    "stdout": "Verified: /workspace/openyr-core-review-20261113-6/.tmp/tmp-scan/program\nerror: /workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/2x1.mix:0x1: not an SHP or TMP\n"
+  },
+  {
+    "label": "after malformed 6x3",
+    "command": [
+      "python3",
+      "scripts/proof_build.py",
+      "--repo",
+      "/workspace/openyr-core-review-20261113-6",
+      "run",
+      "--receipt",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-scan/receipt.json",
+      "--",
+      "render",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/6x3.mix:0x1",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/6x3.mix:0x2",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/after-invalid-6.png"
+    ],
+    "exit": 1,
+    "stdout": "Verified: /workspace/openyr-core-review-20261113-6/.tmp/tmp-scan/program\nerror: /workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/6x3.mix:0x1: not an SHP or TMP\n"
+  },
+  {
+    "label": "after malformed 10x5",
+    "command": [
+      "python3",
+      "scripts/proof_build.py",
+      "--repo",
+      "/workspace/openyr-core-review-20261113-6",
+      "run",
+      "--receipt",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-scan/receipt.json",
+      "--",
+      "render",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/10x5.mix:0x1",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/10x5.mix:0x2",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/after-invalid-10.png"
+    ],
+    "exit": 1,
+    "stdout": "Verified: /workspace/openyr-core-review-20261113-6/.tmp/tmp-scan/program\nerror: /workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/10x5.mix:0x1: not an SHP or TMP\n"
+  },
+  {
+    "label": "before valid 4x2",
+    "command": [
+      "python3",
+      "scripts/proof_build.py",
+      "--repo",
+      "/workspace/openyr",
+      "run",
+      "--receipt",
+      "/workspace/openyr-menu-audit-20261113-5/.tmp/menu-enter-scan/receipt.json",
+      "--",
+      "render",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/4x2.mix:0x1",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/4x2.mix:0x2",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/before-4.png"
+    ],
+    "exit": 0,
+    "stdout": "Verified: /workspace/openyr-menu-audit-20261113-5/.tmp/menu-enter-scan/program\nrendered /workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/4x2.mix:0x1 -> /workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/before-4.png (4x2)\n"
+  },
+  {
+    "label": "after valid 4x2",
+    "command": [
+      "python3",
+      "scripts/proof_build.py",
+      "--repo",
+      "/workspace/openyr-core-review-20261113-6",
+      "run",
+      "--receipt",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-scan/receipt.json",
+      "--",
+      "render",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/4x2.mix:0x1",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/4x2.mix:0x2",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/after-4.png"
+    ],
+    "exit": 0,
+    "stdout": "Verified: /workspace/openyr-core-review-20261113-6/.tmp/tmp-scan/program\nrendered /workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/4x2.mix:0x1 -> /workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/after-4.png (4x2)\n"
+  },
+  {
+    "label": "before valid 8x4",
+    "command": [
+      "python3",
+      "scripts/proof_build.py",
+      "--repo",
+      "/workspace/openyr",
+      "run",
+      "--receipt",
+      "/workspace/openyr-menu-audit-20261113-5/.tmp/menu-enter-scan/receipt.json",
+      "--",
+      "render",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/8x4.mix:0x1",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/8x4.mix:0x2",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/before-8.png"
+    ],
+    "exit": 0,
+    "stdout": "Verified: /workspace/openyr-menu-audit-20261113-5/.tmp/menu-enter-scan/program\nrendered /workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/8x4.mix:0x1 -> /workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/before-8.png (8x4)\n"
+  },
+  {
+    "label": "after valid 8x4",
+    "command": [
+      "python3",
+      "scripts/proof_build.py",
+      "--repo",
+      "/workspace/openyr-core-review-20261113-6",
+      "run",
+      "--receipt",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-scan/receipt.json",
+      "--",
+      "render",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/8x4.mix:0x1",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/8x4.mix:0x2",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/after-8.png"
+    ],
+    "exit": 0,
+    "stdout": "Verified: /workspace/openyr-core-review-20261113-6/.tmp/tmp-scan/program\nrendered /workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/8x4.mix:0x1 -> /workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/after-8.png (8x4)\n"
+  },
+  {
+    "label": "before valid 48x24",
+    "command": [
+      "python3",
+      "scripts/proof_build.py",
+      "--repo",
+      "/workspace/openyr",
+      "run",
+      "--receipt",
+      "/workspace/openyr-menu-audit-20261113-5/.tmp/menu-enter-scan/receipt.json",
+      "--",
+      "render",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/48x24.mix:0x1",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/48x24.mix:0x2",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/before-48.png"
+    ],
+    "exit": 0,
+    "stdout": "Verified: /workspace/openyr-menu-audit-20261113-5/.tmp/menu-enter-scan/program\nrendered /workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/48x24.mix:0x1 -> /workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/before-48.png (48x24)\n"
+  },
+  {
+    "label": "after valid 48x24",
+    "command": [
+      "python3",
+      "scripts/proof_build.py",
+      "--repo",
+      "/workspace/openyr-core-review-20261113-6",
+      "run",
+      "--receipt",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-scan/receipt.json",
+      "--",
+      "render",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/48x24.mix:0x1",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/48x24.mix:0x2",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/after-48.png"
+    ],
+    "exit": 0,
+    "stdout": "Verified: /workspace/openyr-core-review-20261113-6/.tmp/tmp-scan/program\nrendered /workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/48x24.mix:0x1 -> /workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/after-48.png (48x24)\n"
+  },
+  {
+    "label": "before valid 60x30",
+    "command": [
+      "python3",
+      "scripts/proof_build.py",
+      "--repo",
+      "/workspace/openyr",
+      "run",
+      "--receipt",
+      "/workspace/openyr-menu-audit-20261113-5/.tmp/menu-enter-scan/receipt.json",
+      "--",
+      "render",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/60x30.mix:0x1",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/60x30.mix:0x2",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/before-60.png"
+    ],
+    "exit": 0,
+    "stdout": "Verified: /workspace/openyr-menu-audit-20261113-5/.tmp/menu-enter-scan/program\nrendered /workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/60x30.mix:0x1 -> /workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/before-60.png (60x30)\n"
+  },
+  {
+    "label": "after valid 60x30",
+    "command": [
+      "python3",
+      "scripts/proof_build.py",
+      "--repo",
+      "/workspace/openyr-core-review-20261113-6",
+      "run",
+      "--receipt",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-scan/receipt.json",
+      "--",
+      "render",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/60x30.mix:0x1",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/60x30.mix:0x2",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/after-60.png"
+    ],
+    "exit": 0,
+    "stdout": "Verified: /workspace/openyr-core-review-20261113-6/.tmp/tmp-scan/program\nrendered /workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/60x30.mix:0x1 -> /workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/after-60.png (60x30)\n"
+  },
+  {
+    "label": "before valid 256x128",
+    "command": [
+      "python3",
+      "scripts/proof_build.py",
+      "--repo",
+      "/workspace/openyr",
+      "run",
+      "--receipt",
+      "/workspace/openyr-menu-audit-20261113-5/.tmp/menu-enter-scan/receipt.json",
+      "--",
+      "render",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/256x128.mix:0x1",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/256x128.mix:0x2",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/before-256.png"
+    ],
+    "exit": 0,
+    "stdout": "Verified: /workspace/openyr-menu-audit-20261113-5/.tmp/menu-enter-scan/program\nrendered /workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/256x128.mix:0x1 -> /workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/before-256.png (256x128)\n"
+  },
+  {
+    "label": "after valid 256x128",
+    "command": [
+      "python3",
+      "scripts/proof_build.py",
+      "--repo",
+      "/workspace/openyr-core-review-20261113-6",
+      "run",
+      "--receipt",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-scan/receipt.json",
+      "--",
+      "render",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/256x128.mix:0x1",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/256x128.mix:0x2",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/after-256.png"
+    ],
+    "exit": 0,
+    "stdout": "Verified: /workspace/openyr-core-review-20261113-6/.tmp/tmp-scan/program\nrendered /workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/256x128.mix:0x1 -> /workspace/openyr-core-review-20261113-6/.tmp/tmp-cli-proof/after-256.png (256x128)\n"
+  }
+]
