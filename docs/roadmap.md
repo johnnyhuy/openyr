@@ -90,6 +90,11 @@ Johnny on 2026-10-31.
       zero errors (`docs/formats/vxl.md`). Voxel lighting and original animation
       cadence remain separate fidelity work.
 - [x] TMP terrain tiles
+- [x] Reject incompatible TMP diamond geometry (#386): four-pixel row
+      validation prevents accepted 2x1 templates from panicking in rendering.
+      Public row generation rejects invalid dimensions before allocation;
+      valid TS/RA2 geometry, CLI output preservation and terrain-loader errors
+      are checked (`docs/formats/tmp.md`). Simulation/save formats stay intact.
 - [x] `mix-dump scan`: recursive census + corpus-wide parser check
 - [x] Fail the corpus check when the census contains parser errors (#111,
       #113), including malformed CSF files. Print the census and first 40

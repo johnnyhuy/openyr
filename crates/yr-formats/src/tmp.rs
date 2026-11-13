@@ -77,6 +77,10 @@ pub struct TmpFile {
     pub tiles: Vec<Option<TmpTile>>,
 }
 
+fn valid_diamond(width: u32, height: u32) -> bool {
+    (4..=256).contains(&width) && width.is_multiple_of(4) && height == width / 2
+}
+
 impl TmpFile {
     pub fn parse(data: &[u8]) -> Result<Self, TmpError> {
         let mut c = Cursor::new(data);
@@ -87,9 +91,7 @@ impl TmpFile {
         let cells = (cells_x as usize).checked_mul(cells_y as usize);
         let valid_dims = (1..=64).contains(&cells_x)
             && (1..=64).contains(&cells_y)
-            && tile_width > 0
-            && u64::from(tile_width) == u64::from(tile_height) * 2
-            && tile_width <= 256;
+            && valid_diamond(tile_width, tile_height);
         let Some(cells) = cells.filter(|_| valid_dims) else {
             return Err(TmpError::BadHeader);
         };
@@ -118,9 +120,13 @@ impl TmpFile {
 
     /// Diamond scanlines as `(row, x_start, width)`: rows widen by 4 px from
     /// the top until the middle, then narrow. Packed pixel data follows this
-    /// order. The last row of a 60x30 tile has width 0.
+    /// order. The last row of a 60x30 tile has width 0. Invalid manually
+    /// constructed dimensions return an empty table before allocating.
     pub fn diamond_rows(&self) -> Vec<(u32, u32, u32)> {
         let (w, h) = (self.tile_width, self.tile_height);
+        if !valid_diamond(w, h) {
+            return Vec::new();
+        }
         let mut rows = Vec::with_capacity(h as usize);
         let mut width = 4u32;
         for y in 0..h {
@@ -257,6 +263,71 @@ mod tests {
         assert_eq!(rows[0], (0, 28, 4));
         assert_eq!(rows[14], (14, 0, 60));
         assert_eq!(rows[29].2, 0);
+    }
+
+    #[test]
+    fn rejects_incompatible_diamond_dimensions() {
+        for (width, height) in [
+            (0, 0),
+            (2, 1),
+            (6, 3),
+            (10, 5),
+            (60, 31),
+            (256, 129),
+            (260, 130),
+            (u32::MAX, u32::MAX),
+        ] {
+            let data = [1u32, 1, width, height, 0]
+                .into_iter()
+                .flat_map(u32::to_le_bytes)
+                .collect::<Vec<_>>();
+            assert_eq!(
+                TmpFile::parse(&data).unwrap_err(),
+                TmpError::BadHeader,
+                "{width}x{height}"
+            );
+        }
+        for width in (4u32..=256).step_by(4) {
+            let height = width / 2;
+            let data = [1u32, 1, width, height, 0]
+                .into_iter()
+                .flat_map(u32::to_le_bytes)
+                .collect::<Vec<_>>();
+            let tmp = TmpFile::parse(&data).unwrap();
+            let rows = tmp.diamond_rows();
+            assert_eq!(rows.len(), height as usize);
+            assert_eq!(rows.iter().map(|r| r.2).sum::<u32>(), width * height / 2);
+            assert_eq!(rows[0].2, 4);
+            assert_eq!(rows[height as usize / 2 - 1].2, width);
+            assert_eq!(rows.last().unwrap().2, 0);
+            for &(y, x, len) in &rows {
+                assert!(y < height && x + len <= width);
+                assert_eq!(2 * x + len, width);
+            }
+        }
+    }
+
+    #[test]
+    fn manually_invalid_diamonds_have_no_rows() {
+        for (width, height) in [
+            (0, 0),
+            (2, 1),
+            (6, 3),
+            (60, 31),
+            (256, 129),
+            (260, 130),
+            (u32::MAX, 0),
+            (60, u32::MAX),
+        ] {
+            let tmp = TmpFile {
+                cells_x: 1,
+                cells_y: 1,
+                tile_width: width,
+                tile_height: height,
+                tiles: vec![None],
+            };
+            assert!(tmp.diamond_rows().is_empty(), "{width}x{height}");
+        }
     }
 
     #[test]

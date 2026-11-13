@@ -51,8 +51,15 @@ fn tmp_loading_reports_a_missing_referenced_template_without_panicking() {
 
 #[test]
 fn tmp_loading_reports_malformed_referenced_templates_with_filename_and_reason() {
+    let incompatible = [1u32, 1, 2, 1, 20]
+        .into_iter()
+        .flat_map(u32::to_le_bytes)
+        .chain([0; 52])
+        .chain([1])
+        .collect::<Vec<_>>();
     for (bytes, reason) in [
         (b"bad".to_vec(), "not a TS/RA2 TMP file"),
+        (incompatible, "not a TS/RA2 TMP file"),
         (template()[..72].to_vec(), "TMP cell 0 is malformed"),
     ] {
         let mut fs = assets(Some(bytes));

@@ -423,3 +423,58 @@ fn invalid_usage_keeps_its_exit_code() {
         .unwrap()
         .starts_with("usage:"));
 }
+
+#[test]
+fn tmp_render_rejects_incompatible_rows_and_preserves_existing_output() {
+    let fixture = Fixture::new();
+    let output_path = fixture.0.join("protected.png");
+    let mut palette = [0u8; 768];
+    palette[3] = 63;
+    for (width, height, valid) in [
+        (2u32, 1u32, false),
+        (6, 3, false),
+        (10, 5, false),
+        (4, 2, true),
+        (8, 4, true),
+        (48, 24, true),
+        (60, 30, true),
+        (256, 128, true),
+    ] {
+        let mut tmp = [1u32, 1, width, height, 20]
+            .into_iter()
+            .flat_map(u32::to_le_bytes)
+            .collect::<Vec<_>>();
+        tmp.extend([0; 52]);
+        tmp.extend(vec![1; (width * height / 2) as usize]);
+        let path = fixture.0.join("test.mix");
+        fs::write(&path, archive(&[&tmp, &palette])).unwrap();
+        fs::write(&output_path, b"existing output remains intact").unwrap();
+        let output = Command::new(env!("CARGO_BIN_EXE_mix-dump"))
+            .arg("render")
+            .arg(format!("{}:0x1", path.display()))
+            .arg(format!("{}:0x2", path.display()))
+            .arg(&output_path)
+            .output()
+            .unwrap();
+        if valid {
+            assert_success(&output);
+            let png = fs::read(&output_path).unwrap();
+            assert_eq!(&png[..8], b"\x89PNG\r\n\x1a\n");
+            assert_eq!(u32::from_be_bytes(png[16..20].try_into().unwrap()), width);
+            assert_eq!(u32::from_be_bytes(png[20..24].try_into().unwrap()), height);
+        } else {
+            assert_eq!(output.status.code(), Some(1), "{output:?}");
+            assert!(output.stdout.is_empty());
+            let error = String::from_utf8(output.stderr).unwrap();
+            assert!(
+                error.starts_with("error:") && error.contains("not an SHP or TMP"),
+                "{error}"
+            );
+            assert!(!error.contains("panicked"));
+            assert_eq!(
+                fs::read(&output_path).unwrap(),
+                b"existing output remains intact"
+            );
+        }
+    }
+}
