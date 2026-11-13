@@ -261,3 +261,91 @@ fn base_binding_guards_menu_text_and_ctrl_h_harvest_dispatch() {
     assert!(empty.pending.is_empty());
     println!("Bare H is navigation, Ctrl+H queues only eligible owned Harvest with the original feedback, guards remain inert and Save still accepts h. No simulation step is caused by either shortcut.");
 }
+
+#[test]
+fn match_entry_centers_owned_ground_and_preserves_commands_selection_and_save() {
+    for size in [(640, 480), (800, 600), (1280, 800)] {
+        for zoom in [0.25, 1.0, 4.0] {
+            let (mut app, own, _) = scene(size);
+            app.view.zoom = zoom;
+            let map = app.map.as_mut().unwrap();
+            map.width = 12000;
+            map.height = 8000;
+            map.origin_x = -6000;
+            map.origin_y = -4000;
+            let (_, cell) = yard(&app);
+            let sim = &mut app.session.as_mut().unwrap().sim;
+            let mut grid = sim.terrain().unwrap().clone();
+            grid.cell_mut(cell.0.floor() as u16, cell.1.floor() as u16)
+                .unwrap()
+                .height = 4;
+            sim.set_terrain(grid);
+            let point = yr_app::interaction::ground_point(
+                app.map.as_ref().unwrap(),
+                app.session.as_ref().unwrap().sim.terrain(),
+                cell,
+            );
+            app.pending.push(Command::Stop { id: own });
+            let before = bytes(&app);
+            app.center_match_view();
+            assert!(
+                ((point.0 - app.view.cam_x) * zoom - (size.0 - SIDEBAR_W) as f32 / 2.0).abs()
+                    < 0.01
+            );
+            assert!(((point.1 - app.view.cam_y) * zoom - size.1 as f32 / 2.0).abs() < 0.01);
+            assert_eq!(app.view.zoom, zoom);
+            assert_eq!(app.selected, BTreeSet::from([own]));
+            assert_eq!(app.pending, [Command::Stop { id: own }]);
+            assert_eq!(bytes(&app), before);
+        }
+    }
+}
+
+#[test]
+fn match_entry_falls_back_to_owned_force_and_then_bounded_map_center() {
+    let (mut app, own, _) = scene((800, 600));
+    let sim = &mut app.session.as_mut().unwrap().sim;
+    let remove: Vec<_> = sim
+        .buildings()
+        .iter()
+        .filter(|b| b.owner == yr_sim::OWNER_PLAYER)
+        .map(|b| Command::Destroy { id: b.id })
+        .collect();
+    let remove = remove
+        .into_iter()
+        .chain(
+            sim.units()
+                .iter()
+                .filter(|u| u.owner == yr_sim::OWNER_PLAYER && u.id != own)
+                .map(|u| Command::Remove { id: u.id }),
+        )
+        .collect::<Vec<_>>();
+    sim.step(&remove);
+    let unit = sim.units().iter().find(|u| u.id == own).unwrap();
+    let cell = (unit.x.raw() as f32 / 256.0, unit.y.raw() as f32 / 256.0);
+    let before = bytes(&app);
+    app.center_match_view();
+    let camera = (app.view.cam_x, app.view.cam_y);
+    app.center_world_at(cell, (800 - SIDEBAR_W, 600));
+    app.bound_camera((800, 600));
+    assert_eq!((app.view.cam_x, app.view.cam_y), camera);
+    assert_eq!(bytes(&app), before);
+    let sim = &mut app.session.as_mut().unwrap().sim;
+    let remove: Vec<_> = sim
+        .units()
+        .iter()
+        .filter(|u| u.owner == yr_sim::OWNER_PLAYER)
+        .map(|u| Command::Remove { id: u.id })
+        .collect();
+    sim.step(&remove);
+    let before = bytes(&app);
+    app.view.cam_x = -10000.0;
+    app.view.cam_y = 10000.0;
+    app.center_match_view();
+    let camera = (app.view.cam_x, app.view.cam_y);
+    app.view
+        .center_map(app.map.as_ref().unwrap(), (800 - SIDEBAR_W, 600));
+    app.bound_camera((800, 600));
+    assert_eq!((app.view.cam_x, app.view.cam_y), camera);
+    assert_eq!(bytes(&app), before);
+}

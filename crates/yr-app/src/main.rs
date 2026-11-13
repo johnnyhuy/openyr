@@ -1589,6 +1589,7 @@ impl ApplicationHandler for App {
                 return;
             }
         }
+        self.center_match_view();
         println!("OpenYR: left-click select/order, box select, T=select visible matching types, P=select all owned units, N=next owned unit, F=follow selected unit, Ctrl+1-9=assign team, 1-9=recall (twice=center), Shift+number=add team, right-click cancel, A=attack-move, S=stop, H=center base, Ctrl+H=harvest, K=repair, L=sell, M=mute, F5=save, F9=load, Esc=pause, right-drag/arrows pan, wheel zoom; sidebar: Q/W/E/R select categories, left-click build or place a ready structure, right-click hold/cancel");
         window.request_redraw();
         self.window = Some(window);

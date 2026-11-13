@@ -1191,3 +1191,47 @@ mod list_keys;
 mod keyboard_tracking;
 
 mod preferences_storage;
+
+#[test]
+fn retail_match_completion_frames_the_owned_yard_on_start_and_restore() {
+    let dir = PathBuf::from(std::env::var("HOME").unwrap_or_default())
+        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    if !dir.is_dir() {
+        return;
+    }
+    let temp = Scratch::new();
+    let mut app = new_app(dir.to_string_lossy().into(), "EB1.MMX".into(), 1);
+    app.save_path = temp.0.join("startup.oyrsave");
+    let mut saved = None;
+    for restore in [false, true] {
+        app.start_menu_load(restore.then(|| app.save_path.clone()));
+        finish_load(&mut app);
+        assert!(!app.menu.visible());
+        let session = app.session.as_ref().unwrap();
+        let yard = session
+            .sim
+            .buildings()
+            .iter()
+            .find(|b| b.owner == yr_sim::OWNER_PLAYER && b.role == yr_sim::Role::ConstructionYard)
+            .unwrap();
+        let (x, y) = yard.centre();
+        let point = yr_app::interaction::ground_point(
+            app.map.as_ref().unwrap(),
+            session.sim.terrain(),
+            (x.raw() as f32 / 256.0, y.raw() as f32 / 256.0),
+        );
+        let size = app.camera_size();
+        assert!(
+            ((point.0 - app.view.cam_x) * app.view.zoom - (size.0 - SIDEBAR_W) as f32 / 2.0).abs()
+                < 0.01
+        );
+        assert!(((point.1 - app.view.cam_y) * app.view.zoom - size.1 as f32 / 2.0).abs() < 0.01);
+        let bytes = yr_app::snapshot::encode(session).unwrap();
+        if let Some(saved) = &saved {
+            assert_eq!(&bytes, saved);
+        } else {
+            yr_app::snapshot::save(session, &app.save_path).unwrap();
+            saved = Some(bytes);
+        }
+    }
+}

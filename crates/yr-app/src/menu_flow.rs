@@ -676,11 +676,7 @@ impl App {
                         }
                     }
                 }
-                let size = self.camera_size();
-                if let Some(map) = &self.map {
-                    self.view
-                        .center_map(map, (size.0.saturating_sub(SIDEBAR_W), size.1));
-                }
+                self.center_match_view();
                 self.menu.set(Page::Closed);
                 if restored {
                     self.order_feedback.loaded(
