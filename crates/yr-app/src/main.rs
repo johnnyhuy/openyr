@@ -136,6 +136,7 @@ struct App {
     shift: bool,
     control: bool,
     super_key: bool,
+    alt_key: bool,
     cursor: (f64, f64),
     pointer: yr_app::cursor::Presence,
     left_down: Option<(f64, f64)>,
@@ -382,6 +383,7 @@ impl App {
             self.shift = false;
             self.control = false;
             self.super_key = false;
+            self.alt_key = false;
             self.placing = None;
             self.service_mode = ServiceMode::None;
             self.attack_move = false;
@@ -1640,11 +1642,7 @@ impl ApplicationHandler for App {
             WindowEvent::CursorEntered { .. } | WindowEvent::CursorLeft { .. } => {
                 self.invalidate_pointer()
             }
-            WindowEvent::ModifiersChanged(m) => {
-                self.shift = m.state().shift_key();
-                self.control = m.state().control_key();
-                self.super_key = m.state().super_key();
-            }
+            WindowEvent::ModifiersChanged(m) => self.modifiers_changed(m.state()),
             WindowEvent::MouseInput { state, button, .. } => self.pointer_button(state, button),
             WindowEvent::CursorMoved { position, .. } => {
                 self.pointer_moved((position.x, position.y))
@@ -1745,6 +1743,7 @@ fn new_app(gamedir: String, map_name: String, scale: u32) -> App {
         shift: false,
         control: false,
         super_key: false,
+        alt_key: false,
         cursor: (0.0, 0.0),
         pointer: yr_app::cursor::Presence {
             inside: false,

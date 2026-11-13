@@ -268,3 +268,20 @@ coverage. `OPENYR_SIDEBAR_OWNERSHIP_PROOF=<directory>` with
 held/released shared-compositor frames and cursor/state receipts. These are
 authored fixtures, not retail or original-game comparisons. Physical
 Mac/Retina delivery and original gesture calibration remain open in #97/#98.
+
+## Alt/Option stays outside world shortcuts
+
+The native modifier handler now retains Alt/Option state (#381). After menu
+routing, Alt-modified presses use the same world-input guard as Command/Super.
+They cannot issue orders, arm modes, select units or categories, pan/zoom,
+open save/load/pause, toggle mute or write save/preferences files. Menu text
+input retains its supplied text, including Option-produced characters; ordinary
+and documented Ctrl/Shift world bindings retain their existing routes.
+
+Rejected presses keep held-key/repeat suppression, so releasing Alt alone does
+not turn a continuing repeat into a plain shortcut. A release or fresh deliberate
+press restores the plain binding. Focus loss, menu transitions, completed loads
+and the native folder dialog clear the tracked Alt state alongside other
+modifiers. Selection, existing gestures, queued commands, simulation and save
+encoding are unchanged. This is native desktop input policy; original-game
+modifier behavior and physical Mac/Option delivery remain unverified in #97.
