@@ -1,0 +1,28 @@
+{
+  "format": "openyr-proof-build-v1",
+  "source": {
+    "commit": "07c6326a01c3302e207d170f954edc21c55ae7df",
+    "tree": "b30de9efdacf3488eca67bc9e3d52b418ea95d4b"
+  },
+  "package": "yr-app",
+  "binary": "openyr",
+  "profile": "release",
+  "cargo": "cargo 1.100.0 (3acc79c0c 2026-11-05)",
+  "command": [
+    "/workspace/.cargo/bin/cargo",
+    "build",
+    "--manifest-path",
+    "/workspace/openyr-retail-restored-20261113-2/Cargo.toml",
+    "--package",
+    "yr-app",
+    "--bin",
+    "openyr",
+    "--release",
+    "--locked",
+    "--target-dir",
+    "/workspace/openyr-retail-restored-20261113-2/.tmp/start-camera-runtime/target-9r8fpuuz",
+    "--message-format=json-render-diagnostics"
+  ],
+  "sha256": "9e52a15f5298c01c87493c68eaa772156fe00bb45420ee52ac91ddfdfd284fbc",
+  "bytes": 14254456
+}

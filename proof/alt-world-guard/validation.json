@@ -1,0 +1,123 @@
+{
+  "source": "1d2167aee222daedb3f71cc7e3978c07b15e9808",
+  "tree": "e7f53245711efab43f33ca7383eef9f0c7dcedaf",
+  "rust_passed": 685,
+  "rust_failed": 0,
+  "rust_ignored": 1,
+  "clippy": "passed --workspace --all-targets --locked -- -D warnings",
+  "fmt": "passed --all --check",
+  "python_tests": 3,
+  "authored_modifier_cases": 216,
+  "data_directory": "/workspace/game-data/RA2",
+  "limits": [
+    "Native Linux Xorg with synthetic XTest input",
+    "Live capture silent; no audio device",
+    "Physical Mac/Option, Retina and original runtime not checked"
+  ],
+  "retail_archives": 16,
+  "retail_scan_errors": 0,
+  "commands": [
+    "cargo +1.100.0 test --workspace --locked",
+    "cargo +1.100.0 clippy --workspace --all-targets --locked -- -D warnings",
+    "cargo +1.100.0 fmt --all --check",
+    "python3 -m unittest discover -s scripts -p 'test_*.py' -v",
+    "python3 scripts/proof_build.py build --output .tmp/alt-runtime",
+    "python3 scripts/proof_build.py build --package mix-dump --bin mix-dump --output .tmp/alt-scan",
+    "python3 scripts/proof_build.py run --receipt .tmp/alt-scan/receipt.json -- scan /workspace/game-data/RA2/*.mix",
+    "python3 .tmp/capture-alt-fixed.py <repo> <receipt> <output>",
+    "python3 scripts/proof_build.py run --receipt .tmp/alt-runtime/receipt.json -- /workspace/game-data/RA2 EB1.MMX --ticks 6000 --save .tmp/alt-end.oyrsave"
+  ],
+  "simulation": {
+    "tick": 6000,
+    "hash": "3082cb602467f8fc",
+    "outcome": "Lost",
+    "baseline_and_restored_save_bytes_equal": true,
+    "save_bytes": 1313364,
+    "save_sha256": "2aa3854b45f102a7c47a837eed85244f011020705d2a4922544623553ec44815"
+  },
+  "native_video": {
+    "streams": [
+      {
+        "index": 0,
+        "codec_name": "h264",
+        "codec_long_name": "H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10",
+        "profile": "High",
+        "codec_type": "video",
+        "codec_tag_string": "avc1",
+        "codec_tag": "0x31637661",
+        "width": 1280,
+        "height": 800,
+        "coded_width": 1280,
+        "coded_height": 800,
+        "closed_captions": 0,
+        "film_grain": 0,
+        "has_b_frames": 2,
+        "pix_fmt": "yuv420p",
+        "level": 32,
+        "chroma_location": "left",
+        "field_order": "progressive",
+        "refs": 1,
+        "is_avc": "true",
+        "nal_length_size": "4",
+        "id": "0x1",
+        "r_frame_rate": "30/1",
+        "avg_frame_rate": "30/1",
+        "time_base": "1/15360",
+        "start_pts": 0,
+        "start_time": "0.000000",
+        "duration_ts": 323584,
+        "duration": "21.066667",
+        "bit_rate": "420363",
+        "bits_per_raw_sample": "8",
+        "nb_frames": "632",
+        "extradata_size": 44,
+        "disposition": {
+          "default": 1,
+          "dub": 0,
+          "original": 0,
+          "comment": 0,
+          "lyrics": 0,
+          "karaoke": 0,
+          "forced": 0,
+          "hearing_impaired": 0,
+          "visual_impaired": 0,
+          "clean_effects": 0,
+          "attached_pic": 0,
+          "timed_thumbnails": 0,
+          "non_diegetic": 0,
+          "captions": 0,
+          "descriptions": 0,
+          "metadata": 0,
+          "dependent": 0,
+          "still_image": 0,
+          "multilayer": 0
+        },
+        "tags": {
+          "language": "und",
+          "handler_name": "VideoHandler",
+          "vendor_id": "[0][0][0][0]",
+          "encoder": "Lavc61.19.101 libx264"
+        }
+      }
+    ],
+    "format": {
+      "filename": "/workspace/openyr-core-audit-20261113-4/.tmp/alt-after/native-demo.mp4",
+      "nb_streams": 1,
+      "nb_programs": 0,
+      "nb_stream_groups": 0,
+      "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+      "format_long_name": "QuickTime / MOV",
+      "start_time": "0.000000",
+      "duration": "21.066667",
+      "size": "1115396",
+      "bit_rate": "423568",
+      "probe_score": 100,
+      "tags": {
+        "major_brand": "isom",
+        "minor_version": "512",
+        "compatible_brands": "isomiso2avc1mp41",
+        "encoder": "Lavf61.7.103"
+      }
+    }
+  }
+}
