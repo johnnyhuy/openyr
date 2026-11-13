@@ -1,8 +1,0 @@
-Verified: /workspace/openyr-retail-restored-20261113-2/.tmp/start-camera-runtime/program
-tick 2: queued GAPOWR
-tick 560: placed GAPOWR at (82, 81)
-tick 1200: queued GAREFN
-tick 2480: placed GAREFN at (89, 77)
-OpenYR: match OpenYR: EB1.MMX | $4000 | tick 5738 | AI groups 3 | 0 selected | Lost
-OpenYR: headless tick 6000, hash 3082cb602467f8fc, Lost
-OpenYR: saved .tmp/start-camera-end.oyrsave at tick 6000, hash 3082cb602467f8fc, Lost
