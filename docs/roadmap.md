@@ -83,6 +83,12 @@ Johnny on 2026-10-31.
       Preserve the observed one-pixel transparent row overrun; authored
       frame/canvas and CLI checks retain valid neighbors (`docs/formats/shp.md`).
 - [x] VXL + HVA readers (vehicles)
+- [x] Reject VXL columns outside their declared byte/height bounds (#377).
+      Validate complete offset tables and constrain every column read before
+      decoding; preserve exact-height empty runs and valid sparse/full columns.
+      Authored parser/CLI regressions and the 16-archive retail census pass with
+      zero errors (`docs/formats/vxl.md`). Voxel lighting and original animation
+      cadence remain separate fidelity work.
 - [x] TMP terrain tiles
 - [x] `mix-dump scan`: recursive census + corpus-wide parser check
 - [x] Fail the corpus check when the census contains parser errors (#111,

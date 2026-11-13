@@ -159,8 +159,9 @@ fn read_spans(
 ) -> Option<Vec<Voxel>> {
     let (sx, sy, sz) = (size[0] as usize, size[1] as usize, size[2] as usize);
     let columns = sx * sy;
-    let mut starts = Cursor::at(body, span_start);
-    let mut ends = Cursor::at(body, span_end);
+    let table_bytes = columns.checked_mul(4)?;
+    let mut starts = Cursor::new(body.get(span_start..span_start.checked_add(table_bytes)?)?);
+    let mut ends = Cursor::new(body.get(span_end..span_end.checked_add(table_bytes)?)?);
     let data = body.get(span_data..)?;
     let mut voxels = Vec::new();
     for col in 0..columns {
@@ -170,18 +171,22 @@ fn read_spans(
             continue;
         }
         let (x, y) = ((col % sx) as u8, (col / sx) as u8);
-        let mut c = Cursor::at(data, usize::try_from(start).ok()?);
+        let first = usize::try_from(start).ok()?;
         let last = usize::try_from(end).ok()?;
+        // The inclusive end must bound every read, including the repeated
+        // count. Do not walk into neighboring columns before rejecting it.
+        let column = data.get(first..last.checked_add(1)?)?;
+        let mut c = Cursor::new(column);
         let mut z = 0usize;
         while z < sz {
             z += c.u8()? as usize;
             let count = c.u8()? as usize;
+            if z > sz || count > sz - z {
+                return None;
+            }
             for _ in 0..count {
                 let color = c.u8()?;
                 let normal = c.u8()?;
-                if z >= sz {
-                    return None;
-                }
                 voxels.push(Voxel {
                     x,
                     y,
@@ -196,7 +201,7 @@ fn read_spans(
             }
         }
         // The end offset names the column's final byte (the trailing count).
-        if c.pos() != last + 1 {
+        if c.pos() != column.len() {
             return None;
         }
     }
@@ -292,6 +297,127 @@ mod tests {
         d[20..24].copy_from_slice(&u32::MAX.to_le_bytes());
         d[24..28].copy_from_slice(&u32::MAX.to_le_bytes());
         assert_eq!(VxlFile::parse(&d).unwrap_err(), VxlError::Truncated);
+    }
+
+    #[test]
+    fn rejects_a_column_that_skips_beyond_its_declared_height() {
+        let mut d = sample();
+        let spans = HEADER_LEN + LIMB_HEADER_LEN + 16;
+        // The last empty run follows two valid voxels at z=1 and z=2.
+        // Skipping two more cells would end at z=5 in a four-cell column.
+        d[spans + 7] = 2;
+        assert_eq!(VxlFile::parse(&d).unwrap_err(), VxlError::BadLimb(0));
+    }
+
+    #[test]
+    fn column_ranges_and_complete_tables_are_required() {
+        let original = sample();
+        let body = HEADER_LEN + LIMB_HEADER_LEN;
+        let tailer = original.len() - LIMB_TAILER_LEN;
+        for (offset, value) in [
+            (body, -2),
+            (body, i32::MAX),
+            (body, 10),
+            (body + 8, -1),
+            (body + 8, i32::MAX),
+            (body + 8, 8), // excludes the final repeated count
+            (body, 9),     // an incomplete run at the end of the column
+            (tailer, i32::MAX),
+            (tailer + 4, i32::MAX),
+            (tailer + 8, i32::MAX),
+            (tailer, 23),     // only three bytes remain for two starts
+            (tailer + 4, 23), // only three bytes remain for two ends
+        ] {
+            let mut d = original.clone();
+            d[offset..offset + 4].copy_from_slice(&value.to_le_bytes());
+            assert_eq!(
+                VxlFile::parse(&d).unwrap_err(),
+                VxlError::BadLimb(0),
+                "offset {offset}, value {value}"
+            );
+        }
+        // A reversed, in-bounds range must fail too.
+        let mut d = original.clone();
+        d[body..body + 4].copy_from_slice(&8i32.to_le_bytes());
+        d[body + 8..body + 12].copy_from_slice(&2i32.to_le_bytes());
+        assert_eq!(VxlFile::parse(&d).unwrap_err(), VxlError::BadLimb(0));
+        for len in 0..original.len() {
+            assert!(VxlFile::parse(&original[..len]).is_err(), "prefix {len}");
+        }
+    }
+
+    fn one_column(bytes: &[u8], end: i32) -> Option<Vec<Voxel>> {
+        let mut body = 0i32.to_le_bytes().to_vec();
+        body.extend(end.to_le_bytes());
+        body.extend(bytes);
+        read_spans(&body, 0, 4, 8, [1, 1, 4])
+    }
+
+    #[test]
+    fn runs_require_complete_bytes_matching_counts_and_exact_height() {
+        for bytes in [
+            &[][..],
+            &[4],
+            &[4, 0],
+            &[4, 0, 1], // inconsistent repeated count
+            &[0, 1, 11],
+            &[0, 1, 11, 101],
+            &[0, 1, 11, 101, 2],
+            &[0, 0, 0],                   // consumes bytes without advancing z
+            &[3, 2, 11, 101, 12, 102, 2], // run exceeds height
+            &[4, 1, 11, 101, 1],
+            &[4, 0, 0, 0], // unconsumed byte inside the column
+        ] {
+            assert!(one_column(bytes, bytes.len() as i32 - 1).is_none());
+        }
+        // Empty runs may reach exactly the top, but never pass it.
+        for skip in 4..=u8::MAX {
+            let result = one_column(&[skip, 0, 0], 2);
+            if skip == 4 {
+                assert_eq!(result, Some(vec![]));
+            } else {
+                assert!(result.is_none(), "skip {skip}");
+            }
+        }
+        // A valid next column cannot supply this column's missing count.
+        assert!(one_column(&[4, 0, 0, 4, 0, 0], 1).is_none());
+        assert_eq!(one_column(&[4, 0, 0, 4, 0, 0], 2), Some(vec![]));
+    }
+
+    #[test]
+    fn sparse_full_and_empty_columns_preserve_voxels_and_coordinates() {
+        let mut body = Vec::new();
+        for offset in [0i32, -1, 10, 21, 9, -1, 20, 23] {
+            body.extend(offset.to_le_bytes());
+        }
+        body.extend([1, 2, 11, 101, 12, 102, 2, 1, 0, 0]);
+        body.extend([0, 4, 21, 111, 22, 112, 23, 113, 24, 114, 4]);
+        body.extend([4, 0, 0]);
+        let voxels = read_spans(&body, 0, 16, 32, [2, 2, 4]).unwrap();
+        let positions: Vec<_> = voxels.iter().map(|v| (v.x, v.y, v.z)).collect();
+        assert_eq!(
+            positions,
+            [
+                (0, 0, 1),
+                (0, 0, 2),
+                (0, 1, 0),
+                (0, 1, 1),
+                (0, 1, 2),
+                (0, 1, 3)
+            ]
+        );
+        let pixels: Vec<_> = voxels.iter().map(|v| (v.color, v.normal)).collect();
+        assert_eq!(
+            pixels,
+            [
+                (11, 101),
+                (12, 102),
+                (21, 111),
+                (22, 112),
+                (23, 113),
+                (24, 114)
+            ]
+        );
     }
 
     #[test]
