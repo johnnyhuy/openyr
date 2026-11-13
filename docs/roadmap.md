@@ -1142,6 +1142,11 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       focus/menu changes; verify resizing, Retina hit coordinates, tooltip
       clipping and visible save/load feedback. Sidebar queues and command-bar
       controls remain in #86; repair/sell remains in #94.
+- [x] Stop held camera keys when Alt/Option or Command/Super arrives later
+      (#393). Clear active keyboard ownership immediately, retain suppression
+      after modifier release, and require key-up or fresh input. Ordinary
+      Control/Shift panning, menu editing and complete saved match bytes stay
+      intact (`docs/window-input.md`, `docs/camera-input.md`).
 
 - [x] Animate accepted menu clicks and route their supplied sound event (#344,
       #96): bounded SDBTNANM press/persistent-control phases and MenuClick audio

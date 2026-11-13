@@ -286,6 +286,17 @@ modifiers. Selection, existing gestures, queued commands, simulation and save
 encoding are unchanged. This is native desktop input policy; original-game
 modifier behavior and physical Mac/Option delivery remain unverified in #97.
 
+## Held arrows before desktop modifiers
+
+If a camera arrow is already held when Alt/Option or Command/Super first
+becomes active in a match, the modifier handler clears active keyboard input
+immediately (#393). This does not depend on another arrow event or on operating
+system key repeat. Already-held keys remain suppressed after modifier release
+until key-up or a fresh press. Ordinary Control/Shift panning and menu editing
+retain their existing routes; selection, queued orders and saved match bytes
+are unchanged. This is native desktop input policy, without original-game or
+physical Mac/Option calibration.
+
 ## Alt-modified menu activation
 
 Alt/Option+Enter and Alt/Option+keypad Enter now remain outside menu activation

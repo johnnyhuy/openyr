@@ -3,10 +3,16 @@ use super::*;
 
 impl App {
     pub(super) fn modifiers_changed(&mut self, modifiers: winit::keyboard::ModifiersState) {
+        let desktop_was_active = self.super_key || self.alt_key;
         self.shift = modifiers.shift_key();
         self.control = modifiers.control_key();
         self.super_key = modifiers.super_key();
         self.alt_key = modifiers.alt_key();
+        if !self.menu.visible() && !desktop_was_active && (self.super_key || self.alt_key) {
+            // An arrow can precede the desktop modifier without another key event.
+            self.suppress_held_keys();
+            self.view.dirty = true;
+        }
     }
 
     /// Repeat events from an earlier input surface need a release or fresh press.

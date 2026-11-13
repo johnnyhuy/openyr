@@ -1,5 +1,11 @@
 # Camera input
 
+Desktop modifiers also stop an already-held keyboard pan (#393). Pressing
+Alt/Option or Command/Super after an arrow clears active keys immediately;
+releasing the modifier alone cannot restart the held arrow. A key release or
+fresh press restores normal panning. Control and Shift keep their existing
+camera behavior. Pointer pan, edge-scroll and simulation policies are unchanged.
+
 Arrow keys and optional edge scrolling move the world camera at 600 framebuffer
 pixels per second, divided by world zoom. Diagonal movement has the same speed
 as movement along one axis. Redraw timestamps drive this presentation state;
