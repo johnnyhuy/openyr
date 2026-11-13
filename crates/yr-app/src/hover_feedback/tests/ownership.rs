@@ -728,3 +728,5 @@ mod alt_world;
 mod sidebar_overrides;
 
 mod menu_alt_enter;
+
+mod late_modifiers;
