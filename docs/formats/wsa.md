@@ -54,3 +54,20 @@ this parser's scope.
 `mix-dump scan` routes entries to this parser only through a recovered
 .WSA name, because the format carries no magic bytes. A malformed
 named entry reports a scan error like every other strict parser.
+
+## Chained packet bounds (#394)
+
+Authored two-frame clips exposed two gaps in the documented range policy.
+`[0, 1, 38, 0]` previously exposed metadata as frame one; palette adjustment
+could move that read into the embedded palette. `[30, 34, 38, 38]` exposed an
+empty loop packet. Both now return `WsaError::Index`.
+
+The first stored offset of a chained clip must be at least the table end in
+palette-free coordinates. A gap after the table remains allowed, including
+the existing `[0, 34, 38, 0]` fixture. A nonzero terminal entry must strictly
+exceed the preceding endpoint. Zero still means no loop packet. Tests cover
+both palette modes, initial/chained clips, loop/no-loop clips, exact-boundary
+and gapped starts, metadata overlaps and every truncated valid fixture prefix.
+No codec or playback behavior is inferred from these containers. The local
+retail install has no WSA files; retail census checks establish only that the
+other supported formats remain compatible.

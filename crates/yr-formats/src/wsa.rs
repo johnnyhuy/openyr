@@ -87,6 +87,11 @@ impl<'a> WsaFile<'a> {
             return Err(Index);
         }
         let first = usize::from(!has_initial_state);
+        // Chained clips omit frame zero, but their first stored packet must
+        // still begin after the metadata (in palette-free coordinates).
+        if offsets[first] < data_start {
+            return Err(Index);
+        }
         for pair in offsets[first..=count].windows(2) {
             if pair[1] <= pair[0] || pair[1] > stored_len {
                 return Err(Index);
@@ -99,8 +104,11 @@ impl<'a> WsaFile<'a> {
             end => (
                 end,
                 Some(WsaFrame {
-                    offset: offsets[count] + palette_len,
-                    size: end.checked_sub(offsets[count]).ok_or(Index)?,
+                    offset: offsets[count].checked_add(palette_len).ok_or(Index)?,
+                    size: end
+                        .checked_sub(offsets[count])
+                        .filter(|size| *size > 0)
+                        .ok_or(Index)?,
                 }),
             ),
         };
@@ -222,6 +230,96 @@ mod tests {
         assert!(!f.has_initial_state);
         assert!(f.frame(0).is_none());
         assert_eq!(f.frame(1), Some([3u8; 4].as_slice()));
+    }
+
+    #[test]
+    fn chained_frames_cannot_read_header_table_or_palette_bytes() {
+        for flags in [0, WSA_FLAG_HAS_PALETTE] {
+            for start in 0..30u32 {
+                let mut data = header(2, flags, 100);
+                for offset in [0, start, 38, 0] {
+                    data.extend(offset.to_le_bytes());
+                }
+                if flags != 0 {
+                    data.extend([7; WSA_PALETTE_BYTES]);
+                }
+                data.extend([3; 8]);
+                assert!(
+                    matches!(WsaFile::parse(&data), Err(WsaError::Index)),
+                    "chained start {start}, flags {flags} overlaps metadata"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn explicit_loop_frame_must_have_payload() {
+        for flags in [0, WSA_FLAG_HAS_PALETTE] {
+            let mut data = header(2, flags, 100);
+            for offset in [30u32, 34, 38, 38] {
+                data.extend(offset.to_le_bytes());
+            }
+            if flags != 0 {
+                data.extend([7; WSA_PALETTE_BYTES]);
+            }
+            data.extend([3; 8]);
+            assert!(matches!(WsaFile::parse(&data), Err(WsaError::Index)));
+        }
+    }
+
+    #[test]
+    fn valid_packet_ranges_stay_outside_metadata_for_all_container_modes() {
+        for chained in [false, true] {
+            for flags in [0, WSA_FLAG_HAS_PALETTE] {
+                for looped in [false, true] {
+                    for gap in [0u32, 4] {
+                        if !chained && gap != 0 {
+                            continue;
+                        }
+                        let palette_len = if flags == 0 { 0 } else { WSA_PALETTE_BYTES };
+                        let first = if chained { 0 } else { 30 };
+                        let second = if chained { 30 + gap } else { 34 };
+                        let end = second + 4;
+                        let eof = if looped { end + 4 } else { end };
+                        let mut data = header(2, flags, 100);
+                        for offset in [first, second, end, if looped { eof } else { 0 }] {
+                            data.extend(offset.to_le_bytes());
+                        }
+                        data.extend(vec![7; palette_len]);
+                        data.extend((30..eof).map(|n| n as u8));
+                        let clip = WsaFile::parse(&data).unwrap();
+                        assert_eq!(clip.has_initial_state, !chained);
+                        assert_eq!(clip.frame(0).is_none(), chained);
+                        assert_eq!(
+                            clip.frame(1),
+                            Some(
+                                data[second as usize + palette_len..end as usize + palette_len]
+                                    .as_ref()
+                            )
+                        );
+                        assert_eq!(
+                            clip.loop_data(),
+                            looped
+                                .then(|| &data
+                                    [end as usize + palette_len..eof as usize + palette_len])
+                        );
+                        for packet in clip
+                            .frames
+                            .iter()
+                            .filter(|f| f.size != 0)
+                            .chain(clip.loop_frame.iter())
+                        {
+                            assert!(packet.offset >= 30 + palette_len);
+                            assert!(packet.size > 0);
+                            assert!(packet.offset + packet.size <= data.len());
+                        }
+                        for prefix in 0..data.len() {
+                            assert!(WsaFile::parse(&data[..prefix]).is_err());
+                        }
+                    }
+                }
+            }
+        }
     }
 
     #[test]

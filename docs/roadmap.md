@@ -82,6 +82,10 @@ Johnny on 2026-10-31.
       underfilled rows, nontransparent overflow and runs beyond retail padding.
       Preserve the observed one-pixel transparent row overrun; authored
       frame/canvas and CLI checks retain valid neighbors (`docs/formats/shp.md`).
+- [x] Reject WSA packets overlapping metadata and empty explicit loop packets
+      (#394). Authored initial/chained, palette and loop fixtures retain valid
+      ranges and reject every truncated prefix (`docs/formats/wsa.md`). Retail
+      WSA playback remains unverified because the install contains no WSA files.
 - [x] VXL + HVA readers (vehicles)
 - [x] Reject VXL columns outside their declared byte/height bounds (#377).
       Validate complete offset tables and constrain every column read before
