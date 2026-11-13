@@ -148,6 +148,50 @@ fn scan_reports_nested_asset_errors_and_continues_to_valid_assets() {
 }
 
 #[test]
+fn scan_rejects_invalid_named_wsa_ranges_and_retains_valid_neighbors() {
+    let fixture = Fixture::new();
+    let clip = |offsets: [u32; 4], palette: bool| {
+        let mut data = Vec::new();
+        for value in [2u16, 10, 20, 4, 3, 100, if palette { 2 } else { 0 }] {
+            data.extend(value.to_le_bytes());
+        }
+        for offset in offsets {
+            data.extend(offset.to_le_bytes());
+        }
+        if palette {
+            data.extend([7; 768]);
+        }
+        data.extend([3; 8]);
+        data
+    };
+    for palette in [false, true] {
+        for offsets in [[0, 1, 38, 0], [30, 34, 38, 38]] {
+            let invalid = clip(offsets, palette);
+            let valid = clip([0, 34, 38, 0], palette);
+            let mut mix = archive(&[
+                &invalid,
+                &valid,
+                b"[Animations]\nBad=BAD.WSA\nGood=GOOD.WSA\n",
+            ]);
+            mix[6..10].copy_from_slice(&yr_formats::mix_id("BAD.WSA").to_le_bytes());
+            mix[18..22].copy_from_slice(&yr_formats::mix_id("GOOD.WSA").to_le_bytes());
+            fs::write(fixture.0.join("test.mix"), mix).unwrap();
+            let output = fixture.command("scan").output().unwrap();
+            assert_eq!(output.status.code(), Some(1), "{output:?}");
+            let text = String::from_utf8(output.stdout).unwrap();
+            assert!(text.contains("wsa: invalid WSA Index"), "{text}");
+            assert!(text.contains("GOOD.WSA"), "{text}");
+            assert!(text.contains("wsa 4x3 2 frames"), "{text}");
+            assert!(text.contains("errors (1):"), "{text}");
+            assert_eq!(
+                String::from_utf8(output.stderr).unwrap(),
+                "error: archive scan found 1 parser error(s)\n"
+            );
+        }
+    }
+}
+
+#[test]
 fn scan_fails_for_a_malformed_csf() {
     let fixture = Fixture::new();
     fs::write(fixture.0.join("test.mix"), archive(&[b" FSC"])).unwrap();
