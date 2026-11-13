@@ -1,0 +1,11 @@
+warning: unused field `repository` in `workspace.package`
+  --> Cargo.toml:10:1
+   |
+10 | repository = "https://github.com/johnnyhuy/openyr"
+   | ^^^^^^^^^^
+   |
+   = note: `cargo::unused_workspace_package_fields` is set to `warn` by default
+help: consider removing the field `workspace.package.repository`
+warning: workspace (manifest) generated 1 warning
+    Checking yr-app v0.1.0 (/workspace/openyr-retail-restored-20261113-2/crates/yr-app)
+    Finished `dev` profile [unoptimized] target(s) in 2.97s
