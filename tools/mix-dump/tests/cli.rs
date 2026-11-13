@@ -169,7 +169,8 @@ fn wav_rejects_malformed_headers_without_replacing_output_and_scan_keeps_valid_n
         sample_rate: 22050,
         channels: 2,
         samples: vec![100, -100, 200, -200],
-    });
+    })
+    .unwrap();
     let input = format!("{}:0x00000001", fixture.0.join("input.mix").display());
     let destination = fixture.0.join("protected.wav");
     for (field, bytes) in [
@@ -217,6 +218,48 @@ fn wav_rejects_malformed_headers_without_replacing_output_and_scan_keeps_valid_n
         .unwrap();
     assert!(output.status.success(), "{output:?}");
     assert_eq!(fs::read(destination).unwrap(), valid);
+}
+
+#[test]
+fn wav_export_rejects_unrepresentable_conversion_before_replacing_destination() {
+    let fixture = Fixture::new();
+    let input = fixture.0.join("input.mix");
+    let asset = format!("{}:0x00000001", input.display());
+    let destination = fixture.0.join("protected.wav");
+    // This mono 8-bit source is internally consistent, but its rate cannot
+    // be doubled for canonical 16-bit output.
+    let mut wav = b"RIFF\x26\0\0\0WAVEfmt \x10\0\0\0\x01\0\x01\0".to_vec();
+    wav.extend(u32::MAX.to_le_bytes());
+    wav.extend(u32::MAX.to_le_bytes());
+    wav.extend(b"\x01\0\x08\0data\x02\0\0\0\0\xff");
+    let pcm = yr_formats::audio::decode_wav(&wav).unwrap();
+    assert_eq!(pcm.samples, [i16::MIN, 32512]);
+    fs::write(&input, archive(&[&wav])).unwrap();
+    for exists in [true, false] {
+        if exists {
+            fs::write(&destination, b"preserve earlier export").unwrap();
+        } else {
+            fs::remove_file(&destination).unwrap();
+        }
+        let output = Command::new(env!("CARGO_BIN_EXE_mix-dump"))
+            .arg("wav")
+            .arg(&asset)
+            .arg(&destination)
+            .output()
+            .unwrap();
+        assert_eq!(output.status.code(), Some(1), "{output:?}");
+        assert!(output.stdout.is_empty());
+        let stderr = String::from_utf8(output.stderr).unwrap();
+        assert!(
+            stderr.contains("WAV byte rate exceeds") && !stderr.contains("panicked"),
+            "{stderr}"
+        );
+        if exists {
+            assert_eq!(fs::read(&destination).unwrap(), b"preserve earlier export");
+        } else {
+            assert!(!destination.exists());
+        }
+    }
 }
 
 #[test]

@@ -110,6 +110,10 @@ Johnny on 2026-10-31.
       retail corpus revalidation remains unavailable without an install
       (`docs/formats/pcx.md`).
 - [x] AUD / AUDIO.BAG+IDX / IMA WAV decoders, bit-exact vs ffmpeg
+- [x] Reject unrepresentable canonical WAV exports (#390). Fallible encoding
+      checks complete mono/stereo frames and RIFF/rate/platform limits before
+      allocation. CLI rejection preserves existing output; ordinary PCM/IMA
+      and native mixer capture bytes remain unchanged (`docs/formats/audio.md`).
 - [x] Reject malformed WAV container and PCM geometry (#387): bound chunks
       by RIFF size, require complete headers/padding and validate mono/stereo
       frame alignment and rates before decoding. Authored parser/CLI/native

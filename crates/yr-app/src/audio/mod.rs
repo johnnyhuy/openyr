@@ -335,12 +335,14 @@ struct Recorder {
 
 impl Recorder {
     fn new(dir: &Path) -> std::io::Result<Self> {
-        let mut wav = std::io::BufWriter::new(std::fs::File::create(dir.join("audio.wav"))?);
-        wav.write_all(&yr_formats::audio::encode_wav(&yr_formats::audio::Pcm {
+        let header = yr_formats::audio::encode_wav(&yr_formats::audio::Pcm {
             sample_rate: CAPTURE_RATE,
             channels: 2,
             samples: vec![],
-        }))?;
+        })
+        .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidInput, e))?;
+        let mut wav = std::io::BufWriter::new(std::fs::File::create(dir.join("audio.wav"))?);
+        wav.write_all(&header)?;
         let mut log = std::io::BufWriter::new(std::fs::File::create(dir.join("audio-cues.tsv"))?);
         writeln!(log, "tick\tbus\tevent\tsample")?;
         Ok(Self {

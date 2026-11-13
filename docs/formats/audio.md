@@ -5,6 +5,16 @@ All retail audio is IMA ADPCM, 22,050 Hz, decoded to signed 16-bit PCM by
 exports any of the three containers. Bank entries are addressed as
 `<archive>:<path>/AUDIO.BAG#<name>`.
 
+Canonical 16-bit WAV export is fallible (#390). `encode_wav` requires complete
+mono/stereo frames and a nonzero rate. It checks block alignment, byte rate,
+sample byte count, RIFF size and platform allocation limits before reserving
+the output buffer. A valid 8-bit source at rate 4,294,967,295 cannot be exported
+as 16-bit PCM because doubling its byte rate exceeds the RIFF field. The CLI
+reports the error before creating or replacing the destination; supported
+exports retain their exact bytes. The native recorder propagates encoder
+errors before opening its output and retains its existing streaming size cap.
+Simulation and save formats are unchanged.
+
 ## Containers
 
 | Container | Where | Used for |
