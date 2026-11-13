@@ -365,3 +365,10 @@ prepared-match commits at three layouts. Fresh presses and normal same-editor
 repeats still work. Selection, pending valid orders and saved/encoded Session
 bytes follow their existing transition policies. This does not reconstruct
 retail saves or establish original-game timing or physical Mac/Retina delivery.
+
+Alt/Option-modified Enter and keypad Enter do not activate menu controls (#384).
+This includes overwrite, load and permanent-delete confirmations. Plain Enter,
+Escape, pointer activation and Option-produced filename text retain their prior
+routes. The native keyboard gate leaves the pending intent and file contents
+intact and suppresses continuing repeats until release or fresh input. This is
+native keyboard policy, not an original-game timing or modifier observation.
