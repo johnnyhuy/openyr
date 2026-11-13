@@ -1,0 +1,122 @@
+{
+  "source": "07c6326a01c3302e207d170f954edc21c55ae7df",
+  "tree": "b30de9efdacf3488eca67bc9e3d52b418ea95d4b",
+  "rust_passed": 683,
+  "rust_ignored": 1,
+  "rust_failed": 0,
+  "clippy": "passed Rust 1.100.0 --workspace --all-targets --locked -- -D warnings",
+  "fmt": "passed --all --check",
+  "python": "3 passed",
+  "retail_mix_archives": 16,
+  "retail_scan_errors": 0,
+  "retail_scan_source": "2f9b83c3d6d27ddcdef1fd2fd4a9d00c1f1b8ab1",
+  "retail_test_corpus": "/workspace/game-data/RA2",
+  "limits": [
+    "Native Linux Xorg with synthetic XTest input",
+    "No audio device; silent live recording",
+    "Original runtime, physical Mac and Retina checks did not run"
+  ],
+  "commands": [
+    "cargo +1.100.0 test --workspace --locked",
+    "cargo +1.100.0 clippy --workspace --all-targets --locked -- -D warnings",
+    "cargo +1.100.0 fmt --all --check",
+    "python3 -m unittest discover -s scripts -p 'test_*.py' -v",
+    "python3 scripts/proof_build.py build --output .tmp/start-camera-runtime",
+    "python3 .tmp/capture-startup-fixed.py <repo> <receipt> <output>",
+    "python3 scripts/proof_build.py run --receipt .tmp/start-camera-runtime/receipt.json -- /workspace/game-data/RA2 EB1.MMX --ticks 6000 --save .tmp/start-camera-end.oyrsave",
+    "cmp .tmp/start-camera-end.oyrsave .tmp/restored-eb1/end.oyrsave"
+  ],
+  "simulation": {
+    "tick": 6000,
+    "outcome": "Lost",
+    "state_hash": "3082cb602467f8fc",
+    "fresh_and_restored_saves_equal_baseline": true,
+    "save_bytes": 1313364,
+    "save_sha256": "2aa3854b45f102a7c47a837eed85244f011020705d2a4922544623553ec44815"
+  },
+  "video": {
+    "streams": [
+      {
+        "index": 0,
+        "codec_name": "h264",
+        "codec_long_name": "H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10",
+        "profile": "High",
+        "codec_type": "video",
+        "codec_tag_string": "avc1",
+        "codec_tag": "0x31637661",
+        "width": 1280,
+        "height": 800,
+        "coded_width": 1280,
+        "coded_height": 800,
+        "closed_captions": 0,
+        "film_grain": 0,
+        "has_b_frames": 2,
+        "pix_fmt": "yuv420p",
+        "level": 32,
+        "chroma_location": "left",
+        "field_order": "progressive",
+        "refs": 1,
+        "is_avc": "true",
+        "nal_length_size": "4",
+        "id": "0x1",
+        "r_frame_rate": "30/1",
+        "avg_frame_rate": "30/1",
+        "time_base": "1/15360",
+        "start_pts": 0,
+        "start_time": "0.000000",
+        "duration_ts": 431104,
+        "duration": "28.066667",
+        "bit_rate": "681223",
+        "bits_per_raw_sample": "8",
+        "nb_frames": "842",
+        "extradata_size": 44,
+        "disposition": {
+          "default": 1,
+          "dub": 0,
+          "original": 0,
+          "comment": 0,
+          "lyrics": 0,
+          "karaoke": 0,
+          "forced": 0,
+          "hearing_impaired": 0,
+          "visual_impaired": 0,
+          "clean_effects": 0,
+          "attached_pic": 0,
+          "timed_thumbnails": 0,
+          "non_diegetic": 0,
+          "captions": 0,
+          "descriptions": 0,
+          "metadata": 0,
+          "dependent": 0,
+          "still_image": 0,
+          "multilayer": 0
+        },
+        "tags": {
+          "language": "und",
+          "handler_name": "VideoHandler",
+          "vendor_id": "[0][0][0][0]",
+          "encoder": "Lavc61.19.101 libx264"
+        }
+      }
+    ],
+    "format": {
+      "filename": "/workspace/openyr-retail-restored-20261113-2/.tmp/start-camera-native/native-demo.mp4",
+      "nb_streams": 1,
+      "nb_programs": 0,
+      "nb_stream_groups": 0,
+      "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+      "format_long_name": "QuickTime / MOV",
+      "start_time": "0.000000",
+      "duration": "28.066667",
+      "size": "2400944",
+      "bit_rate": "684354",
+      "probe_score": 100,
+      "tags": {
+        "major_brand": "isom",
+        "minor_version": "512",
+        "compatible_brands": "isomiso2avc1mp41",
+        "encoder": "Lavf61.7.103"
+      }
+    }
+  }
+}

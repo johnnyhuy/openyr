@@ -1,0 +1,158 @@
+{
+  "build": {
+    "format": "openyr-proof-build-v1",
+    "source": {
+      "commit": "07c6326a01c3302e207d170f954edc21c55ae7df",
+      "tree": "b30de9efdacf3488eca67bc9e3d52b418ea95d4b"
+    },
+    "package": "yr-app",
+    "binary": "openyr",
+    "profile": "release",
+    "cargo": "cargo 1.100.0 (3acc79c0c 2026-11-05)",
+    "command": [
+      "/workspace/.cargo/bin/cargo",
+      "build",
+      "--manifest-path",
+      "/workspace/openyr-retail-restored-20261113-2/Cargo.toml",
+      "--package",
+      "yr-app",
+      "--bin",
+      "openyr",
+      "--release",
+      "--locked",
+      "--target-dir",
+      "/workspace/openyr-retail-restored-20261113-2/.tmp/start-camera-runtime/target-9r8fpuuz",
+      "--message-format=json-render-diagnostics"
+    ],
+    "sha256": "9e52a15f5298c01c87493c68eaa772156fe00bb45420ee52ac91ddfdfd284fbc",
+    "bytes": 14254456
+  },
+  "platform": "Linux Xorg native window; synthetic XTest input; silent video",
+  "events": [
+    {
+      "name": "initial-gameplay",
+      "seconds": 0.624,
+      "colors": 3243
+    },
+    {
+      "name": "automatic-base",
+      "seconds": 1.163,
+      "colors": 3242
+    },
+    {
+      "name": "selected-army",
+      "seconds": 1.763,
+      "colors": 3242
+    },
+    {
+      "name": "movement",
+      "seconds": 10.334,
+      "colors": 3172
+    },
+    {
+      "name": "attack-move",
+      "seconds": 16.923,
+      "colors": 3092
+    },
+    {
+      "name": "production",
+      "seconds": 22.538,
+      "colors": 3124
+    },
+    {
+      "name": "pause",
+      "seconds": 25.399,
+      "colors": 518
+    },
+    {
+      "name": "resumed",
+      "seconds": 28.031,
+      "colors": 3128
+    }
+  ],
+  "video": {
+    "streams": [
+      {
+        "index": 0,
+        "codec_name": "h264",
+        "codec_long_name": "H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10",
+        "profile": "High",
+        "codec_type": "video",
+        "codec_tag_string": "avc1",
+        "codec_tag": "0x31637661",
+        "width": 1280,
+        "height": 800,
+        "coded_width": 1280,
+        "coded_height": 800,
+        "closed_captions": 0,
+        "film_grain": 0,
+        "has_b_frames": 2,
+        "pix_fmt": "yuv420p",
+        "level": 32,
+        "chroma_location": "left",
+        "field_order": "progressive",
+        "refs": 1,
+        "is_avc": "true",
+        "nal_length_size": "4",
+        "id": "0x1",
+        "r_frame_rate": "30/1",
+        "avg_frame_rate": "30/1",
+        "time_base": "1/15360",
+        "start_pts": 0,
+        "start_time": "0.000000",
+        "duration_ts": 431104,
+        "duration": "28.066667",
+        "bit_rate": "681223",
+        "bits_per_raw_sample": "8",
+        "nb_frames": "842",
+        "extradata_size": 44,
+        "disposition": {
+          "default": 1,
+          "dub": 0,
+          "original": 0,
+          "comment": 0,
+          "lyrics": 0,
+          "karaoke": 0,
+          "forced": 0,
+          "hearing_impaired": 0,
+          "visual_impaired": 0,
+          "clean_effects": 0,
+          "attached_pic": 0,
+          "timed_thumbnails": 0,
+          "non_diegetic": 0,
+          "captions": 0,
+          "descriptions": 0,
+          "metadata": 0,
+          "dependent": 0,
+          "still_image": 0,
+          "multilayer": 0
+        },
+        "tags": {
+          "language": "und",
+          "handler_name": "VideoHandler",
+          "vendor_id": "[0][0][0][0]",
+          "encoder": "Lavc61.19.101 libx264"
+        }
+      }
+    ],
+    "format": {
+      "filename": "/workspace/openyr-retail-restored-20261113-2/.tmp/start-camera-native/native-demo.mp4",
+      "nb_streams": 1,
+      "nb_programs": 0,
+      "nb_stream_groups": 0,
+      "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+      "format_long_name": "QuickTime / MOV",
+      "start_time": "0.000000",
+      "duration": "28.066667",
+      "size": "2400944",
+      "bit_rate": "684354",
+      "probe_score": 100,
+      "tags": {
+        "major_brand": "isom",
+        "minor_version": "512",
+        "compatible_brands": "isomiso2avc1mp41",
+        "encoder": "Lavf61.7.103"
+      }
+    }
+  }
+}

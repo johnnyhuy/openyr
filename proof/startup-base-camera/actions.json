@@ -1,0 +1,85 @@
+[
+  {
+    "type": "capture",
+    "name": "automatic-base"
+  },
+  {
+    "type": "key",
+    "name": "p"
+  },
+  {
+    "type": "capture",
+    "name": "selected-army"
+  },
+  {
+    "type": "click",
+    "x": 520,
+    "y": 400
+  },
+  {
+    "type": "wait",
+    "seconds": 8
+  },
+  {
+    "type": "capture",
+    "name": "movement"
+  },
+  {
+    "type": "key",
+    "name": "a"
+  },
+  {
+    "type": "click",
+    "x": 650,
+    "y": 300
+  },
+  {
+    "type": "wait",
+    "seconds": 6
+  },
+  {
+    "type": "capture",
+    "name": "attack-move"
+  },
+  {
+    "type": "key",
+    "name": "q"
+  },
+  {
+    "type": "click",
+    "x": 1150,
+    "y": 250
+  },
+  {
+    "type": "wait",
+    "seconds": 5
+  },
+  {
+    "type": "capture",
+    "name": "production"
+  },
+  {
+    "type": "key",
+    "name": "Escape"
+  },
+  {
+    "type": "wait",
+    "seconds": 2
+  },
+  {
+    "type": "capture",
+    "name": "pause"
+  },
+  {
+    "type": "key",
+    "name": "Escape"
+  },
+  {
+    "type": "wait",
+    "seconds": 2
+  },
+  {
+    "type": "capture",
+    "name": "resumed"
+  }
+]
