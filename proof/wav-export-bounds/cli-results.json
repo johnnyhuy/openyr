@@ -1,0 +1,614 @@
+[
+  {
+    "label": "baseline corrupt export",
+    "command": [
+      "python3",
+      "scripts/proof_build.py",
+      "--repo",
+      "/workspace/openyr",
+      "run",
+      "--receipt",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-rebased-scan/receipt.json",
+      "--",
+      "wav",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/high-1-2147483648.mix:0x1",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/protected.wav"
+    ],
+    "exit": 0,
+    "output": "Verified: /workspace/openyr-core-review-20261113-6/.tmp/tmp-rebased-scan/program\ndecoded /workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/high-1-2147483648.mix:0x1 -> /workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/protected.wav (2147483648 Hz, 1 ch, 3 samples, 0.00 s)\n"
+  },
+  {
+    "label": "final rejects before opening output",
+    "command": [
+      "python3",
+      "scripts/proof_build.py",
+      "--repo",
+      "/workspace/openyr-wav-export-20261113-7",
+      "run",
+      "--receipt",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/final-cli-2/receipt.json",
+      "--",
+      "wav",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/high-1-2147483648.mix:0x1",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/protected.wav"
+    ],
+    "exit": 1,
+    "output": "Verified: /workspace/openyr-wav-export-20261113-7/.tmp/final-cli-2/program\nerror: unsupported audio: WAV byte rate exceeds the 32-bit field\n"
+  },
+  {
+    "label": "final rejects before opening output",
+    "command": [
+      "python3",
+      "scripts/proof_build.py",
+      "--repo",
+      "/workspace/openyr-wav-export-20261113-7",
+      "run",
+      "--receipt",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/final-cli-2/receipt.json",
+      "--",
+      "wav",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/high-1-2147483648.mix:0x1",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/protected.wav"
+    ],
+    "exit": 1,
+    "output": "Verified: /workspace/openyr-wav-export-20261113-7/.tmp/final-cli-2/program\nerror: unsupported audio: WAV byte rate exceeds the 32-bit field\n"
+  },
+  {
+    "label": "baseline corrupt export",
+    "command": [
+      "python3",
+      "scripts/proof_build.py",
+      "--repo",
+      "/workspace/openyr",
+      "run",
+      "--receipt",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-rebased-scan/receipt.json",
+      "--",
+      "wav",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/high-1-4294967295.mix:0x1",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/protected.wav"
+    ],
+    "exit": 0,
+    "output": "Verified: /workspace/openyr-core-review-20261113-6/.tmp/tmp-rebased-scan/program\ndecoded /workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/high-1-4294967295.mix:0x1 -> /workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/protected.wav (4294967295 Hz, 1 ch, 3 samples, 0.00 s)\n"
+  },
+  {
+    "label": "final rejects before opening output",
+    "command": [
+      "python3",
+      "scripts/proof_build.py",
+      "--repo",
+      "/workspace/openyr-wav-export-20261113-7",
+      "run",
+      "--receipt",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/final-cli-2/receipt.json",
+      "--",
+      "wav",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/high-1-4294967295.mix:0x1",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/protected.wav"
+    ],
+    "exit": 1,
+    "output": "Verified: /workspace/openyr-wav-export-20261113-7/.tmp/final-cli-2/program\nerror: unsupported audio: WAV byte rate exceeds the 32-bit field\n"
+  },
+  {
+    "label": "final rejects before opening output",
+    "command": [
+      "python3",
+      "scripts/proof_build.py",
+      "--repo",
+      "/workspace/openyr-wav-export-20261113-7",
+      "run",
+      "--receipt",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/final-cli-2/receipt.json",
+      "--",
+      "wav",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/high-1-4294967295.mix:0x1",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/protected.wav"
+    ],
+    "exit": 1,
+    "output": "Verified: /workspace/openyr-wav-export-20261113-7/.tmp/final-cli-2/program\nerror: unsupported audio: WAV byte rate exceeds the 32-bit field\n"
+  },
+  {
+    "label": "baseline corrupt export",
+    "command": [
+      "python3",
+      "scripts/proof_build.py",
+      "--repo",
+      "/workspace/openyr",
+      "run",
+      "--receipt",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-rebased-scan/receipt.json",
+      "--",
+      "wav",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/high-2-1073741824.mix:0x1",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/protected.wav"
+    ],
+    "exit": 0,
+    "output": "Verified: /workspace/openyr-core-review-20261113-6/.tmp/tmp-rebased-scan/program\ndecoded /workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/high-2-1073741824.mix:0x1 -> /workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/protected.wav (1073741824 Hz, 2 ch, 6 samples, 0.00 s)\n"
+  },
+  {
+    "label": "final rejects before opening output",
+    "command": [
+      "python3",
+      "scripts/proof_build.py",
+      "--repo",
+      "/workspace/openyr-wav-export-20261113-7",
+      "run",
+      "--receipt",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/final-cli-2/receipt.json",
+      "--",
+      "wav",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/high-2-1073741824.mix:0x1",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/protected.wav"
+    ],
+    "exit": 1,
+    "output": "Verified: /workspace/openyr-wav-export-20261113-7/.tmp/final-cli-2/program\nerror: unsupported audio: WAV byte rate exceeds the 32-bit field\n"
+  },
+  {
+    "label": "final rejects before opening output",
+    "command": [
+      "python3",
+      "scripts/proof_build.py",
+      "--repo",
+      "/workspace/openyr-wav-export-20261113-7",
+      "run",
+      "--receipt",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/final-cli-2/receipt.json",
+      "--",
+      "wav",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/high-2-1073741824.mix:0x1",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/protected.wav"
+    ],
+    "exit": 1,
+    "output": "Verified: /workspace/openyr-wav-export-20261113-7/.tmp/final-cli-2/program\nerror: unsupported audio: WAV byte rate exceeds the 32-bit field\n"
+  },
+  {
+    "label": "baseline corrupt export",
+    "command": [
+      "python3",
+      "scripts/proof_build.py",
+      "--repo",
+      "/workspace/openyr",
+      "run",
+      "--receipt",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-rebased-scan/receipt.json",
+      "--",
+      "wav",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/high-2-2147483647.mix:0x1",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/protected.wav"
+    ],
+    "exit": 0,
+    "output": "Verified: /workspace/openyr-core-review-20261113-6/.tmp/tmp-rebased-scan/program\ndecoded /workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/high-2-2147483647.mix:0x1 -> /workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/protected.wav (2147483647 Hz, 2 ch, 6 samples, 0.00 s)\n"
+  },
+  {
+    "label": "final rejects before opening output",
+    "command": [
+      "python3",
+      "scripts/proof_build.py",
+      "--repo",
+      "/workspace/openyr-wav-export-20261113-7",
+      "run",
+      "--receipt",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/final-cli-2/receipt.json",
+      "--",
+      "wav",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/high-2-2147483647.mix:0x1",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/protected.wav"
+    ],
+    "exit": 1,
+    "output": "Verified: /workspace/openyr-wav-export-20261113-7/.tmp/final-cli-2/program\nerror: unsupported audio: WAV byte rate exceeds the 32-bit field\n"
+  },
+  {
+    "label": "final rejects before opening output",
+    "command": [
+      "python3",
+      "scripts/proof_build.py",
+      "--repo",
+      "/workspace/openyr-wav-export-20261113-7",
+      "run",
+      "--receipt",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/final-cli-2/receipt.json",
+      "--",
+      "wav",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/high-2-2147483647.mix:0x1",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/protected.wav"
+    ],
+    "exit": 1,
+    "output": "Verified: /workspace/openyr-wav-export-20261113-7/.tmp/final-cli-2/program\nerror: unsupported audio: WAV byte rate exceeds the 32-bit field\n"
+  },
+  {
+    "label": "pcm-1-8 baseline",
+    "command": [
+      "python3",
+      "scripts/proof_build.py",
+      "--repo",
+      "/workspace/openyr",
+      "run",
+      "--receipt",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-rebased-scan/receipt.json",
+      "--",
+      "wav",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/pcm-1-8.mix:0x1",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/pcm-1-8-before.wav"
+    ],
+    "exit": 0,
+    "output": "Verified: /workspace/openyr-core-review-20261113-6/.tmp/tmp-rebased-scan/program\ndecoded /workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/pcm-1-8.mix:0x1 -> /workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/pcm-1-8-before.wav (22050 Hz, 1 ch, 3 samples, 0.00 s)\n"
+  },
+  {
+    "label": "pcm-1-8 final",
+    "command": [
+      "python3",
+      "scripts/proof_build.py",
+      "--repo",
+      "/workspace/openyr-wav-export-20261113-7",
+      "run",
+      "--receipt",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/final-cli-2/receipt.json",
+      "--",
+      "wav",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/pcm-1-8.mix:0x1",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/pcm-1-8-after.wav"
+    ],
+    "exit": 0,
+    "output": "Verified: /workspace/openyr-wav-export-20261113-7/.tmp/final-cli-2/program\ndecoded /workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/pcm-1-8.mix:0x1 -> /workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/pcm-1-8-after.wav (22050 Hz, 1 ch, 3 samples, 0.00 s)\n"
+  },
+  {
+    "label": "pcm-1-16 baseline",
+    "command": [
+      "python3",
+      "scripts/proof_build.py",
+      "--repo",
+      "/workspace/openyr",
+      "run",
+      "--receipt",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-rebased-scan/receipt.json",
+      "--",
+      "wav",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/pcm-1-16.mix:0x1",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/pcm-1-16-before.wav"
+    ],
+    "exit": 0,
+    "output": "Verified: /workspace/openyr-core-review-20261113-6/.tmp/tmp-rebased-scan/program\ndecoded /workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/pcm-1-16.mix:0x1 -> /workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/pcm-1-16-before.wav (22050 Hz, 1 ch, 3 samples, 0.00 s)\n"
+  },
+  {
+    "label": "pcm-1-16 final",
+    "command": [
+      "python3",
+      "scripts/proof_build.py",
+      "--repo",
+      "/workspace/openyr-wav-export-20261113-7",
+      "run",
+      "--receipt",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/final-cli-2/receipt.json",
+      "--",
+      "wav",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/pcm-1-16.mix:0x1",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/pcm-1-16-after.wav"
+    ],
+    "exit": 0,
+    "output": "Verified: /workspace/openyr-wav-export-20261113-7/.tmp/final-cli-2/program\ndecoded /workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/pcm-1-16.mix:0x1 -> /workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/pcm-1-16-after.wav (22050 Hz, 1 ch, 3 samples, 0.00 s)\n"
+  },
+  {
+    "label": "edge-1 baseline",
+    "command": [
+      "python3",
+      "scripts/proof_build.py",
+      "--repo",
+      "/workspace/openyr",
+      "run",
+      "--receipt",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-rebased-scan/receipt.json",
+      "--",
+      "wav",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/edge-1.mix:0x1",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/edge-1-before.wav"
+    ],
+    "exit": 0,
+    "output": "Verified: /workspace/openyr-core-review-20261113-6/.tmp/tmp-rebased-scan/program\ndecoded /workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/edge-1.mix:0x1 -> /workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/edge-1-before.wav (2147483647 Hz, 1 ch, 3 samples, 0.00 s)\n"
+  },
+  {
+    "label": "edge-1 final",
+    "command": [
+      "python3",
+      "scripts/proof_build.py",
+      "--repo",
+      "/workspace/openyr-wav-export-20261113-7",
+      "run",
+      "--receipt",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/final-cli-2/receipt.json",
+      "--",
+      "wav",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/edge-1.mix:0x1",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/edge-1-after.wav"
+    ],
+    "exit": 0,
+    "output": "Verified: /workspace/openyr-wav-export-20261113-7/.tmp/final-cli-2/program\ndecoded /workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/edge-1.mix:0x1 -> /workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/edge-1-after.wav (2147483647 Hz, 1 ch, 3 samples, 0.00 s)\n"
+  },
+  {
+    "label": "ima-1 baseline",
+    "command": [
+      "python3",
+      "scripts/proof_build.py",
+      "--repo",
+      "/workspace/openyr",
+      "run",
+      "--receipt",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-rebased-scan/receipt.json",
+      "--",
+      "wav",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/ima-1.mix:0x1",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/ima-1-before.wav"
+    ],
+    "exit": 0,
+    "output": "Verified: /workspace/openyr-core-review-20261113-6/.tmp/tmp-rebased-scan/program\ndecoded /workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/ima-1.mix:0x1 -> /workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/ima-1-before.wav (22050 Hz, 1 ch, 3 samples, 0.00 s)\n"
+  },
+  {
+    "label": "ima-1 final",
+    "command": [
+      "python3",
+      "scripts/proof_build.py",
+      "--repo",
+      "/workspace/openyr-wav-export-20261113-7",
+      "run",
+      "--receipt",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/final-cli-2/receipt.json",
+      "--",
+      "wav",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/ima-1.mix:0x1",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/ima-1-after.wav"
+    ],
+    "exit": 0,
+    "output": "Verified: /workspace/openyr-wav-export-20261113-7/.tmp/final-cli-2/program\ndecoded /workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/ima-1.mix:0x1 -> /workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/ima-1-after.wav (22050 Hz, 1 ch, 3 samples, 0.00 s)\n"
+  },
+  {
+    "label": "pcm-2-8 baseline",
+    "command": [
+      "python3",
+      "scripts/proof_build.py",
+      "--repo",
+      "/workspace/openyr",
+      "run",
+      "--receipt",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-rebased-scan/receipt.json",
+      "--",
+      "wav",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/pcm-2-8.mix:0x1",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/pcm-2-8-before.wav"
+    ],
+    "exit": 0,
+    "output": "Verified: /workspace/openyr-core-review-20261113-6/.tmp/tmp-rebased-scan/program\ndecoded /workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/pcm-2-8.mix:0x1 -> /workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/pcm-2-8-before.wav (22050 Hz, 2 ch, 6 samples, 0.00 s)\n"
+  },
+  {
+    "label": "pcm-2-8 final",
+    "command": [
+      "python3",
+      "scripts/proof_build.py",
+      "--repo",
+      "/workspace/openyr-wav-export-20261113-7",
+      "run",
+      "--receipt",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/final-cli-2/receipt.json",
+      "--",
+      "wav",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/pcm-2-8.mix:0x1",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/pcm-2-8-after.wav"
+    ],
+    "exit": 0,
+    "output": "Verified: /workspace/openyr-wav-export-20261113-7/.tmp/final-cli-2/program\ndecoded /workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/pcm-2-8.mix:0x1 -> /workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/pcm-2-8-after.wav (22050 Hz, 2 ch, 6 samples, 0.00 s)\n"
+  },
+  {
+    "label": "pcm-2-16 baseline",
+    "command": [
+      "python3",
+      "scripts/proof_build.py",
+      "--repo",
+      "/workspace/openyr",
+      "run",
+      "--receipt",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-rebased-scan/receipt.json",
+      "--",
+      "wav",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/pcm-2-16.mix:0x1",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/pcm-2-16-before.wav"
+    ],
+    "exit": 0,
+    "output": "Verified: /workspace/openyr-core-review-20261113-6/.tmp/tmp-rebased-scan/program\ndecoded /workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/pcm-2-16.mix:0x1 -> /workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/pcm-2-16-before.wav (22050 Hz, 2 ch, 6 samples, 0.00 s)\n"
+  },
+  {
+    "label": "pcm-2-16 final",
+    "command": [
+      "python3",
+      "scripts/proof_build.py",
+      "--repo",
+      "/workspace/openyr-wav-export-20261113-7",
+      "run",
+      "--receipt",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/final-cli-2/receipt.json",
+      "--",
+      "wav",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/pcm-2-16.mix:0x1",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/pcm-2-16-after.wav"
+    ],
+    "exit": 0,
+    "output": "Verified: /workspace/openyr-wav-export-20261113-7/.tmp/final-cli-2/program\ndecoded /workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/pcm-2-16.mix:0x1 -> /workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/pcm-2-16-after.wav (22050 Hz, 2 ch, 6 samples, 0.00 s)\n"
+  },
+  {
+    "label": "edge-2 baseline",
+    "command": [
+      "python3",
+      "scripts/proof_build.py",
+      "--repo",
+      "/workspace/openyr",
+      "run",
+      "--receipt",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-rebased-scan/receipt.json",
+      "--",
+      "wav",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/edge-2.mix:0x1",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/edge-2-before.wav"
+    ],
+    "exit": 0,
+    "output": "Verified: /workspace/openyr-core-review-20261113-6/.tmp/tmp-rebased-scan/program\ndecoded /workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/edge-2.mix:0x1 -> /workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/edge-2-before.wav (1073741823 Hz, 2 ch, 6 samples, 0.00 s)\n"
+  },
+  {
+    "label": "edge-2 final",
+    "command": [
+      "python3",
+      "scripts/proof_build.py",
+      "--repo",
+      "/workspace/openyr-wav-export-20261113-7",
+      "run",
+      "--receipt",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/final-cli-2/receipt.json",
+      "--",
+      "wav",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/edge-2.mix:0x1",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/edge-2-after.wav"
+    ],
+    "exit": 0,
+    "output": "Verified: /workspace/openyr-wav-export-20261113-7/.tmp/final-cli-2/program\ndecoded /workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/edge-2.mix:0x1 -> /workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/edge-2-after.wav (1073741823 Hz, 2 ch, 6 samples, 0.00 s)\n"
+  },
+  {
+    "label": "ima-2 baseline",
+    "command": [
+      "python3",
+      "scripts/proof_build.py",
+      "--repo",
+      "/workspace/openyr",
+      "run",
+      "--receipt",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-rebased-scan/receipt.json",
+      "--",
+      "wav",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/ima-2.mix:0x1",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/ima-2-before.wav"
+    ],
+    "exit": 0,
+    "output": "Verified: /workspace/openyr-core-review-20261113-6/.tmp/tmp-rebased-scan/program\ndecoded /workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/ima-2.mix:0x1 -> /workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/ima-2-before.wav (22050 Hz, 2 ch, 6 samples, 0.00 s)\n"
+  },
+  {
+    "label": "ima-2 final",
+    "command": [
+      "python3",
+      "scripts/proof_build.py",
+      "--repo",
+      "/workspace/openyr-wav-export-20261113-7",
+      "run",
+      "--receipt",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/final-cli-2/receipt.json",
+      "--",
+      "wav",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/ima-2.mix:0x1",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/ima-2-after.wav"
+    ],
+    "exit": 0,
+    "output": "Verified: /workspace/openyr-wav-export-20261113-7/.tmp/final-cli-2/program\ndecoded /workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/ima-2.mix:0x1 -> /workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/ima-2-after.wav (22050 Hz, 2 ch, 6 samples, 0.00 s)\n"
+  },
+  {
+    "label": "retail-wav baseline",
+    "command": [
+      "python3",
+      "scripts/proof_build.py",
+      "--repo",
+      "/workspace/openyr",
+      "run",
+      "--receipt",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-rebased-scan/receipt.json",
+      "--",
+      "wav",
+      "/workspace/game-data/RA2/langmd.mix:AUDIOMD.MIX/CEVA060.WAV",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/retail-wav-before.wav"
+    ],
+    "exit": 0,
+    "output": "Verified: /workspace/openyr-core-review-20261113-6/.tmp/tmp-rebased-scan/program\ndecoded /workspace/game-data/RA2/langmd.mix:AUDIOMD.MIX/CEVA060.WAV -> /workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/retail-wav-before.wav (22050 Hz, 1 ch, 26383 samples, 1.20 s)\n"
+  },
+  {
+    "label": "retail-wav final",
+    "command": [
+      "python3",
+      "scripts/proof_build.py",
+      "--repo",
+      "/workspace/openyr-wav-export-20261113-7",
+      "run",
+      "--receipt",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/final-cli-2/receipt.json",
+      "--",
+      "wav",
+      "/workspace/game-data/RA2/langmd.mix:AUDIOMD.MIX/CEVA060.WAV",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/retail-wav-after.wav"
+    ],
+    "exit": 0,
+    "output": "Verified: /workspace/openyr-wav-export-20261113-7/.tmp/final-cli-2/program\ndecoded /workspace/game-data/RA2/langmd.mix:AUDIOMD.MIX/CEVA060.WAV -> /workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/retail-wav-after.wav (22050 Hz, 1 ch, 26383 samples, 1.20 s)\n"
+  },
+  {
+    "label": "retail-aud baseline",
+    "command": [
+      "python3",
+      "scripts/proof_build.py",
+      "--repo",
+      "/workspace/openyr",
+      "run",
+      "--receipt",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-rebased-scan/receipt.json",
+      "--",
+      "wav",
+      "/workspace/game-data/RA2/ra2.mix:LOCAL.MIX/INTRO.AUD",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/retail-aud-before.wav"
+    ],
+    "exit": 0,
+    "output": "Verified: /workspace/openyr-core-review-20261113-6/.tmp/tmp-rebased-scan/program\ndecoded /workspace/game-data/RA2/ra2.mix:LOCAL.MIX/INTRO.AUD -> /workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/retail-aud-before.wav (22050 Hz, 1 ch, 4721534 samples, 214.13 s)\n"
+  },
+  {
+    "label": "retail-aud final",
+    "command": [
+      "python3",
+      "scripts/proof_build.py",
+      "--repo",
+      "/workspace/openyr-wav-export-20261113-7",
+      "run",
+      "--receipt",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/final-cli-2/receipt.json",
+      "--",
+      "wav",
+      "/workspace/game-data/RA2/ra2.mix:LOCAL.MIX/INTRO.AUD",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/retail-aud-after.wav"
+    ],
+    "exit": 0,
+    "output": "Verified: /workspace/openyr-wav-export-20261113-7/.tmp/final-cli-2/program\ndecoded /workspace/game-data/RA2/ra2.mix:LOCAL.MIX/INTRO.AUD -> /workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/retail-aud-after.wav (22050 Hz, 1 ch, 4721534 samples, 214.13 s)\n"
+  },
+  {
+    "label": "retail-bank baseline",
+    "command": [
+      "python3",
+      "scripts/proof_build.py",
+      "--repo",
+      "/workspace/openyr",
+      "run",
+      "--receipt",
+      "/workspace/openyr-core-review-20261113-6/.tmp/tmp-rebased-scan/receipt.json",
+      "--",
+      "wav",
+      "/workspace/game-data/RA2/language.mix:AUDIO.MIX/AUDIO.BAG#ichratta",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/retail-bank-before.wav"
+    ],
+    "exit": 0,
+    "output": "Verified: /workspace/openyr-core-review-20261113-6/.tmp/tmp-rebased-scan/program\ndecoded /workspace/game-data/RA2/language.mix:AUDIO.MIX/AUDIO.BAG#ichratta -> /workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/retail-bank-before.wav (22050 Hz, 1 ch, 141323 samples, 6.41 s)\n"
+  },
+  {
+    "label": "retail-bank final",
+    "command": [
+      "python3",
+      "scripts/proof_build.py",
+      "--repo",
+      "/workspace/openyr-wav-export-20261113-7",
+      "run",
+      "--receipt",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/final-cli-2/receipt.json",
+      "--",
+      "wav",
+      "/workspace/game-data/RA2/language.mix:AUDIO.MIX/AUDIO.BAG#ichratta",
+      "/workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/retail-bank-after.wav"
+    ],
+    "exit": 0,
+    "output": "Verified: /workspace/openyr-wav-export-20261113-7/.tmp/final-cli-2/program\ndecoded /workspace/game-data/RA2/language.mix:AUDIO.MIX/AUDIO.BAG#ichratta -> /workspace/openyr-wav-export-20261113-7/.tmp/cli-proof-2/retail-bank-after.wav (22050 Hz, 1 ch, 141323 samples, 6.41 s)\n"
+  }
+]

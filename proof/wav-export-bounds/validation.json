@@ -1,0 +1,33 @@
+{
+  "source": "8cf0dc674d82c61d153823989ad012fcbb835bea",
+  "tree": "0e077838787ff1700ad24e6e93080e63133a2699",
+  "rust_passed": 698,
+  "rust_failed": 0,
+  "rust_ignored": 1,
+  "clippy": "passed --workspace --all-targets --locked -- -D warnings",
+  "fmt": "passed --all --check",
+  "python_tests": 3,
+  "retail_mix_archives": 16,
+  "retail_wav_files": 1223,
+  "retail_scan_errors": 0,
+  "cli_baseline_corrupt_rates": 4,
+  "cli_rejection_checks": 8,
+  "valid_conversion_controls": 11,
+  "profiles": [
+    "CARGO_PROFILE_DEV_DEBUG=0",
+    "CARGO_PROFILE_TEST_DEBUG=0",
+    "CARGO_PROFILE_DEV_STRIP=symbols",
+    "CARGO_PROFILE_TEST_STRIP=symbols",
+    "CARGO_INCREMENTAL=0",
+    "CARGO_BUILD_JOBS=2"
+  ],
+  "limits": [
+    "Physical macOS/Retina and live audio device not checked",
+    "Original-game runtime not run",
+    "Known blocked capture/reference paths not retried",
+    "Terminal and shared headless mixer proof"
+  ],
+  "fixture_parallel_cases": 4,
+  "initial_ci_failure": "43410748672: colliding map-extent test scratch directories (#392), repaired",
+  "local_disk_failure": "Full Rust suite passed; later Clippy exhausted disk. Removed only run-owned build cache, reran Clippy successfully in a separate private target."
+}
