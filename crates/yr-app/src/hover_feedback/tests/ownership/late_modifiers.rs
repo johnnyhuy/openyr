@@ -111,3 +111,72 @@ fn ordinary_modifiers_keep_held_pan_and_menu_editing_keeps_ownership() {
         assert!(app.keys.is_empty());
     }
 }
+
+#[test]
+fn late_desktop_modifier_compositor_preserves_stopped_view_and_recovers() {
+    let (mut app, _, _) = scene((800, 600));
+    let map = app.map.as_mut().unwrap();
+    map.rgba = (0..map.height)
+        .flat_map(|y| {
+            (0..map.width).flat_map(move |x| {
+                if (x / 40 + y / 30) % 2 == 0 {
+                    [30, 90, 60, 255]
+                } else {
+                    [90, 60, 30, 255]
+                }
+            })
+        })
+        .collect();
+    app.view.cam_x = 200.0;
+    app.view.cam_y = 200.0;
+    let saved = yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap();
+    let now = Instant::now();
+    app.update_camera(now, (800, 600));
+    press(&mut app, KeyCode::ArrowRight, false);
+    app.update_camera(now + Duration::from_millis(50), (800, 600));
+    assert!(app.view.cam_x > 200.0);
+    capture_camera(&app, "late-00-ordinary-pan");
+    let camera = (app.view.cam_x, app.view.cam_y);
+    let frame = |app: &App| {
+        let mut frame = vec![0; 800 * 600 * 4];
+        app.compose(&mut frame, 800, 600);
+        frame
+    };
+    let before = frame(&app);
+    app.modifiers_changed(ModifiersState::ALT);
+    app.update_camera(now + Duration::from_millis(100), (800, 600));
+    capture_camera(&app, "late-01-modifier-held");
+    assert_eq!((app.view.cam_x, app.view.cam_y), camera);
+    assert_eq!(frame(&app), before);
+    app.modifiers_changed(ModifiersState::empty());
+    press(&mut app, KeyCode::ArrowRight, true);
+    app.update_camera(now + Duration::from_millis(150), (800, 600));
+    capture_camera(&app, "late-02-stale-repeat");
+    assert_eq!(frame(&app), before);
+    key(&mut app, KeyCode::ArrowRight, ElementState::Released);
+    press(&mut app, KeyCode::ArrowRight, false);
+    app.update_camera(now + Duration::from_millis(200), (800, 600));
+    capture_camera(&app, "late-03-fresh-pan");
+    assert!(app.view.cam_x > camera.0);
+    assert_ne!(frame(&app), before);
+    assert_eq!(
+        yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap(),
+        saved
+    );
+    println!("Authored compositor retains exact stopped/repeat frames, resumes fresh pan and preserves complete Session bytes.");
+}
+
+fn capture_camera(app: &App, name: &str) {
+    capture(app, name);
+    if let Some(directory) = std::env::var_os("OPENYR_WORLD_FEEDBACK_PROOF") {
+        std::fs::write(
+            PathBuf::from(directory).join(format!("{name}-camera.json")),
+            serde_json::to_vec_pretty(&serde_json::json!({
+                "x": app.view.cam_x, "y": app.view.cam_y, "zoom": app.view.zoom,
+                "retail_art": false, "native_window": false,
+            }))
+            .unwrap(),
+        )
+        .unwrap();
+    }
+}

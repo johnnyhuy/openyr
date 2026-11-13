@@ -297,6 +297,13 @@ retain their existing routes; selection, queued orders and saved match bytes
 are unchanged. This is native desktop input policy, without original-game or
 physical Mac/Option calibration.
 
+`OPENYR_WORLD_FEEDBACK_PROOF=<directory> cargo test -p yr-app --bin openyr
+late_desktop_modifier_compositor -- --nocapture` exports authored checkerboard
+frames and camera coordinates through the shared camera/compose handlers.
+The stopped and stale-repeat frames remain byte-identical, fresh arrows move
+the view again, and complete Session bytes are preserved. This proof needs no
+retail assets and does not establish physical input delivery or original parity.
+
 ## Alt-modified menu activation
 
 Alt/Option+Enter and Alt/Option+keypad Enter now remain outside menu activation
