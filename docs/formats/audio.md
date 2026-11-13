@@ -64,6 +64,27 @@ The header is followed by 4-byte groups alternating between channels, each
 holding 8 low-first nibbles. Mono 512-byte blocks hold 1,017 samples. The
 WAV `fact` chunk gives the true frame count, and the final block is padded.
 
+### WAV container validation
+
+The decoder bounds chunk reads by the declared RIFF size (#387). It rejects
+an incomplete chunk header, a chunk payload beyond that boundary, or missing
+odd-length chunk padding. Bytes after the RIFF container are ignored and
+cannot supply a missing format or data chunk. Unknown complete chunks and
+data-before-format ordering remain supported.
+
+Supported WAV output is mono or stereo with a nonzero sample rate. PCM 8-bit
+and 16-bit headers must declare exactly `channels * bytes_per_sample` block
+alignment, the corresponding checked byte rate, and complete frames. IMA
+block decoding and `fact` trimming retain their existing policies. This does
+not add new codecs or change ADPCM predictor math.
+
+Authored parser controls cover both channel counts and PCM depths, padded
+odd chunks, container boundaries and IMA fact trimming. CLI checks retain an
+existing export on malformed input and report each invalid WAV while scanning
+valid neighbors. Native sound lookup falls back from a malformed loose WAV to
+its paired bank entry, caches that result and keeps unrelated samples usable.
+The retail census still decodes all 1,223 WAVs without parser errors.
+
 ## Two IMA roundings
 
 The two packings use different nibble expansions, and each matches ffmpeg

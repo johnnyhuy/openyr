@@ -228,9 +228,17 @@ pub fn decode_wav(data: &[u8]) -> Result<Pcm, AudioError> {
     if data.len() < 12 || &data[..4] != b"RIFF" || &data[8..12] != b"WAVE" {
         return Err(AudioError::BadHeader);
     }
+    let size = u32::from_le_bytes(data[4..8].try_into().unwrap()) as usize;
+    let end = size.checked_add(8).ok_or(AudioError::BadHeader)?;
+    let data = data.get(..end).ok_or(AudioError::Truncated)?;
+    if data.len() < 12 {
+        return Err(AudioError::BadHeader);
+    }
     let mut c = Cursor::at(data, 12);
     let (mut fmt, mut body, mut frames) = (None, None, None);
-    while let (Some(id), Some(len)) = (c.array::<4>(), c.u32()) {
+    while c.pos() < data.len() {
+        let id = c.array::<4>().ok_or(AudioError::Truncated)?;
+        let len = c.u32().ok_or(AudioError::Truncated)?;
         let chunk = c.take(len as usize).ok_or(AudioError::Truncated)?;
         match &id {
             b"fmt " => fmt = Some(chunk),
@@ -241,7 +249,7 @@ pub fn decode_wav(data: &[u8]) -> Result<Pcm, AudioError> {
             _ => {}
         }
         if len % 2 == 1 {
-            c.skip(1);
+            c.skip(1).ok_or(AudioError::Truncated)?;
         }
     }
     let (fmt, body) = (
@@ -252,9 +260,27 @@ pub fn decode_wav(data: &[u8]) -> Result<Pcm, AudioError> {
     let tag = f.u16().ok_or(AudioError::BadHeader)?;
     let channels = f.u16().ok_or(AudioError::BadHeader)?;
     let sample_rate = f.u32().ok_or(AudioError::BadHeader)?;
-    f.skip(4).ok_or(AudioError::BadHeader)?; // byte rate
+    let byte_rate = f.u32().ok_or(AudioError::BadHeader)?;
     let block_align = f.u16().ok_or(AudioError::BadHeader)? as usize;
     let bits = f.u16().ok_or(AudioError::BadHeader)?;
+    if sample_rate == 0 || channels == 0 {
+        return Err(AudioError::BadHeader);
+    }
+    if channels > 2 {
+        return Err(AudioError::Unsupported(format!("WAV {channels} channels")));
+    }
+    if tag == 1 && matches!(bits, 8 | 16) {
+        let expected_block = usize::from(channels) * usize::from(bits / 8);
+        let expected_rate = sample_rate
+            .checked_mul(expected_block as u32)
+            .ok_or(AudioError::BadHeader)?;
+        if block_align != expected_block
+            || byte_rate != expected_rate
+            || !body.len().is_multiple_of(expected_block)
+        {
+            return Err(AudioError::BadHeader);
+        }
+    }
     let mut samples = match (tag, bits) {
         (1, 16) => body
             .as_chunks::<2>()
@@ -272,7 +298,10 @@ pub fn decode_wav(data: &[u8]) -> Result<Pcm, AudioError> {
     };
     // The fact chunk gives the true frame count; the last block is padded.
     if let Some(n) = frames {
-        samples.truncate(n * channels as usize);
+        let count = n
+            .checked_mul(usize::from(channels))
+            .ok_or(AudioError::BadHeader)?;
+        samples.truncate(count);
     }
     Ok(Pcm {
         sample_rate,
@@ -464,6 +493,143 @@ mod tests {
             samples: vec![0, 1000, -1000, i16::MAX],
         };
         assert_eq!(decode_wav(&encode_wav(&pcm)).unwrap(), pcm);
+    }
+
+    #[test]
+    fn wav_rejects_malformed_containers_and_pcm_geometry() {
+        let valid = encode_wav(&Pcm {
+            sample_rate: 22050,
+            channels: 2,
+            samples: vec![100, -100, 200, -200],
+        });
+        for (field, value, label) in [
+            (4, 0u32, "short RIFF size"),
+            (4, u32::MAX, "truncated RIFF"),
+            (24, 0, "zero sample rate"),
+            (28, 1, "inconsistent PCM byte rate"),
+            (24, u32::MAX, "overflowing PCM byte rate"),
+            (40, 6, "incomplete stereo frame"),
+        ] {
+            let mut data = valid.clone();
+            data[field..field + 4].copy_from_slice(&value.to_le_bytes());
+            assert!(decode_wav(&data).is_err(), "accepted {label}");
+        }
+        for (field, value, label) in [
+            (22, 0u16, "zero channels"),
+            (22, 3, "unsupported channels"),
+            (32, 1, "inconsistent PCM block alignment"),
+        ] {
+            let mut data = valid.clone();
+            data[field..field + 2].copy_from_slice(&value.to_le_bytes());
+            assert!(decode_wav(&data).is_err(), "accepted {label}");
+        }
+        for tail in [&b"x"[..], &b"JUNK\x00\x00\x00"[..]] {
+            let mut data = valid.clone();
+            data.extend(tail);
+            let size = (data.len() - 8) as u32;
+            data[4..8].copy_from_slice(&size.to_le_bytes());
+            assert!(decode_wav(&data).is_err(), "accepted partial chunk header");
+        }
+        let mut missing_pad = valid;
+        missing_pad.extend(b"JUNK\x01\x00\x00\x00x");
+        let size = (missing_pad.len() - 8) as u32;
+        missing_pad[4..8].copy_from_slice(&size.to_le_bytes());
+        assert!(
+            decode_wav(&missing_pad).is_err(),
+            "accepted missing chunk pad"
+        );
+
+        let mut partial_frame = encode_wav(&Pcm {
+            sample_rate: 22050,
+            channels: 2,
+            samples: vec![1, 2, 3, 4],
+        });
+        partial_frame.truncate(50);
+        partial_frame[4..8].copy_from_slice(&42u32.to_le_bytes());
+        partial_frame[40..44].copy_from_slice(&6u32.to_le_bytes());
+        assert!(matches!(
+            decode_wav(&partial_frame),
+            Err(AudioError::BadHeader)
+        ));
+    }
+
+    fn wav_chunks(chunks: &[(&[u8; 4], &[u8])]) -> Vec<u8> {
+        let mut data = b"RIFF\0\0\0\0WAVE".to_vec();
+        for (id, bytes) in chunks {
+            data.extend(*id);
+            data.extend((bytes.len() as u32).to_le_bytes());
+            data.extend(*bytes);
+            if bytes.len() % 2 == 1 {
+                data.push(0);
+            }
+        }
+        let size = (data.len() - 8) as u32;
+        data[4..8].copy_from_slice(&size.to_le_bytes());
+        data
+    }
+
+    #[test]
+    fn wav_preserves_pcm_ima_padding_chunk_order_and_container_boundary() {
+        for channels in [1u16, 2] {
+            for bits in [8u16, 16] {
+                let mut fmt = Vec::new();
+                fmt.extend(1u16.to_le_bytes());
+                fmt.extend(channels.to_le_bytes());
+                fmt.extend(22050u32.to_le_bytes());
+                let block = channels * (bits / 8);
+                fmt.extend((22050 * u32::from(block)).to_le_bytes());
+                fmt.extend(block.to_le_bytes());
+                fmt.extend(bits.to_le_bytes());
+                let (body, expected) = if bits == 8 {
+                    (vec![0, 128, 255], vec![i16::MIN, 0, 32512])
+                } else {
+                    (vec![1, 0, 255, 255, 0, 128], vec![1, -1, i16::MIN])
+                };
+                let body = body.repeat(usize::from(channels));
+                let mut data = wav_chunks(&[(b"data", &body), (b"JUNK", b"x"), (b"fmt ", &fmt)]);
+                let pcm = decode_wav(&data).unwrap();
+                assert_eq!(pcm.channels, channels);
+                assert_eq!(pcm.sample_rate, 22050);
+                assert_eq!(pcm.samples, expected.repeat(usize::from(channels)));
+                // Bytes after the declared container are not WAV chunks.
+                data.extend(b"data\x04\x00\x00\x00bad!");
+                assert_eq!(decode_wav(&data).unwrap(), pcm);
+
+                let only_fmt = wav_chunks(&[(b"fmt ", &fmt)]);
+                let mut external_body = only_fmt;
+                external_body.extend(b"data\x02\x00\x00\x00\x01\x00");
+                assert!(decode_wav(&external_body).is_err());
+            }
+
+            let mut fmt = Vec::new();
+            fmt.extend(0x11u16.to_le_bytes());
+            fmt.extend(channels.to_le_bytes());
+            fmt.extend(22050u32.to_le_bytes());
+            fmt.extend(19600u32.to_le_bytes());
+            fmt.extend((8 * channels).to_le_bytes());
+            fmt.extend(4u16.to_le_bytes());
+            let mut body = Vec::new();
+            for predictor in [100i16, -100].into_iter().take(usize::from(channels)) {
+                body.extend(predictor.to_le_bytes());
+                body.extend([0, 0]);
+            }
+            body.extend(vec![0; usize::from(channels) * 4]);
+            let data = wav_chunks(&[
+                (b"fmt ", &fmt),
+                (b"fact", &3u32.to_le_bytes()),
+                (b"data", &body),
+            ]);
+            let pcm = decode_wav(&data).unwrap();
+            assert_eq!(pcm.samples.len(), 3 * usize::from(channels));
+            assert_eq!(
+                pcm.samples,
+                if channels == 1 {
+                    vec![100; 3]
+                } else {
+                    [100, -100].repeat(3)
+                }
+            );
+        }
     }
 
     #[test]
