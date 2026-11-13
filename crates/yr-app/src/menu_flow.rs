@@ -51,6 +51,7 @@ impl App {
         self.shift = false;
         self.control = false;
         self.super_key = false;
+        self.alt_key = false;
         if self.service_mode != ServiceMode::None {
             self.service_mode = ServiceMode::None;
         } else if self.placing.take().is_some() {
@@ -75,6 +76,7 @@ impl App {
         self.shift = false;
         self.control = false;
         self.super_key = false;
+        self.alt_key = false;
         self.attack_move = false;
         self.placing = None;
         self.service_mode = ServiceMode::None;
@@ -429,6 +431,7 @@ impl App {
                 self.shift = false;
                 self.control = false;
                 self.super_key = false;
+                self.alt_key = false;
             }
             Effect::Quit => self.quit_requested = true,
             Effect::Restart => self.start_menu_load(None),
@@ -655,6 +658,7 @@ impl App {
                 self.shift = false;
                 self.control = false;
                 self.super_key = false;
+                self.alt_key = false;
                 self.cancel_pointer_action();
                 self.announced = false;
                 if let Some(session) = &self.session {

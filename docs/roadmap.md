@@ -1102,6 +1102,12 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       bounded construction-yard framing, with owned-building/unit and empty-map
       fallbacks. Zoom and exact Session/save bytes remain unchanged; original
       framing and physical input calibration remain open (`docs/camera-input.md`).
+- [x] Isolate Alt/Option-modified world keys (#381, #97): retain native Alt
+      state, preserve menu text routing and reject unsupported tactical, storage,
+      camera and selection chords through the existing desktop-key guard.
+      Repeat/focus recovery and protected-file/Session checks preserve ordinary
+      bindings (`docs/window-input.md`). Physical Mac/Option and original
+      modifier calibration remain open.
 - [ ] Complete world interaction and desktop UX (#97): consistent selection,
       supported control groups/hotkeys, hover/target/order feedback, bounded
       camera movement and configurable edge scrolling. Clear held input on

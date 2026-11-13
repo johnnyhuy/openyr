@@ -106,6 +106,7 @@ impl App {
         self.shift = false;
         self.control = false;
         self.super_key = false;
+        self.alt_key = false;
         self.pointer.inside = false;
         if let Some(w) = &self.window {
             w.set_cursor_visible(true);
