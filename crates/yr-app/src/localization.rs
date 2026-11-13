@@ -54,6 +54,41 @@ mod tests {
     use yr_rules::Rules;
 
     #[test]
+    fn csf_loaded_multi_values_keep_the_first_localized_name_and_reject_bad_counts() {
+        let rules = Rules::load(
+            &IniFile::parse(
+                "[InfantryTypes]\n0=E1\n[E1]\nUIName=Name:GI\nName=Internal infantry\n",
+            ),
+            &IniFile::default(),
+        );
+        let techno = rules.techno("E1").unwrap();
+        let mut table = b" FSC".to_vec();
+        for n in [3u32, 1, 2, 0, 0] {
+            table.extend(n.to_le_bytes());
+        }
+        table.extend(b" LBL");
+        table.extend(2u32.to_le_bytes());
+        table.extend(7u32.to_le_bytes());
+        table.extend(b"Name:GI");
+        for value in ["First name", "Second name"] {
+            table.extend(b" RTS");
+            table.extend((value.len() as u32).to_le_bytes());
+            for unit in value.encode_utf16() {
+                table.extend((!unit).to_le_bytes());
+            }
+        }
+        let load =
+            |bytes| SidebarNames::load(&AssetFs::from_files(vec![("RA2MD.CSF".into(), bytes)]));
+        let names = load(table.clone());
+        assert_eq!(names.name(techno), "First name");
+        let entries = &names.0.as_ref().unwrap().entries;
+        assert!(std::sync::Arc::ptr_eq(&entries[0].label, &entries[1].label));
+        table[28..32].copy_from_slice(&u32::MAX.to_le_bytes());
+        assert_eq!(load(table).name(techno), "Internal infantry");
+        println!("Native CSF localization preserves first-value lookup, shares names, and falls back after hostile counts");
+    }
+
+    #[test]
     fn localized_names_and_missing_null_empty_or_unreadable_strings() {
         let rules = Rules::load(
             &IniFile::parse(

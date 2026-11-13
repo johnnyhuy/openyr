@@ -45,9 +45,33 @@ value `Intro` (each UTF-16 unit stored inverted, `ff b6` = `!0x0049`).
 
 ## Usage in the engine
 
-`yr-formats::csf` exposes `CsfFile::parse(&[u8]) -> Vec<CsfEntry>` plus
+`yr-formats::csf` exposes `CsfFile::parse(&[u8]) -> Result<CsfFile, CsfError>` plus
 lookup by label name (case-insensitive). The renderer/localisation layer
 resolves labels at load time; the sim never reads CSF.
+
+## Bounded decoded storage
+
+The parser checks the table's minimum label/value bytes before reserving entry
+storage: each label requires 12 bytes and every value requires at least its
+four-byte tag. Label-local counts cannot exceed the remaining declared table
+total or the available value tags. Name, UTF-16 and sound-reference ranges use
+checked arithmetic before reading. Count mismatches are errors; empty tables
+and zero-value labels remain supported.
+
+A label with multiple values stores its decoded name once in `Arc<str>`.
+`CsfEntry::label` exposes that shared immutable name instead of `String` (#401).
+Previously, a 4,644-byte authored table with one 4,096-byte label and 128 null
+records created 128 separate name buffers, totaling 512 KiB. Shared names keep
+label storage proportional to input bytes, including when a parsed table is
+cloned, without rejecting valid multi-value tables. Values and sound references
+retain their original order; case-insensitive lookup still returns the first
+value for the first matching label. This is parser storage policy, not an
+original-engine allocation claim.
+
+Authored tests check shared backing pointers, Unicode/sound/null records,
+every truncated prefix, hostile counts/lengths, native localization fallback
+and actual `mix-dump scan` behavior beside valid tables. The retail known-answer
+check retains all 5,211 RA2MD.CSF entries, including its voice references.
 
 ## Production sidebar
 
