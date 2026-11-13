@@ -36,7 +36,7 @@ limb tailer (92 bytes) x limb_count
 
 Columns are indexed `x + y * size_x`. A start offset of `-1` means an empty
 column. Otherwise, relative to `span_data_ofs`, the column is a sequence of
-segments repeated until `z >= size_z`:
+segments repeated until `z == size_z`:
 
 ```
 u8 skip                 empty voxels before this run
@@ -44,6 +44,27 @@ u8 count
 (u8 colour, u8 normal) x count
 u8 count                repeated, as a check
 ```
+
+The decoder validates both complete `x*y` offset tables against the body before
+walking any columns. For an occupied column, the nonnegative start and inclusive
+end must describe a slice inside the span data. Every segment read, including
+the repeated count, stays inside that slice. Skips and voxel runs must fit the
+remaining height, and reaching the top must consume the complete column.
+An empty run may skip exactly to the top; it may not skip past it (#377).
+
+An authored 2x1x4 fixture exposed the former overrun acceptance: voxels at z=1
+and z=2 followed by `skip=2,count=0,count=0` ended at z=5 but parsed successfully.
+The corrected parser rejects that limb. Boundary fixtures cover every larger
+empty skip through 255, incomplete runs, inconsistent counts, invalid ranges,
+short tables and every truncated file prefix. Separate sparse/full/empty-column
+fixtures retain exact voxel coordinates, colors and normal indices. A CLI
+census fixture checks the malformed model's diagnostic and failing exit while
+retaining a valid exact-height neighbor.
+
+On 2026-11-13, `mix-dump scan` over all 16 top-level retail MIX archives completed
+with zero parser errors, including all 221 VXL entries. This establishes retail
+compatibility for the boundary checks, not original-game rendering or timing
+parity. No model, palette, animation or simulation state changes in this slice.
 
 ## HVA layout
 

@@ -213,6 +213,46 @@ fn scan_rejects_malformed_shp_rows_and_retains_valid_neighbors() {
 }
 
 #[test]
+fn scan_rejects_vxl_height_overruns_and_retains_valid_neighbors() {
+    fn model(skip: u8) -> Vec<u8> {
+        let mut bytes = b"Voxel Animation\0".to_vec();
+        for value in [1u32, 1, 1, 11] {
+            bytes.extend(value.to_le_bytes());
+        }
+        bytes.extend([16, 31]);
+        bytes.extend([0; 768]);
+        bytes.extend([0; 28]);
+        bytes.extend(0i32.to_le_bytes());
+        bytes.extend(2i32.to_le_bytes());
+        bytes.extend([skip, 0, 0]);
+        for value in [0u32, 4, 8] {
+            bytes.extend(value.to_le_bytes());
+        }
+        bytes.extend([0; 76]);
+        bytes.extend([1, 1, 4, 4]);
+        bytes
+    }
+
+    let fixture = Fixture::new();
+    let valid = model(4);
+    let invalid = model(5);
+    fs::write(fixture.0.join("test.mix"), archive(&[&invalid, &valid])).unwrap();
+    let output = fixture.command("scan").output().unwrap();
+    assert_eq!(output.status.code(), Some(1), "{output:?}");
+    let text = String::from_utf8(output.stdout).unwrap();
+    assert!(
+        text.contains("test.mix/0x00000001: vxl: VXL limb 0 has invalid span data"),
+        "{text}"
+    );
+    assert!(text.contains("test.mix/0x00000002 (933 B)"), "{text}");
+    assert_eq!(
+        String::from_utf8(output.stderr).unwrap(),
+        "error: archive scan found 1 parser error(s)\n"
+    );
+    println!("VXL scan rejects an empty run past z=4, retains the valid exact-height neighbor and exits 1 with one limb diagnostic.");
+}
+
+#[test]
 fn scan_counts_errors_beyond_the_diagnostic_limit() {
     let fixture = Fixture::new();
     fs::write(fixture.0.join("test.mix"), archive(&[&b"RIFF"[..]; 43])).unwrap();
