@@ -285,3 +285,17 @@ and the native folder dialog clear the tracked Alt state alongside other
 modifiers. Selection, existing gestures, queued commands, simulation and save
 encoding are unchanged. This is native desktop input policy; original-game
 modifier behavior and physical Mac/Option delivery remain unverified in #97.
+
+## Alt-modified menu activation
+
+Alt/Option+Enter and Alt/Option+keypad Enter now remain outside menu activation
+(#384). They cannot accept a focused save overwrite, load, permanent delete,
+setup choice or navigation control. This check runs in the shared native
+keyboard handler before menu dispatch. Rejected Enter presses retain repeat
+suppression; releasing Alt alone cannot turn a held repeat into activation.
+A key release or fresh deliberate plain Enter restores the ordinary action.
+
+Other menu keys and text retain their existing routes, including Option-produced
+characters and spaces in Save names. Simulation, saved-match encoding, pointer
+input and plain Enter behavior are unchanged. This is a native input policy;
+original-game modifiers and physical Mac/Option delivery remain uncalibrated.

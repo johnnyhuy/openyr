@@ -57,6 +57,11 @@ impl App {
         }
         self.held_keys.insert(code);
         if self.menu.visible() {
+            // Alt/Option+Enter is a desktop chord, not a deliberate menu activation.
+            if self.alt_key && matches!(code, KeyCode::Enter | KeyCode::NumpadEnter) {
+                self.suppressed_keys.insert(code);
+                return;
+            }
             let context = self.menu_input_context();
             self.menu_key_code(code, text, repeat);
             if context != self.menu_input_context() {

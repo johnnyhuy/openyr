@@ -715,6 +715,12 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       or wineserver socket permission prove nothing about the prefix. Keep
       the successful pixel evidence and the failing startup receipts
       separate.
+- [x] Reject Alt/Option-modified menu Enter (#384, #96, #97): Enter and
+      keypad Enter cannot activate focused confirmations or other controls.
+      Protected overwrite/delete files, pending loads and repeat recovery pass
+      through native handlers; ordinary Enter and Option text remain usable
+      (`docs/window-input.md`, `docs/formats/menus.md`). Physical/original
+      modifier calibration remains open.
 - [ ] Native menu and match flow (#96): original-style main menu, skirmish
       setup/map preview, saved matches, pause/resume, save/load, restart,
       options and quit. Add Won/Lost screens, loading/error feedback and
