@@ -391,27 +391,69 @@ pub fn parse_bag_index(data: &[u8]) -> Result<Vec<BagEntry>, AudioError> {
         .collect()
 }
 
-/// Encode PCM as a canonical 16-bit WAV.
-pub fn encode_wav(pcm: &Pcm) -> Vec<u8> {
-    let data_len = (pcm.samples.len() * 2) as u32;
-    let block = pcm.channels * 2;
-    let mut out = Vec::with_capacity(44 + data_len as usize);
+struct WavLayout {
+    data_len: u32,
+    riff_len: u32,
+    block: u16,
+    byte_rate: u32,
+    file_len: usize,
+}
+
+// Accept a count separately so RIFF/platform limits can be checked without
+// allocating multi-gigabyte sample buffers.
+fn wav_layout(rate: u32, channels: u16, samples: usize) -> Result<WavLayout, AudioError> {
+    if rate == 0 || channels == 0 {
+        return Err(AudioError::BadHeader);
+    }
+    if channels > 2 {
+        return Err(AudioError::Unsupported(format!("WAV {channels} channels")));
+    }
+    if !samples.is_multiple_of(usize::from(channels)) {
+        return Err(AudioError::BadHeader);
+    }
+    let block = channels.checked_mul(2).ok_or(AudioError::BadHeader)?;
+    let byte_rate = rate
+        .checked_mul(u32::from(block))
+        .ok_or_else(|| AudioError::Unsupported("WAV byte rate exceeds the 32-bit field".into()))?;
+    let size_error =
+        || AudioError::Unsupported("WAV output exceeds RIFF or platform size limits".into());
+    let bytes = samples.checked_mul(2).ok_or_else(size_error)?;
+    let data_len = u32::try_from(bytes).map_err(|_| size_error())?;
+    let riff_len = data_len.checked_add(36).ok_or_else(size_error)?;
+    let file_len = bytes.checked_add(44).ok_or_else(size_error)?;
+    isize::try_from(file_len).map_err(|_| size_error())?;
+    Ok(WavLayout {
+        data_len,
+        riff_len,
+        block,
+        byte_rate,
+        file_len,
+    })
+}
+
+/// Encode complete mono/stereo PCM frames as a canonical 16-bit WAV.
+/// Reject unrepresentable headers before reserving the output buffer.
+pub fn encode_wav(pcm: &Pcm) -> Result<Vec<u8>, AudioError> {
+    let layout = wav_layout(pcm.sample_rate, pcm.channels, pcm.samples.len())?;
+    let mut out = Vec::new();
+    out.try_reserve_exact(layout.file_len)
+        .map_err(|_| AudioError::Unsupported("WAV output allocation failed".into()))?;
     out.extend(b"RIFF");
-    out.extend((36 + data_len).to_le_bytes());
+    out.extend(layout.riff_len.to_le_bytes());
     out.extend(b"WAVEfmt ");
     out.extend(16u32.to_le_bytes());
     out.extend(1u16.to_le_bytes());
     out.extend(pcm.channels.to_le_bytes());
     out.extend(pcm.sample_rate.to_le_bytes());
-    out.extend((pcm.sample_rate * u32::from(block)).to_le_bytes());
-    out.extend(block.to_le_bytes());
+    out.extend(layout.byte_rate.to_le_bytes());
+    out.extend(layout.block.to_le_bytes());
     out.extend(16u16.to_le_bytes());
     out.extend(b"data");
-    out.extend(data_len.to_le_bytes());
+    out.extend(layout.data_len.to_le_bytes());
     for s in &pcm.samples {
         out.extend(s.to_le_bytes());
     }
-    out
+    Ok(out)
 }
 
 #[cfg(test)]
@@ -492,7 +534,77 @@ mod tests {
             channels: 1,
             samples: vec![0, 1000, -1000, i16::MAX],
         };
-        assert_eq!(decode_wav(&encode_wav(&pcm)).unwrap(), pcm);
+        assert_eq!(decode_wav(&encode_wav(&pcm).unwrap()).unwrap(), pcm);
+    }
+
+    #[test]
+    fn wav_export_validates_frames_rates_and_exact_canonical_bytes() {
+        for (channels, divisor) in [(1, 2), (2, 4)] {
+            let max_rate = u32::MAX / divisor;
+            for rate in [1, 22050, 44100, max_rate] {
+                for samples in [vec![], vec![i16::MIN, -1, 0, i16::MAX]] {
+                    let pcm = Pcm {
+                        sample_rate: rate,
+                        channels,
+                        samples,
+                    };
+                    let wav = encode_wav(&pcm).unwrap();
+                    let bytes = (pcm.samples.len() * 2) as u32;
+                    let mut expected = b"RIFF".to_vec();
+                    expected.extend((36 + bytes).to_le_bytes());
+                    expected.extend(b"WAVEfmt \x10\0\0\0\x01\0");
+                    expected.extend(channels.to_le_bytes());
+                    expected.extend(rate.to_le_bytes());
+                    expected.extend((rate * divisor).to_le_bytes());
+                    expected.extend((channels * 2).to_le_bytes());
+                    expected.extend(b"\x10\0data");
+                    expected.extend(bytes.to_le_bytes());
+                    for sample in &pcm.samples {
+                        expected.extend(sample.to_le_bytes());
+                    }
+                    assert_eq!(wav, expected);
+                    assert_eq!(decode_wav(&wav).unwrap(), pcm);
+                }
+            }
+            assert!(encode_wav(&Pcm {
+                sample_rate: max_rate + 1,
+                channels,
+                samples: vec![]
+            })
+            .is_err());
+        }
+        for (rate, channels, samples) in [
+            (0, 1, vec![]),
+            (22050, 0, vec![]),
+            (22050, 3, vec![]),
+            (22050, u16::MAX, vec![]),
+            (22050, 2, vec![1]),
+        ] {
+            assert!(encode_wav(&Pcm {
+                sample_rate: rate,
+                channels,
+                samples
+            })
+            .is_err());
+        }
+    }
+
+    #[test]
+    fn wav_export_bounds_large_lengths_without_allocating() {
+        let riff_max_samples = (u32::MAX as usize - 36) / 2;
+        let platform_max_samples = (isize::MAX as usize - 44) / 2;
+        for channels in [1, 2] {
+            let ch = usize::from(channels);
+            let max = riff_max_samples.min(platform_max_samples) / ch * ch;
+            let layout = wav_layout(22050, channels, max).unwrap();
+            assert_eq!(layout.data_len as usize, max * 2);
+            assert_eq!(u64::from(layout.riff_len), 36 + (max as u64) * 2);
+            assert_eq!(layout.file_len, 44 + max * 2);
+            assert!(wav_layout(22050, channels, max + ch).is_err());
+            for count in [usize::MAX, usize::MAX / 2, u32::MAX as usize] {
+                assert!(wav_layout(22050, channels, count).is_err());
+            }
+        }
     }
 
     #[test]
@@ -501,7 +613,8 @@ mod tests {
             sample_rate: 22050,
             channels: 2,
             samples: vec![100, -100, 200, -200],
-        });
+        })
+        .unwrap();
         for (field, value, label) in [
             (4, 0u32, "short RIFF size"),
             (4, u32::MAX, "truncated RIFF"),
@@ -543,7 +656,8 @@ mod tests {
             sample_rate: 22050,
             channels: 2,
             samples: vec![1, 2, 3, 4],
-        });
+        })
+        .unwrap();
         partial_frame.truncate(50);
         partial_frame[4..8].copy_from_slice(&42u32.to_le_bytes());
         partial_frame[40..44].copy_from_slice(&6u32.to_le_bytes());

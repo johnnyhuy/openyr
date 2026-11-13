@@ -263,7 +263,8 @@ mod tests {
             sample_rate: 22050,
             channels: 1,
             samples: vec![100, -100],
-        });
+        })
+        .unwrap();
         let fs = AssetFs::from_files(vec![
             (
                 "SOUNDMD.INI".into(),
@@ -344,7 +345,8 @@ mod tests {
             sample_rate: 22050,
             channels: 1,
             samples: vec![100, -100],
-        });
+        })
+        .unwrap();
         for (field, bytes) in [
             (4, 0u32.to_le_bytes().to_vec()),
             (4, u32::MAX.to_le_bytes().to_vec()),

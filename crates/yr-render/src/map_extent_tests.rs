@@ -63,11 +63,15 @@ impl Drop for Scratch {
     }
 }
 fn install(template: Vec<u8>) -> Scratch {
-    let dir = Scratch(std::env::temp_dir().join(
-        format!("openyr-map-bounds-{}-{}",std::process::id(),
-        std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()),
-    ));
-    fs::create_dir(&dir.0).unwrap();
+    let stem = format!(
+        "openyr-map-bounds-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    );
+    let dir = scratch(&std::env::temp_dir(), &stem);
     let mut palette = vec![0; 768];
     palette[3..6].copy_from_slice(&[10, 20, 30]);
     palette[6..9].copy_from_slice(&[40, 50, 60]);
@@ -86,6 +90,42 @@ fn install(template: Vec<u8>) -> Scratch {
     // One authored cell (1,1), tile 0, with the normal zero trailer.
     fs::write(dir.0.join("SMALL.MAP"),"[Map]\nTheater=TEMPERATE\nSize=0,0,2,2\nLocalSize=0,0,2,2\n[IsoMapPack5]\n1=EwAPACABAAEAAAAAAAAAAAAAAAARAAA=\n").unwrap();
     dir
+}
+
+fn scratch(root: &std::path::Path, stem: &str) -> Scratch {
+    for attempt in 0..128 {
+        let path = root.join(format!("{stem}-{attempt}"));
+        match fs::create_dir(&path) {
+            // Cleanup belongs only to the caller that created this directory.
+            Ok(()) => return Scratch(path),
+            Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => continue,
+            Err(e) => panic!("cannot create {}: {e}", path.display()),
+        }
+    }
+    panic!("map-extent fixture exhausted 128 scratch candidates");
+}
+
+#[test]
+fn map_extent_fixture_collision_preserves_existing_and_parallel_owners() {
+    let root = install(tmp(None));
+    let existing = root.0.join("collision-0");
+    fs::create_dir(&existing).unwrap();
+    fs::write(existing.join("keep"), b"preexisting fixture").unwrap();
+    std::thread::scope(|scope| {
+        let a = scope.spawn(|| scratch(&root.0, "collision"));
+        let b = scope.spawn(|| scratch(&root.0, "collision"));
+        let (a, b) = (a.join().unwrap(), b.join().unwrap());
+        assert_ne!(a.0, b.0);
+        fs::write(b.0.join("owned"), b"other owner").unwrap();
+        let released = a.0.clone();
+        drop(a);
+        assert!(!released.exists());
+        assert_eq!(fs::read(b.0.join("owned")).unwrap(), b"other owner");
+    });
+    assert_eq!(
+        fs::read(existing.join("keep")).unwrap(),
+        b"preexisting fixture"
+    );
 }
 
 #[test]

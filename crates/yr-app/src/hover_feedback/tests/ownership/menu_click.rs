@@ -39,7 +39,8 @@ fn menu_click_audio_follows_accepted_native_mouse_keyboard_and_mute_routing() {
         samples: (0..2048)
             .map(|i| if i % 32 < 16 { 8000 } else { -8000 })
             .collect(),
-    });
+    })
+    .unwrap();
     std::fs::write(dir.join("click.wav"), wave).unwrap();
     let (mut app, _, _) = scene((800, 600));
     app.menu.front = true;

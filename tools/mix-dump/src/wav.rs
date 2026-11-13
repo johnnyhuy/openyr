@@ -12,7 +12,8 @@ use yr_formats::{AudFile, Pcm};
 
 pub fn cmd_wav(asset: &str, out: &str, stdout: &mut dyn Write) -> crate::CommandResult {
     let pcm = decode(asset)?;
-    fs::write(out, encode_wav(&pcm)).map_err(|e| e.to_string())?;
+    let wav = encode_wav(&pcm).map_err(|e| e.to_string())?;
+    fs::write(out, wav).map_err(|e| e.to_string())?;
     writeln!(
         stdout,
         "decoded {asset} -> {out} ({} Hz, {} ch, {} samples, {:.2} s)",
