@@ -48,9 +48,7 @@ impl App {
         self.order_feedback.clear();
         self.cancel_pointer_action();
         self.suppress_held_keys();
-        self.shift = false;
-        self.control = false;
-        self.super_key = false;
+        self.modifiers_changed(ModifiersState::empty());
         if self.service_mode != ServiceMode::None {
             self.service_mode = ServiceMode::None;
         } else if self.placing.take().is_some() {
@@ -72,9 +70,7 @@ impl App {
         self.order_feedback.clear();
         self.cancel_pointer_action();
         self.suppress_held_keys();
-        self.shift = false;
-        self.control = false;
-        self.super_key = false;
+        self.modifiers_changed(ModifiersState::empty());
         self.attack_move = false;
         self.placing = None;
         self.service_mode = ServiceMode::None;
@@ -426,9 +422,7 @@ impl App {
             Effect::Resume => {
                 self.cancel_pointer_action();
                 self.suppress_held_keys();
-                self.shift = false;
-                self.control = false;
-                self.super_key = false;
+                self.modifiers_changed(ModifiersState::empty());
             }
             Effect::Quit => self.quit_requested = true,
             Effect::Restart => self.start_menu_load(None),
@@ -652,9 +646,7 @@ impl App {
                 self.order_feedback.clear();
                 self.pending.clear();
                 self.suppress_held_keys();
-                self.shift = false;
-                self.control = false;
-                self.super_key = false;
+                self.modifiers_changed(ModifiersState::empty());
                 self.cancel_pointer_action();
                 self.announced = false;
                 if let Some(session) = &self.session {

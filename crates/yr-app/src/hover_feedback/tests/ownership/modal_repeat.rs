@@ -189,7 +189,9 @@ fn focus_and_prepared_match_commit_do_not_revive_held_keys() {
             }))
             .ok()
             .unwrap();
+        app.modifiers_changed(ModifiersState::ALT);
         app.poll_menu_load();
+        assert!(!app.alt_key);
         assert_eq!(app.menu.page, Page::Closed);
         repeat(&mut app, KeyCode::ArrowRight, None);
         assert_eq!(app.keyboard_pan(), (0.0, 0.0));

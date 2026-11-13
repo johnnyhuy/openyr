@@ -182,3 +182,41 @@ mod attack_move;
 mod service_tracking;
 
 mod camera_tracking;
+
+#[test]
+fn native_modifier_state_and_context_cleanup_include_alt() {
+    let mut app = new_app(String::new(), String::new(), 1);
+    let all = ModifiersState::ALT
+        | ModifiersState::SUPER
+        | ModifiersState::CONTROL
+        | ModifiersState::SHIFT;
+    for transition in 0..4 {
+        app.modifiers_changed(all);
+        assert!(app.alt_key && app.super_key && app.control && app.shift);
+        match transition {
+            0 => {
+                app.focus_changed(false);
+                app.focus_changed(true);
+            }
+            1 => app.open_menu(Page::Pause),
+            2 => app.apply_menu_effect(yr_app::menu::Effect::Resume),
+            _ => app.escape_command_or_pause(),
+        }
+        assert!(!app.alt_key && !app.super_key && !app.control && !app.shift);
+    }
+    app.open_menu(Page::Save);
+    app.menu.name = "Keep".into();
+    app.modifiers_changed(ModifiersState::ALT);
+    key(
+        &mut app,
+        KeyCode::KeyO,
+        ElementState::Pressed,
+        Some("ø"),
+        false,
+    );
+    assert_eq!(app.menu.name, "Keepø");
+    assert!(app.alt_key && !app.super_key && !app.control && !app.shift);
+    assert!(app.pending.is_empty());
+    app.modifiers_changed(ModifiersState::empty());
+    assert!(!app.alt_key);
+}

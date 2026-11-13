@@ -1102,6 +1102,13 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       bounded construction-yard framing, with owned-building/unit and empty-map
       fallbacks. Zoom and exact Session/save bytes remain unchanged; original
       framing and physical input calibration remain open (`docs/camera-input.md`).
+- [x] Isolate Alt/Option world shortcuts (#381): retain native modifier state
+      and reject unsupported chords before world dispatch, preserving menu
+      Option text. Shared context resets clear Alt; stale repeats require release
+      or a fresh press. Native handler/compositor and protected-file checks
+      preserve gestures, queued orders, selection and full Session bytes. Live
+      retail launch works; physical Mac event delivery and original calibration
+      remain unverified (`docs/window-input.md`).
 - [ ] Complete world interaction and desktop UX (#97): consistent selection,
       supported control groups/hotkeys, hover/target/order feedback, bounded
       camera movement and configurable edge scrolling. Clear held input on

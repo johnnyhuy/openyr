@@ -268,3 +268,34 @@ coverage. `OPENYR_SIDEBAR_OWNERSHIP_PROOF=<directory>` with
 held/released shared-compositor frames and cursor/state receipts. These are
 authored fixtures, not retail or original-game comparisons. Physical
 Mac/Retina delivery and original gesture calibration remain open in #97/#98.
+
+## Alt and Option world-key isolation
+
+The native modifier event now retains Alt/Option (#381). The same handler used
+by `WindowEvent::ModifiersChanged` supplies the keyboard dispatcher, which
+rejects Alt-modified world keys alongside Command/Super. This includes Alt+F9,
+Alt+F5, mode/selection/team/category shortcuts, mute, pan and zoom. Rejected keys
+retain the existing repeat suppression and team/type timing cleanup. Releasing
+Alt alone cannot revive a rejected key; key-up or a fresh plain press restores
+ordinary input. Other pending commands and pointer gestures remain intact.
+
+Menu routing still runs first, including Option-generated text and existing
+Ctrl/Command editing. Every modifier reset at focus loss, pause/resume, folder
+selection and prepared-match commit now uses the shared modifier handler, so
+Alt cannot leak across those context boundaries. Pointer bindings, simulation,
+save encoding and preferences schemas are unchanged. This is native desktop
+input policy, not original-game modifier calibration.
+
+The baseline drops Alt in the modifier handler: the authored Alt+F9 regression
+opens the load confirmation, Stop adds an unintended command, and camera
+repeats remain active. Fixed native handler/compositor checks cover 336
+layout/key/modifier combinations, 54 protected-file/menu/camera cases, stale
+repeat recovery and plain F9 confirmation. Full Session bytes and protected
+save/preferences bytes stay exact. Additional checks retain Option text and
+clear Alt at focus/menu/prepared-load boundaries. Use
+`OPENYR_COMMAND_WORLD_PROOF=<dir> cargo test -p yr-app --bin openyr
+command_world -- --nocapture` to export the authored before/after Alt+F9 and
+plain F9 frames, with their menu/tick/save-state receipts. These are native
+handler/compositor captures; they do not establish physical Mac/Retina event
+delivery. The live retail window launches, but macOS display capture is
+permission-blocked and automated System Events input did not complete.

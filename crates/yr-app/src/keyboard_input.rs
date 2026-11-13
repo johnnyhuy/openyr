@@ -2,6 +2,13 @@
 use super::*;
 
 impl App {
+    pub(super) fn modifiers_changed(&mut self, state: ModifiersState) {
+        self.shift = state.shift_key();
+        self.control = state.control_key();
+        self.super_key = state.super_key();
+        self.alt_key = state.alt_key();
+    }
+
     /// Repeat events from an earlier input surface need a release or fresh press.
     pub(super) fn suppress_held_keys(&mut self) {
         self.suppressed_keys.extend(self.held_keys.iter().copied());
@@ -57,8 +64,8 @@ impl App {
             }
             return;
         }
-        // Menu editors own Command shortcuts; match bindings use their documented modifiers.
-        if self.super_key {
+        // Menu editors receive Option text and Command shortcuts before world guards.
+        if self.super_key || self.alt_key {
             self.keys.remove(&code);
             self.suppressed_keys.insert(code);
             if !repeat {

@@ -103,9 +103,7 @@ impl App {
     pub(super) fn choose_front_directory(&mut self) {
         self.cancel_pointer_action();
         self.suppress_held_keys();
-        self.shift = false;
-        self.control = false;
-        self.super_key = false;
+        self.modifiers_changed(ModifiersState::empty());
         self.pointer.inside = false;
         if let Some(w) = &self.window {
             w.set_cursor_visible(true);
