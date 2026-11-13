@@ -1,0 +1,4 @@
+Verified: /workspace/openyr-menu-audit-20261113-5/.tmp/menu-enter-runtime/program
+OpenYR: loaded .tmp/menu-enter-end.oyrsave at tick 6000, hash 3082cb602467f8fc, Lost
+OpenYR: headless tick 6000, hash 3082cb602467f8fc, Lost
+OpenYR: saved .tmp/menu-enter-reloaded.oyrsave at tick 6000, hash 3082cb602467f8fc, Lost
