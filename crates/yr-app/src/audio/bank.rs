@@ -337,6 +337,39 @@ mod tests {
         assert_eq!(bank.sample("legacy").unwrap().samples, [100]);
         assert!(bank.sample("absent").is_none());
     }
+
+    #[test]
+    fn malformed_loose_wav_falls_back_to_the_paired_sound_bank() {
+        let valid = encode_wav(&Pcm {
+            sample_rate: 22050,
+            channels: 1,
+            samples: vec![100, -100],
+        });
+        for (field, bytes) in [
+            (4, 0u32.to_le_bytes().to_vec()),
+            (4, u32::MAX.to_le_bytes().to_vec()),
+            (40, 3u32.to_le_bytes().to_vec()),
+        ] {
+            let mut malformed = valid.clone();
+            malformed[field..field + bytes.len()].copy_from_slice(&bytes);
+            let fs = AssetFs::from_files(vec![
+                ("shared.WAV".into(), malformed.clone()),
+                ("valid.WAV".into(), valid.clone()),
+                ("missing.WAV".into(), malformed),
+                (
+                    "LANGMD.MIX".into(),
+                    mix(&[("AUDIOMD.MIX", bank_archive("shared", 200))]),
+                ),
+            ]);
+            let mut bank = SoundBank::new(fs, "map");
+            let sample = bank.sample("shared").unwrap();
+            assert_eq!(sample.samples, [200]);
+            assert!(Arc::ptr_eq(&sample, &bank.sample("SHARED").unwrap()));
+            assert_eq!(bank.sample("valid").unwrap().samples, [100, -100]);
+            assert!(bank.sample("missing").is_none());
+            assert!(bank.sample("missing").is_none());
+        }
+    }
     #[test]
     fn retail_menu_uses_the_declared_intro_theme_even_when_not_in_the_normal_playlist() {
         let dir = std::path::PathBuf::from(std::env::var("HOME").unwrap_or_default())

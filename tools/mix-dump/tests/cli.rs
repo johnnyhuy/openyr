@@ -162,6 +162,64 @@ fn scan_fails_for_a_malformed_csf() {
 }
 
 #[test]
+fn wav_rejects_malformed_headers_without_replacing_output_and_scan_keeps_valid_neighbors() {
+    use yr_formats::audio::{encode_wav, Pcm};
+    let fixture = Fixture::new();
+    let valid = encode_wav(&Pcm {
+        sample_rate: 22050,
+        channels: 2,
+        samples: vec![100, -100, 200, -200],
+    });
+    let input = format!("{}:0x00000001", fixture.0.join("input.mix").display());
+    let destination = fixture.0.join("protected.wav");
+    for (field, bytes) in [
+        (4, 0u32.to_le_bytes().to_vec()),
+        (4, u32::MAX.to_le_bytes().to_vec()),
+        (22, 0u16.to_le_bytes().to_vec()),
+        (24, 0u32.to_le_bytes().to_vec()),
+        (28, 1u32.to_le_bytes().to_vec()),
+        (32, 1u16.to_le_bytes().to_vec()),
+        (40, 6u32.to_le_bytes().to_vec()),
+    ] {
+        let mut malformed = valid.clone();
+        malformed[field..field + bytes.len()].copy_from_slice(&bytes);
+        fs::write(fixture.0.join("input.mix"), archive(&[&malformed])).unwrap();
+        fs::write(&destination, b"preserve earlier export").unwrap();
+        let output = Command::new(env!("CARGO_BIN_EXE_mix-dump"))
+            .arg("wav")
+            .arg(&input)
+            .arg(&destination)
+            .output()
+            .unwrap();
+        assert_eq!(output.status.code(), Some(1), "{output:?}");
+        assert!(output.stdout.is_empty(), "{output:?}");
+        let stderr = String::from_utf8(output.stderr).unwrap();
+        assert!(
+            stderr.starts_with("error: ") && !stderr.contains("panicked"),
+            "{stderr}"
+        );
+        assert_eq!(fs::read(&destination).unwrap(), b"preserve earlier export");
+
+        fs::write(fixture.0.join("test.mix"), archive(&[&malformed, &valid])).unwrap();
+        let output = fixture.command("scan").output().unwrap();
+        assert_eq!(output.status.code(), Some(1), "{output:?}");
+        let text = String::from_utf8(output.stdout).unwrap();
+        assert!(text.contains("errors (1):"), "{text}");
+        assert!(text.contains("test.mix/0x00000001: wav:"), "{text}");
+        assert!(!text.contains("test.mix/0x00000002: wav:"), "{text}");
+    }
+    fs::write(fixture.0.join("input.mix"), archive(&[&valid])).unwrap();
+    let output = Command::new(env!("CARGO_BIN_EXE_mix-dump"))
+        .arg("wav")
+        .arg(&input)
+        .arg(&destination)
+        .output()
+        .unwrap();
+    assert!(output.status.success(), "{output:?}");
+    assert_eq!(fs::read(destination).unwrap(), valid);
+}
+
+#[test]
 fn scan_rejects_malformed_shp_rows_and_retains_valid_neighbors() {
     let fixture = Fixture::new();
     let shp = |row: &[u8]| {

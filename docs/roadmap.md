@@ -105,6 +105,12 @@ Johnny on 2026-10-31.
       retail corpus revalidation remains unavailable without an install
       (`docs/formats/pcx.md`).
 - [x] AUD / AUDIO.BAG+IDX / IMA WAV decoders, bit-exact vs ffmpeg
+- [x] Reject malformed WAV container and PCM geometry (#387): bound chunks
+      by RIFF size, require complete headers/padding and validate mono/stereo
+      frame alignment and rates before decoding. Authored parser/CLI/native
+      lookup checks preserve existing exports, valid neighbors, bank fallback
+      and IMA fact trimming. All 1,223 retail WAVs still pass the corpus scan
+      (`docs/formats/audio.md`).
 - [x] Bink 1 container metadata (#110): all 146 retail Bink entries validate
       with bounded frame/track tables and packet ranges (`docs/formats/bink.md`).
 - [x] WSA metadata: bounded header, offset-table and frame-range parser
