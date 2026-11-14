@@ -63,8 +63,10 @@ impl App {
         }
         self.held_keys.insert(code);
         if self.menu.visible() {
-            // Alt/Option+Enter is a desktop chord, not a deliberate menu activation.
-            if self.alt_key && matches!(code, KeyCode::Enter | KeyCode::NumpadEnter) {
+            // Desktop-modified Enter must not accept a focused menu action.
+            if (self.alt_key || self.super_key)
+                && matches!(code, KeyCode::Enter | KeyCode::NumpadEnter)
+            {
                 self.suppressed_keys.insert(code);
                 return;
             }
