@@ -481,6 +481,41 @@ fn inspection_output_is_complete() {
 }
 
 #[test]
+fn rules_decimal_overflow_is_absent_and_exact_neighbors_remain_printable() {
+    let fixture = Fixture::new();
+    for (value, expected) in [
+        ("9223372036854.999999", "(default)"),
+        ("-9223372036854.999999", "(default)"),
+        ("9223372036854.999999%", "(default)"),
+        ("-9223372036854.999999%", "(default)"),
+        (
+            "9223372036854.775807",
+            "9223372036854.775807 (2361183241434822 lp)",
+        ),
+        (
+            "-9223372036854.775808",
+            "-9223372036854.775808 (-2361183241434822 lp)",
+        ),
+        ("5.75", "5.75 (1472 lp)"),
+        ("-1.4", "-1.4 (-358 lp)"),
+        ("75.125%", "0.75125 (192 lp)"),
+    ] {
+        fs::write(
+            fixture.0.join("rulesmd.ini"),
+            format!("[VehicleTypes]\n0=TEST\n[TEST]\nPrimary=WEAPON\n[WEAPON]\nRange={value}\n"),
+        )
+        .unwrap();
+        let output = fixture.command("rules").arg("TEST").output().unwrap();
+        assert_success(&output);
+        let stdout = String::from_utf8(output.stdout).unwrap();
+        assert!(
+            stdout.contains(&format!("range {expected} burst")),
+            "{value}: {stdout}"
+        );
+    }
+}
+
+#[test]
 fn inspection_commands_accept_an_already_closed_stdout() {
     let fixture = Fixture::new();
     for verb in ["info", "list", "names", "scan", "vfs", "rules"] {

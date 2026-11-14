@@ -57,22 +57,28 @@ impl Decimal {
             return None;
         }
         let whole: i64 = if int.is_empty() { 0 } else { int.parse().ok()? };
-        let mut units = whole.checked_mul(SCALE)?;
+        let magnitude = whole.checked_mul(SCALE)?;
+        let mut units = if neg { -magnitude } else { magnitude };
         let mut place = SCALE / 10;
         for b in frac.bytes().take(6) {
-            units += i64::from(b - b'0') * place;
+            let digit = i64::from(b - b'0') * place;
+            units = if neg {
+                units.checked_sub(digit)?
+            } else {
+                units.checked_add(digit)?
+            };
             place /= 10;
         }
         if percent {
             units /= 100;
         }
-        Some(Decimal(if neg { -units } else { units }))
+        Some(Decimal(units))
     }
 
     /// Cells to leptons (256 per cell), truncating toward zero. The engine's
     /// exact conversion is not yet verified against the oracle.
     pub fn to_leptons(self) -> i64 {
-        self.0 * 256 / SCALE
+        (i128::from(self.0) * 256 / i128::from(SCALE)) as i64
     }
 
     /// Integer part, truncating toward zero.
@@ -199,6 +205,41 @@ mod tests {
         assert_eq!(r.to_string(), "1.4");
         assert_eq!(Decimal::parse("-0.25").unwrap().to_string(), "-0.25");
         assert_eq!(Decimal::from_int(3).to_string(), "3");
+    }
+
+    #[test]
+    fn decimal_fraction_boundaries_are_checked_before_percentage_scaling() {
+        for (text, units) in [
+            ("9223372036854.775807", i64::MAX),
+            ("+9223372036854.7758079", i64::MAX),
+            ("-9223372036854.775808", i64::MIN),
+            ("-9223372036854.7758089", i64::MIN),
+            ("9223372036854.775807%", i64::MAX / 100),
+            ("-9223372036854.775808%", i64::MIN / 100),
+            ("75.125%", 751_250),
+            ("-75.125%", -751_250),
+        ] {
+            let value = Decimal::parse(text).unwrap();
+            assert_eq!(value.units(), units, "{text}");
+            assert_eq!(Decimal::parse(&value.to_string()), Some(value));
+            assert_eq!(
+                value.to_leptons(),
+                (i128::from(units) * 256 / 1_000_000) as i64
+            );
+        }
+        for text in [
+            "9223372036854.775808",
+            "-9223372036854.775809",
+            "9223372036854.999999",
+            "-9223372036854.999999",
+            "9223372036855",
+            "-9223372036855",
+            "9223372036854.999999%",
+            "-9223372036854.999999%",
+            "9223372036854775808",
+        ] {
+            assert_eq!(Decimal::parse(text), None, "{text}");
+        }
     }
 
     #[test]

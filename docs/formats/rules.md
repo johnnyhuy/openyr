@@ -42,6 +42,19 @@ the raw INI lines.
   `Verses=75%`, `CellSpread=.3`). Conversions are explicit:
   `to_leptons()` (x256, truncating; the engine's rounding is unverified) and
   `mul_int()` for damage x verses.
+- Decimal parsing accumulates signed millionths with checked arithmetic (#406).
+  Up to six fractional digits are retained; additional digits are truncated.
+  The raw value must fit i64 before optional percentage division by 100, which
+  truncates toward zero. The exact endpoints are `9223372036854.775807` and
+  `-9223372036854.775808`; the latter now parses without requiring a positive
+  intermediate outside i64. Out-of-range optional values remain absent,
+  shown as `(default)` by the rules CLI, rather than panicking or wrapping.
+  Lepton conversion widens the intermediate product to i128; its divided
+  result always fits i64. Ordinary values and save encoding are unchanged.
+  Authored parser and CLI cases check signed overflow, endpoint printing,
+  percentage behavior and normal neighbors without retail assets.
+  `from_int()` and `mul_int()` still need the separate API/caller audit in #408;
+  this slice does not claim all Decimal arithmetic is bounded.
 - `Verses=` has 11 entries in armor order `none, flak, plate, light, medium,
   heavy, wood, steel, concrete, special_1, special_2` (ModEnc "Verses",
   "Armor"). All 100 retail `Verses` lines have 11. An unspecified `Verses` is
