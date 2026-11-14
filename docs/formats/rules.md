@@ -53,8 +53,20 @@ the raw INI lines.
   result always fits i64. Ordinary values and save encoding are unchanged.
   Authored parser and CLI cases check signed overflow, endpoint printing,
   percentage behavior and normal neighbors without retail assets.
-  `from_int()` and `mul_int()` still need the separate API/caller audit in #408;
-  this slice does not claim all Decimal arithmetic is bounded.
+- Integer construction and integer multiplication have an explicit native
+  saturation policy (#408). `from_int()` clamps unrepresentable millionths
+  to i64::MIN/MAX, including const evaluation. `mul_int()` computes its complete
+  product and division in i128, truncates toward zero, then clamps only a final
+  result outside i64. Representable products no longer fail because their
+  intermediate product exceeds i64; public signatures stay unchanged.
+  This intentionally changes former debug panics/release wraps at extremes,
+  not ordinary arithmetic. It is not an observed original-game policy.
+  The production callers are `WeaponSpec::damage_against` and the rules CLI's
+  damage table; `from_int()` has only test callers in this repository.
+  Signed endpoint/overflow/truncation cases run in both profiles. An authored
+  four-verse combat fixture compares complete saved bytes and continued
+  events/hashes with baseline production code. Save encoding is unchanged;
+  old saves with extreme arithmetic operands now use the documented policy.
 - `Verses=` has 11 entries in armor order `none, flak, plate, light, medium,
   heavy, wood, steel, concrete, special_1, special_2` (ModEnc "Verses",
   "Armor"). All 100 retail `Verses` lines have 11. An unspecified `Verses` is

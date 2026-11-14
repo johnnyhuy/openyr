@@ -28,8 +28,9 @@ impl Decimal {
     pub const ZERO: Decimal = Decimal(0);
     pub const ONE: Decimal = Decimal(SCALE);
 
+    /// Whole integer to millionths, saturating at the stored i64 limits.
     pub const fn from_int(v: i64) -> Decimal {
-        Decimal(v * SCALE)
+        Decimal(v.saturating_mul(SCALE))
     }
 
     /// Raw `units` (value * 10^6).
@@ -87,8 +88,10 @@ impl Decimal {
     }
 
     /// `self * v`, truncating toward zero (damage x verses, etc.).
+    /// Widen before multiplication; saturate only the final integer result.
     pub fn mul_int(self, v: i64) -> i64 {
-        self.0 * v / SCALE
+        (i128::from(self.0) * i128::from(v) / i128::from(SCALE))
+            .clamp(i128::from(i64::MIN), i128::from(i64::MAX)) as i64
     }
 }
 
@@ -205,6 +208,47 @@ mod tests {
         assert_eq!(r.to_string(), "1.4");
         assert_eq!(Decimal::parse("-0.25").unwrap().to_string(), "-0.25");
         assert_eq!(Decimal::from_int(3).to_string(), "3");
+    }
+
+    #[test]
+    fn decimal_integer_construction_saturates_only_outside_raw_limits() {
+        const LARGE: Decimal = Decimal::from_int(i64::MAX);
+        const SMALL: Decimal = Decimal::from_int(i64::MIN);
+        assert_eq!(LARGE.units(), i64::MAX);
+        assert_eq!(SMALL.units(), i64::MIN);
+        for v in [-9_223_372_036_854, -1, 0, 1, 9_223_372_036_854] {
+            assert_eq!(Decimal::from_int(v).units(), v * SCALE);
+        }
+        assert_eq!(Decimal::from_int(9_223_372_036_855).units(), i64::MAX);
+        assert_eq!(Decimal::from_int(-9_223_372_036_855).units(), i64::MIN);
+        println!("Integer construction retains exact representable millionths; both out-of-range signs saturate, including const evaluation.");
+    }
+
+    #[test]
+    fn decimal_integer_products_widen_truncate_and_saturate_in_that_order() {
+        for (raw, factor, expected) in [
+            (SCALE, i64::MAX, i64::MAX),
+            (SCALE, i64::MIN, i64::MIN),
+            (-SCALE, i64::MAX, -i64::MAX),
+            (-SCALE, i64::MIN, i64::MAX),
+            (2 * SCALE, i64::MAX, i64::MAX),
+            (2 * SCALE, i64::MIN, i64::MIN),
+            (i64::MAX, 1, 9_223_372_036_854),
+            (i64::MIN, 1, -9_223_372_036_854),
+            (i64::MAX, i64::MAX, i64::MAX),
+            (i64::MIN, i64::MAX, i64::MIN),
+            (i64::MIN, i64::MIN, i64::MAX),
+            (i64::MIN, 0, 0),
+            (900_000, 65, 58),
+            (-900_000, 65, -58),
+            (900_000, -65, -58),
+            (-900_000, -65, 58),
+            (1, -999_999, 0),
+        ] {
+            let actual = Decimal(raw).mul_int(factor);
+            assert_eq!(actual, expected, "raw {raw} * {factor}");
+            println!("raw {raw} * {factor} / {SCALE} = {actual}");
+        }
     }
 
     #[test]

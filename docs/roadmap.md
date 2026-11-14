@@ -179,9 +179,12 @@ Johnny on 2026-10-31.
       i64 boundaries. Wide lepton conversion keeps valid extremes printable;
       authored parser/CLI checks cover debug and release without retail data
       (`docs/formats/rules.md`).
-- [ ] Bound public Decimal integer construction and multiplication (#408),
-      including representable products with overflowing intermediates and an
-      explicit policy for unrepresentable results.
+- [x] Bound public Decimal integer construction and multiplication (#408).
+      Constructor saturation and wide multiply/divide followed by final-result
+      saturation keep public signatures and ordinary arithmetic. Signed
+      debug/release boundaries, both production callers and authored baseline
+      combat/save comparisons verify the documented native extreme-value
+      policy (`docs/formats/rules.md`). Retail checks still require data.
 
 - [x] Parse `rulesmd.ini`/`artmd.ini` into typed technos/weapons/warheads/projectiles (`yr-rules`)
 - [x] `mix-dump rules <gamedir> <ID>`: resolved unit, weapon chain, damage table, art provenance
