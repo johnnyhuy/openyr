@@ -1,0 +1,370 @@
+[
+  {
+    "field": "projectile",
+    "value": -2147483647000,
+    "valid": true,
+    "final": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261115-03/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-core-slice-20261115-03/.tmp/final-probe-src",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261115-03/.tmp/final-probe-built/receipt.json",
+        "--",
+        "load",
+        "/workspace/openyr-core-slice-20261115-03/.tmp/proof-payload/projectile--2147483647000.oyrsave"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261115-03/.tmp/final-probe-built/program\nload=ok tick=1 hash=5057132923ea08b1\n",
+      "stderr": ""
+    }
+  },
+  {
+    "field": "projectile",
+    "value": 2147483647000,
+    "valid": true,
+    "final": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261115-03/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-core-slice-20261115-03/.tmp/final-probe-src",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261115-03/.tmp/final-probe-built/receipt.json",
+        "--",
+        "load",
+        "/workspace/openyr-core-slice-20261115-03/.tmp/proof-payload/projectile-2147483647000.oyrsave"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261115-03/.tmp/final-probe-built/program\nload=ok tick=1 hash=2cf44805be738116\n",
+      "stderr": ""
+    }
+  },
+  {
+    "field": "projectile",
+    "value": -2147483647001,
+    "valid": false,
+    "final": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261115-03/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-core-slice-20261115-03/.tmp/final-probe-src",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261115-03/.tmp/final-probe-built/receipt.json",
+        "--",
+        "load",
+        "/workspace/openyr-core-slice-20261115-03/.tmp/proof-payload/projectile--2147483647001.oyrsave"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261115-03/.tmp/final-probe-built/program\nload=error invalid save: projectile damage out of range\n",
+      "stderr": ""
+    }
+  },
+  {
+    "field": "projectile",
+    "value": 2147483647001,
+    "valid": false,
+    "final": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261115-03/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-core-slice-20261115-03/.tmp/final-probe-src",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261115-03/.tmp/final-probe-built/receipt.json",
+        "--",
+        "load",
+        "/workspace/openyr-core-slice-20261115-03/.tmp/proof-payload/projectile-2147483647001.oyrsave"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261115-03/.tmp/final-probe-built/program\nload=error invalid save: projectile damage out of range\n",
+      "stderr": ""
+    }
+  },
+  {
+    "field": "projectile",
+    "value": -9223372036854775808,
+    "valid": false,
+    "final": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261115-03/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-core-slice-20261115-03/.tmp/final-probe-src",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261115-03/.tmp/final-probe-built/receipt.json",
+        "--",
+        "load",
+        "/workspace/openyr-core-slice-20261115-03/.tmp/proof-payload/projectile--9223372036854775808.oyrsave"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261115-03/.tmp/final-probe-built/program\nload=error invalid save: projectile damage out of range\n",
+      "stderr": ""
+    }
+  },
+  {
+    "field": "projectile",
+    "value": 9223372036854775807,
+    "valid": false,
+    "final": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261115-03/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-core-slice-20261115-03/.tmp/final-probe-src",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261115-03/.tmp/final-probe-built/receipt.json",
+        "--",
+        "load",
+        "/workspace/openyr-core-slice-20261115-03/.tmp/proof-payload/projectile-9223372036854775807.oyrsave"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261115-03/.tmp/final-probe-built/program\nload=error invalid save: projectile damage out of range\n",
+      "stderr": ""
+    }
+  },
+  {
+    "field": "origin",
+    "value": -2147483648,
+    "valid": false,
+    "final": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261115-03/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-core-slice-20261115-03/.tmp/final-probe-src",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261115-03/.tmp/final-probe-built/receipt.json",
+        "--",
+        "load",
+        "/workspace/openyr-core-slice-20261115-03/.tmp/proof-payload/origin--2147483648.oyrsave"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261115-03/.tmp/final-probe-built/program\nload=error invalid save: shot source damage out of range\n",
+      "stderr": ""
+    }
+  },
+  {
+    "field": "origin",
+    "value": 2147483648,
+    "valid": false,
+    "final": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261115-03/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-core-slice-20261115-03/.tmp/final-probe-src",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261115-03/.tmp/final-probe-built/receipt.json",
+        "--",
+        "load",
+        "/workspace/openyr-core-slice-20261115-03/.tmp/proof-payload/origin-2147483648.oyrsave"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261115-03/.tmp/final-probe-built/program\nload=error invalid save: shot source damage out of range\n",
+      "stderr": ""
+    }
+  },
+  {
+    "field": "weapon",
+    "value": -2147483648,
+    "valid": false,
+    "final": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261115-03/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-core-slice-20261115-03/.tmp/final-probe-src",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261115-03/.tmp/final-probe-built/receipt.json",
+        "--",
+        "load",
+        "/workspace/openyr-core-slice-20261115-03/.tmp/proof-payload/weapon--2147483648.oyrsave"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261115-03/.tmp/final-probe-built/program\nload=error invalid save: weapon damage out of range\n",
+      "stderr": ""
+    }
+  },
+  {
+    "field": "weapon",
+    "value": 2147483648,
+    "valid": false,
+    "final": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261115-03/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-core-slice-20261115-03/.tmp/final-probe-src",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261115-03/.tmp/final-probe-built/receipt.json",
+        "--",
+        "load",
+        "/workspace/openyr-core-slice-20261115-03/.tmp/proof-payload/weapon-2147483648.oyrsave"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261115-03/.tmp/final-probe-built/program\nload=error invalid save: weapon damage out of range\n",
+      "stderr": ""
+    }
+  },
+  {
+    "version": 1,
+    "baseline": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261115-03/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-core-slice-20261115-03/.tmp/baseline-probe-src",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261115-03/.tmp/baseline-probe-built/receipt.json",
+        "--",
+        "load",
+        "/workspace/openyr-core-slice-20261115-03/.tmp/proof-payload/legacy-v1.oyrsave"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261115-03/.tmp/baseline-probe-built/program\nload=ok tick=1 hash=086a35ee03edc5ea\n",
+      "stderr": ""
+    },
+    "final": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261115-03/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-core-slice-20261115-03/.tmp/final-probe-src",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261115-03/.tmp/final-probe-built/receipt.json",
+        "--",
+        "load",
+        "/workspace/openyr-core-slice-20261115-03/.tmp/proof-payload/legacy-v1.oyrsave"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261115-03/.tmp/final-probe-built/program\nload=ok tick=1 hash=086a35ee03edc5ea\n",
+      "stderr": ""
+    }
+  },
+  {
+    "version": 2,
+    "baseline": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261115-03/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-core-slice-20261115-03/.tmp/baseline-probe-src",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261115-03/.tmp/baseline-probe-built/receipt.json",
+        "--",
+        "load",
+        "/workspace/openyr-core-slice-20261115-03/.tmp/proof-payload/legacy-v2.oyrsave"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261115-03/.tmp/baseline-probe-built/program\nload=ok tick=1 hash=086a35ee03edc5ea\n",
+      "stderr": ""
+    },
+    "final": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261115-03/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-core-slice-20261115-03/.tmp/final-probe-src",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261115-03/.tmp/final-probe-built/receipt.json",
+        "--",
+        "load",
+        "/workspace/openyr-core-slice-20261115-03/.tmp/proof-payload/legacy-v2.oyrsave"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261115-03/.tmp/final-probe-built/program\nload=ok tick=1 hash=086a35ee03edc5ea\n",
+      "stderr": ""
+    }
+  },
+  {
+    "version": 3,
+    "baseline": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261115-03/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-core-slice-20261115-03/.tmp/baseline-probe-src",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261115-03/.tmp/baseline-probe-built/receipt.json",
+        "--",
+        "load",
+        "/workspace/openyr-core-slice-20261115-03/.tmp/proof-payload/legacy-v3.oyrsave"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261115-03/.tmp/baseline-probe-built/program\nload=ok tick=1 hash=086a35ee03edc5ea\n",
+      "stderr": ""
+    },
+    "final": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261115-03/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-core-slice-20261115-03/.tmp/final-probe-src",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261115-03/.tmp/final-probe-built/receipt.json",
+        "--",
+        "load",
+        "/workspace/openyr-core-slice-20261115-03/.tmp/proof-payload/legacy-v3.oyrsave"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261115-03/.tmp/final-probe-built/program\nload=ok tick=1 hash=086a35ee03edc5ea\n",
+      "stderr": ""
+    }
+  },
+  {
+    "version": 4,
+    "baseline": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261115-03/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-core-slice-20261115-03/.tmp/baseline-probe-src",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261115-03/.tmp/baseline-probe-built/receipt.json",
+        "--",
+        "load",
+        "/workspace/openyr-core-slice-20261115-03/.tmp/proof-payload/legacy-v4.oyrsave"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261115-03/.tmp/baseline-probe-built/program\nload=ok tick=1 hash=086a35ee03edc5ea\n",
+      "stderr": ""
+    },
+    "final": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261115-03/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-core-slice-20261115-03/.tmp/final-probe-src",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261115-03/.tmp/final-probe-built/receipt.json",
+        "--",
+        "load",
+        "/workspace/openyr-core-slice-20261115-03/.tmp/proof-payload/legacy-v4.oyrsave"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261115-03/.tmp/final-probe-built/program\nload=ok tick=1 hash=086a35ee03edc5ea\n",
+      "stderr": ""
+    }
+  }
+]

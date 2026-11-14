@@ -1,0 +1,28 @@
+{
+  "format": "openyr-proof-build-v1",
+  "source": {
+    "commit": "d2728825e67c7283500ef5805d65ee424eb8c794",
+    "tree": "fe8b794737e8a333d13ccea1893a84600509d131"
+  },
+  "package": "projectile-damage-probe",
+  "binary": "projectile-damage-probe",
+  "profile": "release",
+  "cargo": "cargo 1.100.0 (3acc79c0c 2026-11-05)",
+  "command": [
+    "/workspace/.cargo/bin/cargo",
+    "build",
+    "--manifest-path",
+    "/workspace/openyr-core-slice-20261115-03/.tmp/final-probe-src/Cargo.toml",
+    "--package",
+    "projectile-damage-probe",
+    "--bin",
+    "projectile-damage-probe",
+    "--release",
+    "--locked",
+    "--target-dir",
+    "/workspace/openyr-core-slice-20261115-03/.tmp/final-probe-built/target-thp3dtx3",
+    "--message-format=json-render-diagnostics"
+  ],
+  "sha256": "75c0bfe2c9155bead2cf6a81985e237a10f13f378cce4fdf0032c1bad9948662",
+  "bytes": 1191920
+}

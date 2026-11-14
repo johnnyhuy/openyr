@@ -1,0 +1,41 @@
+Building projectile-damage-probe/projectile-damage-probe in a fresh isolated target
+warning: unused field `repository` in `workspace.package`
+  --> Cargo.toml:10:1
+   |
+10 | repository = "https://github.com/johnnyhuy/openyr"
+   | ^^^^^^^^^^
+   |
+   = note: `cargo::unused_workspace_package_fields` is set to `warn` by default
+help: consider removing the field `workspace.package.repository`
+warning: workspace (manifest) generated 1 warning
+   Compiling version_check v0.9.5
+   Compiling typenum v1.20.1
+   Compiling generic-array v0.14.7
+   Compiling proc-macro2 v1.0.107
+   Compiling autocfg v1.5.1
+   Compiling num-traits v0.2.19
+   Compiling unicode-ident v1.0.27
+   Compiling quote v1.0.47
+   Compiling serde_core v1.0.229
+   Compiling inout v0.1.4
+   Compiling crypto-common v0.1.7
+   Compiling cipher v0.4.4
+   Compiling syn v3.0.9
+   Compiling num-integer v0.1.47
+   Compiling serde v1.0.229
+   Compiling byteorder v1.5.0
+   Compiling zmij v1.0.23
+   Compiling blowfish v0.9.1
+   Compiling serde_derive v1.0.229
+   Compiling num-bigint v0.4.8
+   Compiling serde_json v1.0.154
+   Compiling yr-formats v0.1.0 (/workspace/openyr-core-slice-20261115-03/.tmp/final-probe-src/crates/yr-formats)
+   Compiling memchr v2.8.3
+   Compiling itoa v1.0.18
+   Compiling yr-rules v0.1.0 (/workspace/openyr-core-slice-20261115-03/.tmp/final-probe-src/crates/yr-rules)
+   Compiling yr-sim v0.1.0 (/workspace/openyr-core-slice-20261115-03/.tmp/final-probe-src/crates/yr-sim)
+   Compiling projectile-damage-probe v0.0.0 (/workspace/openyr-core-slice-20261115-03/.tmp/final-probe-src/tools/projectile-damage-probe)
+    Finished `release` profile [optimized] target(s) in 14.71s
+Receipt: /workspace/openyr-core-slice-20261115-03/.tmp/final-probe-built/receipt.json
+Source tree: fe8b794737e8a333d13ccea1893a84600509d131
+SHA256: 75c0bfe2c9155bead2cf6a81985e237a10f13f378cce4fdf0032c1bad9948662
