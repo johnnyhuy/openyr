@@ -538,6 +538,12 @@ Johnny on 2026-10-31.
 
 ## M4: Simulation v1
 
+- [x] Reject overflowing reloads and unsupported rules weapon fields (#419,
+      #420). Checked u32 conversion retains existing reload defaults, and
+      resolution reuses the unchanged snapshot damage/range/speed/verse
+      validator. Authored signed/boundary/all-armor tests and baseline/final
+      combat saves verify ordinary behavior (`docs/formats/rules.md`).
+
 - [x] Reject wrapped and unsupported rules weapon ranges (#417). Validate
       signed i64 lepton values before narrowing, share the unchanged snapshot
       range domain, and saturate the public signed conversion at i32 limits.

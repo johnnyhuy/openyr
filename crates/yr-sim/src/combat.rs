@@ -38,7 +38,7 @@ pub struct WeaponSpec {
 
 impl WeaponSpec {
     /// Resolve a rules weapon (by ID) against all armour classes.
-    /// `None` when data is incomplete or its range/speed is unsupported.
+    /// `None` when data is incomplete or outside the native weapon-field domain.
     pub fn from_rules(rules: &Rules, weapon_id: &str) -> Option<WeaponSpec> {
         let w = rules.weapons.get(weapon_id)?;
         if !w.defined {
@@ -71,7 +71,7 @@ impl WeaponSpec {
                 }
             }
         };
-        Some(WeaponSpec {
+        let weapon = WeaponSpec {
             source: (rules
                 .weapons
                 .iter()
@@ -80,11 +80,13 @@ impl WeaponSpec {
                 == 1)
                 .then(|| w.source_id()),
             damage: w.damage?,
-            rof_ticks: w.rof.unwrap_or(0).max(0) as u32,
+            rof_ticks: u32::try_from(w.rof.unwrap_or(0).max(0)).ok()?,
             range: cells_to_leptons(range),
             projectile_speed,
             verses,
-        })
+        };
+        crate::save::weapon(weapon).ok()?;
+        Some(weapon)
     }
 
     /// Damage this weapon deals to armour class `armor` (index into
