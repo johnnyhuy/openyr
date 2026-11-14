@@ -407,3 +407,48 @@ Set `OPENYR_BUILDING_CACHE_PROOF` for the retail cache test to export matching
 cold/rebuilt factory layer PNGs outside git. These source-pixel comparisons do
 not establish original animation cadence, per-overlay depth or physical Mac
 display calibration, which remain in #6.
+
+
+## Decoded unit history byte budget
+
+The unit history already limited decoded sprites to 512 entries, but did not
+limit their combined RGBA allocation (#413). An authored valid SHP with a 2x2
+body/shadow on a sparse 1024x1024 canvas retained 138,412,032 bytes after 33
+remaps on unchanged code. The parser's 4096x4096 canvas limit alone permits
+64 MiB per decoded RGBA sprite, so entry count is insufficient as a memory
+budget. The experiment did not allocate the theoretical 32 GiB maximum.
+
+Unit sprites now use the same bounded cache implementation as building layers,
+with a separate 512-entry and 128 MiB retained-capacity budget. FIFO eviction
+removes as many old entries as needed before insertion. Reads do not reorder
+history, failed decodes consume entries but no RGBA bytes, and resolved pose/
+frame/remap keys retain their existing meaning. Units request one sprite at a
+time, so they do not protect an earlier working set as building layers do.
+Valid decoded SHP and voxel sprites fit individually within the budget. An
+impossible over-budget entry would be omitted and retried without discarding
+neighboring entries or caching a permanent decode failure.
+
+The limit counts `Vec::capacity()`, including retained spare allocation. It
+bounds decoded unit history, not the whole process, parsed voxel models,
+other caches, or transient decoding. Building history retains its own budget
+and current-layer protection. No format limits, palette/shadow pixels,
+infantry cadence, voxel poses, simulation state or save fields change.
+
+The sparse-canvas regression now retains at most 134,217,728 bytes across 34
+remaps. Authored eight-facing ready/walk/fire/idle cases preserve exact body,
+shadow, remap and anchor data under a 48-byte test budget; 600 missing-art
+requests remain entry-bounded and valid art reconstructs afterwards. A retail
+144-request cohort covers E1, GGI, Engineer, Grizzly, Harvester and Black Hawk
+at all eight facings and multiple action/pose clocks. Two passes under a
+59,408-byte test budget peak at eight entries and 58,656 RGBA bytes; every
+cold/rebuilt sprite matches exactly. The existing rotor/source-pixel and
+building working-set checks remain in the same suite:
+
+```sh
+cargo test -p yr-render cache -- --nocapture
+```
+
+`OPENYR_UNIT_CACHE_PROOF` exports six matching cold/rebuilt PNG pairs from the
+retail cohort. These contain retail artwork and must stay outside Git.
+This verifies native reconstruction, not original-game cache policy or
+physical macOS/Retina input.
