@@ -236,7 +236,7 @@ fn health(hp: i64, max_hp: i64, armor: u8) -> Result<(), SaveError> {
     )
 }
 
-fn weapon(w: WeaponSpec) -> Result<(), SaveError> {
+pub(crate) fn weapon(w: WeaponSpec) -> Result<(), SaveError> {
     require(
         (-MAX_STAT..=MAX_STAT).contains(&w.damage),
         "weapon damage out of range",

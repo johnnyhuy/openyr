@@ -90,6 +90,23 @@ Ordinary weapon ranges and save encoding are unchanged; unsupported rules
 weapons resolve to `None` through the existing caller policy. Authored cases
 cover negative/large values, fractional boundaries and unchanged save rejection.
 
+Reload conversion is checked before narrowing to u32 (#419). An absent, zero
+or negative stored `ROF` retains the existing zero-reload policy; positive
+values through 4,294,967,295 are preserved, and larger values resolve to `None`
+rather than wrapping to a shorter reload. This is native representability,
+not calibration of the original game's reload limits or defaults.
+
+The resolved weapon also passes the existing snapshot weapon-field validator
+(#420). Damage must fit the unchanged symmetric range +/-2,147,483,647, and
+each of the eleven verse multipliers must fit +/-1,000,000,000 raw millionths.
+Range and speed retain their existing bounds. Unsupported values resolve to
+`None`; public signatures, supported defaults and snapshot acceptance remain
+unchanged. The same validator is reused rather than duplicating these limits.
+This validates individual weapon fields, not every later composed combat
+calculation. Authored debug/release cases check both signs, all armor entries,
+exact boundaries and save/load roundtrips; ordinary combat proof compares
+complete snapshots and continued state with baseline production code.
+
 ## Retail known answers (tests in `crates/yr-rules/tests/retail.rs`)
 
 - Registries: 65 infantry, 80 vehicles, 12 aircraft, 402 buildings, plus 189
