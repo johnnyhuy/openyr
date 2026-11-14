@@ -242,7 +242,7 @@ fn weapon(w: WeaponSpec) -> Result<(), SaveError> {
         "weapon damage out of range",
     )?;
     require(
-        (0..=MAX_COORD).contains(&w.range.raw())
+        (0..=crate::combat::MAX_WEAPON_RANGE).contains(&w.range.raw())
             && (0..=crate::combat::MAX_PROJECTILE_SPEED).contains(&w.projectile_speed.raw()),
         "weapon range/speed out of range",
     )?;
