@@ -727,6 +727,6 @@ mod sidebar_ownership;
 mod alt_world;
 mod sidebar_overrides;
 
-mod menu_alt_enter;
+mod menu_desktop_enter;
 
 mod late_modifiers;

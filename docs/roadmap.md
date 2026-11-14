@@ -1160,6 +1160,12 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       focus/menu changes; verify resizing, Retina hit coordinates, tooltip
       clipping and visible save/load feedback. Sidebar queues and command-bar
       controls remain in #86; repair/sell remains in #94.
+- [x] Keep Command/Super+Enter outside menu confirmations (#403), alongside
+      Alt/Option+Enter. Protected overwrite/delete/load targets, menu focus and
+      repeat suppression survive desktop chords; plain Enter, Command+A name
+      replacement and Option text retain their routes. Authored native-handler
+      and shared-compositor checks preserve complete Session bytes and queued
+      orders (`docs/window-input.md`). Physical Mac delivery remains open.
 - [x] Stop held camera keys when Alt/Option or Command/Super arrives later
       (#393). Clear active keyboard ownership immediately, retain suppression
       after modifier release, and require key-up or fresh input. Ordinary

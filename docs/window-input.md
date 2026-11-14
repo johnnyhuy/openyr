@@ -304,16 +304,30 @@ The stopped and stale-repeat frames remain byte-identical, fresh arrows move
 the view again, and complete Session bytes are preserved. This proof needs no
 retail assets and does not establish physical input delivery or original parity.
 
-## Alt-modified menu activation
+## Desktop-modified menu activation
 
-Alt/Option+Enter and Alt/Option+keypad Enter now remain outside menu activation
-(#384). They cannot accept a focused save overwrite, load, permanent delete,
-setup choice or navigation control. This check runs in the shared native
+Alt/Option or Command/Super with Enter or keypad Enter remains outside menu
+activation (#384, #403). They cannot accept a focused save overwrite, load,
+permanent delete, setup choice or navigation control. This check runs in the shared native
 keyboard handler before menu dispatch. Rejected Enter presses retain repeat
-suppression; releasing Alt alone cannot turn a held repeat into activation.
+suppression; releasing the desktop modifier alone cannot turn a held repeat into
+activation.
 A key release or fresh deliberate plain Enter restores the ordinary action.
 
 Other menu keys and text retain their existing routes, including Option-produced
 characters and spaces in Save names. Simulation, saved-match encoding, pointer
 input and plain Enter behavior are unchanged. This is a native input policy;
 original-game modifiers and physical Mac/Option delivery remain uncalibrated.
+
+The Command regression reproduced both protected-file overwrite and permanent
+save deletion on unchanged production code. At 640x480, 800x600 and 1280x800,
+Command+Enter deleted the temporary target before the fix; the final handler
+preserves it, while a subsequent deliberate plain Enter still deletes it.
+The existing overwrite/delete/load matrix now covers twelve Alt/Super/Control/
+Shift combinations and both Enter keys, with menu focus, queued commands,
+selection and complete Session bytes preserved. Skirmish popup acceptance and
+Command+A replacement in both name editors retain their plain-input routes.
+`OPENYR_WORLD_FEEDBACK_PROOF=<directory> cargo test -p yr-app --bin openyr
+desktop_menu_enter -- --nocapture` exports authored compositor frames and state
+receipts. These captures use fallback menu art, not retail/original pixels or
+physical macOS input. Retail runtime checks remain separate.
