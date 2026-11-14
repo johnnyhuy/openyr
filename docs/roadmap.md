@@ -545,6 +545,13 @@ Johnny on 2026-10-31.
 
 ## M4: Simulation v1
 
+- [x] Preserve native scaled projectile damage in saves (#424). Derive the
+      applied-damage bound from supported raw damage and verse limits while
+      retaining raw-field bounds, wire encoding and damage/timing behavior.
+      Authored signed-extreme restores, hostile boundaries and ordinary
+      baseline/final saves verify the compatibility policy
+      (`docs/formats/save.md`).
+
 - [x] Reject overflowing reloads and unsupported rules weapon fields (#419,
       #420). Checked u32 conversion retains existing reload defaults, and
       resolution reuses the unchanged snapshot damage/range/speed/verse

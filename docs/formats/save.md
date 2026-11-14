@@ -92,10 +92,25 @@ hash `4601c68d2468f7dc`. The historical-state comparison is described in
 not distributed proof assets.
 
 The simulation snapshot starts with `OYRSIM\0\0` (8 bytes), then a
-little-endian u32 version (currently 3), then UTF-8 JSON of `Sim`.
+little-endian u32 version (currently 4), then UTF-8 JSON of `Sim`.
 Fixed-point values are raw i32 integers with 256 units per cell; rule
 decimals are raw i64 millionths. No floating point enters the payload.
 JSON's integer text preserves all bits of the u64 RNG and tick fields.
+
+Applied projectile damage has a different bound from raw weapon damage (#424).
+The accepted raw damage limit is +/-2,147,483,647 and the accepted verse limit
+is +/-1,000,000,000 millionths. Their product divided by one million permits
+native in-flight damage through +/-2,147,483,647,000. Snapshot validation derives
+that bound from the same constants, without clipping damage or changing flight
+timing. Raw weapon and shot-origin damage keep their previous bounds; values
+outside the derived applied-damage domain are still rejected.
+
+The JSON fields and version are unchanged. Existing valid snapshots retain
+their bytes and acceptance, including legacy versions with absent provenance.
+Newly saveable extreme flights require a reader with the wider validation
+bound; older readers reject them. No existing file is migrated or rewritten.
+Authored tests exercise signed extrema, post-launch restoration, delivered
+damage/events, boundary rejection and ordinary baseline/final save equality.
 
 The payload includes unit paths, targets, attack-move goals, cooldowns,
 harvest clocks and cargo; buildings and terrain edits; projectiles;
