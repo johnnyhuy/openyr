@@ -174,9 +174,14 @@ Johnny on 2026-10-31.
 
 ## M2: Typed game data
 
-- [ ] Reject overflowing exact decimal fractions (#406). The hostile
-      `Range=9223372036854.999999` reproduces a debug CLI panic during
-      fractional accumulation; retain ordinary exact values in all profiles.
+- [x] Reject overflowing exact decimal fractions (#406). Signed checked
+      accumulation retains six-digit truncation, percentage scaling and both
+      i64 boundaries. Wide lepton conversion keeps valid extremes printable;
+      authored parser/CLI checks cover debug and release without retail data
+      (`docs/formats/rules.md`).
+- [ ] Bound public Decimal integer construction and multiplication (#408),
+      including representable products with overflowing intermediates and an
+      explicit policy for unrepresentable results.
 
 - [x] Parse `rulesmd.ini`/`artmd.ini` into typed technos/weapons/warheads/projectiles (`yr-rules`)
 - [x] `mix-dump rules <gamedir> <ID>`: resolved unit, weapon chain, damage table, art provenance
