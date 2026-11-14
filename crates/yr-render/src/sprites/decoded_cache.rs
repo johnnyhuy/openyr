@@ -1,48 +1,44 @@
-//! Bounded decoded building history; current-request layers stay together.
+//! Bounded decoded sprite history; protected request layers stay together.
 
-use super::{HashMap, LayerKey, Sprite, VecDeque};
+use super::{HashMap, Sprite, VecDeque};
+use std::hash::Hash;
 
-const MAX_LAYERS: usize = 512;
+const MAX_ENTRIES: usize = 512;
 const MAX_BYTES: usize = 128 * 1024 * 1024;
 
-pub(super) struct LayerCache {
-    entries: HashMap<LayerKey, Option<Sprite>>,
-    order: VecDeque<LayerKey>,
+pub(super) struct DecodedCache<K> {
+    entries: HashMap<K, Option<Sprite>>,
+    order: VecDeque<K>,
     bytes: usize,
     max_entries: usize,
     max_bytes: usize,
 }
 
-impl Default for LayerCache {
+impl<K> Default for DecodedCache<K> {
     fn default() -> Self {
         Self {
             entries: HashMap::new(),
             order: VecDeque::new(),
             bytes: 0,
-            max_entries: MAX_LAYERS,
+            max_entries: MAX_ENTRIES,
             max_bytes: MAX_BYTES,
         }
     }
 }
 
-impl LayerCache {
-    pub(super) fn contains_key(&self, key: &LayerKey) -> bool {
+impl<K: Clone + Eq + Hash> DecodedCache<K> {
+    pub(super) fn contains_key(&self, key: &K) -> bool {
         self.entries.contains_key(key)
     }
 
-    pub(super) fn get(&self, key: &LayerKey) -> Option<&Option<Sprite>> {
+    pub(super) fn get(&self, key: &K) -> Option<&Option<Sprite>> {
         self.entries.get(key)
     }
 
     /// Call only for a missing key. Failed decodes consume an entry too.
     /// If the current building exceeds the budget, omit its later optional
     /// layers and retry them on a future request rather than caching failure.
-    pub(super) fn insert(
-        &mut self,
-        key: LayerKey,
-        sprite: Option<Sprite>,
-        protected: &[&LayerKey],
-    ) {
+    pub(super) fn insert(&mut self, key: K, sprite: Option<Sprite>, protected: &[&K]) {
         let bytes = sprite.as_ref().map_or(0, |s| s.rgba.capacity());
         if self.max_entries == 0 || bytes > self.max_bytes {
             return;
@@ -87,6 +83,7 @@ impl LayerCache {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::sprites::LayerKey;
 
     fn key(frame: usize) -> LayerKey {
         LayerKey {
@@ -110,7 +107,7 @@ mod tests {
 
     #[test]
     fn byte_pressure_evicts_oldest_unprotected_and_counts_allocated_capacity() {
-        let mut cache = LayerCache::with_limits(8, 12);
+        let mut cache = DecodedCache::with_limits(8, 12);
         for i in 0..3 {
             cache.insert(key(i), sprite(4), &[]);
         }
@@ -130,7 +127,7 @@ mod tests {
 
     #[test]
     fn missing_art_is_bounded_and_protected_working_sets_do_not_cache_budget_failure() {
-        let mut cache = LayerCache::with_limits(2, 8);
+        let mut cache = DecodedCache::with_limits(2, 8);
         for i in 0..600 {
             cache.insert(key(i), None, &[]);
             assert!(cache.len() <= 2);

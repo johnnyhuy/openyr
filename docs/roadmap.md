@@ -350,6 +350,12 @@ Johnny on 2026-10-31.
       shadows and foundation-based adjacent-structure ordering (#6).
       Production frames follow queue progress and stop while ready for
       placement (`docs/formats/shp.md`).
+- [x] Bound retained unit sprite memory (#413) to 512 entries and 128 MiB
+      of RGBA capacity, sharing the building cache implementation with separate
+      budgets. Valid sparse canvases reproduce the old excess; byte-pressure
+      infantry/voxel reconstruction and missing-art churn retain exact pixels,
+      shadows, remaps and anchors. Simulation/save fields and original-game
+      animation calibration stay unchanged (`docs/formats/shp.md`).
 - [x] Bound decoded building-layer history (#411) to 512 entries and
       128 MiB of retained RGBA capacity. Protect the current request's layers
       with base priority; retry optional layers omitted by budget pressure.

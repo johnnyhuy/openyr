@@ -14,8 +14,8 @@ use yr_rules::{Rules, TechnoKind};
 
 #[cfg(test)]
 mod cache_tests;
-mod layer_cache;
-use layer_cache::LayerCache;
+mod decoded_cache;
+use decoded_cache::DecodedCache;
 
 /// Alpha value marking a shadow pixel (darken the destination by half).
 pub const SHADOW_ALPHA: u8 = 128;
@@ -282,10 +282,6 @@ enum SpriteFrame {
 
 type SpriteKey = (String, SpriteFrame, [u8; 3]);
 
-/// Limit decoded unit canvases even when modded parts have coprime
-/// animation lengths. Keys contain resolved poses, never elapsed ticks.
-const MAX_UNIT_SPRITES: usize = 512;
-
 /// Lazily decoded sprites for one map's theater.
 pub struct SpriteBank {
     vfs: AssetFs,
@@ -295,13 +291,12 @@ pub struct SpriteBank {
     theater: Theater,
     unit_pal: Palette,
     infantry: HashMap<String, InfantrySequences>,
-    cache: HashMap<SpriteKey, Option<Sprite>>,
-    cache_order: VecDeque<SpriteKey>,
+    cache: DecodedCache<SpriteKey>,
     voxels: HashMap<String, Option<crate::voxels::VoxelModel>>,
     buildings: HashMap<String, Option<BuildingArt>>,
     map_structure_colors: HashMap<(String, u16, u16), [u8; 3]>,
     map_unit_kinds: HashSet<String>,
-    layers: LayerCache,
+    layers: DecodedCache<LayerKey>,
     effects: crate::effects::Effects,
     projectiles: crate::projectiles::Projectiles,
 }
@@ -360,13 +355,12 @@ impl SpriteBank {
             theater,
             unit_pal,
             infantry,
-            cache: HashMap::new(),
-            cache_order: VecDeque::new(),
+            cache: DecodedCache::default(),
             voxels: HashMap::new(),
             buildings: HashMap::new(),
             map_structure_colors,
             map_unit_kinds,
-            layers: LayerCache::default(),
+            layers: DecodedCache::default(),
             effects: Default::default(),
             projectiles: Default::default(),
         })
@@ -745,17 +739,13 @@ impl SpriteBank {
         self.cached_sprite(id, frame, remap)
     }
 
+    // Resolved frame keys and retained RGBA capacity bound history independently
+    // of elapsed ticks, remap churn and sparse SHP canvas dimensions.
     fn cached_sprite(&mut self, id: String, frame: SpriteFrame, remap: [u8; 3]) -> Option<&Sprite> {
         let key = (id.clone(), frame.clone(), remap);
         if !self.cache.contains_key(&key) {
             let sprite = self.decode(&id, &frame, remap);
-            if self.cache.len() == MAX_UNIT_SPRITES {
-                if let Some(oldest) = self.cache_order.pop_front() {
-                    self.cache.remove(&oldest);
-                }
-            }
-            self.cache_order.push_back(key.clone());
-            self.cache.insert(key.clone(), sprite);
+            self.cache.insert(key.clone(), sprite, &[]);
         }
         self.cache.get(&key).and_then(Option::as_ref)
     }
@@ -1431,18 +1421,18 @@ mod tests {
             tank
         );
         assert_eq!(bank.cache.len(), 3, "static tank has one pose");
-        for color in 0..MAX_UNIT_SPRITES + 1 {
+        for color in 0..512 + 1 {
             let remap = [color as u8, (color / 256) as u8, 0];
             assert!(bank.get("E1", 0, remap).is_some());
         }
-        assert_eq!(bank.cache.len(), MAX_UNIT_SPRITES);
-        assert_eq!(bank.cache_order.len(), MAX_UNIT_SPRITES);
+        assert_eq!(bank.cache.len(), 512);
+        assert_eq!(bank.cache.stats().2, 512);
         assert_eq!(
             signature(bank.get_animated_at("SHAD", 0, remap, idle, 0).unwrap()),
             first,
             "evicted pose rebuilds identically"
         );
-        assert_eq!(bank.cache.len(), MAX_UNIT_SPRITES);
+        assert_eq!(bank.cache.len(), 512);
     }
 
     fn sequences() -> InfantrySequences {
