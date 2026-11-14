@@ -1,0 +1,32 @@
+warning: unused field `repository` in `workspace.package`
+  --> Cargo.toml:10:1
+   |
+10 | repository = "https://github.com/johnnyhuy/openyr"
+   | ^^^^^^^^^^
+   |
+   = note: `cargo::unused_workspace_package_fields` is set to `warn` by default
+help: consider removing the field `workspace.package.repository`
+warning: workspace (manifest) generated 1 warning
+   Compiling yr-formats v0.1.0 (/workspace/openyr-core-slice-20261115-01/crates/yr-formats)
+   Compiling yr-rules v0.1.0 (/workspace/openyr-core-slice-20261115-01/crates/yr-rules)
+   Compiling yr-sim v0.1.0 (/workspace/openyr-core-slice-20261115-01/crates/yr-sim)
+   Compiling yr-assets v0.1.0 (/workspace/openyr-core-slice-20261115-01/crates/yr-assets)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 4.88s
+     Running tests/weapon_range.rs (/workspace/openyr-core-review-20261113-10/.tmp/check-target/debug/build/yr-sim/b4daddf3d8109060/out/weapon_range-b4daddf3d8109060)
+
+running 1 test
+Range=16777216: resolved range Some(0)
+
+thread 'rules_weapon_range_rejects_wraparound_and_snapshot_domain_overflow' (40682) panicked at crates/yr-sim/tests/weapon_range.rs:21:9:
+unsupported Range=16777216 became Some(WeaponSpec { source: Some(16912508747982936869), damage: 65, rof_ticks: 60, range: Fix(0), projectile_speed: Fix(0), verses: [Decimal(1000000), Decimal(1000000), Decimal(1000000), Decimal(1000000), Decimal(1000000), Decimal(1000000), Decimal(1000000), Decimal(1000000), Decimal(1000000), Decimal(1000000), Decimal(1000000)] })
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test rules_weapon_range_rejects_wraparound_and_snapshot_domain_overflow ... FAILED
+
+failures:
+
+failures:
+    rules_weapon_range_rejects_wraparound_and_snapshot_domain_overflow
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p yr-sim --test weapon_range`

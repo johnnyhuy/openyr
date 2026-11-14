@@ -1,0 +1,586 @@
+[
+  {
+    "input": "16777216",
+    "expected_range": null,
+    "baseline": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261115-01/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/baseline-probe-src",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/baseline-probe-built/receipt.json",
+        "--",
+        "16777216",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/proof-payload/baseline-0.saves"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261115-01/.tmp/baseline-probe-built/program\nrange=16777216 converted=0\nweapon=0\ntick=17 hash=79f8bd8b4da516c3 target_hp=1000 save_bytes=14456\n",
+      "stderr": ""
+    },
+    "final": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261115-01/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/final-probe-src",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/final-probe-built/receipt.json",
+        "--",
+        "16777216",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/proof-payload/final-0.saves"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261115-01/.tmp/final-probe-built/program\nrange=16777216 converted=2147483647\nweapon=none\n",
+      "stderr": ""
+    }
+  },
+  {
+    "input": "-16777216",
+    "expected_range": null,
+    "baseline": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261115-01/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/baseline-probe-src",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/baseline-probe-built/receipt.json",
+        "--",
+        "-16777216",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/proof-payload/baseline-1.saves"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261115-01/.tmp/baseline-probe-built/program\nrange=-16777216 converted=0\nweapon=0\ntick=17 hash=79f8bd8b4da516c3 target_hp=1000 save_bytes=14456\n",
+      "stderr": ""
+    },
+    "final": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261115-01/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/final-probe-src",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/final-probe-built/receipt.json",
+        "--",
+        "-16777216",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/proof-payload/final-1.saves"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261115-01/.tmp/final-probe-built/program\nrange=-16777216 converted=-2147483648\nweapon=none\n",
+      "stderr": ""
+    }
+  },
+  {
+    "input": "8388608",
+    "expected_range": null,
+    "baseline": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261115-01/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/baseline-probe-src",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/baseline-probe-built/receipt.json",
+        "--",
+        "8388608",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/proof-payload/baseline-2.saves"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261115-01/.tmp/baseline-probe-built/program\nrange=8388608 converted=-2147483648\nweapon=-2147483648\nsave_error=invalid save: weapon range/speed out of range\n",
+      "stderr": ""
+    },
+    "final": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261115-01/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/final-probe-src",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/final-probe-built/receipt.json",
+        "--",
+        "8388608",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/proof-payload/final-2.saves"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261115-01/.tmp/final-probe-built/program\nrange=8388608 converted=2147483647\nweapon=none\n",
+      "stderr": ""
+    }
+  },
+  {
+    "input": "65536.003907",
+    "expected_range": null,
+    "baseline": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261115-01/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/baseline-probe-src",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/baseline-probe-built/receipt.json",
+        "--",
+        "65536.003907",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/proof-payload/baseline-3.saves"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261115-01/.tmp/baseline-probe-built/program\nrange=65536.003907 converted=16777217\nweapon=16777217\nsave_error=invalid save: weapon range/speed out of range\n",
+      "stderr": ""
+    },
+    "final": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261115-01/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/final-probe-src",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/final-probe-built/receipt.json",
+        "--",
+        "65536.003907",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/proof-payload/final-3.saves"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261115-01/.tmp/final-probe-built/program\nrange=65536.003907 converted=16777217\nweapon=none\n",
+      "stderr": ""
+    }
+  },
+  {
+    "input": "-0.003907",
+    "expected_range": null,
+    "baseline": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261115-01/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/baseline-probe-src",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/baseline-probe-built/receipt.json",
+        "--",
+        "-0.003907",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/proof-payload/baseline-4.saves"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261115-01/.tmp/baseline-probe-built/program\nrange=-0.003907 converted=-1\nweapon=-1\nsave_error=invalid save: weapon range/speed out of range\n",
+      "stderr": ""
+    },
+    "final": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261115-01/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/final-probe-src",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/final-probe-built/receipt.json",
+        "--",
+        "-0.003907",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/proof-payload/final-4.saves"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261115-01/.tmp/final-probe-built/program\nrange=-0.003907 converted=-1\nweapon=none\n",
+      "stderr": ""
+    }
+  },
+  {
+    "input": "-0.000001",
+    "expected_range": null,
+    "baseline": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261115-01/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/baseline-probe-src",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/baseline-probe-built/receipt.json",
+        "--",
+        "-0.000001",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/proof-payload/baseline-5.saves"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261115-01/.tmp/baseline-probe-built/program\nrange=-0.000001 converted=0\nweapon=0\ntick=17 hash=79f8bd8b4da516c3 target_hp=1000 save_bytes=14456\n",
+      "stderr": ""
+    },
+    "final": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261115-01/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/final-probe-src",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/final-probe-built/receipt.json",
+        "--",
+        "-0.000001",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/proof-payload/final-5.saves"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261115-01/.tmp/final-probe-built/program\nrange=-0.000001 converted=0\nweapon=none\n",
+      "stderr": ""
+    }
+  },
+  {
+    "input": "9223372036854.775807",
+    "expected_range": null,
+    "baseline": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261115-01/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/baseline-probe-src",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/baseline-probe-built/receipt.json",
+        "--",
+        "9223372036854.775807",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/proof-payload/baseline-6.saves"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261115-01/.tmp/baseline-probe-built/program\nrange=9223372036854.775807 converted=-799344954\nweapon=-799344954\nsave_error=invalid save: weapon range/speed out of range\n",
+      "stderr": ""
+    },
+    "final": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261115-01/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/final-probe-src",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/final-probe-built/receipt.json",
+        "--",
+        "9223372036854.775807",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/proof-payload/final-6.saves"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261115-01/.tmp/final-probe-built/program\nrange=9223372036854.775807 converted=2147483647\nweapon=none\n",
+      "stderr": ""
+    }
+  },
+  {
+    "input": "-9223372036854.775808",
+    "expected_range": null,
+    "baseline": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261115-01/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/baseline-probe-src",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/baseline-probe-built/receipt.json",
+        "--",
+        "-9223372036854.775808",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/proof-payload/baseline-7.saves"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261115-01/.tmp/baseline-probe-built/program\nrange=-9223372036854.775808 converted=799344954\nweapon=799344954\nsave_error=invalid save: weapon range/speed out of range\n",
+      "stderr": ""
+    },
+    "final": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261115-01/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/final-probe-src",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/final-probe-built/receipt.json",
+        "--",
+        "-9223372036854.775808",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/proof-payload/final-7.saves"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261115-01/.tmp/final-probe-built/program\nrange=-9223372036854.775808 converted=-2147483648\nweapon=none\n",
+      "stderr": ""
+    }
+  },
+  {
+    "input": "0",
+    "expected_range": 0,
+    "baseline": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261115-01/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/baseline-probe-src",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/baseline-probe-built/receipt.json",
+        "--",
+        "0",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/proof-payload/baseline-8.saves"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261115-01/.tmp/baseline-probe-built/program\nrange=0 converted=0\nweapon=0\ntick=17 hash=79f8bd8b4da516c3 target_hp=1000 save_bytes=14456\n",
+      "stderr": ""
+    },
+    "final": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261115-01/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/final-probe-src",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/final-probe-built/receipt.json",
+        "--",
+        "0",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/proof-payload/final-8.saves"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261115-01/.tmp/final-probe-built/program\nrange=0 converted=0\nweapon=0\ntick=17 hash=79f8bd8b4da516c3 target_hp=1000 save_bytes=14456\n",
+      "stderr": ""
+    },
+    "save_bytes": 14456,
+    "save_sha256": "44f52f5be4c34899c27636959c18d7440199e93413fdc0a0b43a7de02649a860"
+  },
+  {
+    "input": "0.003906",
+    "expected_range": 0,
+    "baseline": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261115-01/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/baseline-probe-src",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/baseline-probe-built/receipt.json",
+        "--",
+        "0.003906",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/proof-payload/baseline-9.saves"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261115-01/.tmp/baseline-probe-built/program\nrange=0.003906 converted=0\nweapon=0\ntick=17 hash=79f8bd8b4da516c3 target_hp=1000 save_bytes=14456\n",
+      "stderr": ""
+    },
+    "final": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261115-01/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/final-probe-src",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/final-probe-built/receipt.json",
+        "--",
+        "0.003906",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/proof-payload/final-9.saves"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261115-01/.tmp/final-probe-built/program\nrange=0.003906 converted=0\nweapon=0\ntick=17 hash=79f8bd8b4da516c3 target_hp=1000 save_bytes=14456\n",
+      "stderr": ""
+    },
+    "save_bytes": 14456,
+    "save_sha256": "44f52f5be4c34899c27636959c18d7440199e93413fdc0a0b43a7de02649a860"
+  },
+  {
+    "input": "0.003907",
+    "expected_range": 1,
+    "baseline": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261115-01/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/baseline-probe-src",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/baseline-probe-built/receipt.json",
+        "--",
+        "0.003907",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/proof-payload/baseline-10.saves"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261115-01/.tmp/baseline-probe-built/program\nrange=0.003907 converted=1\nweapon=1\ntick=17 hash=b8ecdc054df4c2b6 target_hp=1000 save_bytes=14456\n",
+      "stderr": ""
+    },
+    "final": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261115-01/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/final-probe-src",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/final-probe-built/receipt.json",
+        "--",
+        "0.003907",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/proof-payload/final-10.saves"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261115-01/.tmp/final-probe-built/program\nrange=0.003907 converted=1\nweapon=1\ntick=17 hash=b8ecdc054df4c2b6 target_hp=1000 save_bytes=14456\n",
+      "stderr": ""
+    },
+    "save_bytes": 14456,
+    "save_sha256": "217ff2150a4e189b4388156da18b294e179e0c73c13def2b0ca98e299e48c7fe"
+  },
+  {
+    "input": "1.4",
+    "expected_range": 358,
+    "baseline": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261115-01/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/baseline-probe-src",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/baseline-probe-built/receipt.json",
+        "--",
+        "1.4",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/proof-payload/baseline-11.saves"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261115-01/.tmp/baseline-probe-built/program\nrange=1.4 converted=358\nweapon=358\ntick=17 hash=a204d73bf1ff984e target_hp=1000 save_bytes=14488\n",
+      "stderr": ""
+    },
+    "final": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261115-01/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/final-probe-src",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/final-probe-built/receipt.json",
+        "--",
+        "1.4",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/proof-payload/final-11.saves"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261115-01/.tmp/final-probe-built/program\nrange=1.4 converted=358\nweapon=358\ntick=17 hash=a204d73bf1ff984e target_hp=1000 save_bytes=14488\n",
+      "stderr": ""
+    },
+    "save_bytes": 14488,
+    "save_sha256": "dc2e1771665d94990e061b08f15094e256679c6a7e47a8444988007949be5645"
+  },
+  {
+    "input": "5.75",
+    "expected_range": 1472,
+    "baseline": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261115-01/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/baseline-probe-src",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/baseline-probe-built/receipt.json",
+        "--",
+        "5.75",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/proof-payload/baseline-12.saves"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261115-01/.tmp/baseline-probe-built/program\nrange=5.75 converted=1472\nweapon=1472\ntick=17 hash=130b3430078670d5 target_hp=610 save_bytes=19941\n",
+      "stderr": ""
+    },
+    "final": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261115-01/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/final-probe-src",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/final-probe-built/receipt.json",
+        "--",
+        "5.75",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/proof-payload/final-12.saves"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261115-01/.tmp/final-probe-built/program\nrange=5.75 converted=1472\nweapon=1472\ntick=17 hash=130b3430078670d5 target_hp=610 save_bytes=19941\n",
+      "stderr": ""
+    },
+    "save_bytes": 19941,
+    "save_sha256": "c60399e14d797f9d209930e2cbf14145cf419142d39b9248d846c9b7a02b3721"
+  },
+  {
+    "input": "65536",
+    "expected_range": 16777216,
+    "baseline": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261115-01/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/baseline-probe-src",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/baseline-probe-built/receipt.json",
+        "--",
+        "65536",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/proof-payload/baseline-13.saves"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261115-01/.tmp/baseline-probe-built/program\nrange=65536 converted=16777216\nweapon=16777216\ntick=17 hash=b6b59b4eed7cd269 target_hp=610 save_bytes=20005\n",
+      "stderr": ""
+    },
+    "final": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261115-01/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/final-probe-src",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/final-probe-built/receipt.json",
+        "--",
+        "65536",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/proof-payload/final-13.saves"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261115-01/.tmp/final-probe-built/program\nrange=65536 converted=16777216\nweapon=16777216\ntick=17 hash=b6b59b4eed7cd269 target_hp=610 save_bytes=20005\n",
+      "stderr": ""
+    },
+    "save_bytes": 20005,
+    "save_sha256": "c4ac45fc738b069d6fbc8f36bb9605c883572a965784d808a840bc49cede0699"
+  },
+  {
+    "input": "65536.003906",
+    "expected_range": 16777216,
+    "baseline": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261115-01/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/baseline-probe-src",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/baseline-probe-built/receipt.json",
+        "--",
+        "65536.003906",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/proof-payload/baseline-14.saves"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261115-01/.tmp/baseline-probe-built/program\nrange=65536.003906 converted=16777216\nweapon=16777216\ntick=17 hash=b6b59b4eed7cd269 target_hp=610 save_bytes=20005\n",
+      "stderr": ""
+    },
+    "final": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261115-01/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/final-probe-src",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/final-probe-built/receipt.json",
+        "--",
+        "65536.003906",
+        "/workspace/openyr-core-slice-20261115-01/.tmp/proof-payload/final-14.saves"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261115-01/.tmp/final-probe-built/program\nrange=65536.003906 converted=16777216\nweapon=16777216\ntick=17 hash=b6b59b4eed7cd269 target_hp=610 save_bytes=20005\n",
+      "stderr": ""
+    },
+    "save_bytes": 20005,
+    "save_sha256": "c4ac45fc738b069d6fbc8f36bb9605c883572a965784d808a840bc49cede0699"
+  }
+]
