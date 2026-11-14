@@ -1,0 +1,26 @@
+warning: unused field `repository` in `workspace.package`
+  --> Cargo.toml:10:1
+   |
+10 | repository = "https://github.com/johnnyhuy/openyr"
+   | ^^^^^^^^^^
+   |
+   = note: `cargo::unused_workspace_package_fields` is set to `warn` by default
+help: consider removing the field `workspace.package.repository`
+warning: workspace (manifest) generated 1 warning
+   Compiling yr-formats v0.1.0 (/workspace/openyr-decimal-arithmetic-20261114-05/crates/yr-formats)
+   Compiling yr-rules v0.1.0 (/workspace/openyr-decimal-arithmetic-20261114-05/crates/yr-rules)
+   Compiling yr-sim v0.1.0 (/workspace/openyr-decimal-arithmetic-20261114-05/crates/yr-sim)
+   Compiling yr-assets v0.1.0 (/workspace/openyr-decimal-arithmetic-20261114-05/crates/yr-assets)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.39s
+     Running tests/decimal_arithmetic.rs (/workspace/openyr-core-review-20261113-10/.tmp/check-target/debug/build/yr-sim/af3c4d53c7493a38/out/decimal_arithmetic-af3c4d53c7493a38)
+
+running 2 tests
+test damage_caller_retains_large_representable_products_and_saturates_overflow ... ok
+ordinary 90%: tick 17 hash 61c7587551612770
+ordinary 125%: tick 17 hash 81cb152f159bb93c
+ordinary 33.333333%: tick 17 hash ce930561999f9b58
+ordinary 0%: tick 17 hash 5301a619e14f4ca5
+test ordinary_decimal_combat_saves_and_continuations_remain_identical ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+

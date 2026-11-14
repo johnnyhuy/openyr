@@ -1,0 +1,28 @@
+{
+  "format": "openyr-proof-build-v1",
+  "source": {
+    "commit": "52b4659ac9659f8fa2c50b54f9af8dedda81e7c4",
+    "tree": "53d6e52448157c69b1e0e9a082b1a4744e2b04d9"
+  },
+  "package": "mix-dump",
+  "binary": "mix-dump",
+  "profile": "release",
+  "cargo": "cargo 1.100.0 (3acc79c0c 2026-11-05)",
+  "command": [
+    "/workspace/.cargo/bin/cargo",
+    "build",
+    "--manifest-path",
+    "/workspace/openyr-decimal-arithmetic-20261114-05/Cargo.toml",
+    "--package",
+    "mix-dump",
+    "--bin",
+    "mix-dump",
+    "--release",
+    "--locked",
+    "--target-dir",
+    "/workspace/openyr-decimal-arithmetic-20261114-05/.tmp/final-cli/target-teay3u9n",
+    "--message-format=json-render-diagnostics"
+  ],
+  "sha256": "14b5909272c66440531fc331dd611f80055ef0c87207ec940e4d64ec49ba0338",
+  "bytes": 1419592
+}
