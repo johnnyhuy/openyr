@@ -1,0 +1,362 @@
+[
+  {
+    "value": "9223372036854.999999",
+    "expected": "(default)",
+    "baseline": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261114-04/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-decimal-baseline-20261114",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261114-04/.tmp/baseline-cli/receipt.json",
+        "--",
+        "rules",
+        "/workspace/openyr-core-slice-20261114-04/.tmp/proof-payload/case-0",
+        "TEST"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261114-04/.tmp/baseline-cli/program\nTEST: ?\n  kind      Vehicle #0\n  strength  (default)   armor (default)   cost (default)   tech (default)   sight (default)   speed (default)\n  art       [TEST]\n  Primary        WEAPON: damage (default) ROF (default) range -9223372036854.551617 (57 lp) burst (default) projectile (default) warhead (default)\n  rulesmd.ini [TEST]:\n    Primary=WEAPON\n  artmd.ini [TEST]:\n    Voxel=yes\n\n",
+      "stderr": ""
+    },
+    "final": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261114-04/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-core-slice-20261114-04",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261114-04/.tmp/final-cli/receipt.json",
+        "--",
+        "rules",
+        "/workspace/openyr-core-slice-20261114-04/.tmp/proof-payload/case-0",
+        "TEST"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261114-04/.tmp/final-cli/program\nTEST: ?\n  kind      Vehicle #0\n  strength  (default)   armor (default)   cost (default)   tech (default)   sight (default)   speed (default)\n  art       [TEST]\n  Primary        WEAPON: damage (default) ROF (default) range (default) burst (default) projectile (default) warhead (default)\n  rulesmd.ini [TEST]:\n    Primary=WEAPON\n  artmd.ini [TEST]:\n    Voxel=yes\n\n",
+      "stderr": ""
+    }
+  },
+  {
+    "value": "-9223372036854.999999",
+    "expected": "(default)",
+    "baseline": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261114-04/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-decimal-baseline-20261114",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261114-04/.tmp/baseline-cli/receipt.json",
+        "--",
+        "rules",
+        "/workspace/openyr-core-slice-20261114-04/.tmp/proof-payload/case-1",
+        "TEST"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261114-04/.tmp/baseline-cli/program\nTEST: ?\n  kind      Vehicle #0\n  strength  (default)   armor (default)   cost (default)   tech (default)   sight (default)   speed (default)\n  art       [TEST]\n  Primary        WEAPON: damage (default) ROF (default) range 9223372036854.551617 (-57 lp) burst (default) projectile (default) warhead (default)\n  rulesmd.ini [TEST]:\n    Primary=WEAPON\n  artmd.ini [TEST]:\n    Voxel=yes\n\n",
+      "stderr": ""
+    },
+    "final": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261114-04/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-core-slice-20261114-04",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261114-04/.tmp/final-cli/receipt.json",
+        "--",
+        "rules",
+        "/workspace/openyr-core-slice-20261114-04/.tmp/proof-payload/case-1",
+        "TEST"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261114-04/.tmp/final-cli/program\nTEST: ?\n  kind      Vehicle #0\n  strength  (default)   armor (default)   cost (default)   tech (default)   sight (default)   speed (default)\n  art       [TEST]\n  Primary        WEAPON: damage (default) ROF (default) range (default) burst (default) projectile (default) warhead (default)\n  rulesmd.ini [TEST]:\n    Primary=WEAPON\n  artmd.ini [TEST]:\n    Voxel=yes\n\n",
+      "stderr": ""
+    }
+  },
+  {
+    "value": "9223372036854.999999%",
+    "expected": "(default)",
+    "baseline": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261114-04/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-decimal-baseline-20261114",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261114-04/.tmp/baseline-cli/receipt.json",
+        "--",
+        "rules",
+        "/workspace/openyr-core-slice-20261114-04/.tmp/proof-payload/case-2",
+        "TEST"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261114-04/.tmp/baseline-cli/program\nTEST: ?\n  kind      Vehicle #0\n  strength  (default)   armor (default)   cost (default)   tech (default)   sight (default)   speed (default)\n  art       [TEST]\n  Primary        WEAPON: damage (default) ROF (default) range -92233720368.545516 (-5165088340638 lp) burst (default) projectile (default) warhead (default)\n  rulesmd.ini [TEST]:\n    Primary=WEAPON\n  artmd.ini [TEST]:\n    Voxel=yes\n\n",
+      "stderr": ""
+    },
+    "final": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261114-04/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-core-slice-20261114-04",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261114-04/.tmp/final-cli/receipt.json",
+        "--",
+        "rules",
+        "/workspace/openyr-core-slice-20261114-04/.tmp/proof-payload/case-2",
+        "TEST"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261114-04/.tmp/final-cli/program\nTEST: ?\n  kind      Vehicle #0\n  strength  (default)   armor (default)   cost (default)   tech (default)   sight (default)   speed (default)\n  art       [TEST]\n  Primary        WEAPON: damage (default) ROF (default) range (default) burst (default) projectile (default) warhead (default)\n  rulesmd.ini [TEST]:\n    Primary=WEAPON\n  artmd.ini [TEST]:\n    Voxel=yes\n\n",
+      "stderr": ""
+    }
+  },
+  {
+    "value": "-9223372036854.999999%",
+    "expected": "(default)",
+    "baseline": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261114-04/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-decimal-baseline-20261114",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261114-04/.tmp/baseline-cli/receipt.json",
+        "--",
+        "rules",
+        "/workspace/openyr-core-slice-20261114-04/.tmp/proof-payload/case-3",
+        "TEST"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261114-04/.tmp/baseline-cli/program\nTEST: ?\n  kind      Vehicle #0\n  strength  (default)   armor (default)   cost (default)   tech (default)   sight (default)   speed (default)\n  art       [TEST]\n  Primary        WEAPON: damage (default) ROF (default) range 92233720368.545516 (5165088340638 lp) burst (default) projectile (default) warhead (default)\n  rulesmd.ini [TEST]:\n    Primary=WEAPON\n  artmd.ini [TEST]:\n    Voxel=yes\n\n",
+      "stderr": ""
+    },
+    "final": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261114-04/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-core-slice-20261114-04",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261114-04/.tmp/final-cli/receipt.json",
+        "--",
+        "rules",
+        "/workspace/openyr-core-slice-20261114-04/.tmp/proof-payload/case-3",
+        "TEST"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261114-04/.tmp/final-cli/program\nTEST: ?\n  kind      Vehicle #0\n  strength  (default)   armor (default)   cost (default)   tech (default)   sight (default)   speed (default)\n  art       [TEST]\n  Primary        WEAPON: damage (default) ROF (default) range (default) burst (default) projectile (default) warhead (default)\n  rulesmd.ini [TEST]:\n    Primary=WEAPON\n  artmd.ini [TEST]:\n    Voxel=yes\n\n",
+      "stderr": ""
+    }
+  },
+  {
+    "value": "9223372036854.775807",
+    "expected": "9223372036854.775807 (2361183241434822 lp)",
+    "baseline": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261114-04/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-decimal-baseline-20261114",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261114-04/.tmp/baseline-cli/receipt.json",
+        "--",
+        "rules",
+        "/workspace/openyr-core-slice-20261114-04/.tmp/proof-payload/case-4",
+        "TEST"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261114-04/.tmp/baseline-cli/program\nTEST: ?\n  kind      Vehicle #0\n  strength  (default)   armor (default)   cost (default)   tech (default)   sight (default)   speed (default)\n  art       [TEST]\n  Primary        WEAPON: damage (default) ROF (default) range 9223372036854.775807 (0 lp) burst (default) projectile (default) warhead (default)\n  rulesmd.ini [TEST]:\n    Primary=WEAPON\n  artmd.ini [TEST]:\n    Voxel=yes\n\n",
+      "stderr": ""
+    },
+    "final": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261114-04/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-core-slice-20261114-04",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261114-04/.tmp/final-cli/receipt.json",
+        "--",
+        "rules",
+        "/workspace/openyr-core-slice-20261114-04/.tmp/proof-payload/case-4",
+        "TEST"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261114-04/.tmp/final-cli/program\nTEST: ?\n  kind      Vehicle #0\n  strength  (default)   armor (default)   cost (default)   tech (default)   sight (default)   speed (default)\n  art       [TEST]\n  Primary        WEAPON: damage (default) ROF (default) range 9223372036854.775807 (2361183241434822 lp) burst (default) projectile (default) warhead (default)\n  rulesmd.ini [TEST]:\n    Primary=WEAPON\n  artmd.ini [TEST]:\n    Voxel=yes\n\n",
+      "stderr": ""
+    }
+  },
+  {
+    "value": "-9223372036854.775808",
+    "expected": "-9223372036854.775808 (-2361183241434822 lp)",
+    "baseline": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261114-04/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-decimal-baseline-20261114",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261114-04/.tmp/baseline-cli/receipt.json",
+        "--",
+        "rules",
+        "/workspace/openyr-core-slice-20261114-04/.tmp/proof-payload/case-5",
+        "TEST"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261114-04/.tmp/baseline-cli/program\nTEST: ?\n  kind      Vehicle #0\n  strength  (default)   armor (default)   cost (default)   tech (default)   sight (default)   speed (default)\n  art       [TEST]\n  Primary        WEAPON: damage (default) ROF (default) range -9223372036854.775808 (0 lp) burst (default) projectile (default) warhead (default)\n  rulesmd.ini [TEST]:\n    Primary=WEAPON\n  artmd.ini [TEST]:\n    Voxel=yes\n\n",
+      "stderr": ""
+    },
+    "final": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261114-04/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-core-slice-20261114-04",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261114-04/.tmp/final-cli/receipt.json",
+        "--",
+        "rules",
+        "/workspace/openyr-core-slice-20261114-04/.tmp/proof-payload/case-5",
+        "TEST"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261114-04/.tmp/final-cli/program\nTEST: ?\n  kind      Vehicle #0\n  strength  (default)   armor (default)   cost (default)   tech (default)   sight (default)   speed (default)\n  art       [TEST]\n  Primary        WEAPON: damage (default) ROF (default) range -9223372036854.775808 (-2361183241434822 lp) burst (default) projectile (default) warhead (default)\n  rulesmd.ini [TEST]:\n    Primary=WEAPON\n  artmd.ini [TEST]:\n    Voxel=yes\n\n",
+      "stderr": ""
+    }
+  },
+  {
+    "value": "5.75",
+    "expected": "5.75 (1472 lp)",
+    "baseline": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261114-04/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-decimal-baseline-20261114",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261114-04/.tmp/baseline-cli/receipt.json",
+        "--",
+        "rules",
+        "/workspace/openyr-core-slice-20261114-04/.tmp/proof-payload/case-6",
+        "TEST"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261114-04/.tmp/baseline-cli/program\nTEST: ?\n  kind      Vehicle #0\n  strength  (default)   armor (default)   cost (default)   tech (default)   sight (default)   speed (default)\n  art       [TEST]\n  Primary        WEAPON: damage (default) ROF (default) range 5.75 (1472 lp) burst (default) projectile (default) warhead (default)\n  rulesmd.ini [TEST]:\n    Primary=WEAPON\n  artmd.ini [TEST]:\n    Voxel=yes\n\n",
+      "stderr": ""
+    },
+    "final": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261114-04/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-core-slice-20261114-04",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261114-04/.tmp/final-cli/receipt.json",
+        "--",
+        "rules",
+        "/workspace/openyr-core-slice-20261114-04/.tmp/proof-payload/case-6",
+        "TEST"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261114-04/.tmp/final-cli/program\nTEST: ?\n  kind      Vehicle #0\n  strength  (default)   armor (default)   cost (default)   tech (default)   sight (default)   speed (default)\n  art       [TEST]\n  Primary        WEAPON: damage (default) ROF (default) range 5.75 (1472 lp) burst (default) projectile (default) warhead (default)\n  rulesmd.ini [TEST]:\n    Primary=WEAPON\n  artmd.ini [TEST]:\n    Voxel=yes\n\n",
+      "stderr": ""
+    }
+  },
+  {
+    "value": "-1.4",
+    "expected": "-1.4 (-358 lp)",
+    "baseline": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261114-04/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-decimal-baseline-20261114",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261114-04/.tmp/baseline-cli/receipt.json",
+        "--",
+        "rules",
+        "/workspace/openyr-core-slice-20261114-04/.tmp/proof-payload/case-7",
+        "TEST"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261114-04/.tmp/baseline-cli/program\nTEST: ?\n  kind      Vehicle #0\n  strength  (default)   armor (default)   cost (default)   tech (default)   sight (default)   speed (default)\n  art       [TEST]\n  Primary        WEAPON: damage (default) ROF (default) range -1.4 (-358 lp) burst (default) projectile (default) warhead (default)\n  rulesmd.ini [TEST]:\n    Primary=WEAPON\n  artmd.ini [TEST]:\n    Voxel=yes\n\n",
+      "stderr": ""
+    },
+    "final": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261114-04/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-core-slice-20261114-04",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261114-04/.tmp/final-cli/receipt.json",
+        "--",
+        "rules",
+        "/workspace/openyr-core-slice-20261114-04/.tmp/proof-payload/case-7",
+        "TEST"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261114-04/.tmp/final-cli/program\nTEST: ?\n  kind      Vehicle #0\n  strength  (default)   armor (default)   cost (default)   tech (default)   sight (default)   speed (default)\n  art       [TEST]\n  Primary        WEAPON: damage (default) ROF (default) range -1.4 (-358 lp) burst (default) projectile (default) warhead (default)\n  rulesmd.ini [TEST]:\n    Primary=WEAPON\n  artmd.ini [TEST]:\n    Voxel=yes\n\n",
+      "stderr": ""
+    }
+  },
+  {
+    "value": "75.125%",
+    "expected": "0.75125 (192 lp)",
+    "baseline": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261114-04/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-decimal-baseline-20261114",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261114-04/.tmp/baseline-cli/receipt.json",
+        "--",
+        "rules",
+        "/workspace/openyr-core-slice-20261114-04/.tmp/proof-payload/case-8",
+        "TEST"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261114-04/.tmp/baseline-cli/program\nTEST: ?\n  kind      Vehicle #0\n  strength  (default)   armor (default)   cost (default)   tech (default)   sight (default)   speed (default)\n  art       [TEST]\n  Primary        WEAPON: damage (default) ROF (default) range 0.75125 (192 lp) burst (default) projectile (default) warhead (default)\n  rulesmd.ini [TEST]:\n    Primary=WEAPON\n  artmd.ini [TEST]:\n    Voxel=yes\n\n",
+      "stderr": ""
+    },
+    "final": {
+      "command": [
+        "python3",
+        "/workspace/openyr-core-slice-20261114-04/scripts/proof_build.py",
+        "--repo",
+        "/workspace/openyr-core-slice-20261114-04",
+        "run",
+        "--receipt",
+        "/workspace/openyr-core-slice-20261114-04/.tmp/final-cli/receipt.json",
+        "--",
+        "rules",
+        "/workspace/openyr-core-slice-20261114-04/.tmp/proof-payload/case-8",
+        "TEST"
+      ],
+      "exit": 0,
+      "stdout": "Verified: /workspace/openyr-core-slice-20261114-04/.tmp/final-cli/program\nTEST: ?\n  kind      Vehicle #0\n  strength  (default)   armor (default)   cost (default)   tech (default)   sight (default)   speed (default)\n  art       [TEST]\n  Primary        WEAPON: damage (default) ROF (default) range 0.75125 (192 lp) burst (default) projectile (default) warhead (default)\n  rulesmd.ini [TEST]:\n    Primary=WEAPON\n  artmd.ini [TEST]:\n    Voxel=yes\n\n",
+      "stderr": ""
+    }
+  }
+]
