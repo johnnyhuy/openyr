@@ -516,6 +516,32 @@ fn rules_decimal_overflow_is_absent_and_exact_neighbors_remain_printable() {
 }
 
 #[test]
+fn rules_damage_table_widens_then_saturates_decimal_products() {
+    let fixture = Fixture::new();
+    for (damage, verse, expected) in [
+        (i64::MAX, "100%", i64::MAX),
+        (i64::MIN, "100%", i64::MIN),
+        (i64::MIN, "-100%", i64::MAX),
+        (i64::MAX, "200%", i64::MAX),
+        (i64::MIN, "200%", i64::MIN),
+        (65, "90%", 58),
+        (-65, "90%", -58),
+    ] {
+        let verses = [verse; 11].join(",");
+        fs::write(fixture.0.join("rulesmd.ini"), format!(
+            "[VehicleTypes]\n0=TEST\n[TEST]\nPrimary=GUN\n[GUN]\nDamage={damage}\nWarhead=WH\n[WH]\nVerses={verses}\n"
+        )).unwrap();
+        let output = fixture.command("rules").arg("TEST").output().unwrap();
+        assert_success(&output);
+        let stdout = String::from_utf8(output.stdout).unwrap();
+        assert!(
+            stdout.contains(&format!("damage/shot: none {expected}, flak {expected}")),
+            "{stdout}"
+        );
+    }
+}
+
+#[test]
 fn inspection_commands_accept_an_already_closed_stdout() {
     let fixture = Fixture::new();
     for verb in ["info", "list", "names", "scan", "vfs", "rules"] {
