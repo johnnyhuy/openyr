@@ -42,6 +42,7 @@ struct Observation {
     moving: bool,
     changed_at: u64,
     fired_at: Option<u64>,
+    seen_at: u64,
 }
 
 #[derive(Default)]
@@ -59,8 +60,6 @@ impl UnitAnimations {
             return;
         }
         self.tick = Some(tick);
-        self.units
-            .retain(|id, _| sim.units().iter().any(|u| u.id == *id));
         for u in sim.units() {
             let position = (u.x, u.y);
             let previous = self.units.entry(u.id).or_insert(Observation {
@@ -69,7 +68,9 @@ impl UnitAnimations {
                 moving: false,
                 changed_at: tick,
                 fired_at: None,
+                seen_at: tick,
             });
+            previous.seen_at = tick;
             let moving = position != previous.position;
             if moving != previous.moving {
                 previous.moving = moving;
@@ -81,6 +82,9 @@ impl UnitAnimations {
             previous.position = position;
             previous.shots = u.shots;
         }
+        // Prune once after observing live IDs, without rescanning the army
+        // for every retained clock. Survivors keep their action phases.
+        self.units.retain(|_, state| state.seen_at == tick);
     }
 
     pub fn get(&self, id: u32) -> InfantryAnimation {
@@ -273,5 +277,89 @@ mod tests {
         sim.step(&[Command::Remove { id: 1 }]);
         animation.update(&sim);
         assert!(!animation.units.contains_key(&1));
+    }
+
+    #[test]
+    fn army_churn_preserves_survivor_phases_and_releases_removed_clocks() {
+        let mut sim = Sim::new(7);
+        sim.step(&(0..256).map(|x| spawn(x, None)).collect::<Vec<_>>());
+        let mut animation = UnitAnimations::default();
+        animation.update(&sim);
+        sim.step(&[Command::Move {
+            id: 1,
+            x: Fix::from_int(-100),
+            y: Fix::ZERO,
+        }]);
+        animation.update(&sim);
+        assert!(animation.get(1).moving);
+
+        for cycle in 0..8 {
+            let removed: Vec<_> = sim.units()[192..].iter().map(|u| u.id).collect();
+            let first_new = sim.next_id_peek();
+            let commands: Vec<_> = removed
+                .iter()
+                .map(|&id| Command::Remove { id })
+                .chain((0..64).map(|x| spawn(256 + cycle * 64 + x, None)))
+                .collect();
+            sim.step(&commands);
+            let saved = sim.save_bytes().unwrap();
+            animation.update(&sim);
+            assert_eq!(animation.units.len(), 256);
+            assert_eq!(animation.get(1).elapsed, sim.tick() - 2);
+            assert!(animation.get(1).moving);
+            assert_eq!(animation.get(2).elapsed, sim.tick() - 1);
+            for id in removed {
+                assert!(!animation.units.contains_key(&id));
+                assert_eq!(animation.get(id), InfantryAnimation::default());
+            }
+            for id in first_new..sim.next_id_peek() {
+                assert_eq!(animation.get(id), InfantryAnimation::default());
+                assert!(animation.units.contains_key(&id));
+            }
+            let observed: Vec<_> = sim.units().iter().map(|u| animation.get(u.id)).collect();
+            for _ in 0..4 {
+                animation.update(&sim);
+                assert_eq!(
+                    sim.units()
+                        .iter()
+                        .map(|u| animation.get(u.id))
+                        .collect::<Vec<_>>(),
+                    observed
+                );
+            }
+            assert_eq!(sim.save_bytes().unwrap(), saved);
+        }
+        let removed: Vec<_> = sim
+            .units()
+            .iter()
+            .map(|u| Command::Remove { id: u.id })
+            .collect();
+        sim.step(&removed);
+        animation.update(&sim);
+        assert!(animation.units.is_empty());
+    }
+
+    #[test]
+    #[ignore = "manual animation-clock scaling probe; timings are not a CI assertion"]
+    fn animation_clock_scaling_probe() {
+        use std::{hint::black_box, time::Instant};
+        for count in [512, 2048, 8192] {
+            let mut sim = Sim::new(7);
+            sim.step(&(0..count).map(|x| spawn(x, None)).collect::<Vec<_>>());
+            let mut animation = UnitAnimations::default();
+            animation.update(&sim);
+            let mut elapsed = std::time::Duration::ZERO;
+            for _ in 0..48 {
+                sim.step(&[]);
+                let start = Instant::now();
+                animation.update(black_box(&sim));
+                elapsed += start.elapsed();
+                black_box(animation.get(1));
+            }
+            println!(
+                "{count} units: {:.1} us/update (48 ticks)",
+                elapsed.as_secs_f64() * 1e6 / 48.0
+            );
+        }
     }
 }
