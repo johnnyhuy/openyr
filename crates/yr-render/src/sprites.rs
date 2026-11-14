@@ -12,6 +12,11 @@ use yr_assets::{AssetFs, Theater};
 use yr_formats::{IniFile, MapFile, Palette, ShpFile};
 use yr_rules::{Rules, TechnoKind};
 
+#[cfg(test)]
+mod cache_tests;
+mod layer_cache;
+use layer_cache::LayerCache;
+
 /// Alpha value marking a shadow pixel (darken the destination by half).
 pub const SHADOW_ALPHA: u8 = 128;
 
@@ -296,7 +301,7 @@ pub struct SpriteBank {
     buildings: HashMap<String, Option<BuildingArt>>,
     map_structure_colors: HashMap<(String, u16, u16), [u8; 3]>,
     map_unit_kinds: HashSet<String>,
-    layers: HashMap<LayerKey, Option<Sprite>>,
+    layers: LayerCache,
     effects: crate::effects::Effects,
     projectiles: crate::projectiles::Projectiles,
 }
@@ -361,7 +366,7 @@ impl SpriteBank {
             buildings: HashMap::new(),
             map_structure_colors,
             map_unit_kinds,
-            layers: HashMap::new(),
+            layers: LayerCache::default(),
             effects: Default::default(),
             projectiles: Default::default(),
         })
@@ -656,11 +661,15 @@ impl SpriteBank {
                 }
             }
         }
-        for key in bib.iter().chain(&keys) {
+        // Reserve the base first, then retain every earlier layer in this
+        // request. Later optional layers cannot evict the parent or each other.
+        let mut protected = Vec::new();
+        for key in keys.iter().chain(bib.iter()) {
             if !self.layers.contains_key(key) {
                 let sprite = self.decode_shp(&key.file, key.frame, key.shadow, remap, key.offset);
-                self.layers.insert(key.clone(), sprite);
+                self.layers.insert(key.clone(), sprite, &protected);
             }
+            protected.push(key);
         }
         // A missing base must still trigger the caller's fallback marker.
         self.layers.get(&keys[0])?.as_ref()?;

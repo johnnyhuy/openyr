@@ -350,6 +350,13 @@ Johnny on 2026-10-31.
       shadows and foundation-based adjacent-structure ordering (#6).
       Production frames follow queue progress and stop while ready for
       placement (`docs/formats/shp.md`).
+- [x] Bound decoded building-layer history (#411) to 512 entries and
+      128 MiB of retained RGBA capacity. Protect the current request's layers
+      with base priority; retry optional layers omitted by budget pressure.
+      Authored phase/remap and byte-pressure checks plus retail eviction
+      comparisons preserve body, shadow, bib, shell and animation pixels.
+      Simulation/save formats and original cadence/depth calibration stay intact
+      (`docs/formats/shp.md`).
 - [x] Refinery unloading art follows the actual harvester timer (#68, #6).
       Retail `SpecialAnim=GAREFNOR` plays once, stops at completion,
       and resumes its phase after save/load. Body pixels and damaged

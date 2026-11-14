@@ -366,3 +366,44 @@ their paths. Authored directional frames, a nonzero Ready start and shadow
 masks verify agreement. This is native consistency, not original direction or
 cadence calibration. Supported map-unit bodies now use the live lifetime and
 original-house path in #351, described in `map.md`; unsupported art stays static.
+
+## Decoded building-layer storage (#411)
+
+Building frames were previously cached indefinitely by filename, frame,
+shadow flag, house remap and anchor offset. A 600-frame authored working
+overlay exceeded 512 retained entries at tick 510; further phases and colors
+continued growing the cache. This is a native storage defect, not evidence
+about the original engine's cache implementation or animation timing.
+
+The live building cache now retains at most 512 entries and 128 MiB of RGBA
+vector capacity. Failed decodes count toward the entry limit. FIFO eviction
+skips layers already resolved for the current building request, so loading a
+new layer cannot evict that request's base or earlier layers. Requests resolve
+the base first, followed by shells, active, production and unloading layers,
+then the bib. The returned bib still draws below bodies as before; insertion
+priority does not change draw order. If a modded building's simultaneous
+working set exceeds the budget, later optional layers are omitted and retried
+on future requests. Budget rejection is not cached as a decode failure.
+
+The byte limit covers retained decoded building RGBA allocations, not total
+process memory, parsed art, other caches or transient decoding. Existing SHP
+canvas limits still apply before decoding. Eviction reconstructs frames from
+the same source bytes, selected phase and remap; it adds no simulation fields,
+RNG calls, save metadata or clocks.
+
+Authored regressions exercise 1,200 phase/color requests, entry and byte
+pressure, negative entries, protected working sets, optional-layer retry and
+exact body/shadow/anchor reconstruction. A retail check churns 600 Construction
+Yard colors and compares 24 complete factory/refinery/yard requests before and
+after eviction, including damaged, powered, production and unloading states.
+The existing independent retail SHP-canvas comparisons remain in place.
+
+```sh
+cargo test -p yr-render cache -- --nocapture
+cargo test -p yr-render --test retail building_layers_match_retail_canvases
+```
+
+Set `OPENYR_BUILDING_CACHE_PROOF` for the retail cache test to export matching
+cold/rebuilt factory layer PNGs outside git. These source-pixel comparisons do
+not establish original animation cadence, per-overlay depth or physical Mac
+display calibration, which remain in #6.
