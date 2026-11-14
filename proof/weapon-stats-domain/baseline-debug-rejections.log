@@ -1,0 +1,38 @@
+warning: unused field `repository` in `workspace.package`
+  --> Cargo.toml:10:1
+   |
+10 | repository = "https://github.com/johnnyhuy/openyr"
+   | ^^^^^^^^^^
+   |
+   = note: `cargo::unused_workspace_package_fields` is set to `warn` by default
+help: consider removing the field `workspace.package.repository`
+warning: workspace (manifest) generated 1 warning
+   Compiling yr-formats v0.1.0 (/workspace/openyr-core-slice-20261115-02/crates/yr-formats)
+   Compiling yr-rules v0.1.0 (/workspace/openyr-core-slice-20261115-02/crates/yr-rules)
+   Compiling yr-sim v0.1.0 (/workspace/openyr-core-slice-20261115-02/crates/yr-sim)
+   Compiling yr-assets v0.1.0 (/workspace/openyr-core-slice-20261115-02/crates/yr-assets)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 5.24s
+     Running tests/weapon_stats.rs (/workspace/openyr-core-review-20261113-10/.tmp/check-target/debug/build/yr-sim/77fbfca304ff5d9a/out/weapon_stats-77fbfca304ff5d9a)
+
+running 2 tests
+ROF=4294967296: resolved reload Some(0)
+
+thread 'rules_reload_rejects_overflow_instead_of_wrapping_to_instant_fire' (45913) panicked at crates/yr-sim/tests/weapon_stats.rs:19:9:
+unsupported reload became Some(WeaponSpec { source: Some(16912508747982936869), damage: 65, rof_ticks: 0, range: Fix(1472), projectile_speed: Fix(0), verses: [Decimal(1000000), Decimal(1000000), Decimal(1000000), Decimal(1000000), Decimal(1000000), Decimal(1000000), Decimal(1000000), Decimal(1000000), Decimal(1000000), Decimal(1000000), Decimal(1000000)] })
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+Damage=2147483648, verse=100%: resolved Some(WeaponSpec { source: Some(16912508747982936869), damage: 2147483648, rof_ticks: 2, range: Fix(1472), projectile_speed: Fix(0), verses: [Decimal(1000000), Decimal(1000000), Decimal(1000000), Decimal(1000000), Decimal(1000000), Decimal(1000000), Decimal(1000000), Decimal(1000000), Decimal(1000000), Decimal(1000000), Decimal(1000000)] })
+
+thread 'rules_damage_and_verses_reject_values_outside_weapon_snapshot_domain' (45912) panicked at crates/yr-sim/tests/weapon_stats.rs:31:9:
+assertion failed: weapon.is_none()
+test rules_damage_and_verses_reject_values_outside_weapon_snapshot_domain ... FAILED
+test rules_reload_rejects_overflow_instead_of_wrapping_to_instant_fire ... FAILED
+
+failures:
+
+failures:
+    rules_damage_and_verses_reject_values_outside_weapon_snapshot_domain
+    rules_reload_rejects_overflow_instead_of_wrapping_to_instant_fire
+
+test result: FAILED. 0 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p yr-sim --test weapon_stats`

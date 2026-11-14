@@ -1,0 +1,31 @@
+warning: unused field `repository` in `workspace.package`
+  --> Cargo.toml:10:1
+   |
+10 | repository = "https://github.com/johnnyhuy/openyr"
+   | ^^^^^^^^^^
+   |
+   = note: `cargo::unused_workspace_package_fields` is set to `warn` by default
+help: consider removing the field `workspace.package.repository`
+warning: workspace (manifest) generated 1 warning
+   Compiling yr-formats v0.1.0 (/workspace/openyr-core-slice-20261115-02/crates/yr-formats)
+   Compiling yr-rules v0.1.0 (/workspace/openyr-core-slice-20261115-02/crates/yr-rules)
+   Compiling yr-sim v0.1.0 (/workspace/openyr-core-slice-20261115-02/crates/yr-sim)
+   Compiling yr-assets v0.1.0 (/workspace/openyr-core-slice-20261115-02/crates/yr-assets)
+    Finished `release` profile [optimized] target(s) in 10.89s
+     Running tests/weapon_stats.rs (/workspace/openyr-core-review-20261113-10/.tmp/check-target/release/build/yr-sim/e84f45e30f26be09/out/weapon_stats-e84f45e30f26be09)
+
+running 4 tests
+Damage=2147483648, verse=100%: resolved None
+ROF=4294967296: resolved reload None
+Damage=-2147483648, verse=100%: resolved None
+ROF=4294967297: resolved reload None
+ROF=9223372036854775807: resolved reload None
+Damage=65, verse=100000.0001%: resolved None
+Damage=65, verse=-100000.0001%: resolved None
+test rules_reload_rejects_overflow_instead_of_wrapping_to_instant_fire ... ok
+test rules_damage_and_verses_reject_values_outside_weapon_snapshot_domain ... ok
+test every_armor_entry_uses_the_existing_snapshot_multiplier_bound ... ok
+test supported_reload_defaults_and_stat_boundaries_remain_saveable ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

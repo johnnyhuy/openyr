@@ -1,0 +1,28 @@
+{
+  "format": "openyr-proof-build-v1",
+  "source": {
+    "commit": "6fd69ef4e59b445a0ddb0870ce95e25f7baf844a",
+    "tree": "91e1668ca1a68d28d64133ba966b3e6c34c4dc82"
+  },
+  "package": "weapon-stats-probe",
+  "binary": "weapon-stats-probe",
+  "profile": "release",
+  "cargo": "cargo 1.100.0 (3acc79c0c 2026-11-05)",
+  "command": [
+    "/workspace/.cargo/bin/cargo",
+    "build",
+    "--manifest-path",
+    "/workspace/openyr-core-slice-20261115-02/.tmp/baseline-probe-src/Cargo.toml",
+    "--package",
+    "weapon-stats-probe",
+    "--bin",
+    "weapon-stats-probe",
+    "--release",
+    "--locked",
+    "--target-dir",
+    "/workspace/openyr-core-slice-20261115-02/.tmp/baseline-probe-built/target-tt4sfvjg",
+    "--message-format=json-render-diagnostics"
+  ],
+  "sha256": "e7df1dcd0b503e0ce54d2592e250686690c7d61760a0a73d66951a19d67f61f6",
+  "bytes": 1176328
+}

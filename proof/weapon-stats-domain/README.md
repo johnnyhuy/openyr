@@ -1,0 +1,11 @@
+# Resolved weapon stats proof
+
+Tested source 492f0c633c11a3aad49a60ffde69d552d77482ef, tree f74db7063b80c5ac8d368278aa6bac7f34d2fede. Baseline production source 87d1587193c87e09f6050b89a588448d0b895c52.
+
+terminal.typescript records release public-API probes. Three reloads above u32 resolve in baseline with wrapped intervals but return None in final code (#419). Two oversized damage values and two oversized verse values resolve in baseline but fail its weapon snapshot validation; final resolution rejects them (#420). Nine supported/default/boundary controls retain byte-identical complete simulation save streams, state hashes and restored event/state continuation across sixteen ticks (144 snapshots). Results, per-stream SHA256 values and all produced streams are included.
+
+The probe is authored verification code, not a new application feature. Both builds use exact archived source snapshots plus the same tools/weapon-stats-probe caller. source-audit.json checks every original file byte for byte, except Cargo.toml/Cargo.lock whose only allowed edits register the probe and add its local package entry. No engine implementation is changed inside the snapshots. Build receipts bind the complete augmented source trees and executable sizes/SHA256; scripts/proof_build.py builds in fresh isolated targets and verifies the copies before execution. Probe sources/setup/runner are included; compiled executables are not.
+
+The debug failure log is the initial authored integration reproducer on unchanged production code. Final debug/release tests cover both signs, each armor entry, reload defaults, exact field boundaries, unchanged snapshot rejection and valid roundtrips. The initial all-armor fixture's mutable-registry assumption was corrected before successful full validation; current fixtures use public INI parsing.
+
+Full workspace: 747 passed, zero failed, two existing ignores (native audio-device playback and manual animation scaling). Strict Clippy/fmt and three Python checks pass. Existing negative/absent reload normalization and snapshot acceptance remain unchanged. This validates individual weapon fields, not every later composed combat calculation or original-game numeric policy. Retail data is absent; no original runtime, physical Mac/Retina or audible-device checks ran. Known blocked capture/release-upload paths were skipped.
