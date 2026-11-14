@@ -31,6 +31,33 @@ fn saved(app: &App) -> Vec<u8> {
 }
 
 #[test]
+fn sidebar_scroll_press_owns_world_feedback_until_release() {
+    let size = (640, 302);
+    let (mut app, own, enemy) = canvas(size, 1.0);
+    point_at(&mut app, enemy, size);
+    let target = app.cursor;
+    assert_eq!(app.cursor_kind(size), Kind::Attack);
+    let before = saved(&app);
+    app.pending.push(Command::Stop { id: own });
+    app.pointer_moved((f64::from(size.0 - SIDEBAR_W + 90), f64::from(size.1 - 14)));
+    app.pointer_button(ElementState::Pressed, MouseButton::Left);
+    assert_eq!(
+        app.sidebar_view
+            .first_row(app.session.as_ref().unwrap(), size.1),
+        1
+    );
+    app.pointer_moved(target);
+    assert_eq!(app.cursor_kind(size), Kind::Pointer);
+    assert!(app.hover_target(size).is_none());
+    app.pointer_button(ElementState::Released, MouseButton::Left);
+    assert_eq!(app.cursor_kind(size), Kind::Attack);
+    assert_eq!(app.pending, [Command::Stop { id: own }]);
+    assert_eq!(app.selected, [own].into());
+    assert_eq!(saved(&app), before);
+    println!("Held scroll control suppresses world attack feedback and releases without changing Session bytes, selection or queued commands.");
+}
+
+#[test]
 fn sidebar_tab_ownership_suppresses_world_feedback_until_release() {
     for size in [(640, 480), (1280, 800)] {
         for zoom in [0.5, 1.0, 2.0] {

@@ -497,6 +497,13 @@ Johnny on 2026-10-31.
       preserve Session bytes and queued intents, and verify fresh click/pan/
       zoom recovery (`docs/window-input.md`). Original and physical calibration
       remain open.
+- [x] Retain held sidebar scroll gesture ownership (#422, #86). Native
+      arrows move immediately, repeat with bounded presentation clocks and
+      show a held inset. Origin-only leave/reentry, both endpoints and eight
+      cancellation routes preserve complete Session bytes; held gestures
+      suppress world hover, edge and wheel actions. Compact retail compositor
+      proof covers rows 1/2/3. Original art/timing and physical input calibration
+      remain open (`docs/formats/sidebar.md`).
 - [ ] Complete original sidebar behavior and command bar (#86), including
       radar calibration/shroud, power-meter calibration, repair/sell fidelity, text calibration,
       button transitions,

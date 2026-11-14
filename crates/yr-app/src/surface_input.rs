@@ -45,6 +45,10 @@ impl App {
                 sidebar::session_tab_at(self.camera_size().0, session, position)
             }),
         );
+        if let Some(session) = &self.session {
+            self.sidebar_view
+                .track_scroll(session, self.camera_size(), position, Instant::now());
+        }
         if self.menu.visible() {
             let size = self.camera_size();
             let local = Layout::for_state(&self.menu, size.0, size.1).local(position);

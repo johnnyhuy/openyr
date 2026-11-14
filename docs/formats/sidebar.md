@@ -295,10 +295,22 @@ menu resets sidebar presentation state; save files contain no scroll state.
 Overflow adds two native up/down controls inside the bottom cap, aligned
 with the cameo columns, at y=height-24, each 60x20 pixels. Gold arrows are
 enabled and gray arrows are disabled at their respective bounds. These are
-native fallback controls, not sampled retail arrow art. They move one row per
-click; held-button repeat is not implemented. The existing retail chrome is
-unchanged when the category fits. Arrow styling, placement and repeat timing
-still need original-game comparison under #86.
+native fallback controls, not sampled retail arrow art. An enabled press moves
+one row immediately and retains pointer ownership until release or cancellation
+(#422). Holding the original arrow repeats after 350 ms, then every 80 ms, at
+most one row per redraw. Delayed redraws cannot produce a catch-up burst. The
+held arrow has an inset fill; disabled endpoints retain the gesture without
+scrolling. Moving outside that arrow pauses repeats, and reentry starts a fresh
+350 ms delay. Moving over the opposite arrow cannot change the held direction.
+
+World hover/action feedback, edge scrolling and wheel input stay suppressed
+during the gesture, including outside the panel. Release, right press, pointer
+leave, focus loss, modal input, resize and pointer-cancelling shortcuts discard
+the hold. Fresh presses recover normally. Category positions and complete saved
+match bytes are unchanged; the hold clock is presentation-only. The existing
+retail chrome is unchanged when the category fits. These repeat/pressed policies
+are native choices. Arrow styling, placement and timing still need original-game
+comparison under #86.
 
 Wheel input over the panel scrolls its category and never changes map zoom,
 including over credits, radar, gutters and a non-overflowing category. One
@@ -317,8 +329,8 @@ return, fractional input, focus cleanup, invalid input, hidden READY work,
 scrolled Chrono Miner hold/resume and unchanged complete saved match bytes.
 The regular stock retail sandbox has no overflowing category at the default
 1280x800 framebuffer; the compact proof exercises the same compositor and
-handlers at 800x352 and 800x302. Desktop resizing still scales the fixed
-framebuffer rather than changing the available row count.
+handlers at 800x352 and 800x302. Compact logical framebuffers and Retina-aware
+resizing use the same geometry and hit tests (`docs/window-input.md`).
 
 ```sh
 OPENYR_SIDEBAR_SCROLL_PROOF=/tmp/openyr-sidebar-scroll cargo test -p yr-app --bin openyr scrolling_tests -- --nocapture
@@ -326,6 +338,15 @@ OPENYR_SIDEBAR_SCROLL_PROOF=/tmp/openyr-sidebar-scroll cargo test -p yr-app --bi
 
 The optional proof writes tick- and row-labeled compositor PNGs outside git.
 Physical mouse/trackpad and Retina behavior still need desktop verification.
+
+The asset-independent `sidebar_scroll` input tests pin exact delay/interval
+boundaries at three layouts, long redraw gaps, origin-only reentry, both bounds
+and eight cancellation routes. Shared-compositor frames show the held fill. The
+retail `retail_sidebar_scroll_hold_repeats_through_the_native_compositor` test
+uses EB1 at 800x302, captures rows 1/2/3 through native input and injected repeat
+clocks, then releases in the world without submitting an order or altering
+complete Session bytes. Its +1000/+1080 ms frames are injected-clock observations,
+not wall-clock timing or physical Mac input evidence.
 
 ## Category shortcuts
 
