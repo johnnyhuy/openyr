@@ -174,6 +174,10 @@ Johnny on 2026-10-31.
 
 ## M2: Typed game data
 
+- [ ] Reject overflowing exact decimal fractions (#406). The hostile
+      `Range=9223372036854.999999` reproduces a debug CLI panic during
+      fractional accumulation; retain ordinary exact values in all profiles.
+
 - [x] Parse `rulesmd.ini`/`artmd.ini` into typed technos/weapons/warheads/projectiles (`yr-rules`)
 - [x] `mix-dump rules <gamedir> <ID>`: resolved unit, weapon chain, damage table, art provenance
 - [x] INI fidelity: header text after `]` (MirageWH), first-char booleans, map merge
@@ -205,6 +209,12 @@ Johnny on 2026-10-31.
       and death events route type/weapon art through ANIM.PAL, bounded caches
       and one-shot presentation clocks. All 78 source frames, colored alpha,
       same-tick fire/death and unchanged sim/save data are checked.
+- [x] Initial damaged-vehicle smoke (#405, #102): explicit retail damage
+      systems resolve bounded particle frames and translucency. Exact health
+      gates, fixed-world puffs, emission/expiry caps, native composition and
+      resumed future emission after load preserve complete Session bytes.
+      All 20 source canvases match; original timing, drift, emitter offsets,
+      sparks, buildings and aircraft remain open (`docs/formats/effects.md`).
 - [x] Put ground-position combat art into world footprint order (#204, #102).
       Muzzle, impact/destruction clips and cannon bodies can pass behind
       foreground units/buildings while front effects retain alpha blending.

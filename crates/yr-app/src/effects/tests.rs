@@ -3,6 +3,65 @@ use std::path::PathBuf;
 use yr_sim::{Command, OWNER_PLAYER};
 
 #[test]
+fn retail_damage_smoke_has_global_and_per_emitter_caps_without_duplicate_tick_emission() {
+    let dir = PathBuf::from(std::env::var("HOME").unwrap())
+        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    if !dir.is_dir() {
+        return;
+    }
+    let dir = dir.to_str().unwrap();
+    let mut session = crate::session::load(dir, "EB1.MMX", 42).unwrap();
+    let kind = session.kinds.iter().position(|k| k == "MTNK").unwrap() as u16;
+    session.sim = yr_sim::Sim::new(42);
+    let spawn = Command::Spawn {
+        kind,
+        x: Fix::ONE,
+        y: Fix::ONE,
+        loco: yr_sim::terrain::Loco::Track,
+        speed: Fix::ZERO,
+        hp: 300,
+        armor: 5,
+        weapon: None,
+    };
+    session.sim.step(&vec![spawn; 140]);
+    let health: Vec<_> = (1..=140)
+        .map(|id| Command::SetMapUnitHealth { id, health: 128 })
+        .collect();
+    session.sim.step(&health);
+    session.sim.step(&[]);
+    let mut bank = SpriteBank::open(dir, "EB1.MMX").unwrap();
+    let mut scene = EffectScene::default();
+    let save = crate::snapshot::encode(&session).unwrap();
+    scene.update(&session, &[], &mut bank);
+    assert_eq!(scene.smoke.len(), MAX_SMOKE);
+    assert_eq!(scene.smoke.first().unwrap().emitter, 13);
+    assert_eq!(scene.smoke.last().unwrap().emitter, 140);
+    let first_born = scene.smoke[0].born;
+    scene.update(&session, &[], &mut bank);
+    assert_eq!(scene.smoke.len(), MAX_SMOKE);
+    assert!(scene.smoke.iter().all(|p| p.born == first_born));
+    assert_eq!(crate::snapshot::encode(&session).unwrap(), save);
+    let remove: Vec<_> = (2..=140).map(|id| Command::Remove { id }).collect();
+    session.sim.step(&remove);
+    scene.update(&session, &[], &mut bank);
+    assert_eq!(scene.smoke.len(), MAX_SMOKE, "old puffs survive removal");
+    for _ in 0..90 {
+        session.sim.step(&[]);
+        scene.update(&session, &[], &mut bank);
+        assert!(scene.smoke.len() <= MAX_SMOKE);
+        assert!(scene.smoke.iter().filter(|p| p.emitter == 1).count() <= 7);
+    }
+    assert_eq!(scene.smoke.len(), 7);
+    assert!(scene.smoke.iter().all(|p| p.emitter == 1));
+    session.sim.step(&[Command::Destroy { id: 1 }]);
+    for _ in 0..24 {
+        session.sim.step(&[]);
+    }
+    scene.update(&session, &[], &mut bank);
+    assert!(scene.smoke.is_empty());
+}
+
+#[test]
 fn retail_building_impacts_and_destruction_retain_their_foundation() {
     let dir = PathBuf::from(std::env::var("HOME").unwrap())
         .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");

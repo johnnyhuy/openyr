@@ -38,6 +38,8 @@ mod selection_box;
 #[cfg(test)]
 mod selection_box_tests;
 mod sidebar_keys;
+#[cfg(test)]
+mod smoke_tests;
 mod surface_input;
 mod type_selection;
 mod unit_follow;
@@ -1020,6 +1022,7 @@ impl App {
             Projectile(u64, Option<(i32, i32)>),
             Effect(&'a yr_app::effects::Effect),
             Trail(&'a yr_app::effects::Trail),
+            Smoke(&'a yr_app::effects::DamageSmoke),
         }
         let mut world: Vec<_> = markers
             .iter()
@@ -1073,6 +1076,12 @@ impl App {
                 WorldArt::Effect(effect),
             )
         }));
+        world.extend(
+            self.effects
+                .smoke
+                .iter()
+                .map(|p| (point(p.x, p.y), WorldArt::Smoke(p))),
+        );
         let order = yr_render::depth::painter_order(
             &world
                 .iter()
@@ -1181,14 +1190,22 @@ impl App {
                     continue;
                 }
                 if let Some(bank) = bank.as_mut() {
-                    let (sprite, position) = match art {
+                    let (sprite, position, rise) = match art {
                         WorldArt::Projectile(source, motion) => (
                             bank.get_projectile_directed_at(source, motion, tick),
                             (footprint.x, footprint.y),
+                            0.0,
                         ),
                         WorldArt::Effect(effect) => (
                             bank.get_effect(&effect.name, tick.saturating_sub(effect.born)),
                             (effect.x.raw() as f32 / 256.0, effect.y.raw() as f32 / 256.0),
+                            0.0,
+                        ),
+                        WorldArt::Smoke(p) => (
+                            bank.get_damage_smoke(&p.particle, tick.saturating_sub(p.born)),
+                            (p.x.raw() as f32 / 256.0, p.y.raw() as f32 / 256.0),
+                            // Native presentation policy, pending original offsets/drift.
+                            (8.0 + tick.saturating_sub(p.born).min(240) as f32) * k,
                         ),
                         WorldArt::Entity(_) | WorldArt::Trail(_) => unreachable!(),
                     };
@@ -1204,7 +1221,7 @@ impl App {
                             fh,
                             sprite,
                             (mx - self.view.cam_x) * self.view.zoom,
-                            (my - self.view.cam_y) * self.view.zoom,
+                            (my - self.view.cam_y) * self.view.zoom - rise,
                             k,
                             SpritePass::Effect,
                         );

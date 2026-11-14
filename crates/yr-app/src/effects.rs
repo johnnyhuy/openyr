@@ -7,6 +7,15 @@ use yr_sim::{Event, Fix};
 
 const MAX_EFFECTS: usize = 256;
 const MAX_TRAILS: usize = 512;
+const MAX_SMOKE: usize = 128;
+
+pub struct DamageSmoke {
+    pub emitter: u32,
+    pub particle: String,
+    pub x: Fix,
+    pub y: Fix,
+    pub born: u64,
+}
 
 pub struct Trail {
     pub from: (Fix, Fix),
@@ -64,6 +73,8 @@ pub struct EffectScene {
     pub active: Vec<Effect>,
     pub deaths: Vec<InfantryDeath>,
     pub trails: Vec<Trail>,
+    pub smoke: Vec<DamageSmoke>,
+    smoke_tick: Option<u64>,
 }
 
 impl EffectScene {
@@ -112,6 +123,7 @@ impl EffectScene {
         self.deaths.retain(|d| {
             tick >= d.born && bank.infantry_death_alive(&d.kind, d.sequence, tick - d.born)
         });
+        self.update_smoke(session, bank);
         // Current poses win for survivors; previous poses preserve entities
         // which fire and die in the same tick. Refresh the table afterwards.
         let mut entities = self.entities.clone();
@@ -255,6 +267,40 @@ impl EffectScene {
                     },
                 );
             }
+        }
+    }
+
+    fn update_smoke(&mut self, session: &Session, bank: &mut SpriteBank) {
+        let tick = session.sim.tick();
+        self.smoke
+            .retain(|p| tick >= p.born && bank.damage_smoke_alive(&p.particle, tick - p.born));
+        if self.smoke_tick == Some(tick) {
+            return;
+        }
+        self.smoke_tick = Some(tick);
+        for unit in session.sim.units() {
+            let Some(spec) = session
+                .kinds
+                .get(usize::from(unit.kind))
+                .and_then(|kind| bank.damage_smoke(kind, unit.hp, unit.max_hp))
+            else {
+                continue;
+            };
+            if !tick.is_multiple_of(spec.interval)
+                || self.smoke.iter().filter(|p| p.emitter == unit.id).count() >= spec.cap
+            {
+                continue;
+            }
+            if self.smoke.len() == MAX_SMOKE {
+                self.smoke.remove(0);
+            }
+            self.smoke.push(DamageSmoke {
+                emitter: unit.id,
+                particle: spec.particle,
+                x: unit.x,
+                y: unit.y,
+                born: tick,
+            });
         }
     }
 

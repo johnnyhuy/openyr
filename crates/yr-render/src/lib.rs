@@ -12,6 +12,7 @@
 mod buildings;
 pub mod depth;
 mod effects;
+pub use effects::DamageSmokeSpec;
 pub mod png;
 mod projectiles;
 pub use projectiles::{LineTrail, ProjectileTrailer};
