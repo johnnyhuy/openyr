@@ -8,6 +8,9 @@ pub const VERSION: u32 = 4;
 pub const MAX_SAVE_BYTES: usize = 64 * 1024 * 1024;
 const MAX_STAT: i64 = i32::MAX as i64;
 const MAX_COORD: i32 = 1 << 24;
+const MAX_VERSE_UNITS: i64 = 1_000_000_000;
+// Applied flight damage includes the largest supported armor multiplier.
+const MAX_PROJECTILE_DAMAGE: i64 = MAX_STAT * MAX_VERSE_UNITS / yr_rules::Decimal::ONE.units();
 
 #[derive(Debug)]
 pub struct SaveError(pub(crate) String);
@@ -200,7 +203,7 @@ impl Sim {
                 "projectile speed out of range",
             )?;
             require(
-                (-MAX_STAT..=MAX_STAT).contains(&p.damage),
+                (-MAX_PROJECTILE_DAMAGE..=MAX_PROJECTILE_DAMAGE).contains(&p.damage),
                 "projectile damage out of range",
             )?;
         }
@@ -249,7 +252,7 @@ pub(crate) fn weapon(w: WeaponSpec) -> Result<(), SaveError> {
     require(
         w.verses
             .iter()
-            .all(|v| (-1_000_000_000..=1_000_000_000).contains(&v.units())),
+            .all(|v| (-MAX_VERSE_UNITS..=MAX_VERSE_UNITS).contains(&v.units())),
         "damage multiplier out of range",
     )
 }
