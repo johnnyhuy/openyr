@@ -812,3 +812,63 @@ original playback parity.
 ```sh
 cargo test -p yr-render voxel -- --nocapture
 ```
+
+## Damaged vehicle smoke (#405)
+
+The installed RULESMD.INI explicitly labels `SmallGreySSys` as small smoke for
+damaged units. MTNK and other vehicles reference it in `DamageParticleSystems`
+after SparkSys. The system declares `BehavesLike=Smoke`, `Spawns=yes`,
+`HoldsWhat=SmallGreySmoke`, `SpawnFrames=10` and `ParticleCap=7`. SmallGreySmoke
+declares `Image=SGRYSMK1`, `Translucency=50`, `EndStateAI=20`,
+`StateAIAdvance=4` and `DeleteOnStateLimit=yes`. The source sheet resolves from
+RA2.MIX/CONQUER.MIX and has 20 frames on a 48x42 canvas; source index zero is transparent and other indices use
+ANIM.PAL. The separate ARTMD.INI SGRYSMK1 animation has `Rate=500`; a particle
+does not use that animation clock. Particle and animation cache keys remain
+distinct even when their names or sheets match.
+
+The initial native subset emits only for living VehicleTypes with an explicit
+supported smoke-system reference and health at or below AudioVisual
+`ConditionYellow`. The retail threshold is 50%; comparison uses widened exact
+integer arithmetic. Missing/invalid thresholds, unsupported systems and absent
+or malformed particle art disable this optional presentation. A type's first
+supported smoke reference is used. Infantry, aircraft, structures and Spark
+systems are excluded. No unspecified particle-system default is inferred.
+
+The native clock provisionally samples a 60 Hz particle clock at 15 sim ticks/s.
+A system emits on absolute ticks divisible by `ceil(SpawnFrames / 4)`; a puff
+selects `StartFrame + floor(age * 4 / StateAIAdvance)` up to the exclusive
+EndStateAI. The installed definition therefore emits every three ticks and
+plays 20 source frames once, one per native tick. This conversion, inclusive
+health boundary and exclusive frame limit are native policies pending original
+observation. The system's 10-frame spawn interval is rounded up, so this does
+not claim exact original scheduling. StartFrame defaults to zero only in this
+bounded initial subset.
+
+Each puff retains the unit's authoritative subcell world position at emission,
+with terrain height and ordinary world painter order. Movement leaves emitted
+puffs behind. A native vertical lift of `8 + age` source pixels makes the smoke
+rise, independent of zoom and map downscaling. Original Velocity/Deacc,
+SpawnRadius, wind, MaxEC, spawn cutoffs, DamageSmokeOffset and per-facing emitter
+attachment are not implemented. These policies must not be treated as observed
+particle physics. Health recovery and death stop new emission; emitted puffs
+finish their own clips. Load resets past transient history and resumes future
+emission from saved health, positions and absolute ticks, like existing trails.
+
+Smoke shares the existing 128-entry clip and 64-frame FIFO caches, with a separate
+global 128-puff cap and each emitter's declared ParticleCap (1-64). System lists
+stop at 32 names; spawn/state intervals allow 1-240 source ticks. Canvases are
+capped at 512x512 with at most 256 actual SHP frames, and every selected range
+must fit the parsed sheet before decoding. Invalid optional art never hides a
+parent unit. No particle count, clock, RNG call or field is added to sim/saves.
+
+Authored checks cover exact health boundaries, malformed definitions, hostile
+canvases, frame/alpha bytes and independent animation/particle cache clocks.
+Retail checks compare all 20 particle canvases against independently decoded
+SHP indices and ANIM.PAL. Native tests apply a controlled actual shot, compare
+visible/hidden smoke composition, verify fixed emitted positions, recovery,
+death, global/per-emitter caps and same-tick emission suppression. Repeated
+redraws preserve encoded Sessions; two fresh-cache restores produce identical
+future frames and saved bytes. `OPENYR_DAMAGE_SMOKE_PROOF` with
+`cargo test -p yr-app retail_damage_smoke -- --nocapture` exports focused
+native frames and a controlled damaged EB1 save outside git. Original cadence,
+physics, palettes/lighting and physical Mac display calibration remain open.

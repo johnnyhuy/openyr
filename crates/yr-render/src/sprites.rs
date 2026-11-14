@@ -516,6 +516,30 @@ impl SpriteBank {
         self.effects.get(&self.vfs, &self.art_ini, name, ticks)
     }
 
+    /// Initial vehicle-only subset of explicit damage particle systems.
+    pub fn damage_smoke(
+        &mut self,
+        kind: &str,
+        hp: i64,
+        max_hp: i64,
+    ) -> Option<crate::DamageSmokeSpec> {
+        if self.rules.techno(kind)?.kind != TechnoKind::Vehicle {
+            return None;
+        }
+        let spec = crate::effects::damage_smoke_spec(&self.rules_ini, kind, hp, max_hp)?;
+        self.damage_smoke_alive(&spec.particle, 0).then_some(spec)
+    }
+
+    pub fn damage_smoke_alive(&mut self, particle: &str, age: u64) -> bool {
+        self.effects
+            .smoke_alive(&self.vfs, &self.rules_ini, particle, age)
+    }
+
+    pub fn get_damage_smoke(&mut self, particle: &str, age: u64) -> Option<&Sprite> {
+        self.effects
+            .smoke(&self.vfs, &self.rules_ini, particle, age)
+    }
+
     /// Static projectile art from the retained fired weapon identity.
     pub fn get_projectile(&mut self, source: u64) -> Option<&Sprite> {
         self.get_projectile_directed(source, None)
