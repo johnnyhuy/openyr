@@ -538,6 +538,12 @@ Johnny on 2026-10-31.
 
 ## M4: Simulation v1
 
+- [x] Reject wrapped and unsupported rules weapon ranges (#417). Validate
+      signed i64 lepton values before narrowing, share the unchanged snapshot
+      range domain, and saturate the public signed conversion at i32 limits.
+      Authored boundary/save checks and baseline/final combat comparisons keep
+      ordinary ranges and saved bytes intact (`docs/formats/rules.md`).
+
 - [x] Preserve authored initial map-unit facing (#350): shared bounded byte
       normalization and a scenario heading command cover vehicle, infantry and
       aircraft setup without changing ordinary spawns/production. Static/live

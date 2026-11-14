@@ -74,6 +74,22 @@ the raw INI lines.
 - Keys not given in the INI stay `None`, shown as `(default)`. Engine defaults
   are filled in only where documented and verified.
 
+`WeaponSpec::from_rules` rejects negative stored ranges and converted ranges
+above the existing snapshot limit of 16,777,216 leptons (#417). It validates
+the complete i64 lepton value before creating the i32-backed `Fix`; large
+positive ranges can no longer wrap into zero or a negative weapon range.
+Valid ranges still truncate toward zero at 256 leptons per cell, including
+zero, sub-lepton fractions and the quantized upper boundary. Snapshot loading
+uses the same range constant and retains its previous acceptance domain.
+
+The public signed `combat::cells_to_leptons` helper keeps its signature but
+saturates unrepresentable results at i32::MIN/MAX instead of wrapping. Weapon
+resolution applies its smaller nonnegative domain before calling this helper.
+This is an explicit native boundary policy, not original range calibration.
+Ordinary weapon ranges and save encoding are unchanged; unsupported rules
+weapons resolve to `None` through the existing caller policy. Authored cases
+cover negative/large values, fractional boundaries and unchanged save rejection.
+
 ## Retail known answers (tests in `crates/yr-rules/tests/retail.rs`)
 
 - Registries: 65 infantry, 80 vehicles, 12 aircraft, 402 buildings, plus 189

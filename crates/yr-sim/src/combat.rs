@@ -14,6 +14,9 @@ pub const ARMOR_COUNT: usize = 11;
 /// Match the bounded velocity domain accepted by simulation snapshots.
 pub(crate) const MAX_PROJECTILE_SPEED: i32 = 1 << 24;
 
+/// Match the range domain accepted by simulation snapshots.
+pub(crate) const MAX_WEAPON_RANGE: i32 = 1 << 24;
+
 /// A resolved weapon the sim can fire.
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
@@ -35,10 +38,14 @@ pub struct WeaponSpec {
 
 impl WeaponSpec {
     /// Resolve a rules weapon (by ID) against all armour classes.
-    /// `None` when the weapon or its data is incomplete.
+    /// `None` when data is incomplete or its range/speed is unsupported.
     pub fn from_rules(rules: &Rules, weapon_id: &str) -> Option<WeaponSpec> {
         let w = rules.weapons.get(weapon_id)?;
         if !w.defined {
+            return None;
+        }
+        let range = w.range?;
+        if range.units() < 0 || !(0..=i64::from(MAX_WEAPON_RANGE)).contains(&range.to_leptons()) {
             return None;
         }
         let warhead = w.warhead.as_ref().and_then(|id| rules.warheads.get(id))?;
@@ -74,7 +81,7 @@ impl WeaponSpec {
                 .then(|| w.source_id()),
             damage: w.damage?,
             rof_ticks: w.rof.unwrap_or(0).max(0) as u32,
-            range: cells_to_leptons(w.range?),
+            range: cells_to_leptons(range),
             projectile_speed,
             verses,
         })
@@ -92,9 +99,14 @@ impl WeaponSpec {
     }
 }
 
-/// Rules range is in cells (exact decimal); 1 cell = 256 leptons.
+/// Cells to a signed Fix, truncating toward zero and saturating at i32 limits.
+/// Weapon resolution separately enforces the smaller snapshot range domain.
 pub fn cells_to_leptons(cells: Decimal) -> Fix {
-    Fix::from_raw(cells.to_leptons() as i32)
+    Fix::from_raw(
+        cells
+            .to_leptons()
+            .clamp(i64::from(i32::MIN), i64::from(i32::MAX)) as i32,
+    )
 }
 
 #[cfg(test)]
