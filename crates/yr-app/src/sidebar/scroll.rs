@@ -1,4 +1,16 @@
 use super::*;
+use std::time::{Duration, Instant};
+
+const HOLD_DELAY: Duration = Duration::from_millis(350);
+const HOLD_INTERVAL: Duration = Duration::from_millis(80);
+
+#[derive(Debug, Clone, Copy)]
+struct ScrollPress {
+    direction: i32,
+    size: (u32, u32),
+    next: Instant,
+    inside: bool,
+}
 
 /// Presentation-only row offsets. Each category keeps its own position.
 #[derive(Debug, Clone, Copy, Default)]
@@ -8,6 +20,7 @@ pub struct View {
     wheel: f64,
     pressed: Option<(Category, bool)>,
     press_inside: bool,
+    scroll_press: Option<ScrollPress>,
 }
 
 impl From<Category> for View {
@@ -63,11 +76,80 @@ impl View {
     pub fn clear_press(&mut self) {
         self.pressed = None;
         self.press_inside = false;
+        self.scroll_press = None;
     }
 
     /// The origin tab owns the gesture even while its held art is not visible.
     pub fn tab_pressed(self) -> bool {
         self.pressed.is_some()
+    }
+
+    /// A held sidebar control keeps ownership while the pointer is outside it.
+    pub fn pointer_pressed(self) -> bool {
+        self.tab_pressed() || self.scroll_press.is_some()
+    }
+
+    pub fn press_scroll(
+        &mut self,
+        session: &Session,
+        size: (u32, u32),
+        pos: (f64, f64),
+        now: Instant,
+    ) -> bool {
+        let Some(direction) = self.scroll_at(session, size.0, size.1, pos) else {
+            return false;
+        };
+        self.clear_press();
+        self.scroll(session, size.1, direction);
+        self.scroll_press = Some(ScrollPress {
+            direction,
+            size,
+            next: now + HOLD_DELAY,
+            inside: true,
+        });
+        true
+    }
+
+    pub fn track_scroll(
+        &mut self,
+        session: &Session,
+        size: (u32, u32),
+        pos: (f64, f64),
+        now: Instant,
+    ) {
+        let Some(press) = self.scroll_press else {
+            return;
+        };
+        if size != press.size {
+            self.scroll_press = None;
+            return;
+        }
+        let inside = self.scroll_at(session, size.0, size.1, pos) == Some(press.direction);
+        let press = self.scroll_press.as_mut().unwrap();
+        if !inside || !press.inside {
+            press.next = now + HOLD_DELAY;
+        }
+        press.inside = inside;
+    }
+
+    /// Delayed redraws advance at most one row, without a catch-up burst.
+    pub fn repeat_scroll(
+        &mut self,
+        session: &Session,
+        size: (u32, u32),
+        pos: (f64, f64),
+        now: Instant,
+    ) -> bool {
+        self.track_scroll(session, size, pos, now);
+        let Some(press) = self.scroll_press.as_mut() else {
+            return false;
+        };
+        if !press.inside || now < press.next {
+            return false;
+        }
+        press.next = now + HOLD_INTERVAL;
+        let direction = press.direction;
+        self.scroll(session, size.1, direction)
     }
 
     pub fn track_press(&mut self, hovered: Option<Category>) {
@@ -168,8 +250,18 @@ impl View {
     pub(super) fn draw_buttons(self, canvas: &mut Canvas<'_>, session: &Session) {
         for (direction, (x, y), enabled) in self.buttons(session, canvas.width, canvas.height) {
             let color = if enabled { GOLD } else { [96, 100, 104, 255] };
+            let pressed = enabled
+                && self.scroll_press.is_some_and(|press| {
+                    press.direction == direction
+                        && press.inside
+                        && press.size == (canvas.width, canvas.height)
+                });
             canvas.rect((x, y), (SLOT_W, 20), color);
-            canvas.rect((x + 1, y + 1), (SLOT_W - 2, 18), PANEL);
+            canvas.rect(
+                (x + 1, y + 1),
+                (SLOT_W - 2, 18),
+                if pressed { [68, 58, 30, 255] } else { PANEL },
+            );
             for row in 0..5 {
                 let dy = if direction < 0 { row } else { 4 - row };
                 canvas.rect((x + SLOT_W / 2 - row, y + 7 + dy), (row * 2 + 1, 1), color);

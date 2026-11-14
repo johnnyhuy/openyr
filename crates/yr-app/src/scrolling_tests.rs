@@ -1,6 +1,53 @@
 use super::*;
 
 #[test]
+fn retail_sidebar_scroll_hold_repeats_through_the_native_compositor() {
+    let dir = PathBuf::from(std::env::var("HOME").unwrap_or_default())
+        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    if !dir.is_dir() {
+        return;
+    }
+    let mut app = new_app(dir.to_string_lossy().into(), "EB1.MMX".into(), 1);
+    let size = (800, 302);
+    app.frame_size = size;
+    app.session = Some(app.load_session().unwrap());
+    app.map = Some(yr_render::render_map_background(&app.gamedir, &app.map_name, 1).unwrap());
+    app.sprites = load_sprites(&app.gamedir, &app.map_name);
+    let before = yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap();
+    app.pointer_moved((f64::from(size.0 - SIDEBAR_W + 90), f64::from(size.1 - 14)));
+    capture(&mut app, size, "hold-00-before");
+    app.pointer_button(ElementState::Pressed, MouseButton::Left);
+    capture(&mut app, size, "hold-01-pressed");
+    let now = Instant::now();
+    for (ms, row) in [(1000, 2), (1080, 3)] {
+        app.repeat_sidebar_scroll(now + Duration::from_millis(ms));
+        assert_eq!(
+            app.sidebar_view
+                .first_row(app.session.as_ref().unwrap(), size.1),
+            row
+        );
+        capture(&mut app, size, &format!("hold-{ms}ms"));
+    }
+    app.pointer_moved((300., 150.));
+    app.repeat_sidebar_scroll(now + Duration::from_secs(10));
+    assert_eq!(
+        app.sidebar_view
+            .first_row(app.session.as_ref().unwrap(), size.1),
+        3
+    );
+    app.pointer_button(ElementState::Released, MouseButton::Left);
+    app.repeat_sidebar_scroll(now + Duration::from_secs(20));
+    assert!(!app.sidebar_view.pointer_pressed());
+    capture(&mut app, size, "hold-04-released-in-world");
+    assert!(app.pending.is_empty());
+    assert_eq!(
+        yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap(),
+        before
+    );
+    println!("Retail EB1 compact native input/compositor: initial row 1, held rows 2/3 at injected +1000/+1080ms, leave/release pauses without orders or changed Session bytes.");
+}
+
+#[test]
 fn retail_sidebar_scrolling_reaches_every_slot_and_routes_production_without_zoom() {
     let dir = PathBuf::from(std::env::var("HOME").unwrap_or_default())
         .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");

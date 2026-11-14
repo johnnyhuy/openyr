@@ -396,7 +396,7 @@ impl App {
     /// Feedback follows the native gesture owner, including before a redraw.
     fn world_pointer_busy(&self) -> bool {
         self.keyboard_pan() != (0.0, 0.0)
-            || self.sidebar_view.tab_pressed()
+            || self.sidebar_view.pointer_pressed()
             || self.left_down.is_some()
             || self.right_down.is_some()
             || self.right_panning
@@ -657,20 +657,32 @@ impl App {
         let Some(session) = &self.session else {
             return false;
         };
-        let Some(rows) = self
+        if !self
             .sidebar_view
-            .scroll_at(session, size.0, size.1, self.cursor)
-        else {
+            .press_scroll(session, size, self.cursor, Instant::now())
+        {
             return false;
-        };
-        self.sidebar_view.scroll(session, size.1, rows);
+        }
         self.view.dirty = true;
         true
     }
 
+    fn repeat_sidebar_scroll(&mut self, now: Instant) {
+        let size = self.camera_size();
+        if self.menu.visible() || !self.pointer.active(size, self.cursor) {
+            self.sidebar_view.clear_press();
+            return;
+        }
+        if let Some(session) = &self.session {
+            self.view.dirty |= self
+                .sidebar_view
+                .repeat_scroll(session, size, self.cursor, now);
+        }
+    }
+
     fn match_wheel(&mut self, delta: MouseScrollDelta, size: (u32, u32)) {
         if !self.pointer.focused
-            || self.sidebar_view.tab_pressed()
+            || self.sidebar_view.pointer_pressed()
             || !self.pointer.inside
             || self.menu.visible()
             || self.left_down.is_some()
@@ -1677,6 +1689,7 @@ impl ApplicationHandler for App {
                 is_synthetic,
             ),
             WindowEvent::RedrawRequested => {
+                self.repeat_sidebar_scroll(Instant::now());
                 self.view.dirty |= self.order_feedback.expire(Instant::now());
                 self.poll_front_presentation();
                 self.poll_menu_load();
