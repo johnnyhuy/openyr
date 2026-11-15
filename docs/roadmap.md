@@ -361,6 +361,12 @@ Johnny on 2026-10-31.
       infantry/voxel reconstruction and missing-art churn retain exact pixels,
       shadows, remaps and anchors. Simulation/save fields and original-game
       animation calibration stay unchanged (`docs/formats/shp.md`).
+- [x] Clip shared sprite raster work to the viewport before sampling (#426).
+      Body, effect and unioned-shadow passes retain their original sampling
+      origin; offscreen axes return immediately. Authored edge/scale/alpha
+      checks preserve complete RGBA and coverage masks, with wide bounds for
+      extreme coordinates (`docs/sprite-raster-performance.md`). Original
+      animation timing and per-overlay depth calibration remain open.
 - [x] Bound decoded building-layer history (#411) to 512 entries and
       128 MiB of retained RGBA capacity. Protect the current request's layers
       with base priority; retry optional layers omitted by budget pressure.
