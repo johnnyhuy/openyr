@@ -40,6 +40,8 @@ mod selection_box_tests;
 mod sidebar_keys;
 #[cfg(test)]
 mod smoke_tests;
+#[cfg(test)]
+mod sprite_blit_tests;
 mod surface_input;
 mod type_selection;
 mod unit_follow;
@@ -1391,6 +1393,12 @@ enum SpritePass<'a> {
     Shadow(&'a mut [bool]),
 }
 
+/// Visible offsets within a scaled sprite, retaining its sampling origin.
+fn clipped_sprite_axis(origin: i32, extent: i32, limit: u32) -> std::ops::Range<i64> {
+    let origin = i64::from(origin);
+    0.max(-origin)..i64::from(extent).min(i64::from(limit) - origin)
+}
+
 /// Nearest-neighbour blit with `k` window pixels per sprite pixel.
 /// Shadows halve the ground once, using the shared coverage mask.
 #[allow(clippy::too_many_arguments)]
@@ -1404,7 +1412,7 @@ fn blit_sprite(
     k: f32,
     mut pass: SpritePass<'_>,
 ) {
-    if k <= 0.0 {
+    if k <= 0.0 || !k.is_finite() || !ax.is_finite() || !ay.is_finite() {
         return;
     }
     let x0 = (ax - s.ax as f32 * k).round() as i32;
@@ -1413,16 +1421,23 @@ fn blit_sprite(
         (s.w as f32 * k).ceil() as i32,
         (s.h as f32 * k).ceil() as i32,
     );
-    for dy in 0..dh {
-        let py = i64::from(y0) + i64::from(dy);
+    // Clip before visiting pixels. Large or offscreen canvases must not
+    // cost their full scaled area on each body, effect and shadow pass.
+    let xs = clipped_sprite_axis(x0, dw, fw);
+    let ys = clipped_sprite_axis(y0, dh, fh);
+    if xs.is_empty() || ys.is_empty() {
+        return;
+    }
+    for dy in ys {
+        let py = i64::from(y0) + dy;
         let sy = ((dy as f32 + 0.5) / k) as u32;
-        if py < 0 || py >= i64::from(fh) || sy >= s.h {
+        if sy >= s.h {
             continue;
         }
-        for dx in 0..dw {
-            let px = i64::from(x0) + i64::from(dx);
+        for dx in xs.clone() {
+            let px = i64::from(x0) + dx;
             let sx = ((dx as f32 + 0.5) / k) as u32;
-            if px < 0 || px >= i64::from(fw) || sx >= s.w {
+            if sx >= s.w {
                 continue;
             }
             let src = ((sy * s.w + sx) * 4) as usize;

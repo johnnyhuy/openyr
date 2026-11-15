@@ -452,3 +452,13 @@ cargo test -p yr-render cache -- --nocapture
 retail cohort. These contain retail artwork and must stay outside Git.
 This verifies native reconstruction, not original-game cache policy or
 physical macOS/Retina input.
+
+## Shared live sprite clipping (#426)
+
+Decoded canvases keep their existing limits and pixels. The window/headless
+blitter now clips scaled destination iteration before sampling bodies, effects
+and unioned shadows, retaining offsets from the original rounded anchor. Fully
+offscreen sprites return immediately, and work per pass is bounded by viewport
+area. Nonfinite transforms draw nothing. This changes native raster cost, not
+SHP acceptance, playback timing or layer depth. Authored oracle checks and
+isolated probe results are in `../sprite-raster-performance.md`.
