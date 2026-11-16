@@ -382,6 +382,12 @@ Johnny on 2026-10-31.
       raised side and closed roof panels from retail art. All three factions'
       normal/damaged body pixels and anchors match independent SHP canvases.
       Panels remain closed during rollout pending the Wine comparison (#6).
+- [x] Sample shared building animation inputs once per redraw (#428): owner
+      power totals and first production hosts avoid repeated full-base scans.
+      Independent field comparisons cover stalls, READY work, host destruction,
+      owner isolation and save/load; retail unloading compares both paths.
+      Refinery docking queries and original cadence remain unchanged
+      (`docs/animation-performance.md`).
 - [ ] Wine side-by-side infantry and Construction Yard crops; verify
       cadence (including HVA playback), overlay depth adjustments and
       factory doors (#6)

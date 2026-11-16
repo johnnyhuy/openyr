@@ -912,6 +912,7 @@ impl App {
                     }
                 }
             }
+            let building_animations = yr_app::animation::BuildingAnimations::new(sim);
             for b in sim.buildings() {
                 // Only reconstructable neutral buildings were omitted from
                 // the background. Unsupported static art stays baked there.
@@ -947,7 +948,7 @@ impl App {
                     hp: hp_frac(b.hp, b.max_hp),
                     art: kind_id(b.kind).map(|k| (k, 0, b.owner)),
                     animation: Default::default(),
-                    building: Some(yr_app::animation::building_animation(sim, b)),
+                    building: Some(building_animations.get(b)),
                     death: None,
                     map_remap: None,
                 });

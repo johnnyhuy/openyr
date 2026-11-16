@@ -33,3 +33,34 @@ timed region. Timings describe this bookkeeping workload on the test machine,
 not whole-frame throughput or a maximum supported army size. There is no timing
 threshold in CI. The PR proof retains before/after terminal output, verification
 commands, source hashes and an EB1 shared-compositor playback check.
+
+## Shared building presentation sampling
+
+Before #428, every building marker rescanned the building list for its owner's
+power totals and first production host. N buildings therefore performed at
+least N squared power contributions per redraw, even while idle.
+`BuildingAnimations` now samples power and the first host of each role once
+per redraw. Marker lookups search at most six roles in one owner's summary.
+The owner key is a u8, bounding the owner map to 256 entries. Refinery unloading
+still uses the simulation's authoritative docking query, once per owner with
+a refinery. That query's internal scans are unchanged; this is not a claim
+that all simulation or refinery work is linear.
+
+Each redraw builds a fresh summary, including paused redraws. No cached tick,
+new simulation field or save-format change can hide host destruction, health
+changes, power shortages or completed production. The existing single-building
+query remains available as an independent regression oracle. Authored checks
+compare every animation field across all roles, duplicate hosts, four owners,
+credit stalls, READY production, host destruction, empty bases and save/load.
+The retail refinery test compares both paths throughout actual unloading.
+
+Run the optional bookkeeping probe with:
+
+```sh
+cargo test -p yr-app --release --lib building_animation_scaling_probe -- --ignored --nocapture
+```
+
+It compares independent queries with shared sampling and all marker lookups
+for 512, 2048 and 8192 idle buildings over eight redraws. Setup and simulation
+stepping are outside the measurement. Timings are machine-specific and do not
+measure complete rendering or establish original-game animation parity.

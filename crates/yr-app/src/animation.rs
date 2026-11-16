@@ -36,6 +36,70 @@ pub fn building_animation(
     }
 }
 
+/// Shared presentation inputs sampled once for one redraw. Rebuild even when
+/// the tick is unchanged so editor/test mutations cannot leave stale state.
+pub struct BuildingAnimations {
+    tick: u64,
+    owners: BTreeMap<u8, BuildingOwner>,
+}
+
+#[derive(Default)]
+struct BuildingOwner {
+    power: (i64, i64),
+    hosts: Vec<(yr_sim::Role, u32, Option<u64>)>,
+    unloading: Option<u64>,
+}
+
+impl BuildingAnimations {
+    pub fn new(sim: &Sim) -> Self {
+        let mut owners: BTreeMap<u8, BuildingOwner> = BTreeMap::new();
+        for b in sim.buildings() {
+            let owner = owners.entry(b.owner).or_default();
+            let power = b.effective_power();
+            if power >= 0 {
+                owner.power.0 += power;
+            } else {
+                owner.power.1 -= power;
+            }
+            // Role has six variants, so this search stays bounded as bases grow.
+            if !owner.hosts.iter().any(|h| h.0 == b.role) {
+                let production = sim
+                    .production_of(b.owner)
+                    .iter()
+                    .find(|o| o.factory.role() == b.role)
+                    .filter(|o| !o.done())
+                    .map(|o| o.progress.max(0) as u64 / 256);
+                owner.hosts.push((b.role, b.id, production));
+            }
+        }
+        for owner in owners.values_mut() {
+            if let Some(host) = owner.hosts.iter().find(|h| h.0 == yr_sim::Role::Refinery) {
+                // Keep the simulation's docking policy in one place. Query only
+                // the first refinery per owner, never every building marker.
+                owner.unloading = sim.refinery_unloading(host.1).map(u64::from);
+            }
+        }
+        Self {
+            tick: sim.tick(),
+            owners,
+        }
+    }
+
+    pub fn get(&self, b: &yr_sim::Building) -> yr_render::sprites::BuildingAnimation {
+        let owner = self.owners.get(&b.owner);
+        let host = owner.and_then(|o| o.hosts.iter().find(|h| h.0 == b.role && h.1 == b.id));
+        yr_render::sprites::BuildingAnimation {
+            elapsed: self.tick,
+            production: host.and_then(|h| h.2),
+            unloading: host
+                .filter(|h| h.0 == yr_sim::Role::Refinery)
+                .and_then(|_| owner?.unloading),
+            damaged: i128::from(b.hp) * 2 <= i128::from(b.max_hp),
+            powered: owner.is_none_or(|o| o.power.0 >= o.power.1),
+        }
+    }
+}
+
 struct Observation {
     position: (Fix, Fix),
     shots: u32,
@@ -363,3 +427,6 @@ mod tests {
         }
     }
 }
+
+#[cfg(test)]
+mod building_tests;
