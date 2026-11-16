@@ -94,6 +94,14 @@ transparency rules, palette lighting and anchors need comparison with the
 original game; source-art comparisons do not establish exact engine parity.
 
 The cache holds at most 64 decoded effect frames and 128 clip definitions.
+Both histories evict their oldest entries, including missing optional art.
+New definitions remain eligible when metadata history is full (#430); evicted
+animation/particle definitions reload from the same immutable asset data.
+Hits do not reorder the FIFO or advance playback. Authored positive/negative
+churn checks retain separate clocks/alpha, anchors, expiry and exact source
+pixels. Retail smoke and combat source frames plus a complete EB1 smoke
+composition verify reconstruction after 128 missing definitions. This does
+not establish original-game cache policy or animation timing.
 At most 256 effects remain active; the oldest is dropped when full. Expired
 clips disappear on simulation updates even without redraws. Cache keys use
 resolved source frames rather than elapsed ticks. Rendering effects does not

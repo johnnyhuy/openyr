@@ -31,6 +31,114 @@ fn smoke_rules(extra: &str) -> IniFile {
 }
 
 #[test]
+fn clip_cache_churn_does_not_permanently_disable_later_effects_or_smoke() {
+    let palette: Vec<_> = (0..768).map(|n| (n % 64) as u8).collect();
+    let fs = AssetFs::from_files(vec![
+        ("SMOKE.SHP".into(), smoke_fixture(20)),
+        ("ANIM.PAL".into(), palette.clone()),
+    ]);
+    let rules = smoke_rules("");
+    let art = IniFile::parse("[PUFF]\nImage=SMOKE\nRate=225\nTranslucency=0");
+    let pal = Palette::parse(&palette).unwrap();
+    let mut bank = Effects::default();
+    for round in 0..3 {
+        // Both namespaces include negative lookups in the bounded history.
+        for n in 0..128 {
+            let missing = format!("MISSING{round}_{n}");
+            assert!(!bank.alive(&fs, &art, &missing, 0));
+            assert!(!bank.smoke_alive(&fs, &rules, &missing, 0));
+            assert!(bank.clips.len() <= 128);
+            assert_eq!(bank.clip_order.len(), bank.clips.len());
+        }
+        assert!(bank.alive(&fs, &art, "PUFF", 0));
+        assert!(bank.smoke_alive(&fs, &rules, "PUFF", 0));
+        for frame in 0..20 {
+            for smoke in [false, true] {
+                let sprite = if smoke {
+                    bank.smoke(&fs, &rules, "PUFF", frame)
+                } else {
+                    bank.get(&fs, &art, "PUFF", frame)
+                }
+                .expect("new or evicted valid definitions must remain available");
+                assert_eq!((sprite.w, sprite.h, sprite.ax, sprite.ay), (2, 2, 1, 1));
+                let expected: Vec<_> = [0, 1, 2, 3 + frame as u8]
+                    .into_iter()
+                    .flat_map(|index| {
+                        if index == 0 {
+                            [0; 4]
+                        } else {
+                            let [r, g, b, _] = pal.rgba(index);
+                            [r, g, b, if smoke { 127 } else { 255 }]
+                        }
+                    })
+                    .collect();
+                assert_eq!(sprite.rgba, expected);
+            }
+        }
+        assert!(!bank.alive(&fs, &art, "PUFF", 20));
+        assert!(!bank.smoke_alive(&fs, &rules, "PUFF", 20));
+        assert!(bank.clips.len() <= 128);
+        assert!(bank.frames.len() <= MAX_CACHED_FRAMES);
+        assert_eq!(bank.clip_order.len(), bank.clips.len());
+    }
+    println!("768 negative clip lookups preserve later animation/smoke pixels, separate alpha, anchors and expiry across three reloads.");
+}
+
+#[test]
+fn positive_clip_churn_rebuilds_evicted_definitions_and_decoded_frames() {
+    let palette: Vec<_> = (0..768).map(|n| (n % 64) as u8).collect();
+    let fs = AssetFs::from_files(vec![
+        ("SMOKE.SHP".into(), smoke_fixture(20)),
+        ("ANIM.PAL".into(), palette),
+    ]);
+    let mut definitions = String::new();
+    for n in 0..150 {
+        definitions.push_str(&format!(
+            "[CLIP{n}]\nImage=SMOKE\nRate=225\nTranslucency={}\n\
+             BehavesLike=Smoke\nDeleteOnStateLimit=yes\nEndStateAI=20\nStateAIAdvance=4\n",
+            n % 101
+        ));
+    }
+    let ini = IniFile::parse(&definitions);
+    let mut bank = Effects::default();
+    let mut first = Vec::new();
+    for smoke in [false, true] {
+        for n in 0..150 {
+            let name = format!("CLIP{n}");
+            let sprite = if smoke {
+                bank.smoke(&fs, &ini, &name, 3)
+            } else {
+                bank.get(&fs, &ini, &name, 3)
+            }
+            .expect("valid definitions remain available beyond the metadata limit");
+            if n == 0 && !smoke {
+                first = sprite.rgba.clone();
+            }
+            assert_eq!(sprite.rgba[15], (255 * (100 - n % 101) / 100) as u8);
+            assert!(bank.clips.len() <= MAX_CACHED_CLIPS);
+            assert_eq!(bank.clip_order.len(), bank.clips.len());
+            assert!(bank.frames.len() <= MAX_CACHED_FRAMES);
+        }
+    }
+    assert_eq!(bank.clips.len(), MAX_CACHED_CLIPS);
+    assert_eq!(bank.frames.len(), MAX_CACHED_FRAMES);
+    assert!(!bank.clips.contains_key("CLIP0"));
+    assert!(!bank.frames.contains_key(&("CLIP0".into(), 3)));
+    assert_eq!(bank.get(&fs, &ini, "CLIP0", 3).unwrap().rgba, first);
+    let order = bank.clip_order.clone();
+    for _ in 0..200 {
+        assert!(bank.alive(&fs, &ini, "CLIP0", 3));
+    }
+    assert_eq!(bank.clip_order, order, "hits do not grow or reorder FIFO");
+    for name in ["", "../unsafe", &"A".repeat(65)] {
+        assert!(!bank.alive(&fs, &ini, name, 0));
+        assert!(!bank.smoke_alive(&fs, &ini, name, 0));
+    }
+    assert_eq!(bank.clip_order, order, "unsafe names never occupy history");
+    println!("300 valid animation/particle definitions retain 128 metadata and 64 frame entries; evicted pixels reconstruct exactly.");
+}
+
+#[test]
 fn damage_smoke_requires_explicit_bounded_definitions_and_exact_living_health() {
     let ini = smoke_rules("");
     let spec = damage_smoke_spec(&ini, "UNIT", 50, 100).unwrap();
@@ -179,6 +287,9 @@ fn retail_damage_smoke_matches_all_twenty_particle_source_canvases() {
         assert!(bank.damage_smoke(kind, 1, 100).is_none(), "{kind}");
     }
     assert!(bank.damage_smoke("MTNK", 151, 300).is_none());
+    for n in 0..128 {
+        assert!(bank.get_effect(&format!("MISSING{n}"), 0).is_none());
+    }
     for frame in 0..20 {
         let sprite = bank.get_damage_smoke(&spec.particle, frame).unwrap();
         let expected: Vec<_> = shp
@@ -790,6 +901,9 @@ fn retail_effect_frames_match_anim_palette_and_cache_stays_bounded() {
         "GUNFIRE", "MGUN-N", "MGUN-NE", "MGUN-E", "MGUN-SE", "MGUN-S", "MGUN-SW", "MGUN-W",
         "MGUN-NW", "TWLT070", "S_CLSN16", "S_CLSN22", "PIFFPIFF",
     ] {
+        for n in 0..128 {
+            assert!(!bank.alive(&fs, &art, &format!("MISSING{n}"), 0));
+        }
         let shp = ShpFile::parse(fs.read(&format!("{name}.SHP")).unwrap()).unwrap();
         println!(
             "{name}: {}x{}, {} frames",

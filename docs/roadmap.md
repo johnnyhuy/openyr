@@ -223,6 +223,12 @@ Johnny on 2026-10-31.
       resumed future emission after load preserve complete Session bytes.
       All 20 source canvases match; original timing, drift, emitter offsets,
       sparks, buildings and aircraft remain open (`docs/formats/effects.md`).
+- [x] Keep later effect/smoke definitions available after metadata saturation
+      (#430). FIFO eviction bounds positive/negative history to 128 entries;
+      authored churn, retail source canvases and native smoke composition
+      preserve reconstructed pixels, clocks, alpha, anchors and expiry. The
+      64-frame bound and simulation/save policies stay intact; original-game
+      timing and cache behavior remain uncalibrated (`docs/formats/effects.md`).
 - [x] Put ground-position combat art into world footprint order (#204, #102).
       Muzzle, impact/destruction clips and cannon bodies can pass behind
       foreground units/buildings while front effects retain alpha blending.
