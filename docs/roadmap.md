@@ -229,6 +229,12 @@ Johnny on 2026-10-31.
       preserve reconstructed pixels, clocks, alpha, anchors and expiry. The
       64-frame bound and simulation/save policies stay intact; original-game
       timing and cache behavior remain uncalibrated (`docs/formats/effects.md`).
+- [x] Recover projectile bodies after source-cache saturation (#432). FIFO
+      eviction retains at most 128 positive/negative source records and releases
+      their voxel models. Authored SHP/HVA churn and retail source/compositor
+      checks retain pixels, anchors, motion, clocks and saved-flight reconstruction.
+      Both decoded-frame limits remain 64; simulation/save formats and original
+      trajectory/lighting calibration stay unchanged (`docs/formats/effects.md`).
 - [x] Put ground-position combat art into world footprint order (#204, #102).
       Muzzle, impact/destruction clips and cannon bodies can pass behind
       foreground units/buildings while front effects retain alpha blending.

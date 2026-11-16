@@ -214,6 +214,7 @@ type VoxelKey = (u64, u16, Vec<usize>);
 #[derive(Default)]
 pub(crate) struct Projectiles {
     bodies: HashMap<u64, Option<Body>>,
+    body_order: VecDeque<u64>,
     frames: HashMap<(u64, usize), Option<Sprite>>,
     order: VecDeque<(u64, usize)>,
     voxel_models: HashMap<u64, Option<crate::voxels::VoxelModel>>,
@@ -248,14 +249,22 @@ impl Projectiles {
         motion: Option<(i32, i32)>,
         tick: u64,
     ) -> Option<&Sprite> {
-        if self.bodies.len() >= MAX_SOURCES && !self.bodies.contains_key(&source) {
-            return None;
+        if !self.bodies.contains_key(&source) {
+            // Missing/unsupported sources occupy bounded history too. Evict
+            // them rather than permanently hiding later valid projectile art.
+            if self.bodies.len() >= MAX_SOURCES {
+                if let Some(old) = self.body_order.pop_front() {
+                    self.bodies.remove(&old);
+                    // Models belong to source metadata, unlike independently
+                    // bounded decoded frames. Rebuild them on the next miss.
+                    self.voxel_models.remove(&old);
+                }
+            }
+            self.body_order.push_back(source);
+            self.bodies
+                .insert(source, Body::load(fs, rules, art, source));
         }
-        let body = self
-            .bodies
-            .entry(source)
-            .or_insert_with(|| Body::load(fs, rules, art, source))
-            .as_ref()?;
+        let body = self.bodies.get(&source)?.as_ref()?;
         if let Some(stem) = body.voxel_image.clone() {
             return self.get_voxel(fs, source, &stem, motion, tick, pal);
         }
@@ -307,9 +316,6 @@ impl Projectiles {
         tick: u64,
         pal: &Palette,
     ) -> Option<&Sprite> {
-        if self.voxel_models.len() >= MAX_SOURCES && !self.voxel_models.contains_key(&source) {
-            return None;
-        }
         let facing = Body::voxel_facing(motion);
         // Resolve poses before borrowing the model cache mutably below.
         let poses = {
@@ -340,8 +346,25 @@ impl Projectiles {
 }
 
 #[cfg(test)]
+mod cache_tests;
+
+#[cfg(test)]
 mod tests {
     use super::*;
+
+    fn after_missing_sources(
+        fs: &AssetFs,
+        rules: &Rules,
+        art: &IniFile,
+        pal: &Palette,
+    ) -> Projectiles {
+        let mut cache = Projectiles::default();
+        for source in 0..256 {
+            assert!(cache.get(fs, rules, art, pal, source, None).is_none());
+        }
+        cache
+    }
+
     fn motion(frame: usize) -> (i32, i32) {
         let a = frame as f64 * std::f64::consts::TAU / 32.0;
         let (sx, sy) = (-a.sin(), -a.cos());
@@ -474,7 +497,7 @@ mod tests {
         let art = ini("ARTMD.INI");
         let rules = Rules::load(&ini("RULESMD.INI"), &art);
         let pal = Palette::parse(fs.read("UNITTEM.PAL").unwrap()).unwrap();
-        let mut cache = Projectiles::default();
+        let mut cache = after_missing_sources(&fs, &rules, &art, &pal);
         for (weapon, file, size, count) in [
             ("HoverMissile", "DRAGON.SHP", (24, 16), 32),
             ("Medusa", "MEDUSA.SHP", (19, 19), 64),
@@ -532,7 +555,7 @@ mod tests {
         let art = ini("ARTMD.INI");
         let rules = Rules::load(&ini("RULESMD.INI"), &art);
         let pal = Palette::parse(fs.read("UNITTEM.PAL").unwrap()).unwrap();
-        let mut cache = Projectiles::default();
+        let mut cache = after_missing_sources(&fs, &rules, &art, &pal);
         let shp = ShpFile::parse(fs.read("120MM.SHP").unwrap()).unwrap();
         assert_eq!((shp.width, shp.height, shp.frames.len()), (24, 24, 1));
         let expected: Vec<_> = shp
@@ -633,7 +656,7 @@ mod tests {
         let art = ini("ARTMD.INI");
         let rules = Rules::load(&ini("RULESMD.INI"), &art);
         let pal = Palette::parse(fs.read("UNITTEM.PAL").unwrap()).unwrap();
-        let mut cache = Projectiles::default();
+        let mut cache = after_missing_sources(&fs, &rules, &art, &pal);
         for (weapon, stem) in [("BlimpBomb", "ZBOMB"), ("SubTorpedo", "SUBT")] {
             let source = rules.weapons.get(weapon).unwrap().source_id();
             let model = crate::voxels::VoxelModel::load(&fs, stem).unwrap();
@@ -695,7 +718,7 @@ mod tests {
         let rules = Rules::load(&rules_ini, &art);
         let unit_pal = Palette::parse(fs.read("UNITTEM.PAL").unwrap()).unwrap();
         let anim_pal = Palette::parse(fs.read("ANIM.PAL").unwrap()).unwrap();
-        let mut cache = Projectiles::default();
+        let mut cache = after_missing_sources(&fs, &rules, &art, &unit_pal);
         for (weapon, file, size, animated, use_anim_pal) in [
             ("CyCannon", "TORPEDO.SHP", (9, 9), 3usize, true),
             ("Grenade", "DISCUS.SHP", (8, 5), 7, false),

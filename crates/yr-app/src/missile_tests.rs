@@ -68,6 +68,20 @@ fn retail_missiles_draw_from_saved_motion_after_shooter_loss() {
         let save = yr_app::snapshot::encode(session).unwrap();
         let frame = compose(&app);
         assert_eq!(compose(&app), frame);
+        // A fresh renderer must still draw the saved flight after missing
+        // sources have churned beyond its bounded metadata history.
+        app.sprites = load_sprites(dir, "EB1.MMX");
+        {
+            let mut bank = app.sprites.as_ref().unwrap().borrow_mut();
+            for source in 0..256 {
+                assert!(bank.get_projectile(source).is_none());
+            }
+        }
+        let churned = compose(&app);
+        assert_eq!(
+            churned, frame,
+            "late valid missile art survives source churn"
+        );
         assert_eq!(app.session.as_ref().unwrap().sim.state_hash(), hash);
         assert_eq!(
             yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap(),
@@ -141,7 +155,7 @@ fn retail_missiles_draw_from_saved_motion_after_shooter_loss() {
         }
         assert!(arrived, "missile arrives after target movement");
         assert!(app.session.as_ref().unwrap().sim.units()[0].hp < 2000);
-        println!("direction {direction}: tick {tick}, hash {hash:016x}, {changed} visible body pixels, restored after shooter loss");
+        println!("direction {direction}: tick {tick}, hash {hash:016x}, {changed} visible body pixels, unchanged after 256 missing sources and restored after shooter loss");
     }
 }
 

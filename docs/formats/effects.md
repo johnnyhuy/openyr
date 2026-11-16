@@ -821,6 +821,32 @@ original playback parity.
 cargo test -p yr-render voxel -- --nocapture
 ```
 
+## Projectile source-cache recovery (#432)
+
+Projectile metadata now uses FIFO eviction, including missing and unsupported
+sources, rather than rejecting every new source after the first 128 lookups.
+This is a native retention policy, not an observed original-engine cache rule.
+Evicting a source releases its decoded voxel model; SHP and voxel frame histories
+keep their independent 64-entry bounds. Cache hits do not extend the FIFO.
+Immutable asset/rules data lets evicted sources reconstruct without adding
+simulation fields or consuming its RNG.
+
+Authored static, 32-facing, three-frame animated and two-pose HVA fixtures check
+three rounds of negative history and 150 valid sources per body class. Evicted
+metadata, models and frames rebuild with identical RGBA, dimensions, anchors,
+motion selection and absolute-tick clocks, including `u64::MAX`. Retail cannon,
+DRAGON/MEDUSA, four animated SHP sheets and ZBOMB/SUBT source comparisons now
+begin after 256 missing-source lookups. The shared native missile scenario also
+exhausts missing history before comparing all eight in-flight compositions and
+retaining fresh-cache save/load reconstruction after shooter loss. Complete
+Session/save bytes stay unchanged. Original trajectories, timing, altitude and
+lighting remain uncalibrated under #102.
+
+```sh
+cargo test -p yr-render projectiles -- --nocapture
+cargo test -p yr-app --bin openyr retail_missiles_draw_from_saved_motion_after_shooter_loss -- --nocapture
+```
+
 ## Damaged vehicle smoke (#405)
 
 The installed RULESMD.INI explicitly labels `SmallGreySSys` as small smoke for
