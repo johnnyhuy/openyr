@@ -68,47 +68,85 @@ fn normalize(v: [f64; 3]) -> Option<[f32; 3]> {
 
 /// Inverse-transpose normals follow rotation, scale and shear without
 /// inheriting translation. f64 intermediates cover finite f32 poses.
-fn posed_normal(normal: [f32; 3], pose: &Transform) -> Option<[f32; 3]> {
-    let [a, b, c] = pose.map(|row| [row[0], row[1], row[2]].map(f64::from));
-    let cross = |u: [f64; 3], v: [f64; 3]| {
-        [
-            u[1] * v[2] - u[2] * v[1],
-            u[2] * v[0] - u[0] * v[2],
-            u[0] * v[1] - u[1] * v[0],
-        ]
-    };
-    let cofactors = [cross(b, c), cross(c, a), cross(a, b)];
-    let det: f64 = a.into_iter().zip(cofactors[0]).map(|(a, c)| a * c).sum();
-    if !det.is_finite() || det == 0. {
-        return None;
-    }
-    // Normalization removes |det|; retain its sign for reflected poses.
-    normalize(cofactors.map(|row| {
-        row.into_iter()
-            .zip(normal)
-            .map(|(c, n)| c * f64::from(n))
-            .sum::<f64>()
-            * det.signum()
-    }))
+struct NormalPose {
+    cofactors: [[f64; 3]; 3],
+    sign: f64,
 }
 
-/// Fixed light above and to the left in the orthographic camera. This
-/// is an artistic approximation, not a retail normal-table/VPL lookup.
-pub(super) fn brightness(normal: [f32; 3], pose: &Transform, facing: u16) -> u8 {
-    let Some(normal) = posed_normal(normal, pose) else {
-        // Isolated voxels, symmetric thin sheets and invalid poses retain
-        // their original colour rather than acquiring an arbitrary normal.
-        return 255;
-    };
-    let normal = super::project(normal, facing);
-    let light = normalize([-0.45, -0.65, 0.61]).unwrap();
-    let diffuse = normal
-        .into_iter()
-        .zip(light)
-        .map(|(n, l)| n * l)
-        .sum::<f32>()
-        .clamp(0., 1.);
-    ((0.78 + 0.22 * diffuse) * 255.).round() as u8
+impl NormalPose {
+    fn new(pose: &Transform) -> Option<Self> {
+        let [a, b, c] = pose.map(|row| [row[0], row[1], row[2]].map(f64::from));
+        let cross = |u: [f64; 3], v: [f64; 3]| {
+            [
+                u[1] * v[2] - u[2] * v[1],
+                u[2] * v[0] - u[0] * v[2],
+                u[0] * v[1] - u[1] * v[0],
+            ]
+        };
+        let cofactors = [cross(b, c), cross(c, a), cross(a, b)];
+        let det: f64 = a.into_iter().zip(cofactors[0]).map(|(a, c)| a * c).sum();
+        (det.is_finite() && det != 0.).then_some(Self {
+            cofactors,
+            sign: det.signum(),
+        })
+    }
+
+    fn apply(&self, normal: [f32; 3]) -> Option<[f32; 3]> {
+        // Normalization removes |det|; retain its sign for reflected poses.
+        normalize(self.cofactors.map(|row| {
+            row.into_iter()
+                .zip(normal)
+                .map(|(c, n)| c * f64::from(n))
+                .sum::<f64>()
+                * self.sign
+        }))
+    }
+}
+
+/// Pose and fixed camera/light setup shared by one limb's source voxels.
+/// Retain the previous per-normal arithmetic order for exact palette output.
+pub(super) struct Lighting {
+    pose: Option<NormalPose>,
+    projection: super::Projection,
+    light: [f32; 3],
+}
+
+impl Lighting {
+    pub(super) fn new(pose: &Transform, projection: super::Projection) -> Self {
+        Self {
+            pose: NormalPose::new(pose),
+            projection,
+            light: normalize([-0.45, -0.65, 0.61]).unwrap(),
+        }
+    }
+
+    /// Fixed light above and to the left in the orthographic camera. This
+    /// is an artistic approximation, not a retail normal-table/VPL lookup.
+    pub(super) fn brightness(&self, normal: [f32; 3]) -> u8 {
+        let Some(normal) = self.pose.as_ref().and_then(|pose| pose.apply(normal)) else {
+            // Isolated voxels, symmetric thin sheets and invalid poses retain
+            // their original colour rather than acquiring an arbitrary normal.
+            return 255;
+        };
+        let normal = self.projection.apply(normal);
+        let diffuse = normal
+            .into_iter()
+            .zip(self.light)
+            .map(|(n, l)| n * l)
+            .sum::<f32>()
+            .clamp(0., 1.);
+        ((0.78 + 0.22 * diffuse) * 255.).round() as u8
+    }
+}
+
+#[cfg(test)]
+fn posed_normal(normal: [f32; 3], pose: &Transform) -> Option<[f32; 3]> {
+    NormalPose::new(pose)?.apply(normal)
+}
+
+#[cfg(test)]
+fn brightness(normal: [f32; 3], pose: &Transform, facing: u16) -> u8 {
+    Lighting::new(pose, super::Projection::new(facing)).brightness(normal)
 }
 
 /// Light ordinary and house-remapped colours equally, preserving alpha.

@@ -168,17 +168,38 @@ fn model_point(
 
 /// Fixed orthographic camera: 45 degree azimuth, 30 degree elevation.
 /// One model unit keeps the same pixel scale across parts and facings.
-fn project([x, y, z]: [f32; 3], facing: u16) -> [f32; 3] {
-    let ang = f32::from((facing % 256 + 32) % 256) * (std::f32::consts::TAU / 256.0);
-    let (sin, cos) = ang.sin_cos();
-    let (rx, ry) = (x * cos - y * sin, x * sin + y * cos);
-    let horizontal = (rx + ry) * std::f32::consts::FRAC_1_SQRT_2;
-    let vertical = 3.0_f32.sqrt() / 2.0;
-    [
-        (rx - ry) * std::f32::consts::FRAC_1_SQRT_2,
-        horizontal * 0.5 - z * vertical,
-        horizontal * vertical + z * 0.5,
-    ]
+#[derive(Clone, Copy)]
+struct Projection {
+    sin: f32,
+    cos: f32,
+    vertical: f32,
+}
+
+impl Projection {
+    fn new(facing: u16) -> Self {
+        let ang = f32::from((facing % 256 + 32) % 256) * (std::f32::consts::TAU / 256.0);
+        let (sin, cos) = ang.sin_cos();
+        Self {
+            sin,
+            cos,
+            vertical: 3.0_f32.sqrt() / 2.0,
+        }
+    }
+
+    fn apply(self, [x, y, z]: [f32; 3]) -> [f32; 3] {
+        let (rx, ry) = (x * self.cos - y * self.sin, x * self.sin + y * self.cos);
+        let horizontal = (rx + ry) * std::f32::consts::FRAC_1_SQRT_2;
+        [
+            (rx - ry) * std::f32::consts::FRAC_1_SQRT_2,
+            horizontal * 0.5 - z * self.vertical,
+            horizontal * self.vertical + z * 0.5,
+        ]
+    }
+}
+
+#[cfg(test)]
+fn project(point: [f32; 3], facing: u16) -> [f32; 3] {
+    Projection::new(facing).apply(point)
 }
 
 /// Draw the combined body/turret/barrel with one ground anchor and one
@@ -213,19 +234,21 @@ type Point = ([f32; 3], u8, u8);
 
 fn projected_points(model: &VoxelModel, facing: u16, frames: &[usize]) -> Vec<Point> {
     let mut points = Vec::new();
+    let projection = Projection::new(facing);
     for (i, part) in model.parts.iter().enumerate() {
         for (limb_index, limb) in part.vxl.limbs.iter().enumerate() {
             let Some(m) = pose(part, limb, frames.get(i).copied().unwrap_or(0)) else {
                 continue;
             };
+            let light = lighting::Lighting::new(&m, projection);
             for (voxel_index, v) in limb.voxels.iter().enumerate() {
                 let Some(p) = model_point(limb, &m, v) else {
                     continue;
                 };
-                let p = project(p, facing);
+                let p = projection.apply(p);
                 if p.iter().all(|v| v.is_finite()) {
                     let normal = part.normals[limb_index][voxel_index];
-                    points.push((p, v.color, lighting::brightness(normal, &m, facing)));
+                    points.push((p, v.color, light.brightness(normal)));
                 }
             }
         }
@@ -816,3 +839,6 @@ mod tests {
 
 #[cfg(test)]
 mod appearance_tests;
+
+#[cfg(test)]
+mod setup_tests;
