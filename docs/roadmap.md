@@ -332,6 +332,12 @@ Johnny on 2026-10-31.
       shadow ordering. Static previews and unsupported art stay baked. Authored
       background/idle/destruction checks preserve complete Session bytes,
       selected units and pending orders; original/retail calibration remains open.
+- [x] Reuse voxel camera and pose lighting setup per decode (#434).
+      One facing projection and one inverse-transpose setup per limb replace
+      repeated per-voxel work. Previous-formula comparisons retain exact point,
+      depth, brightness, remap, sprite and anchor output across authored and
+      retail poses. The optional timing probe measures projection bookkeeping;
+      original lighting/cadence calibration remains open (`docs/formats/vxl.md`).
 - [x] Geometry-derived voxel lighting (#82): cached local surface normals
       follow HVA poses and facings under a fixed camera light. Palette and
       house colours share bounded ambient/diffuse shading; ambiguous surfaces

@@ -265,3 +265,34 @@ map compass convention remain uncalibrated here; no retail/original runtime
 comparison ran for this change. Supported map VXL bodies now leave match
 backgrounds for live composition in #351 (`map.md`), retaining position,
 direction and original-house remap across movement/load and removal.
+
+## Shared voxel projection setup (#434)
+
+A decode now prepares camera sine/cosine once for the requested facing. Every
+limb prepares its pose's inverse-transpose cofactors and determinant sign once;
+its surface normals share that setup and the fixed light vector. These are
+local values for one call, so facing changes, distinct body/turret/barrel HVA
+frame counts and pose fallback cannot reuse stale state. There is no new
+persistent cache, simulation field or save-format change.
+
+The arithmetic order within each projected point and normal stays the same.
+The earlier per-voxel formulas remain as an independent test oracle. All 256
+headings plus three wrapped headings compare projected coordinate bits and
+brightness bytes over 346 normals and eight poses, including translation,
+rotation, reflection/shear, singular, extreme finite and nonfinite inputs.
+Authored and six retail model checks compare distinct resolved poses at eight
+facings, ownerless and two house rasters, sprite dimensions, anchors and complete
+RGBA bytes. These checks preserve the current native appearance; original
+normal-table/VPL lighting and animation calibration remain open.
+
+```sh
+cargo test -p yr-render shared_voxel_setup -- --nocapture
+cargo test -p yr-render --release voxel_setup_scaling_probe -- --ignored --nocapture
+```
+
+The optional probe compares the earlier formulas and shared setup within one
+optimized binary over identical loaded models and requests. It measures source
+point projection and lighting, including the returned point vector allocation.
+Model loading/normal construction, sorting, rasterization, sprite caching and
+whole-frame throughput are outside the measurement. It has no CI timing limit;
+results depend on the compiler and machine. Terminal proof records both paths.
