@@ -129,6 +129,28 @@ fn retail_damage_smoke_follows_health_movement_and_shared_composition() {
             .count();
         if age == 12 {
             assert!(changed > 0, "damaged vehicle smoke is visible");
+            // Reconstruct active puffs after a fresh renderer has exhausted
+            // its metadata history with missing optional effect definitions.
+            app.sprites = load_sprites(dir, "EB1.MMX");
+            {
+                let mut bank = app.sprites.as_ref().unwrap().borrow_mut();
+                for n in 0..128 {
+                    assert!(bank.get_effect(&format!("MISSING{n}"), 0).is_none());
+                }
+            }
+            let recovered = compose(&app);
+            if let Some(out) = &out {
+                std::fs::write(
+                    out.join(format!("cache-recovered-t{tick:03}.png")),
+                    yr_render::png::encode_rgba(WIN_W, WIN_H, &recovered),
+                )
+                .unwrap();
+            }
+            assert_eq!(
+                recovered, visible,
+                "metadata churn preserves every world/UI pixel"
+            );
+            println!("tick {tick}: 128 missing definitions followed by active smoke reconstruct identical complete compositor bytes; {changed} smoke pixels remain visible");
         }
         assert_eq!(app.session.as_ref().unwrap().sim.state_hash(), hash);
         assert_eq!(

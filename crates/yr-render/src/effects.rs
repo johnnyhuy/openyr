@@ -6,6 +6,7 @@ use yr_assets::AssetFs;
 use yr_formats::{IniFile, IniSection, Palette, ShpFile};
 
 const MAX_CACHED_FRAMES: usize = 64;
+const MAX_CACHED_CLIPS: usize = 128;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct DamageSmokeSpec {
@@ -264,20 +265,32 @@ impl Clip {
 #[derive(Default)]
 pub(crate) struct Effects {
     clips: HashMap<String, Option<Clip>>,
+    clip_order: VecDeque<String>,
     frames: HashMap<(String, usize), Option<Sprite>>,
     order: VecDeque<(String, usize)>,
 }
 
 impl Effects {
+    fn cached_clip(&mut self, key: String, load: impl FnOnce() -> Option<Clip>) -> Option<&Clip> {
+        if !self.clips.contains_key(&key) {
+            // Missing optional art participates in FIFO eviction too, so a
+            // full history cannot permanently suppress later valid effects.
+            if self.clips.len() >= MAX_CACHED_CLIPS {
+                if let Some(old) = self.clip_order.pop_front() {
+                    self.clips.remove(&old);
+                }
+            }
+            self.clip_order.push_back(key.clone());
+            self.clips.insert(key.clone(), load());
+        }
+        self.clips.get(&key)?.as_ref()
+    }
+
     fn clip(&mut self, fs: &AssetFs, art: &IniFile, name: &str) -> Option<&Clip> {
-        // Names originate in the bounded rules registry, never in clocks.
-        if !safe_name(name) || self.clips.len() >= 128 && !self.clips.contains_key(name) {
+        if !safe_name(name) {
             return None;
         }
-        self.clips
-            .entry(name.into())
-            .or_insert_with(|| Clip::load(fs, art, name))
-            .as_ref()
+        self.cached_clip(name.into(), || Clip::load(fs, art, name))
     }
 
     pub fn alive(&mut self, fs: &AssetFs, art: &IniFile, name: &str, ticks: u64) -> bool {
@@ -299,14 +312,9 @@ impl Effects {
             return None;
         }
         // Particle names cannot alias animation names with different clocks.
-        let key = format!("smoke:{name}");
-        if self.clips.len() >= 128 && !self.clips.contains_key(&key) {
-            return None;
-        }
-        self.clips
-            .entry(key)
-            .or_insert_with(|| Clip::load_smoke(fs, rules, name))
-            .as_ref()
+        self.cached_clip(format!("smoke:{name}"), || {
+            Clip::load_smoke(fs, rules, name)
+        })
     }
 
     pub fn smoke_alive(&mut self, fs: &AssetFs, rules: &IniFile, name: &str, age: u64) -> bool {
