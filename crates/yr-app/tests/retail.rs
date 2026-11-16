@@ -47,6 +47,23 @@ fn eb1_harvester_delivers_to_retail_refinery_with_working_animation() {
     for _ in 0..2000 {
         session.step(&[]);
         let state = yr_app::animation::building_animation(&session.sim, &refinery);
+        let shared = yr_app::animation::BuildingAnimations::new(&session.sim).get(&refinery);
+        assert_eq!(
+            (
+                shared.elapsed,
+                shared.production,
+                shared.unloading,
+                shared.damaged,
+                shared.powered
+            ),
+            (
+                state.elapsed,
+                state.production,
+                state.unloading,
+                state.damaged,
+                state.powered
+            )
+        );
         if let Some(elapsed) = state.unloading {
             if began.is_none() {
                 began = Some(session.sim.tick());
