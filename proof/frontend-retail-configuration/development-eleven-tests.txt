@@ -1,0 +1,28 @@
+warning: unused field `repository` in `workspace.package`
+  --> Cargo.toml:10:1
+   |
+10 | repository = "https://github.com/johnnyhuy/openyr"
+   | ^^^^^^^^^^
+   |
+   = note: `cargo::unused_workspace_package_fields` is set to `warn` by default
+help: consider removing the field `workspace.package.repository`
+warning: workspace (manifest) generated 1 warning
+   Compiling yr-app v0.1.0 (/workspace/openyr-core-slice-20261122-10/crates/yr-app)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 5.28s
+     Running unittests src/lib.rs (/workspace/openyr-core-slice-20261122-07/.tmp/model-proof-target/debug/build/yr-app/934dba6724013a82/out/yr_app-934dba6724013a82)
+
+running 11 tests
+test frontend::tests::retail_chooser_backdrop_matches_original_unobstructed_pixels ... ok
+test frontend::tests::retail_front_headings_match_original_renderer_captures ... ok
+test frontend::tests::retail_marker_art_matches_original_sprite_and_digit_pixels ... ok
+test frontend::tests::retail_front_static_regions_match_original_renderer_observations ... ok
+test frontend::tests::retail_chooser_previews_match_complete_original_regions ... ok
+test frontend::tests::retail_setup_sliders_match_complete_original_captures ... ok
+test frontend::tests::retail_shell_uses_its_own_button_palette_and_preserves_source_pixels ... ok
+test frontend::tests::retail_skirmish_backdrop_matches_original_unobstructed_lower_body ... ok
+test frontend::tests::retail_preview_start_markers_match_complete_original_regions ... ok
+test frontend::tests::retail_skirmish_preview_matches_original_unoccluded_pixels ... ok
+test frontend::tests::retail_battle_catalog_previews_every_available_map ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 127 filtered out; finished in 5.91s
+

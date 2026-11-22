@@ -1,0 +1,27 @@
+warning: unused field `repository` in `workspace.package`
+  --> Cargo.toml:10:1
+   |
+10 | repository = "https://github.com/johnnyhuy/openyr"
+   | ^^^^^^^^^^
+   |
+   = note: `cargo::unused_workspace_package_fields` is set to `warn` by default
+help: consider removing the field `workspace.package.repository`
+warning: workspace (manifest) generated 1 warning
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.19s
+     Running unittests src/lib.rs (/workspace/openyr-core-slice-20261122-07/.tmp/model-proof-target/debug/build/yr-app/934dba6724013a82/out/yr_app-934dba6724013a82)
+
+running 1 test
+
+thread 'frontend::tests::retail_marker_art_matches_original_sprite_and_digit_pixels' (101781) panicked at crates/yr-app/src/frontend/tests.rs:8:9:
+OPENYR_GAMEDIR is not a directory: /workspace/openyr-441-intentionally-absent
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test frontend::tests::retail_marker_art_matches_original_sprite_and_digit_pixels ... FAILED
+
+failures:
+
+failures:
+    frontend::tests::retail_marker_art_matches_original_sprite_and_digit_pixels
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 137 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p yr-app --lib`
