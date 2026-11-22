@@ -15,6 +15,7 @@ use yr_rules::{Rules, TechnoKind};
 #[cfg(test)]
 mod cache_tests;
 mod decoded_cache;
+mod model_cache;
 use decoded_cache::DecodedCache;
 
 /// Alpha value marking a shadow pixel (darken the destination by half).
@@ -293,7 +294,7 @@ pub struct SpriteBank {
     unit_pal: Palette,
     infantry: HashMap<String, InfantrySequences>,
     cache: DecodedCache<SpriteKey>,
-    voxels: HashMap<String, Option<crate::voxels::VoxelModel>>,
+    voxels: model_cache::ModelCache,
     buildings: HashMap<String, Option<BuildingArt>>,
     building_order: VecDeque<String>,
     map_structure_colors: HashMap<(String, u16, u16), [u8; 3]>,
@@ -358,7 +359,7 @@ impl SpriteBank {
             unit_pal,
             infantry,
             cache: DecodedCache::default(),
-            voxels: HashMap::new(),
+            voxels: Default::default(),
             buildings: HashMap::new(),
             building_order: VecDeque::new(),
             map_structure_colors,
@@ -725,16 +726,7 @@ impl SpriteBank {
             .techno(&id)
             .is_some_and(|t| t.art.as_ref().is_some_and(|a| a.voxel))
         {
-            if !self.voxels.contains_key(&id) {
-                let image = &self.rules.techno(&id)?.image;
-                let model = crate::voxels::VoxelModel::load(&self.vfs, &image.to_ascii_uppercase());
-                self.voxels.insert(id.clone(), model);
-            }
-            let model = self.voxels.get(&id)?.as_ref()?;
-            SpriteFrame::Voxel {
-                octant,
-                poses: model.frames_at(tick),
-            }
+            return self.voxel_sprite(id, octant, remap, tick);
         } else if self
             .rules
             .techno(&id)
@@ -748,6 +740,56 @@ impl SpriteBank {
             ))
         };
         self.cached_sprite(id, frame, remap)
+    }
+
+    fn voxel_sprite(
+        &mut self,
+        id: String,
+        octant: u8,
+        remap: [u8; 3],
+        tick: u64,
+    ) -> Option<&Sprite> {
+        // A model larger than the retention budget serves this request locally.
+        // It must not become a cached failure or hide otherwise valid art.
+        let loaded = if self.voxels.contains_key(&id) {
+            None
+        } else {
+            let image = &self.rules.techno(&id)?.image;
+            Some(crate::voxels::VoxelModel::load(
+                &self.vfs,
+                &image.to_ascii_uppercase(),
+            ))
+        };
+        let model = loaded.as_ref().or_else(|| self.voxels.get(&id))?.as_ref();
+        let Some(model) = model else {
+            if let Some(loaded) = loaded {
+                self.voxels.insert(id, loaded);
+            }
+            return None;
+        };
+        let poses = model.frames_at(tick);
+        let key = (
+            id.clone(),
+            SpriteFrame::Voxel {
+                octant,
+                poses: poses.clone(),
+            },
+            remap,
+        );
+        if !self.cache.contains_key(&key) {
+            let sprite = crate::voxels::animated_sprite(
+                model,
+                voxel_facing(octant),
+                &poses,
+                &self.unit_pal,
+                remap,
+            );
+            self.cache.insert(key.clone(), sprite, &[]);
+        }
+        if let Some(loaded) = loaded {
+            self.voxels.insert(id, loaded);
+        }
+        self.cache.get(&key).and_then(Option::as_ref)
     }
 
     // Resolved frame keys and retained RGBA capacity bound history independently

@@ -479,6 +479,8 @@ fn retail_unit_byte_pressure_rebuilds_infantry_and_voxel_poses_exactly() {
     // actual byte eviction long before the normal 512-entry limit.
     let budget = cases.iter().map(|c| c.5 .4.len()).max().unwrap() * 2;
     bank.cache = DecodedCache::with_limits(512, budget);
+    bank.voxels = Default::default();
+    bank.voxels.limits(1, usize::MAX);
     let output = std::env::var_os("OPENYR_UNIT_CACHE_PROOF").map(std::path::PathBuf::from);
     if let Some(out) = &output {
         std::fs::create_dir_all(out).unwrap();
@@ -494,6 +496,7 @@ fn retail_unit_byte_pressure_rebuilds_infantry_and_voxel_poses_exactly() {
                 &actual, expected,
                 "{kind}, facing {facing}, tick {tick}, pass {pass}"
             );
+            assert!(bank.voxels.len() <= 1);
             let (entries, bytes, order) = bank.cache.stats();
             assert!(entries <= 512 && bytes <= budget);
             assert_eq!(entries, order);
@@ -516,4 +519,154 @@ fn retail_unit_byte_pressure_rebuilds_infantry_and_voxel_poses_exactly() {
         "the full cohort did not remain cached"
     );
     println!("{} retail infantry/tank/harvester/rotor requests repeated twice: peak {} entries, {} RGBA bytes within {budget}; all frames, remaps, shadows and anchors rebuild exactly.", cases.len(), peak.0, peak.1);
+}
+
+fn voxel() -> Vec<u8> {
+    // One column containing one opaque voxel, with identity limb transform.
+    let mut bytes = b"Voxel Animation\0".to_vec();
+    for n in [1u32, 1, 1, 13] {
+        bytes.extend(n.to_le_bytes());
+    }
+    bytes.extend([16, 31]);
+    bytes.extend([0; 768]);
+    bytes.extend(b"body\0\0\0\0\0\0\0\0\0\0\0\0");
+    bytes.extend([0; 12]);
+    for n in [0u32, 4] {
+        bytes.extend(n.to_le_bytes());
+    }
+    bytes.extend([0, 1, 42, 0, 1]);
+    for n in [0u32, 4, 8] {
+        bytes.extend(n.to_le_bytes());
+    }
+    for n in [
+        1f32, 1., 0., 0., 0., 0., 1., 0., 0., 0., 0., 1., 0., -2., -2., -2., 2., 2., 2.,
+    ] {
+        bytes.extend(n.to_le_bytes());
+    }
+    bytes.extend([1, 1, 1, 4]);
+    bytes
+}
+
+fn hva() -> Vec<u8> {
+    let mut bytes = vec![0; 16];
+    bytes.extend(2u32.to_le_bytes());
+    bytes.extend(1u32.to_le_bytes());
+    bytes.extend(b"body\0\0\0\0\0\0\0\0\0\0\0\0");
+    for shift in [0f32, 3.] {
+        for n in [1f32, 0., 0., shift, 0., 1., 0., 0., 0., 0., 1., 0.] {
+            bytes.extend(n.to_le_bytes());
+        }
+    }
+    bytes
+}
+
+fn voxel_bank() -> SpriteBank {
+    let mut bank = bank();
+    let mut rules = String::from("[VehicleTypes]\n");
+    for i in 0..300 {
+        rules.push_str(&format!("{i}=TYPE{i}\n{}=BAD{i}\n", i + 300));
+    }
+    for i in 0..300 {
+        rules.push_str(&format!(
+            "[TYPE{i}]\nImage=MODEL{i}\nStrength=100\n[BAD{i}]\nImage=BROKEN{i}\n"
+        ));
+    }
+    let mut art = String::new();
+    let mut files = Vec::new();
+    for i in 0..300 {
+        art.push_str(&format!("[MODEL{i}]\nVoxel=yes\n[BROKEN{i}]\nVoxel=yes\n"));
+        files.push((format!("MODEL{i}.VXL"), voxel()));
+        files.push((format!("MODEL{i}.HVA"), hva()));
+        files.push((format!("MODEL{i}TUR.VXL"), voxel()));
+        if i % 2 == 0 {
+            files.push((format!("BROKEN{i}.VXL"), vec![0; 17]));
+        }
+    }
+    bank.rules_ini = IniFile::parse(&rules);
+    bank.art_ini = IniFile::parse(&art);
+    bank.rules = Rules::load(&bank.rules_ini, &bank.art_ini);
+    bank.vfs = AssetFs::from_files(files);
+    bank
+}
+
+#[test]
+fn unit_model_history_bounds_valid_missing_and_malformed_sources() {
+    let mut bank = voxel_bank();
+    let mut fresh = voxel_bank();
+    let remap = [80, 160, 240];
+    let expected = unit_signature(
+        fresh
+            .get_animated_at("TYPE0", 0, remap, Default::default(), 2)
+            .unwrap(),
+    );
+    for i in 0..300 {
+        assert!(bank.get(&format!("TYPE{i}"), 0, remap).is_some());
+        assert!(bank.voxels.len() <= 128);
+        let (entries, bytes, order) = bank.voxels.stats();
+        assert_eq!(entries, order);
+        assert!(bytes <= 128 * 1024 * 1024);
+    }
+    assert!(!bank.voxels.contains_key("TYPE0"));
+    assert!(bank.get("type172", 0, remap).is_some());
+    assert!(bank.get("TYPE172", 0, remap).is_some());
+    assert!(!bank.voxels.contains_key("TYPE0"));
+    for i in 0..300 {
+        assert!(bank.get(&format!("BAD{i}"), 0, remap).is_none());
+        assert_eq!(bank.voxels.len(), 128);
+    }
+    assert_eq!(bank.voxels.stats(), (128, 0, 128));
+    bank.cache = Default::default();
+    assert_eq!(
+        unit_signature(
+            bank.get_animated_at("TYPE0", 0, remap, Default::default(), 2)
+                .unwrap()
+        ),
+        expected
+    );
+    println!("300 valid body/turret models and 300 malformed/missing sources stay within 128 records; evicted art reconstructs exactly.");
+}
+
+#[test]
+fn unit_model_byte_pressure_and_oversized_requests_preserve_exact_poses() {
+    let mut bank = voxel_bank();
+    let mut fresh = voxel_bank();
+    let bytes = crate::voxels::VoxelModel::load(&bank.vfs, "MODEL0")
+        .unwrap()
+        .retained_bytes();
+    assert!(bytes > 0);
+    bank.voxels.limits(128, bytes * 2);
+    for i in 0..12 {
+        assert!(bank.get(&format!("TYPE{i}"), 0, [80, 160, 240]).is_some());
+        let (entries, retained, order) = bank.voxels.stats();
+        assert_eq!(entries, order);
+        assert!(entries <= 2 && retained <= bytes * 2);
+    }
+    assert!(!bank.voxels.contains_key("TYPE0"));
+    for oversized in [false, true] {
+        if oversized {
+            bank.voxels = Default::default();
+            bank.voxels.limits(128, bytes - 1);
+        }
+        for tick in [0, 2, 4, u64::MAX] {
+            for facing in (0..=224).step_by(32) {
+                for remap in [[80, 160, 240], [240, 80, 160]] {
+                    bank.cache = Default::default();
+                    let expected = unit_signature(
+                        fresh
+                            .get_animated_at("TYPE0", facing, remap, Default::default(), tick)
+                            .unwrap(),
+                    );
+                    let actual = unit_signature(
+                        bank.get_animated_at("type0", facing, remap, Default::default(), tick)
+                            .unwrap(),
+                    );
+                    assert_eq!(actual, expected);
+                    if oversized {
+                        assert_eq!(bank.voxels.stats(), (0, 0, 0));
+                    }
+                }
+            }
+        }
+    }
+    println!("128 facing/pose/remap comparisons preserve complete RGBA and anchors under byte eviction and transient oversized-model requests.");
 }
