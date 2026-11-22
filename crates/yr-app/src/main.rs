@@ -45,6 +45,8 @@ mod sprite_blit_tests;
 mod surface_input;
 mod type_selection;
 mod unit_follow;
+#[cfg(test)]
+mod unit_model_retention_tests;
 mod unit_status;
 mod window_size;
 

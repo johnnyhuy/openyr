@@ -442,8 +442,12 @@ fn unit_cache_pressure_preserves_frames_shadows_remaps_and_missing_art_bounds() 
 
 #[test]
 fn retail_unit_byte_pressure_rebuilds_infantry_and_voxel_poses_exactly() {
-    let dir = std::path::PathBuf::from(std::env::var("HOME").unwrap_or_default())
-        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    let dir = std::env::var_os("OPENYR_GAMEDIR")
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(|| {
+            std::path::PathBuf::from(std::env::var("HOME").unwrap_or_default())
+                .join("Games/RA2YR/prefix/drive_c/Westwood/RA2")
+        });
     if !dir.is_dir() {
         return;
     }
