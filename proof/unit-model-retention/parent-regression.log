@@ -1,0 +1,33 @@
+warning: unused field `repository` in `workspace.package`
+  --> Cargo.toml:10:1
+   |
+10 | repository = "https://github.com/johnnyhuy/openyr"
+   | ^^^^^^^^^^
+   |
+   = note: `cargo::unused_workspace_package_fields` is set to `warn` by default
+help: consider removing the field `workspace.package.repository`
+warning: workspace (manifest) generated 1 warning
+    Blocking waiting for file lock on build directory
+   Compiling yr-formats v0.1.0 (/workspace/openyr-model-baseline-20261122-07/crates/yr-formats)
+   Compiling yr-rules v0.1.0 (/workspace/openyr-model-baseline-20261122-07/crates/yr-rules)
+   Compiling yr-sim v0.1.0 (/workspace/openyr-model-baseline-20261122-07/crates/yr-sim)
+   Compiling yr-assets v0.1.0 (/workspace/openyr-model-baseline-20261122-07/crates/yr-assets)
+   Compiling yr-render v0.1.0 (/workspace/openyr-model-baseline-20261122-07/crates/yr-render)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 9.46s
+     Running unittests src/lib.rs (/workspace/openyr-core-review-20261113-10/.tmp/check-target/debug/build/yr-render/3b4ba62ca3de0349/out/yr_render-3b4ba62ca3de0349)
+
+running 1 test
+
+thread 'sprites::cache_tests::unit_model_parent_history_regression' (87416) panicked at crates/yr-render/src/sprites/cache_tests.rs:594:2:
+retained 129 records at type 128
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test sprites::cache_tests::unit_model_parent_history_regression ... FAILED
+
+failures:
+
+failures:
+    sprites::cache_tests::unit_model_parent_history_regression
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 100 filtered out; finished in 0.04s
+
+error: test failed, to rerun pass `-p yr-render --lib`
