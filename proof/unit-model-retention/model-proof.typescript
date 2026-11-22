@@ -1,0 +1,60 @@
+Script started on 2026-11-22 12:30:34+00:00 [COMMAND="bash .tmp/model-proof.sh" <not executed on terminal>]
++ git rev-parse HEAD 'HEAD^{tree}'
+a5e3e342c48f9dc2a8f5688601df023ff48e38fb
+3401375453cc61cd01f4d3a1369069ec4fb34c3e
++ git status --porcelain
++ rustc --version
+rustc 1.100.0 (0ef1bc386 2026-11-09)
++ cargo test --target-dir .tmp/model-proof-target -p yr-render --lib unit_model --locked -- --nocapture
+warning: unused field `repository` in `workspace.package`
+  --> Cargo.toml:10:1
+   |
+10 | repository = "https://github.com/johnnyhuy/openyr"
+   | ^^^^^^^^^^
+   |
+   = note: `cargo::unused_workspace_package_fields` is set to `warn` by default
+help: consider removing the field `workspace.package.repository`
+warning: workspace (manifest) generated 1 warning
+   Compiling version_check v0.9.5
+   Compiling autocfg v1.5.1
+   Compiling generic-array v0.14.7
+   Compiling typenum v1.20.1
+   Compiling num-traits v0.2.19
+   Compiling proc-macro2 v1.0.107
+   Compiling quote v1.0.47
+   Compiling unicode-ident v1.0.27
+   Compiling inout v0.1.4
+   Compiling crypto-common v0.1.7
+   Compiling serde_core v1.0.229
+   Compiling cipher v0.4.4
+   Compiling num-integer v0.1.47
+   Compiling byteorder v1.5.0
+   Compiling num-bigint v0.4.8
+   Compiling blowfish v0.9.1
+   Compiling syn v3.0.9
+   Compiling libc v0.2.191
+   Compiling zmij v1.0.23
+   Compiling serde v1.0.229
+   Compiling yr-formats v0.1.0 (/workspace/openyr-core-slice-20261122-07/crates/yr-formats)
+   Compiling serde_derive v1.0.229
+   Compiling serde_json v1.0.154
+   Compiling itoa v1.0.18
+   Compiling memchr v2.8.3
+   Compiling yr-rules v0.1.0 (/workspace/openyr-core-slice-20261122-07/crates/yr-rules)
+   Compiling memmap2 v0.9.11
+   Compiling yr-sim v0.1.0 (/workspace/openyr-core-slice-20261122-07/crates/yr-sim)
+   Compiling yr-assets v0.1.0 (/workspace/openyr-core-slice-20261122-07/crates/yr-assets)
+   Compiling yr-render v0.1.0 (/workspace/openyr-core-slice-20261122-07/crates/yr-render)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 21.61s
+     Running unittests src/lib.rs (.tmp/model-proof-target/debug/build/yr-render/3b4ba62ca3de0349/out/yr_render-3b4ba62ca3de0349)
+
+running 2 tests
+128 facing/pose/remap comparisons preserve complete RGBA and anchors under byte eviction and transient oversized-model requests.
+test sprites::cache_tests::unit_model_byte_pressure_and_oversized_requests_preserve_exact_poses ... ok
+300 valid body/turret models and 300 malformed/missing sources stay within 128 records; evicted art reconstructs exactly.
+test sprites::cache_tests::unit_model_history_bounds_valid_missing_and_malformed_sources ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 100 filtered out; finished in 0.23s
+
+
+Script done on 2026-11-22 12:30:56+00:00 [COMMAND_EXIT_CODE="0"]
