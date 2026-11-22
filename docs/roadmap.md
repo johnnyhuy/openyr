@@ -384,8 +384,11 @@ Johnny on 2026-10-31.
       model capacities, with transient rendering for oversized requests. Authored
       source churn and exact facing/pose/remap reconstruction pass; original
       presentation, simulation and save fields stay unchanged (`docs/formats/vxl.md`).
-- [ ] Verify unit model eviction with retail live/map art and saved-state
-      comparisons (#437). The cloud executor has no retail installation.
+- [x] Verify unit model eviction with retail live/map art and saved-state
+      comparisons (#437): EB1 compositions at 640x480 and 1280x800 retain exact
+      frames, Session bytes/hash, selection and pending orders after model and
+      decoded-sprite churn and save restore. Retail pose/remap reconstruction
+      also runs with a one-model budget (`docs/formats/vxl.md`).
 - [x] Clip shared sprite raster work to the viewport before sampling (#426).
       Body, effect and unioned-shadow passes retain their original sampling
       origin; offscreen axes return immediately. Authored edge/scale/alpha

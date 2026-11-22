@@ -323,6 +323,25 @@ briefly coexist with the retained budget and is reloaded on subsequent requests.
 Authored tests exercise 300 valid body/turret sources and 300 malformed/missing
 sources, byte eviction, negative-record accounting and oversized requests.
 Complete RGBA/anchor comparisons cover eight facings, two house remaps and
-four clocks including u64::MAX. The optional existing retail reconstruction
-cohort also uses a one-model retention limit. Retail and physical checks have
-not run in this cloud executor; #437 remains open for retail/live-map evidence.
+four clocks including u64::MAX. With `OPENYR_GAMEDIR` set to a retail install,
+the reconstruction cohort also uses a one-model retention limit across infantry
+and voxel art, facings and poses. It compares complete RGBA and anchors twice.
+
+The native app test loads a temporary EB1 map overlay with 140 aliases of six
+retail voxel images. Each of four cases (640x480 and 1280x800, at two simulation
+ticks) exceeds the production 128-model and 512-decoded-sprite history limits.
+It compares complete composed frames before and after churn, then after Session
+snapshot restoration. Session bytes and simulation hash, selected unit IDs and
+pending commands remain identical. The temporary overlay and optional proof
+images stay outside the source tree. These retail checks ran on Linux; they do
+not establish original-game timing/lighting parity, physical input or macOS
+presentation.
+
+```sh
+OPENYR_GAMEDIR=/path/to/RA2 cargo test -p yr-render retail_unit_byte_pressure --locked -- --nocapture
+OPENYR_GAMEDIR=/path/to/RA2 cargo test -p yr-app --bin openyr retail_unit_model_eviction --locked -- --nocapture
+```
+
+Both checks fall back to the usual home-directory installation path and skip
+when no installation is present. `OPENYR_UNIT_CACHE_PROOF` and
+`OPENYR_MODEL_RETENTION_PROOF` optionally export their comparison frames.
