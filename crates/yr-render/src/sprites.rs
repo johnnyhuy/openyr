@@ -35,6 +35,7 @@ pub struct InfantryAnimation {
 /// sequence triples describe frame layout, not a verified playback rate.
 const INFANTRY_FRAME_TICKS: u64 = 2;
 const IDLE_WAIT_TICKS: u64 = 90;
+const MAX_BUILDING_DEFINITIONS: usize = 128;
 
 #[derive(Debug, Clone, Copy)]
 struct Sequence {
@@ -294,6 +295,7 @@ pub struct SpriteBank {
     cache: DecodedCache<SpriteKey>,
     voxels: HashMap<String, Option<crate::voxels::VoxelModel>>,
     buildings: HashMap<String, Option<BuildingArt>>,
+    building_order: VecDeque<String>,
     map_structure_colors: HashMap<(String, u16, u16), [u8; 3]>,
     map_unit_kinds: HashSet<String>,
     layers: DecodedCache<LayerKey>,
@@ -358,6 +360,7 @@ impl SpriteBank {
             cache: DecodedCache::default(),
             voxels: HashMap::new(),
             buildings: HashMap::new(),
+            building_order: VecDeque::new(),
             map_structure_colors,
             map_unit_kinds,
             layers: DecodedCache::default(),
@@ -611,6 +614,14 @@ impl SpriteBank {
         if !self.buildings.contains_key(&id) {
             let art =
                 crate::live_building_art(&self.vfs, &self.rules, &self.art_ini, &id, self.theater);
+            // Bound positive and negative definition history independently of
+            // decoded layers. Hits retain FIFO order; evicted art can reload.
+            if self.buildings.len() >= MAX_BUILDING_DEFINITIONS {
+                if let Some(old) = self.building_order.pop_front() {
+                    self.buildings.remove(&old);
+                }
+            }
+            self.building_order.push_back(id.clone());
             self.buildings.insert(id.clone(), art);
         }
         let art = self.buildings.get(&id)?.as_ref()?;

@@ -409,6 +409,38 @@ not establish original animation cadence, per-overlay depth or physical Mac
 display calibration, which remain in #6.
 
 
+## Building definition history (#436)
+
+The separate building-definition map previously retained every requested type
+name, including unresolved names, for the lifetime of the SpriteBank. An
+authored 300-type fixture reproduced 129 retained definitions at type 128,
+independently of the bounded decoded-layer history above.
+
+Definition history now retains at most 128 positive or negative records.
+Case-normalised hits keep their FIFO position; inserting a new name evicts
+the oldest record. Eviction drops only parsed layer references. Existing
+decoded sprites remain independently budgeted, and a later request resolves
+the same definition from the SpriteBank's immutable rules, art and assets.
+This is an entry-count limit on definition history, not a byte limit on names,
+source INIs, all parsed data or total process memory.
+
+Authored checks cycle 300 valid types and 300 missing names, then reconstruct
+normal/damaged, production, unloading and unpowered layers after clearing
+decoded history too. A native composition test evicts definitions between
+same-tick redraws at three layouts and two idle phases, preserving complete
+pixels, Session bytes/hash, selection and pending orders. The retail cache
+test also evicts all initial definitions through 300 missing names before its
+24 complete layer comparisons and optional cold/rebuilt PNG export. Existing
+independent retail source-canvas checks remain unchanged. No simulation or
+save fields, RNG calls or animation clocks are added. Original cache behaviour,
+animation cadence and per-overlay depth remain uncalibrated.
+
+```sh
+cargo test -p yr-render --lib building_definition_history -- --nocapture
+cargo test -p yr-render --lib retail_building_cache_churn -- --nocapture
+cargo test -p yr-app --bin openyr building_idle -- --nocapture
+```
+
 ## Decoded unit history byte budget
 
 The unit history already limited decoded sprites to 512 entries, but did not
