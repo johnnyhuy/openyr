@@ -869,6 +869,12 @@ then basic-AI skirmish, then data-driven addons, then roguelite mode.
       through native handlers; ordinary Enter and Option text remain usable
       (`docs/window-input.md`, `docs/formats/menus.md`). Physical/original
       modifier calibration remains open.
+- [x] Run the eleven frontend retail-art checks against `OPENYR_GAMEDIR`
+      (#441, #96). Original-observation regions, source palettes, marker art,
+      catalog previews and setup sliders now execute with the cloud install.
+      An absent explicit directory fails; the unconfigured home fallback keeps
+      its existing skip behavior. The #164 marker exclusion and timing/physical
+      limits remain unchanged (`docs/formats/front-menu.md`).
 - [ ] Native menu and match flow (#96): original-style main menu, skirmish
       setup/map preview, saved matches, pause/resume, save/load, restart,
       options and quit. Add Won/Lost screens, loading/error feedback and

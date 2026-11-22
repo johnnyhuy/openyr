@@ -1,10 +1,25 @@
 use super::*;
 use crate::menu::{Button, Effect, Layout, Page, State};
 
+// Explicit retail configuration must never turn a missing install into a pass.
+fn retail_directory() -> std::path::PathBuf {
+    if let Some(path) = std::env::var_os("OPENYR_GAMEDIR") {
+        let path = std::path::PathBuf::from(path);
+        assert!(
+            path.is_dir(),
+            "OPENYR_GAMEDIR is not a directory: {}",
+            path.display()
+        );
+        path
+    } else {
+        std::path::PathBuf::from(std::env::var("HOME").unwrap_or_default())
+            .join("Games/RA2YR/prefix/drive_c/Westwood/RA2")
+    }
+}
+
 #[test]
 fn retail_chooser_backdrop_matches_original_unobstructed_pixels() {
-    let directory = std::path::PathBuf::from(std::env::var("HOME").unwrap_or_default())
-        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    let directory = retail_directory();
     if !directory.is_dir() {
         return;
     }
@@ -89,8 +104,7 @@ fn retail_chooser_backdrop_matches_original_unobstructed_pixels() {
 
 #[test]
 fn retail_skirmish_backdrop_matches_original_unobstructed_lower_body() {
-    let directory = std::path::PathBuf::from(std::env::var("HOME").unwrap_or_default())
-        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    let directory = retail_directory();
     if !directory.is_dir() {
         return;
     }
@@ -135,8 +149,7 @@ fn retail_skirmish_backdrop_matches_original_unobstructed_lower_body() {
 
 #[test]
 fn retail_front_headings_match_original_renderer_captures() {
-    let dir = std::path::PathBuf::from(std::env::var("HOME").unwrap_or_default())
-        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    let dir = retail_directory();
     if !dir.is_dir() {
         return;
     }
@@ -199,8 +212,7 @@ fn retail_front_headings_match_original_renderer_captures() {
 
 #[test]
 fn retail_skirmish_preview_matches_original_unoccluded_pixels() {
-    let dir = std::path::PathBuf::from(std::env::var("HOME").unwrap_or_default())
-        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    let dir = retail_directory();
     if !dir.is_dir() {
         return;
     }
@@ -363,8 +375,7 @@ fn preview_client_fits_both_axes_and_keeps_invalid_images_black() {
 
 #[test]
 fn retail_front_static_regions_match_original_renderer_observations() {
-    let dir = std::path::PathBuf::from(std::env::var("HOME").unwrap_or_default())
-        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    let dir = retail_directory();
     if !dir.is_dir() {
         return;
     }
@@ -490,8 +501,7 @@ fn front_navigation_geometry_and_disabled_modes_are_consistent() {
 #[test]
 fn retail_shell_uses_its_own_button_palette_and_preserves_source_pixels() {
     use yr_formats::{Palette, ShpFile};
-    let dir = std::path::PathBuf::from(std::env::var("HOME").unwrap_or_default())
-        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    let dir = retail_directory();
     if !dir.is_dir() {
         return;
     }
@@ -680,8 +690,7 @@ fn preview_markers_clip_to_the_control_and_keep_sparse_start_numbers() {
 
 #[test]
 fn retail_preview_start_markers_match_complete_original_regions() {
-    let directory = std::path::PathBuf::from(std::env::var("HOME").unwrap_or_default())
-        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    let directory = retail_directory();
     if !directory.is_dir() {
         return;
     }
@@ -765,8 +774,7 @@ fn start_point_indices_are_bounded_and_keep_authored_cells() {
 
 #[test]
 fn retail_marker_art_matches_original_sprite_and_digit_pixels() {
-    let directory = std::path::PathBuf::from(std::env::var("HOME").unwrap_or_default())
-        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    let directory = retail_directory();
     if !directory.is_dir() {
         return;
     }
@@ -805,8 +813,7 @@ fn retail_marker_art_matches_original_sprite_and_digit_pixels() {
 
 #[test]
 fn retail_chooser_previews_match_complete_original_regions() {
-    let directory = std::path::PathBuf::from(std::env::var("HOME").unwrap_or_default())
-        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    let directory = retail_directory();
     if !directory.is_dir() {
         return;
     }
@@ -875,8 +882,7 @@ fn retail_chooser_previews_match_complete_original_regions() {
 
 #[test]
 fn retail_battle_catalog_previews_every_available_map() {
-    let directory = std::path::PathBuf::from(std::env::var("HOME").unwrap_or_default())
-        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    let directory = retail_directory();
     if !directory.is_dir() {
         return;
     }
@@ -901,8 +907,7 @@ fn retail_battle_catalog_previews_every_available_map() {
 
 #[test]
 fn retail_setup_sliders_match_complete_original_captures() {
-    let directory = std::path::PathBuf::from(std::env::var("HOME").unwrap_or_default())
-        .join("Games/RA2YR/prefix/drive_c/Westwood/RA2");
+    let directory = retail_directory();
     if !directory.is_dir() {
         return;
     }

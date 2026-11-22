@@ -315,3 +315,27 @@ authored tone, not a retail menu sound; its decoded mixed output is nonzero.
 exports native-compositor phase PNGs, the synthetic WAV and cue log. These
 checks do not establish retail click artwork/audio, live audio-device playback,
 physical Mac/Retina delivery or original transition parity under #96/#174.
+
+## Configured retail frontend verification (#441)
+
+The eleven retail tests in `frontend/tests.rs` accept `OPENYR_GAMEDIR` before
+trying the usual home installation path. An explicit path that is not a
+directory fails with that path in the assertion message. An existing explicit
+directory is opened through AssetFs; invalid archives or missing required art
+fail the existing assertions. Without an override, an absent home installation
+still skips, allowing asset-free CI.
+
+```sh
+OPENYR_GAMEDIR=/path/to/RA2 cargo test -p yr-app --lib frontend::tests::retail --locked -- --nocapture
+```
+
+The cohort covers chooser/setup backgrounds, captured headings and static
+regions, shell button source pixels, marker artwork, complete Skirmish preview
+regions, available catalog previews and setup sliders. It passed against the
+Linux retail installation. These existing hashes retain their original masks
+and exclusions, including #164's one-pixel chooser marker gap; they do not
+establish full-window parity or elapsed-time, physical input or macOS behavior.
+The optional `OPENYR_BACKDROP_PROOF`, `OPENYR_TITLE_PROOF`,
+`OPENYR_PREVIEW_PROOF`, `OPENYR_FRONT_CALIBRATION_PROOF`, `OPENYR_MARKER_PROOF`,
+`OPENYR_CHOOSER_PROOF` and `OPENYR_SETUP_PROOF` directories export composed
+comparison frames outside the source tree.
