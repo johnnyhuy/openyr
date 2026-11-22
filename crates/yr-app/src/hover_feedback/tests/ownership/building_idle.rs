@@ -205,6 +205,27 @@ fn building_idle_neutral_layers_animate_without_production_or_saved_state_change
             );
             assert_eq!(app.pending, [Command::Stop { id: own }]);
             assert_eq!(app.selected, [own].into());
+            {
+                let mut bank = app.sprites.as_ref().unwrap().borrow_mut();
+                for i in 0..300 {
+                    assert!(bank
+                        .get_building(&format!("MISSING{i}"), map_color, Default::default())
+                        .is_none());
+                }
+            }
+            let mut rebuilt = vec![0; frame.len()];
+            app.compose(&mut rebuilt, size.0, size.1);
+            assert_eq!(
+                rebuilt, frame,
+                "definition eviction preserves composed pixels"
+            );
+            assert_eq!(app.session.as_ref().unwrap().sim.state_hash(), hash);
+            assert_eq!(
+                yr_app::snapshot::encode(app.session.as_ref().unwrap()).unwrap(),
+                before
+            );
+            assert_eq!(app.pending, [Command::Stop { id: own }]);
+            assert_eq!(app.selected, [own].into());
             capture(&app, size, phase, &frame, id, map_color);
             captured.push(frame);
             app.session.as_mut().unwrap().sim.step(&[]);

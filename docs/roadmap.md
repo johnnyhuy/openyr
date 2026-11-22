@@ -379,6 +379,8 @@ Johnny on 2026-10-31.
       infantry/voxel reconstruction and missing-art churn retain exact pixels,
       shadows, remaps and anchors. Simulation/save fields and original-game
       animation calibration stay unchanged (`docs/formats/shp.md`).
+- [ ] Bound retained unit voxel model geometry and positive/negative model
+      history separately from decoded sprite pixels (#437).
 - [x] Clip shared sprite raster work to the viewport before sampling (#426).
       Body, effect and unioned-shadow passes retain their original sampling
       origin; offscreen axes return immediately. Authored edge/scale/alpha
@@ -391,6 +393,12 @@ Johnny on 2026-10-31.
       Authored phase/remap and byte-pressure checks plus retail eviction
       comparisons preserve body, shadow, bib, shell and animation pixels.
       Simulation/save formats and original cadence/depth calibration stay intact
+      (`docs/formats/shp.md`).
+- [x] Bound building definition history (#436) to 128 positive/negative
+      records with FIFO eviction. Valid-type and missing-name churn rebuild
+      normal/damaged, production, unloading and unpowered layers exactly;
+      native redraw checks preserve pixels, complete save bytes and input state.
+      Decoded-layer budgets and original cadence/depth calibration stay intact
       (`docs/formats/shp.md`).
 - [x] Refinery unloading art follows the actual harvester timer (#68, #6).
       Retail `SpecialAnim=GAREFNOR` plays once, stops at completion,

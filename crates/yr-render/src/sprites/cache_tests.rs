@@ -46,6 +46,7 @@ fn bank() -> SpriteBank {
         cache: Default::default(),
         voxels: Default::default(),
         buildings: Default::default(),
+        building_order: Default::default(),
         map_structure_colors: Default::default(),
         map_unit_kinds: Default::default(),
         layers: Default::default(),
@@ -61,6 +62,100 @@ fn signature(sprites: BuildingSprites<'_>) -> Vec<(u32, u32, i32, i32, Vec<u8>)>
         .chain(sprites.layers)
         .map(|s| (s.w, s.h, s.ax, s.ay, s.rgba.clone()))
         .collect()
+}
+
+#[test]
+fn building_definition_history_bounds_valid_and_missing_names_and_rebuilds_layers() {
+    let mut bank = bank();
+    let mut rules = String::from("[BuildingTypes]\n");
+    for i in 0..300 {
+        rules.push_str(&format!("{i}=TYPE{i}\n"));
+    }
+    for i in 0..300 {
+        rules.push_str(&format!("[TYPE{i}]\nImage=BASE\nStrength=100\n"));
+    }
+    bank.rules_ini = IniFile::parse(&rules);
+    bank.art_ini = IniFile::parse(
+        "[BASE]\nFoundation=2x1\nActiveAnim=WORK\nActiveAnimPowered=yes\n\
+         BibShape=BIB\nProductionAnim=WORK\nSpecialAnim=WORK\nUnderDoorAnim=BIB\n\
+         [WORK]\nRate=225\nLoopEnd=600\nShadow=yes\n",
+    );
+    bank.rules = Rules::load(&bank.rules_ini, &bank.art_ini);
+    let states = [
+        BuildingAnimation {
+            elapsed: 37,
+            production: Some(12),
+            powered: true,
+            ..Default::default()
+        },
+        BuildingAnimation {
+            elapsed: 51,
+            damaged: true,
+            powered: true,
+            ..Default::default()
+        },
+        BuildingAnimation {
+            elapsed: 65,
+            unloading: Some(9),
+            powered: true,
+            ..Default::default()
+        },
+        BuildingAnimation {
+            elapsed: u64::MAX,
+            powered: false,
+            ..Default::default()
+        },
+    ];
+    let remap = [80, 160, 240];
+    let expected: Vec<_> = states
+        .iter()
+        .map(|&state| {
+            let result = signature(bank.get_building("TYPE0", remap, state).unwrap());
+            assert!(result.len() >= 4, "bib, body, shell and active art");
+            result
+        })
+        .collect();
+    for i in 0..300 {
+        assert!(bank
+            .get_building(&format!("TYPE{i}"), remap, states[0])
+            .is_some());
+        assert!(
+            bank.buildings.len() <= 128,
+            "valid definition history at type {i}"
+        );
+        assert_eq!(bank.building_order.len(), bank.buildings.len());
+    }
+    assert!(!bank.buildings.contains_key("TYPE0"));
+    assert_eq!(bank.buildings.len(), 128);
+    for i in 0..300 {
+        assert!(bank
+            .get_building(&format!("MISSING{i}"), remap, states[0])
+            .is_none());
+        assert!(
+            bank.buildings.len() <= 128,
+            "negative definition history at name {i}"
+        );
+        assert_eq!(bank.building_order.len(), bank.buildings.len());
+    }
+    assert!(bank.buildings.values().all(Option::is_none));
+    // Case-normalised hits, including negative hits, must not consume capacity
+    // or refresh FIFO order. The oldest miss leaves on the next new request.
+    for _ in 0..300 {
+        assert!(bank.get_building("missing172", remap, states[0]).is_none());
+    }
+    assert_eq!(bank.buildings.len(), 128);
+    bank.layers = Default::default();
+    for (i, state) in states.into_iter().enumerate() {
+        assert_eq!(
+            signature(bank.get_building("type0", remap, state).unwrap()),
+            expected[i]
+        );
+        assert_eq!(bank.buildings.len(), 128);
+    }
+    assert!(!bank.buildings.contains_key("MISSING172"));
+    assert!(bank.buildings.contains_key("MISSING173"));
+    assert_eq!(bank.building_order.len(), bank.buildings.len());
+    println!("300 valid types and 300 missing names retain at most 128 building definitions; normal/damaged/production/unloading/unpowered layers reconstruct exactly.");
 }
 
 #[test]
@@ -201,6 +296,14 @@ fn retail_building_cache_churn_preserves_complete_layer_pixels() {
         .iter()
         .map(|&(kind, state)| signature(bank.get_building(kind, remap, state).unwrap()))
         .collect();
+    for i in 0..300 {
+        assert!(bank
+            .get_building(&format!("MISSING{i}"), remap, states[0])
+            .is_none());
+        assert!(bank.buildings.len() <= 128);
+        assert_eq!(bank.building_order.len(), bank.buildings.len());
+    }
+    assert!(bank.buildings.values().all(Option::is_none));
     let mut peak = (0, 0);
     for color in 0..600 {
         let color = [color as u8, (color / 256) as u8, 100];
@@ -233,7 +336,7 @@ fn retail_building_cache_churn_preserves_complete_layer_pixels() {
             }
         }
     }
-    println!("600 retail color requests: peak {} entries, {} RGBA bytes; 24 complete factory/refinery/yard requests rebuild exactly (normal, damaged, production, unloading and unpowered).", peak.0, peak.1);
+    println!("300 missing names evict all retail definitions within 128 records; 600 retail color requests: peak {} entries, {} RGBA bytes; 24 complete factory/refinery/yard requests rebuild exactly (normal, damaged, production, unloading and unpowered).", peak.0, peak.1);
 }
 
 #[test]
