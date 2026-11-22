@@ -27,6 +27,40 @@ pub(crate) struct VoxelModel {
 const HVA_FRAME_TICKS: u64 = 2;
 
 impl VoxelModel {
+    /// Heap capacities retained by parsed parts, geometry, normals and HVA poses.
+    /// Allocator bookkeeping and temporary parsing/projection storage are separate.
+    pub(crate) fn retained_bytes(&self) -> usize {
+        fn capacity<T>(v: &Vec<T>) -> usize {
+            v.capacity().saturating_mul(std::mem::size_of::<T>())
+        }
+        let mut bytes = capacity(&self.parts);
+        for part in &self.parts {
+            bytes = bytes.saturating_add(capacity(&part.vxl.limbs));
+            for limb in &part.vxl.limbs {
+                bytes = bytes
+                    .saturating_add(limb.name.capacity())
+                    .saturating_add(capacity(&limb.voxels));
+            }
+            bytes = bytes.saturating_add(capacity(&part.normals));
+            for normals in &part.normals {
+                bytes = bytes.saturating_add(capacity(normals));
+            }
+            if let Some(hva) = &part.hva {
+                bytes = bytes
+                    .saturating_add(hva.name.capacity())
+                    .saturating_add(capacity(&hva.limbs))
+                    .saturating_add(capacity(&hva.frames));
+                for name in &hva.limbs {
+                    bytes = bytes.saturating_add(name.capacity());
+                }
+                for frame in &hva.frames {
+                    bytes = bytes.saturating_add(capacity(frame));
+                }
+            }
+        }
+        bytes
+    }
+
     /// Resolve each part independently. Attachment lengths need not match
     /// the body, and no common period or allocation depends on a clock.
     pub(crate) fn frames_at(&self, tick: u64) -> Vec<usize> {

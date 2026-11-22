@@ -379,8 +379,13 @@ Johnny on 2026-10-31.
       infantry/voxel reconstruction and missing-art churn retain exact pixels,
       shadows, remaps and anchors. Simulation/save fields and original-game
       animation calibration stay unchanged (`docs/formats/shp.md`).
-- [ ] Bound retained unit voxel model geometry and positive/negative model
-      history separately from decoded sprite pixels (#437).
+- [x] Bound retained unit voxel model payload and positive/negative history
+      separately from decoded sprite pixels (#437): 128 records and 128 MiB of
+      model capacities, with transient rendering for oversized requests. Authored
+      source churn and exact facing/pose/remap reconstruction pass; original
+      presentation, simulation and save fields stay unchanged (`docs/formats/vxl.md`).
+- [ ] Verify unit model eviction with retail live/map art and saved-state
+      comparisons (#437). The cloud executor has no retail installation.
 - [x] Clip shared sprite raster work to the viewport before sampling (#426).
       Body, effect and unioned-shadow passes retain their original sampling
       origin; offscreen axes return immediately. Authored edge/scale/alpha

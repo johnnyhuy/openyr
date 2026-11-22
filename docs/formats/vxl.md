@@ -171,7 +171,7 @@ tests cover unequal part lengths, large clocks and malformed later poses.
 
 `SpriteBank::get_animated_at` takes the absolute tick shared by live and
 headless drawing. Its keys hold resolved per-part frames rather than
-ticks. Parsed voxel models are retained per type, and a FIFO caps decoded
+ticks. Parsed voxel models use a separate retention budget (#437), and a FIFO caps decoded
 unit sprites at 512 entries, including failed decodes. Coprime part
 lengths cannot create an unbounded sprite cache or require a common loop
 period. Repeated ticks, movement changes, wrapping and eviction are
@@ -296,3 +296,33 @@ point projection and lighting, including the returned point vector allocation.
 Model loading/normal construction, sorting, rasterization, sprite caching and
 whole-frame throughput are outside the measurement. It has no CI timing limit;
 results depend on the compiler and machine. Terminal proof records both paths.
+
+## Retained unit models (#437)
+
+Live unit model history retains at most 128 positive or negative type records
+and 128 MiB of model heap capacities. FIFO hits do not refresh order; ASCII
+case normalization continues to identify a type. The byte count includes the
+parts vector, VXL limb vectors and names, voxel vectors, computed normal
+vectors, and HVA names, limb names and frame/transform vectors, using capacities
+rather than lengths. Inline palettes and HVA headers are included in the parts
+allocation. Saturating sums reject an unrepresentable retained size.
+
+On a miss, the renderer loads and draws the current model before attempting
+retention. A model exceeding the byte limit is used transiently and dropped;
+it is not cached as missing art. Smaller models evict the oldest retained
+records until both limits fit. Decoded RGBA uses its existing independent
+budget, so eviction need not discard a reusable frame. Resolved poses, anchors,
+lighting, remaps, simulation and save fields are unchanged.
+
+The limits bound retained model payload and record count, not total process
+memory. Source files in AssetFs, identifier byte lengths, hash-table/deque
+allocator overhead, parsing/normal-generation scratch space and projected
+points remain outside the model byte count. A current oversized model can
+briefly coexist with the retained budget and is reloaded on subsequent requests.
+
+Authored tests exercise 300 valid body/turret sources and 300 malformed/missing
+sources, byte eviction, negative-record accounting and oversized requests.
+Complete RGBA/anchor comparisons cover eight facings, two house remaps and
+four clocks including u64::MAX. The optional existing retail reconstruction
+cohort also uses a one-model retention limit. Retail and physical checks have
+not run in this cloud executor; #437 remains open for retail/live-map evidence.
