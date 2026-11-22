@@ -1,0 +1,15 @@
+Verified: /workspace/openyr-core-slice-20261122-09/.tmp/retail-437-runtime/program
+.tmp/retail-437-proof/runtime/frame-00001.png: Structures tab
+.tmp/retail-437-proof/runtime/frame-00001-defences.png: Defences tab
+.tmp/retail-437-proof/runtime/frame-00001-infantry.png: Infantry tab
+.tmp/retail-437-proof/runtime/frame-00001-vehicles.png: Vehicles tab
+AI: $10000, queue 0, groups 0, scout false, hash fe2a5132258a2b27
+.tmp/retail-437-proof/runtime/frame-00001.png: tick 1 $10000 player 10 units / 5 buildings / enemy 10 units, 5 enemy buildings, power (200, 85), queue 0, Ongoing
+.tmp/retail-437-proof/runtime/frame-00003.png: Structures tab
+.tmp/retail-437-proof/runtime/frame-00003-defences.png: Defences tab
+.tmp/retail-437-proof/runtime/frame-00003-infantry.png: Infantry tab
+.tmp/retail-437-proof/runtime/frame-00003-vehicles.png: Vehicles tab
+AI: $10000, queue 0, groups 0, scout false, hash 5609270c30874341
+.tmp/retail-437-proof/runtime/frame-00003.png: tick 3 $10000 player 10 units / 5 buildings / enemy 10 units, 5 enemy buildings, power (200, 85), queue 0, Ongoing
+.tmp/retail-437-proof/runtime/audio.wav: stereo 44100 Hz, 2 ticks; cues in .tmp/retail-437-proof/runtime/audio-cues.tsv
+OpenYR: headless tick 3, hash 5609270c30874341, Ongoing

@@ -1,0 +1,18 @@
+{
+  "aliases": 140,
+  "frames_equal": true,
+  "hash": "fe2a5132258a2b27",
+  "pending": "[Stop { id: 156 }]",
+  "phase": 0,
+  "requests": 740,
+  "retail": true,
+  "selected": [
+    156
+  ],
+  "size": [
+    1280,
+    800
+  ],
+  "snapshot_bytes": 1317290,
+  "tick": 1
+}
